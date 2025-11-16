@@ -11,12 +11,12 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 @Builder
 @Entity
-@Table(name = "watch_later", indexes = {
-        @Index(name = "idx_watch_later_user_id", columnList = "user_id")
+@Table(name = "liked_movies", indexes = {
+        @Index(name = "idx_liked_movie_user_id", columnList = "user_id")
 })
-public class WatchLater {
+public class LikedMovie {
     @EmbeddedId
-    private WatchLaterID watchLaterID;
+    private LikedMoviesID likedMoviesID;
 
     @ManyToOne
     @MapsId("userId")
@@ -29,5 +29,5 @@ public class WatchLater {
     private Movie movie;
 
     @Column(name = "date")
-    private LocalDateTime dateAdded;
+    private LocalDateTime dateLiked;
 }
