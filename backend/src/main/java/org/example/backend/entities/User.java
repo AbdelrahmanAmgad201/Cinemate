@@ -68,4 +68,12 @@ public class User {
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
     private List<LikedMovie> likedMovie = new ArrayList<>();
+
+    @OneToMany(mappedBy = "followingUser", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Builder.Default
+    private List<Follows> following = new ArrayList<>();
+
+    @OneToMany(mappedBy = "followedUser", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Builder.Default
+    private List<Follows> followers = new ArrayList<>();
 }

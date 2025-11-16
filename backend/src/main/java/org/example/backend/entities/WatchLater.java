@@ -30,4 +30,9 @@ public class WatchLater {
 
     @Column(name = "date")
     private LocalDateTime dateAdded;
+
+    @PrePersist
+    protected void onCreate() {
+        dateAdded = LocalDateTime.now();
+    }
 }
