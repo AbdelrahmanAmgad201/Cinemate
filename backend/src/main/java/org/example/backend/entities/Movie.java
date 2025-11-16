@@ -42,4 +42,8 @@ public class Movie {
 
     @Column(name = "release_date")
     private LocalDate releaseDate;
+
+    @ManyToOne
+    @JoinColumn(name = "organization_id", nullable = false)
+    private Organization organization;
 }
