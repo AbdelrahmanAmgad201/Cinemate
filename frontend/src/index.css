@@ -1,0 +1,15 @@
+:root {
+    --background-gradient-dark-blue:linear-gradient(to bottom, #01161E 0%, #0C3849 100%);
+    --ghost-white: #FAFAFF; /* for text */
+    --ink-black: #01161E; /* button */
+    --ink-black-border: #0C3849;
+    --ink-black-hover: #022237;
+    --ink-black-disabled: gray;
+}
+
+body {
+    min-height: 100vh;
+    font-family: 'Roboto', sans-serif;
+    background: var(--background-gradient-dark-blue);
+    color: var(--ghost-white);
+}

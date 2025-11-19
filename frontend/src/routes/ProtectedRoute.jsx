@@ -6,7 +6,7 @@ export default function ProtectedRoute(){
 
     if (!user){
         // Not logged in
-        return <Navigate to = "login" replace />;
+        return <Navigate to = "" replace />;
 
     }
 
