@@ -1,9 +1,9 @@
 import { useState } from 'react'
-import './App.css'
-import { BrowserRouter as Router, Routes, Route, Link } from "react-router-dom";
-import UserRoutes from './routes/userRoutes';
-import OrgRoutes from './routes/orgRoutes';
-import AdminRoutes from './routes/adminRoutes';
+import { BrowserRouter } from 'react-router-dom';
+import React, { Suspense } from 'react';
+import AppRoutes from './routes/AppRoutes';
+import LoadingFallback from './components/LoadingFallback';
+
 
 
 
@@ -11,13 +11,13 @@ function App() {
   const [count, setCount] = useState(0)
 
   return (
-    <Router>
-      <Routes>
-        {UserRoutes()}
-        {OrgRoutes()}
-        {AdminRoutes()}
-      </Routes>
-    </Router>
+
+    <BrowserRouter>
+        {/*<Suspense> lets you display a fallback until its children have finished loading.*/}
+        <Suspense fallback={<LoadingFallback />}>
+            <AppRoutes />
+        </Suspense>
+    </BrowserRouter>
   )
 }
 
