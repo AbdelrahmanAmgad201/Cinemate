@@ -1,7 +1,9 @@
-package org.example.backend.entities;
+package org.example.backend.movie;
 
 import jakarta.persistence.*;
 import lombok.*;
+import org.example.backend.admin.Admin;
+import org.example.backend.organization.Organization;
 
 import java.time.LocalDate;
 
