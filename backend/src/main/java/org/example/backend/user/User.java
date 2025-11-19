@@ -1,7 +1,8 @@
-package org.example.backend.entities;
+package org.example.backend.user;
 
 import jakarta.persistence.*;
 import lombok.*;
+import org.example.backend.entities.*;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
