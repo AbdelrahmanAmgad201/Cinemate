@@ -2,7 +2,7 @@ package org.example.backend.entities;
 
 import jakarta.persistence.*;
 import lombok.*;
-import org.example.backend.User.User;
+import org.example.backend.user.User;
 import java.time.LocalDateTime;
 
 @Getter

@@ -1,5 +1,6 @@
-package org.example.backend.User;
+package org.example.backend.user;
 
+import jakarta.transaction.Transactional;
 import org.springframework.stereotype.Service;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
@@ -13,7 +14,8 @@ public class UserService {
     private UserRepository userRepository;
     PasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
 
-    public User addUser(String email, String password) {
+
+    private User addUser(String email, String password) {
         System.out.println(email);
         String hashedPassword = passwordEncoder.encode(password);
         User user = User.builder()
@@ -23,6 +25,7 @@ public class UserService {
         return userRepository.save(user);
     }
 
+    @Transactional
     public User signUp(SignUpDTO signUpDTO) {
         String email = signUpDTO.getEmail();
         String password = signUpDTO.getPassword();
