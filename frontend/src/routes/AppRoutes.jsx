@@ -7,7 +7,7 @@ import OrgRoutes from './orgRoutes';
 import AdminRoutes from './adminRoutes';
 import UserSignIn from "../pages/user/auth/signIn.jsx";
 import UserSignUp from "../pages/user/auth/signUp.jsx";
-import EmailVerification from "../pages/user/auth/emailVerify.jsx";
+import EmailVerification from "../pages/user/auth/EmailVerification.jsx";
 import HomePage from "../pages/user/homePage.jsx";
 
 
@@ -29,7 +29,7 @@ export default function AppRoutes() {
 
             </Route>
 
-            <Route path={"/emailVerif"} element={<EmailVerification />} />
+            <Route path={"/emailVerify"} element={<EmailVerification />} />
 
             {/* protected routes (requires login + verified) */}
             <Route element={<ProtectedRoute requireVerified={true} />}>

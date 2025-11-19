@@ -3,7 +3,7 @@ import { BrowserRouter } from 'react-router-dom';
 import React, { Suspense } from 'react';
 import AppRoutes from './routes/AppRoutes';
 import LoadingFallback from './components/LoadingFallback';
-
+import './App.css'
 
 
 
