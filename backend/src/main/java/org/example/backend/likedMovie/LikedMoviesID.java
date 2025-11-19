@@ -1,4 +1,4 @@
-package org.example.backend.entities;
+package org.example.backend.likedMovie;
 
 import jakarta.persistence.Embeddable;
 import lombok.*;
@@ -11,7 +11,7 @@ import java.util.Objects;
 @AllArgsConstructor
 @Getter
 @Setter
-public class WatchLaterID implements Serializable {
+public class LikedMoviesID implements Serializable {
     private Long userId;
     private Long movieId;
 
@@ -19,7 +19,7 @@ public class WatchLaterID implements Serializable {
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
-        WatchLaterID that = (WatchLaterID) o;
+        LikedMoviesID that = (LikedMoviesID) o;
         return Objects.equals(userId, that.userId) && Objects.equals(movieId, that.movieId);
     }
 

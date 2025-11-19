@@ -1,4 +1,4 @@
-package org.example.backend.entities;
+package org.example.backend.movie;
 
 public enum Genre {
     MYSTERY,

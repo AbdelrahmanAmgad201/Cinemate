@@ -2,7 +2,11 @@ package org.example.backend.user;
 
 import jakarta.persistence.*;
 import lombok.*;
-import org.example.backend.entities.*;
+import org.example.backend.following.Follows;
+import org.example.backend.likedMovie.LikedMovie;
+import org.example.backend.movieReview.MovieReview;
+import org.example.backend.watchHistory.WatchHistory;
+import org.example.backend.watchLater.WatchLater;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;

@@ -1,9 +1,9 @@
-package org.example.backend.entities;
+package org.example.backend.admin;
 
 import jakarta.persistence.*;
 import lombok.*;
+import org.example.backend.movie.Movie;
 
-import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
