@@ -29,7 +29,7 @@ export default function AppRoutes() {
 
             </Route>
 
-            <Route path={"/emailVerify"} element={<EmailVerification />} />
+            <Route path={"/email-verify"} element={<EmailVerification />} />
 
             {/* protected routes (requires login + verified) */}
             <Route element={<ProtectedRoute requireVerified={true} />}>
