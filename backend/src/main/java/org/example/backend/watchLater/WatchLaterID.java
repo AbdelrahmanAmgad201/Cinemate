@@ -12,7 +12,7 @@ import java.util.Objects;
 @Getter
 @Setter
 public class WatchLaterID implements Serializable {
-    private Long userId;
+    private Long id;
     private Long movieId;
 
     @Override
@@ -20,11 +20,11 @@ public class WatchLaterID implements Serializable {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         WatchLaterID that = (WatchLaterID) o;
-        return Objects.equals(userId, that.userId) && Objects.equals(movieId, that.movieId);
+        return Objects.equals(id, that.id) && Objects.equals(movieId, that.movieId);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(userId, movieId);
+        return Objects.hash(id, movieId);
     }
 }

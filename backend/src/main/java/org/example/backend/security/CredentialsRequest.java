@@ -1,4 +1,10 @@
 package org.example.backend.security;
 
-public class credentialsRequest {
+import lombok.Data;
+
+@Data
+public class CredentialsRequest {
+    private String email;
+    private String password;
+    private String role;
 }

@@ -20,7 +20,7 @@ public class WatchLater {
     private WatchLaterID watchLaterID;
 
     @ManyToOne
-    @MapsId("userId")
+    @MapsId("id")
     @JoinColumn(name = "user_id")
     private User user;
 

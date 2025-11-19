@@ -5,6 +5,7 @@ import lombok.*;
 import org.example.backend.following.Follows;
 import org.example.backend.likedMovie.LikedMovie;
 import org.example.backend.movieReview.MovieReview;
+import org.example.backend.security.Authenticatable;
 import org.example.backend.watchHistory.WatchHistory;
 import org.example.backend.watchLater.WatchLater;
 
@@ -22,11 +23,11 @@ import java.util.List;
 @Table(name = "users", indexes = {
         @Index(name = "idx_user_email", columnList = "email")
 })
-public class User {
+public class User implements Authenticatable {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "user_id")
-    private Long userID;
+    private Long id;
 
     @Column(name = "first_name")
     private String firstName;
@@ -61,6 +62,9 @@ public class User {
         createdAt = LocalDateTime.now();
     }
 
+    public String getRole(){
+        return "ROLE_USER";
+    }
 
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
