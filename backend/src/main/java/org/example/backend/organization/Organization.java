@@ -48,4 +48,8 @@ public class Organization {
             createdAt = LocalDateTime.now();
         }
     }
+
+    public String getRole(){
+        return "ROLE_ORGANIZATION";
+    }
 }

@@ -3,6 +3,7 @@ package org.example.backend.admin;
 import jakarta.persistence.*;
 import lombok.*;
 import org.example.backend.movie.Movie;
+import org.example.backend.security.Authenticatable;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -16,7 +17,7 @@ import java.util.List;
 @Table(name = "admins", indexes = {
         @Index(name = "idx_admin_email", columnList = "email")
 })
-public class Admin {
+public class Admin implements Authenticatable {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "admin_id")
@@ -30,6 +31,10 @@ public class Admin {
 
     @Column(name = "password", nullable = false)
     private String password;
+
+    public String getRole() {
+        return "ROLE_ADMIN";
+    }
 
     @OneToMany(mappedBy = "admin")
     @Builder.Default

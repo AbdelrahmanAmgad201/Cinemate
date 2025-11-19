@@ -1,6 +1,7 @@
 package org.example.backend.user;
 
 import jakarta.transaction.Transactional;
+import org.example.backend.security.CredentialsRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
@@ -26,9 +27,9 @@ public class UserService {
     }
 
     @Transactional
-    public User signUp(SignUpDTO signUpDTO) {
-        String email = signUpDTO.getEmail();
-        String password = signUpDTO.getPassword();
+    public User signUp(CredentialsRequest credentialsRequest) {
+        String email = credentialsRequest.getEmail();
+        String password = credentialsRequest.getPassword();
         Optional<User> user = userRepository.findByEmail(email);
         if (user.isPresent()) {
             throw new RuntimeException("User with this email already exists");
