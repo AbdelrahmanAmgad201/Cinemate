@@ -1,5 +1,6 @@
 package org.example.backend.user;
 
+import org.example.backend.verification.Verfication;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
@@ -10,7 +11,7 @@ public class UserController {
     private  UserService userService;
 
     @PostMapping("/v1/sign-up")
-    public User signUp(@RequestBody SignUpDTO signUpDTO) {
+    public Verfication signUp(@RequestBody SignUpDTO signUpDTO) {
         return userService.signUp(signUpDTO);
     }
 }
