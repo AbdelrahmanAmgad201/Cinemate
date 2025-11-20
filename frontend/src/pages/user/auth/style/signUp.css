@@ -159,3 +159,26 @@
 .signup-container button[type=button]:hover{
     background-color: #1d1d1d;
 }
+.passwordWrapper {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.passwordWrapper input {
+    flex: 1;
+    width: auto;
+}
+
+#showBtn{
+    width: auto;
+    margin-top: 0;
+    padding: 8px 16px;
+    height: auto;
+    font-size: 14px;
+}
+.notUser{
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
