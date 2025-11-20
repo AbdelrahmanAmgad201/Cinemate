@@ -3,23 +3,26 @@ name: Run Backend Tests
 on:
   pull_request:
     branches:
-      - main    # Replace with your target branch
-      - milestone_1 # Add more if needed
+      - main
+      - 'milestone_*'
 
 jobs:
   backend-tests:
     runs-on: ubuntu-latest
 
     steps:
+      # 1. Checkout code
       - name: Checkout repository
         uses: actions/checkout@v3
 
+      # 2. Set up Java 21
       - name: Set up JDK 21
         uses: actions/setup-java@v3
         with:
           distribution: 'temurin'
           java-version: '21'
 
+      # 3. Cache Maven dependencies
       - name: Cache Maven packages
         uses: actions/cache@v3
         with:
@@ -28,5 +31,7 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-maven-
 
-      - name: Build and run tests
+      # 4. Run Maven tests in backend folder
+      - name: Build and run backend tests
         run: mvn -f backend/pom.xml clean test
+
