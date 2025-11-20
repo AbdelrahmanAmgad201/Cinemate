@@ -13,9 +13,6 @@ api.interceptors.request.use(config => {
         // Adds the token header
         config.headers.Authorization = `Bearer ${token}`;
     }
-    else{
-        // delete config.headers.Authorization;
-    }
 
     return config;
 })

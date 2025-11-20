@@ -6,7 +6,6 @@ export default async function signInApi({email, password, role}) {
         const response = await api.post("/auth/login", {email, password, role});
         const data = response.data;
         const token = data.token;
-        console.log(data);
         const user = {
             id: data.id,
             email: data.email,

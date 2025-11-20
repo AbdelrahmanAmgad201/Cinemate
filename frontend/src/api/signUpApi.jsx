@@ -5,7 +5,6 @@ export default async function signUpApi({email, password, role}) {
     try{
         const response = await api.post("/user/v1/sign-up", {email, password, role});
         const data = response.data;
-        console.log(data);
 
         return { success: true};
     }

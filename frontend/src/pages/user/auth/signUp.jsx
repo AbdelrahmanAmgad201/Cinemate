@@ -33,7 +33,6 @@ const UserSignUp = () => {
         // The following is for testing and showing an example, THIS IS NOT FINALIZED
         const signUpResult = await signUpApi({email:email, password:password, role:"USER"});
         // await signIn({email:email, password:password, role:"USER"})
-        console.log(firstName, lastName, birthDate, gender, email, password, confirmPassword);
     }
 
     return (

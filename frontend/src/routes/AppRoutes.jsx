@@ -23,13 +23,13 @@ export default function AppRoutes() {
                 {/*The following is equivalent to path = ""*/}
                 <Route index element={<UserSignIn />} />
                 <Route path={"/userSignUp"} element={<UserSignUp />} />
+                <Route path={"/email-verify"} element={<EmailVerification />} />
 
                 {OrgRoutes()}
                 {AdminRoutes()}
 
             </Route>
 
-            <Route path={"/email-verify"} element={<EmailVerification />} />
 
             {/* protected routes (requires login + verified) */}
             <Route element={<ProtectedRoute requireVerified={true} />}>

@@ -15,7 +15,7 @@ export default function AuthProvider({ children }){
     const signIn = async (email, password, role) => {
         try {
             const res = await signInApi({email, password, role});
-            console.log(res);
+
             setUser(res.user)
             return {success: true}
         }
@@ -40,7 +40,6 @@ export default function AuthProvider({ children }){
 
         try{
             const userData = jwtDecode(token); // returns { id, email, role, iat }
-            console.log(userData + " ,Upon fresh reload");
             if (userData.exp * 1000 < Date.now()) {
                 // token expired
                 localStorage.removeItem("token");
