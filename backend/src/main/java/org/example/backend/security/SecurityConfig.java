@@ -40,6 +40,7 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                 .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                 .requestMatchers("/api/auth/**").permitAll()
+                        .requestMatchers("/api/verification/**").permitAll()
                 .requestMatchers("/api/user/v1/sign-up").permitAll()
                 .requestMatchers("/api/admin/**").hasAuthority("ROLE_ADMIN")
                 .requestMatchers("/api/organization/**").hasAuthority("ROLE_ORGANIZATION")

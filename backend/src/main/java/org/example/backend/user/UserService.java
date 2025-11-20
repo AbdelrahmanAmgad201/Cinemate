@@ -21,18 +21,23 @@ public class UserService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final Random random = new Random();
-    @Autowired
-    private VerificationRepository verificationRepository;
+    private final VerificationRepository verificationRepository;
     @Autowired
     private VerificationService verificationService;
 
     private Verfication addVerfication(String email, String password, int code) {
         String hashedPassword = passwordEncoder.encode(password);
-        Verfication verfication = Verfication.builder()
-                .email(email)
-                .password(hashedPassword)
-                .code(code)
-                .build();
+        Optional<Verfication> oldVerification = verificationRepository.findByEmail(email);
+        if (oldVerification.isPresent()) {
+            verificationRepository.delete(oldVerification.get());
+
+        }
+            Verfication verfication= Verfication.builder()
+                    .email(email)
+                    .password(hashedPassword)
+                    .code(code)
+                    .build();
+
         return verificationRepository.save(verfication);
     }
 
@@ -45,7 +50,11 @@ public class UserService {
             throw new RuntimeException("User with this email already exists");
         }
         int code = 100000 + random.nextInt(900000);
-        verificationService.sendVerificationEmail(email, code);
-        return addVerfication(email, password,code);
+        if(verificationService.sendVerificationEmail(email, code)){
+            return addVerfication(email, password,code);
+        }
+        else{
+            return new Verfication();
+        }
     }
 }
