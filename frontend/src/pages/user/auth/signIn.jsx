@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import {useState} from 'react';
 import { FcGoogle } from "react-icons/fc";
 
-const UserSignIn = () => {
+export default function SignIn({role = "User", button1 = "Organization", navigate1 = "/orgSignIn", button2 = "Admin", navigate2 = "/adminSignIn", showParagraph = true}) {
     const navigate = useNavigate();
 
     const [email, setEmail] = useState("");
@@ -20,9 +20,9 @@ const UserSignIn = () => {
         <div className = "signup-container">
             <form onSubmit = {handleSubmit}>
                 <h1>
-                    User Sign In
+                    {role} Sign In
                 </h1>
-                <p>If you don't have an account register <br /> you can <a href = "/userSignUp">Register here!</a> </p>
+                {showParagraph && <p>If you don't have an account register <br /> you can <a href = "/userSignUp">Register here!</a> </p>}
                 <div className = "input-elem">
                     <label htmlFor = "email">Email</label>
                     <input type = "text" id = "email" name = "email" placeholder="Enter your email address" required onChange = {(e) => {setEmail(e.target.value)}} />
@@ -36,14 +36,13 @@ const UserSignIn = () => {
                 </div>
                 <button type="submit" onClick={() => navigate("/homePage")}>Sign In</button><br />
                 <div className = "notUser">
-                    <button type="submit" onClick={() => navigate("/orgSignIn")}>Sign in as Organization</button>
-                    <button type="submit" onClick={() => navigate("/adminSignIn")}>Sign in as Admin</button>
+                    <button type="submit" onClick={() => navigate(navigate1)}>Sign in as {button1}</button>
+                    <button type="submit" onClick={() => navigate(navigate2)}>Sign in as {button2}</button>
                 </div>
             </form>
-            <button type="button" onClick={() => alert("Google")}><FcGoogle />Sign in using Google</button>
+            {showParagraph && <button type="button" onClick={() => alert("Google")}><FcGoogle />Sign in using Google</button>}
 
         </div>
     );
 };
 
-export default UserSignIn;

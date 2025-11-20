@@ -1,12 +1,14 @@
 import React from 'react';
+import SignIn from "../user/auth/signIn.jsx";
 
 const AdminSignIn = () => {
     return (
-        <div>
-            <h1>
-                Admin Sign In
-            </h1>
-        </div>
+        <SignIn
+        role = "Admin"
+        button2 = "User"
+        navigate2 = "/"
+        showParagraph = {false}
+        />
     );
 };
 
