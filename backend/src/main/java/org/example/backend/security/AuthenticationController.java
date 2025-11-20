@@ -1,9 +1,6 @@
 package org.example.backend.security;
 
 import lombok.RequiredArgsConstructor;
-import org.example.backend.security.CredentialsRequest;
-import org.example.backend.security.JWTProvider;
-import org.example.backend.security.AuthenticationService;
 import org.example.backend.user.User;
 import org.example.backend.user.UserAlreadyExistsException;
 import org.example.backend.user.UserService;
