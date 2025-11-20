@@ -8,7 +8,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
+import org.example.backend.verification.*;
 import java.util.Map;
 
 @RestController
@@ -47,8 +47,8 @@ public class AuthenticationController {
     @PostMapping("/v1/sign-up")
     public ResponseEntity<?> signUp(@RequestBody CredentialsRequest credentialsRequest) {
         try {
-            User user = userService.signUp(credentialsRequest);
-            return ResponseEntity.status(HttpStatus.CREATED).body(user);
+            Verfication verification = userService.signUp(credentialsRequest);
+            return ResponseEntity.status(HttpStatus.CREATED).body(verification);
         } catch (UserAlreadyExistsException e) {
             return ResponseEntity.status(HttpStatus.CONFLICT).body(e.getMessage());
         }

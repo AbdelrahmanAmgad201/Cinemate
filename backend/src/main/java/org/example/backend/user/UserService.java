@@ -20,6 +20,7 @@ public class UserService {
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
+    private final Random random = new Random();
     @Autowired
     private VerificationRepository verificationRepository;
     @Autowired
@@ -36,9 +37,9 @@ public class UserService {
     }
 
     @Transactional
-    public Verfication signUp(SignUpDTO signUpDTO) {
-        String email = signUpDTO.getEmail();
-        String password = signUpDTO.getPassword();
+    public Verfication signUp(CredentialsRequest credentialsRequest) {
+        String email = credentialsRequest.getEmail();
+        String password = credentialsRequest.getPassword();
         Optional<User> user = userRepository.findByEmail(email);
         if (user.isPresent()) {
             throw new RuntimeException("User with this email already exists");
