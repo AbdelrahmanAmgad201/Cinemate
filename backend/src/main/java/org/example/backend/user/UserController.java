@@ -10,13 +10,6 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequestMapping("/api/user")
 public class UserController {
-    @Autowired
-    private  UserService userService;
-
-    @PostMapping("/v1/sign-up")
-    public User signUp(@RequestBody CredentialsRequest credentialsRequest) {
-        return userService.signUp(credentialsRequest);
-    }
 
     @GetMapping("/v1/profile")
     @PreAuthorize("hasRole('USER')")

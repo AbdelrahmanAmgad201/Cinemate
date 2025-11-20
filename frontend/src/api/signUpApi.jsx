@@ -3,7 +3,7 @@ import api from './apiClient.jsx';
 
 export default async function signUpApi({email, password, role}) {
     try{
-        const response = await api.post("/user/v1/sign-up", {email, password, role});
+        const response = await api.post("/auth/v1/sign-up", {email, password, role});
         const data = response.data;
 
         return { success: true};
