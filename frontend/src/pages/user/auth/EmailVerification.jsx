@@ -1,5 +1,6 @@
 import {useState, useRef, useEffect} from 'react';
 import { useNavigate } from 'react-router-dom';
+import './style/EmailVerification.css';
 
 const regexDigit =  /^[0-9]$/
 

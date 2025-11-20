@@ -1,6 +1,12 @@
 import './style/signUp.css';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+
+import { AuthContext } from "../../../context/AuthContext";
+import { useContext } from "react";
+
+import signUpApi from '../../../api/signUpApi';
+
 // Icons
 import { FcGoogle } from "react-icons/fc";
 import { HiOutlineMail } from "react-icons/hi";
@@ -20,8 +26,13 @@ const UserSignUp = () => {
     const [password, setPassword] = useState("");
     const [confirmPassword, setConfrimPassword] = useState("");
 
-    const handlesubmit = (e) => {
+    const { user, loading, signIn, signOut, isAuthenticated } = useContext(AuthContext);
+
+    const handlesubmit = async (e) => {
         e.preventDefault();
+        // The following is for testing and showing an example, THIS IS NOT FINALIZED
+        const signUpResult = await signUpApi({email:email, password:password, role:"USER"});
+        await signIn({email:email, password:password, role:"USER"})
         console.log(firstName, lastName, birthDate, gender, email, password, confirmPassword);
     }
 
@@ -31,7 +42,7 @@ const UserSignUp = () => {
                 <h1>
                     Sign Up
                 </h1>
-                <p>If you already have an account register<br />You can <a href="/">Login here!</a></p>
+                <p>If you already have an account registered<br />You can <a href="/">Login here!</a></p>
                 <div className="name">
                     <div className="input-elem">
                     <label htmlFor="firstName">First Name</label>

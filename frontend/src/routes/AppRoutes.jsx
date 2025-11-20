@@ -20,7 +20,7 @@ export default function AppRoutes() {
 
             {/* public routes, i think the only public pages will be auth pages */}
             <Route element={<GuestOnlyRoute />}>
-                // The following is equivalent to path = ""
+                {/*The following is equivalent to path = ""*/}
                 <Route index element={<UserSignIn />} />
                 <Route path={"/userSignUp"} element={<UserSignUp />} />
 
@@ -33,7 +33,7 @@ export default function AppRoutes() {
 
             {/* protected routes (requires login + verified) */}
             <Route element={<ProtectedRoute requireVerified={true} />}>
-                <Route path="/homePage" element={<HomePage />} />
+                <Route path="/home-page" element={<HomePage />} />
                  {/*other protected routes*/}
             </Route>
 
