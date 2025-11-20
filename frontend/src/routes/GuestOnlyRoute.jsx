@@ -1,12 +1,14 @@
 import { Navigate, Outlet } from 'react-router-dom';
+import { AuthContext } from "../context/AuthContext";
+import { useContext } from "react";
 
 export default function GuestOnlyRoute() {
 
-    const user = null;
+    const { user, loading, signIn, signOut, isAuthenticated } = useContext(AuthContext);
 
-    if (user) {
+    if (isAuthenticated) {
         // if logged in
-        return <Navigate to="/movies" replace />;
+        return <Navigate to="/home-page" replace />;
     }
 
 
