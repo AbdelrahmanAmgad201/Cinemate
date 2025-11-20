@@ -1,6 +1,7 @@
 package org.example.backend.user;
 
 import jakarta.transaction.Transactional;
+import lombok.RequiredArgsConstructor;
 import org.example.backend.security.CredentialsRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -10,14 +11,13 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import java.util.Optional;
 
 @Service
+@RequiredArgsConstructor
 public class UserService {
-    @Autowired
-    private UserRepository userRepository;
-    PasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
 
+    private final UserRepository userRepository;
+    private final PasswordEncoder passwordEncoder;
 
     private User addUser(String email, String password) {
-        System.out.println(email);
         String hashedPassword = passwordEncoder.encode(password);
         User user = User.builder()
                 .email(email)
@@ -30,10 +30,11 @@ public class UserService {
     public User signUp(CredentialsRequest credentialsRequest) {
         String email = credentialsRequest.getEmail();
         String password = credentialsRequest.getPassword();
-        Optional<User> user = userRepository.findByEmail(email);
-        if (user.isPresent()) {
-            throw new RuntimeException("User with this email already exists");
-        }
+
+        userRepository.findByEmail(email).ifPresent(u -> {
+            throw new UserAlreadyExistsException("User with this email already exists");
+        });
+
         return addUser(email, password);
     }
 }

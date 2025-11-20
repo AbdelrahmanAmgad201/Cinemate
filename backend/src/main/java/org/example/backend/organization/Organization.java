@@ -3,6 +3,7 @@ package org.example.backend.organization;
 import jakarta.persistence.*;
 import lombok.*;
 import org.example.backend.movie.Movie;
+import org.example.backend.security.Authenticatable;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -17,7 +18,7 @@ import java.util.List;
 @Table(name = "organizations", indexes = {
         @Index(name = "idx_org_email", columnList = "email")
 })
-public class Organization {
+public class Organization implements Authenticatable {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "organization_id")

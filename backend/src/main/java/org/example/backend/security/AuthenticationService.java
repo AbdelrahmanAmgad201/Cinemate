@@ -19,7 +19,6 @@ public class AuthenticationService {
     private final PasswordEncoder passwordEncoder;
 
     public Optional<Authenticatable> findByEmailAndRole(String email, String role) {
-        // Normalize role format
         String normalizedRole = normalizeRole(role);
 
         return switch (normalizedRole) {

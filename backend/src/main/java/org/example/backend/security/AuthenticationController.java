@@ -1,9 +1,13 @@
-package org.example.backend.controller;
+package org.example.backend.security;
 
 import lombok.RequiredArgsConstructor;
 import org.example.backend.security.CredentialsRequest;
 import org.example.backend.security.JWTProvider;
 import org.example.backend.security.AuthenticationService;
+import org.example.backend.user.User;
+import org.example.backend.user.UserAlreadyExistsException;
+import org.example.backend.user.UserService;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -17,6 +21,8 @@ public class AuthenticationController {
 
     private final AuthenticationService authenticationService;
     private final JWTProvider jwtTokenProvider;
+    @Autowired
+    private UserService userService;
 
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody CredentialsRequest request) {
@@ -38,4 +44,17 @@ public class AuthenticationController {
         }).orElse(ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                 .body(Map.of("error", "Invalid credentials")));
     }
+
+
+
+    @PostMapping("/v1/sign-up")
+    public ResponseEntity<?> signUp(@RequestBody CredentialsRequest credentialsRequest) {
+        try {
+            User user = userService.signUp(credentialsRequest);
+            return ResponseEntity.status(HttpStatus.CREATED).body(user);
+        } catch (UserAlreadyExistsException e) {
+            return ResponseEntity.status(HttpStatus.CONFLICT).body(e.getMessage());
+        }
+    }
+
 }
