@@ -4,6 +4,8 @@ import jakarta.transaction.Transactional;
 import org.example.backend.verification.Verfication;
 import org.example.backend.verification.VerificationRepository;
 import org.example.backend.verification.VerificationService;
+import lombok.RequiredArgsConstructor;
+import org.example.backend.security.CredentialsRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
@@ -13,16 +15,15 @@ import java.util.Optional;
 import java.util.Random;
 
 @Service
+@RequiredArgsConstructor
 public class UserService {
-    @Autowired
-    private UserRepository userRepository;
+
+    private final UserRepository userRepository;
+    private final PasswordEncoder passwordEncoder;
     @Autowired
     private VerificationRepository verificationRepository;
     @Autowired
     private VerificationService verificationService;
-    private final Random random = new Random() ;
-    private final PasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
-
 
     private Verfication addVerfication(String email, String password, int code) {
         String hashedPassword = passwordEncoder.encode(password);
