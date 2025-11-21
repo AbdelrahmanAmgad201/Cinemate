@@ -1,6 +1,6 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import SignIn from "../auth/signIn.jsx";
+import SignIn from "../../auth/signIn.jsx";
 
 const OrgSignIn = () => {
     const navigate = useNavigate();

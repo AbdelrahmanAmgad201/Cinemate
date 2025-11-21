@@ -6,9 +6,9 @@ import UserSignIn from "../pages/auth/signIn.jsx";
 import UserSignUp from "../pages/auth/signUp.jsx";
 import EmailVerification from "../pages/auth/emailVerification.jsx";
 import HomePage from "../pages/user/homePage.jsx";
-import OrgSignUp from "../pages/org/orgSignUp.jsx";
-import OrgSignIn from "../pages/org/orgSignIn.jsx";
-import AdminSignIn from "../pages/admin/adminSignIn.jsx";
+import OrgSignUp from "../pages/org/auth/orgSignUp.jsx";
+import OrgSignIn from "../pages/org/auth/orgSignIn.jsx";
+import AdminSignIn from "../pages/admin/auth/adminSignIn.jsx";
 
 
 export default function AppRoutes() {

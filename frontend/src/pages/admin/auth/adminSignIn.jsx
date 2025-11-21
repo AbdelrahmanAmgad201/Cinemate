@@ -1,5 +1,5 @@
 import React from 'react';
-import SignIn from "../auth/signIn.jsx";
+import SignIn from "../../auth/signIn.jsx";
 
 const AdminSignIn = () => {
     return (
