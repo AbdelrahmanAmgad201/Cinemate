@@ -2,13 +2,13 @@ import {Routes, Route} from 'react-router-dom'
 import GuestOnlyRoute from './GuestOnlyRoute'
 import ProtectedRoute from "./ProtectedRoute.jsx";
 
-import UserRoutes from './userRoutes';
-import OrgRoutes from './orgRoutes';
-import AdminRoutes from './adminRoutes';
-import UserSignIn from "../pages/user/auth/signIn.jsx";
-import UserSignUp from "../pages/user/auth/signUp.jsx";
-import EmailVerification from "../pages/user/auth/EmailVerification.jsx";
+import UserSignIn from "../pages/auth/signIn.jsx";
+import UserSignUp from "../pages/auth/signUp.jsx";
+import EmailVerification from "../pages/auth/emailVerification.jsx";
 import HomePage from "../pages/user/homePage.jsx";
+import OrgSignUp from "../pages/org/orgSignUp.jsx";
+import OrgSignIn from "../pages/org/orgSignIn.jsx";
+import AdminSignIn from "../pages/admin/adminSignIn.jsx";
 
 
 export default function AppRoutes() {
@@ -18,15 +18,17 @@ export default function AppRoutes() {
     return (
         <Routes>
 
-            {/* public routes, i think the only public pages will be auth pages */}
+            {/* public routes, currently the only public pages will be auth pages */}
             <Route element={<GuestOnlyRoute />}>
                 {/*The following is equivalent to path = ""*/}
                 <Route index element={<UserSignIn />} />
-                <Route path={"/userSignUp"} element={<UserSignUp />} />
+                <Route path={"/user-sign-up"} element={<UserSignUp />} />
                 <Route path={"/email-verify"} element={<EmailVerification />} />
 
-                {OrgRoutes()}
-                {AdminRoutes()}
+                <Route path="/org-sign-in" element={<OrgSignIn />} />
+                <Route path="/org-sign-up" element={<OrgSignUp />} />
+
+                <Route path="/admin-sign-in" element={<AdminSignIn />} />
 
             </Route>
 
@@ -34,10 +36,12 @@ export default function AppRoutes() {
             {/* protected routes (requires login + verified) */}
             <Route element={<ProtectedRoute requireVerified={true} />}>
                 <Route path="/home-page" element={<HomePage />} />
-                 {/*other protected routes*/}
+
             </Route>
 
+            {/* If any unknown path is entered, it will be redirected to the UserSignIn page*/}
             {/*<Route path="*" element={<NotFoundPage />} />*/}
+            <Route path="*" element={<UserSignIn />} />
 
         </Routes>
     )

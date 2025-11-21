@@ -2,10 +2,10 @@ import './style/signUp.css';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Link } from "react-router-dom";
-import { AuthContext } from "../../../context/AuthContext";
+import { AuthContext } from "../../context/AuthContext.jsx";
 import { useContext } from "react";
 
-import signUpApi from '../../../api/signUpApi';
+import signUpApi from '../../api/signUpApi.jsx';
 
 // Icons
 import { FcGoogle } from "react-icons/fc";

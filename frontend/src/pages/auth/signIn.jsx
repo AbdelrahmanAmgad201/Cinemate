@@ -9,11 +9,11 @@ import { Link } from "react-router-dom";
 
 export default function SignIn({role = "User",
                                 button1 = "Organization",
-                                navigate1 = "/orgSignIn",
+                                navigate1 = "/org-sign-in",
                                 button2 = "Admin",
-                                navigate2 = "/adminSignIn",
+                                navigate2 = "/admin-sign-in",
                                 showParagraph = true,
-                                link = "/userSignUp"}) {
+                                link = "/user-sign-up"}) {
     const navigate = useNavigate();
 
     const [email, setEmail] = useState("");
@@ -22,8 +22,9 @@ export default function SignIn({role = "User",
 
     const handleSubmit = (e) => {
             e.preventDefault();
-            console.log(email, password);
-            navigate("/homePage")
+
+            // console.log(email, password);
+            // navigate("/home-page")
         }
 
     return (
