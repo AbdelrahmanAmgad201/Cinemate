@@ -6,9 +6,10 @@ const OrgSignIn = () => {
     const navigate = useNavigate();
     return (
         <SignIn
-        role = "Organization"
-        button1 = "User"
-        navigate1 = "/"
+            role = "Organization"
+            button1 = "User"
+            navigate1 = "/"
+            link = "/OrgSignUp"
         />
     );
 };

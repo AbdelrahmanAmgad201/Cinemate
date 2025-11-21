@@ -1,12 +1,14 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
+import SignUp from "../user/auth/signUp.jsx";
 
 const OrgSignUp = () => {
     return (
-        <div>
-            <h1>
-                Organization Sign Up
-            </h1>
-        </div>
+        <SignUp
+            role = "Organization"
+            show = {false}
+            link = "/orgSignIn"
+        />
     );
 };
 
