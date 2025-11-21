@@ -13,7 +13,7 @@ import static org.junit.jupiter.api.Assertions.*;
 @SpringBootTest
 @ActiveProfiles("test")
 @Transactional
-class VerificationServiceIntegrationTest {
+class VerificationServiceTest {
 
     @Autowired
     private VerificationRepository verificationRepository;

@@ -28,16 +28,12 @@ public class UserService {
     private Verfication addVerfication(String email, String password, int code) {
         String hashedPassword = passwordEncoder.encode(password);
         Optional<Verfication> oldVerification = verificationRepository.findByEmail(email);
-        if (oldVerification.isPresent()) {
-            verificationRepository.delete(oldVerification.get());
-
-        }
-            Verfication verfication= Verfication.builder()
-                    .email(email)
-                    .password(hashedPassword)
-                    .code(code)
-                    .build();
-
+        oldVerification.ifPresent(verificationRepository::delete);
+        Verfication verfication= Verfication.builder()
+                .email(email)
+                .password(hashedPassword)
+                .code(code)
+                .build();
         return verificationRepository.save(verfication);
     }
 

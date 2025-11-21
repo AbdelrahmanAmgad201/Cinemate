@@ -11,4 +11,8 @@ import lombok.Setter;
 public class VerificationDTO {
     private String email;
     private int code;
+
+    public VerificationDTO() {
+
+    }
 }

@@ -1,5 +1,6 @@
 package org.example.backend.verification;
 
+import jakarta.transaction.Transactional;
 import org.example.backend.user.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -20,11 +21,13 @@ import lombok.Setter;
 @Setter
 
 @Service
+@Transactional
 public class VerificationService {
 
     @Autowired
     private UserRepository userRepository;
-    private final VerificationRepository verificationRepository;
+    @Autowired
+    private VerificationRepository verificationRepository;
 
     @Value("${sendgrid.api.key}")
     private String sendGridApiKey;
@@ -33,10 +36,6 @@ public class VerificationService {
     private String fromEmail;
 
     private final RestTemplate restTemplate = new RestTemplate();
-
-    public VerificationService(VerificationRepository verificationRepository) {
-        this.verificationRepository = verificationRepository;
-    }
 
     private void addUser(String email, String password) {
         User user = User.builder()

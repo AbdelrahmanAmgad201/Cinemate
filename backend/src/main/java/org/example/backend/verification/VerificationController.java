@@ -18,16 +18,13 @@ public class VerificationController  {
 
     @PostMapping("/v1/verify")
     public Map<String, Object> verify(@RequestBody VerificationDTO verificationDTO) {
-        boolean result = verificationService.verifyEmail(verificationDTO);
+        boolean success = verificationService.verifyEmail(verificationDTO);
 
-        Map<String, Object> response = new HashMap<>();
-        response.put("email", verificationDTO.getEmail());
-        response.put("code", verificationDTO.getCode());
-        response.put("success", result);
-        response.put("message", result ? "Verification successful" : "Invalid or expired code");
-        response.put("data", result);
-
-        return response;
+        return Map.of(
+                "success", success,
+                "message", success ? "Verification successful" : "Invalid or expired code",
+                "data", success
+        );
     }
 
 }
