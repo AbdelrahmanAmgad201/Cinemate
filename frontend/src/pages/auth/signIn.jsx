@@ -2,9 +2,10 @@ import './style/signUp.css';
 import './style/signIn.css';
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import {useState} from 'react';
+import {useState, useContext} from 'react';
 import { FcGoogle } from "react-icons/fc";
 import { Link } from "react-router-dom";
+import { AuthContext } from "../../context/AuthContext.jsx";
 
 
 export default function SignIn({role = "User",
@@ -20,13 +21,22 @@ export default function SignIn({role = "User",
     const [password, setPassword] = useState("");
     const [showPassword, setShowPassword] = useState(false);
 
-    const handleSubmit = (e) => {
-            e.preventDefault();
+    const { user, loading, signIn, signOut, isAuthenticated } = useContext(AuthContext);
 
-            // console.log(email, password);
-            // navigate("/home-page")
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+        const signInResult = await signIn(email, password, role.toUpperCase())
+        // DELETE THIS LINE AFTER TESTING
+        console.log("Sign In API " + {email:email, password:password, role:role.toUpperCase()});
+
+        if (signInResult.success){
+            navigate("/home-page")
         }
-
+        else{
+            alert("Error at sign in: see console ");
+            console.log("Error at sign up: " + signInResult.message);
+        }
+    }
     return (
         <div className = "signup-container signIn-container">
             <form onSubmit = {handleSubmit}>

@@ -1,6 +1,7 @@
 import {Routes, Route} from 'react-router-dom'
 import GuestOnlyRoute from './GuestOnlyRoute'
 import ProtectedRoute from "./ProtectedRoute.jsx";
+import PendingUserRoute from "./PendingUserRoute.jsx";
 
 import UserSignIn from "../pages/auth/signIn.jsx";
 import UserSignUp from "../pages/auth/signUp.jsx";
@@ -23,8 +24,10 @@ export default function AppRoutes() {
                 {/*The following is equivalent to path = ""*/}
                 <Route index element={<UserSignIn />} />
                 <Route path={"/user-sign-up"} element={<UserSignUp />} />
-                <Route path={"/email-verify"} element={<EmailVerification />} />
 
+                <Route element={<PendingUserRoute />}>
+                    <Route path="/email-verification" element={<EmailVerification />} />
+                </Route>
                 <Route path="/org-sign-in" element={<OrgSignIn />} />
                 <Route path="/org-sign-up" element={<OrgSignUp />} />
 

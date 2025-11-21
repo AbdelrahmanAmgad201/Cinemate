@@ -1,11 +1,8 @@
 import './style/signUp.css';
-import { useState } from 'react';
+import { useState, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Link } from "react-router-dom";
 import { AuthContext } from "../../context/AuthContext.jsx";
-import { useContext } from "react";
-
-import signUpApi from '../../api/signUpApi.jsx';
 
 // Icons
 import { FcGoogle } from "react-icons/fc";
@@ -13,6 +10,7 @@ import { HiOutlineMail } from "react-icons/hi";
 import { AiOutlineUser } from "react-icons/ai";
 import { HiOutlineLockClosed } from "react-icons/hi";
 import { CiCalendar } from "react-icons/ci";
+import signUpOrgDetails from "../../api/signUpOrgDetails.jsx";
 
 export default function UserSignUp ({role = "User", show = true, link = "/"}) {
 
@@ -28,18 +26,31 @@ export default function UserSignUp ({role = "User", show = true, link = "/"}) {
     const [confirmPassword, setConfrimPassword] = useState("");
     const [about, setAbout] = useState("");
 
-    const { user, loading, signIn, signOut, isAuthenticated } = useContext(AuthContext);
+    const { user, loading, signIn, signOut, signUp, isAuthenticated } = useContext(AuthContext);
 
-    const handlesubmit = async (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
-        // The following is for testing and showing an example, THIS IS NOT FINALIZED
-        const signUpResult = await signUpApi({email:email, password:password, role:"USER"});
-        // await signIn({email:email, password:password, role:"USER"})
+
+        const signUpResult = await signUp(email, password, role.toUpperCase());
+        // TODO: Handle User Details API
+        // signUpOrgDetails
+        // signUpUserDetails
+
+        // DELETE THIS LINE AFTER TESTING
+        console.log("Sign Up API " + {email:email, password:password, role:role.toUpperCase()});
+
+        if (signUpResult.success){
+            navigate("/email-verification");
+        }
+        else{
+            alert("Error at sign up: see console ");
+            console.log("Error at sign up: " + signUpResult.message);
+        }
     }
 
     return (
         <div className="signup-container">
-            <form onSubmit={handlesubmit}>
+            <form onSubmit={handleSubmit}>
                 <h1>
                     {role} Sign Up
                 </h1>
