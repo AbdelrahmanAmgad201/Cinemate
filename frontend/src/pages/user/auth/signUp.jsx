@@ -1,7 +1,7 @@
 import './style/signUp.css';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-
+import { Link } from "react-router-dom";
 import { AuthContext } from "../../../context/AuthContext";
 import { useContext } from "react";
 
@@ -14,10 +14,11 @@ import { AiOutlineUser } from "react-icons/ai";
 import { HiOutlineLockClosed } from "react-icons/hi";
 import { CiCalendar } from "react-icons/ci";
 
-const UserSignUp = () => {
+export default function UserSignUp ({role = "User", show = true, link = "/"}) {
 
     const navigate = useNavigate();
 
+    const [orgName, setOrgName] = useState("");
     const [firstName, setFirstName] = useState("");
     const [lastName, setLastName] = useState("");
     const [birthDate, setBirthDate] = useState("");
@@ -25,6 +26,7 @@ const UserSignUp = () => {
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const [confirmPassword, setConfrimPassword] = useState("");
+    const [about, setAbout] = useState("");
 
     const { user, loading, signIn, signOut, isAuthenticated } = useContext(AuthContext);
 
@@ -39,10 +41,14 @@ const UserSignUp = () => {
         <div className="signup-container">
             <form onSubmit={handlesubmit}>
                 <h1>
-                    Sign Up
+                    {role} Sign Up
                 </h1>
-                <p>If you already have an account registered<br />You can <a href="/">Login here!</a></p>
-                <div className="name">
+                <p>If you already have an account registered<br />You can <Link to={link}>Login here!</Link></p>
+                {!show && <div className="input-elem">
+                    <label htmlFor="orgName">Organization Name</label>
+                    <input type="text" id="orgName" name="orgName" required placeholder = "Enter your organization name" onChange={(e) => {setOrgName(e.target.value)}} />
+                </div>}
+                {show && <div className="name">
                     <div className="input-elem">
                     <label htmlFor="firstName">First Name</label>
                     <input type="text" id="firstName" name="firstName" required style={{width: "200px"}} onChange={(e) => {setFirstName(e.target.value)}} />
@@ -52,9 +58,9 @@ const UserSignUp = () => {
                     <label htmlFor="lastName">Last Name</label>
                     <input type="text" id="lastName" name="lastName" required style={{width: "200px"}} onChange={(e) => {setLastName(e.target.value)}} />
                     </div>
-                </div>
+                </div>}
 
-                <div className="date-gender">
+                {show && <div className="date-gender">
                     <div className="input-elem">
                         <label htmlFor="birthDate">Date of Birth</label><br />
                         <div className="icon-input">
@@ -72,7 +78,7 @@ const UserSignUp = () => {
                             <label htmlFor="female">Female</label>
                         </div>
                     </div>
-                </div>
+                </div>}
 
                 <div className="input-elem">
                     <label htmlFor="email">Email</label>
@@ -82,13 +88,13 @@ const UserSignUp = () => {
                     </div>
                 </div>
 
-                <div className="input-elem">
+                {show && <div className="input-elem">
                     <label htmlFor="username">Username</label>
                     <div className="icon-input">
                         <AiOutlineUser />
                         <input type="text" id="username" name="username" placeholder="Enter your username" required onChange={(e) => {setUsername(e.target.value)}} />
                     </div>
-                </div>
+                </div>}
 
                 <div className="input-elem">
                     <label htmlFor="password">Password</label>
@@ -105,11 +111,14 @@ const UserSignUp = () => {
                         <input type="password" id="confirmPassword" name="confirmPassword" placeholder="Confirm your Password" required onChange={(e) => {setConfrimPassword(e.target.value)}} />
                     </div>
                 </div>
+                {!show && <div className="input-elem">
+                    <label htmlFor="about">About</label>
+                    <textarea id="about" name="about" required placeholder = "About your organization" onChange={(e) => {setAbout(e.target.value)}} />
+                </div>}
+
                 <button type="submit">Create Account</button><br />
                 <button type="button" onClick={() => alert("Google")}><FcGoogle />Sign up using Google</button>
             </form>
         </div>
     );
 };
-
-export default UserSignUp;
