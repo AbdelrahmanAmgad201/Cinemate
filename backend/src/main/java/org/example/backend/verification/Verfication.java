@@ -3,6 +3,8 @@ package org.example.backend.verification;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.time.LocalDateTime;
+
 @Getter
 @Setter
 @NoArgsConstructor
@@ -18,5 +20,14 @@ public class Verfication {
     private String password;
     @Column(name = "code")
     private int code;
-
+    @Column(name="role")
+    private String role;
+    @Column(name = "created-at")
+    private LocalDateTime createdAt;
+    @PrePersist
+    protected void onCreate() {
+        if (createdAt == null) {
+            createdAt = LocalDateTime.now();
+        }
+    }
 }

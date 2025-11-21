@@ -1,6 +1,10 @@
 package org.example.backend.verification;
 
 import jakarta.transaction.Transactional;
+import org.example.backend.admin.Admin;
+import org.example.backend.admin.AdminRepository;
+import org.example.backend.organization.Organization;
+import org.example.backend.organization.OrganizationRepository;
 import org.example.backend.user.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -9,6 +13,8 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
+
+import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -21,13 +27,16 @@ import lombok.Setter;
 @Setter
 
 @Service
-@Transactional
 public class VerificationService {
 
     @Autowired
     private UserRepository userRepository;
     @Autowired
     private VerificationRepository verificationRepository;
+    @Autowired
+    private AdminRepository adminRepository;
+    @Autowired
+    private OrganizationRepository organizationRepository;
 
     @Value("${sendgrid.api.key}")
     private String sendGridApiKey;
@@ -43,6 +52,14 @@ public class VerificationService {
                 .password(password)
                 .build();
         userRepository.save(user);
+    }
+    private void addOrganization(String email, String password) {
+        Organization organization = Organization.builder()
+                .email(email)
+                .password(password)
+                .name("Test Organization")
+                .build();
+        organizationRepository.save(organization);
     }
 
     private Optional<Verfication> verify(String Email, int code) {
@@ -66,6 +83,7 @@ public class VerificationService {
         }
     }
 
+    @Transactional
     public boolean sendVerificationEmail(String toEmail, int code) {
         try {
             String url = "https://api.sendgrid.com/v3/mail/send";
@@ -104,7 +122,7 @@ public class VerificationService {
         }
     }
 
-
+    @Transactional
     public boolean verifyEmail(VerificationDTO verificationDTO) {
         try {
             String email = verificationDTO.getEmail();
@@ -112,7 +130,14 @@ public class VerificationService {
             Optional<Verfication> verification = verify(email, code);
             if (verification.isPresent()) {
                 String password = verification.get().getPassword();
-                addUser(email, password);
+                switch (verification.get().getRole()) {
+                    case "ORGANIZATION":
+                        addOrganization(email, password);
+                        break;
+                    case "USER":
+                        addUser(email, password);
+                        break;
+                }
                 verificationRepository.delete(verification.get());
                 return true;
             }
@@ -121,5 +146,11 @@ public class VerificationService {
             e.printStackTrace();
             return false;
         }
+    }
+
+    @Transactional
+    public void deleteOldVerifications() {
+        LocalDateTime cutoff = LocalDateTime.now().minusMinutes(10);
+        verificationRepository.deleteOlderThan(cutoff);
     }
 }

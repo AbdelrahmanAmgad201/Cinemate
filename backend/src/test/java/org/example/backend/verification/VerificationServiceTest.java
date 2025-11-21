@@ -1,5 +1,6 @@
 package org.example.backend.verification;
 
+import org.example.backend.organization.OrganizationRepository;
 import org.example.backend.user.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -24,10 +25,14 @@ class VerificationServiceTest {
     @Autowired
     private VerificationService verificationService;
 
+    @Autowired
+    private OrganizationRepository organizationRepository;
+
     @BeforeEach
     void setup() {
         verificationRepository.deleteAll();
         userRepository.deleteAll();
+        organizationRepository.deleteAll();
         verificationService.setSendGridApiKey("TEST_KEY");
         verificationService.setFromEmail("noreply@example.com");
     }
@@ -38,6 +43,7 @@ class VerificationServiceTest {
                 .email("test1@example.com")
                 .password("encrypted-pass")
                 .code(999999)
+                .role("USER")
                 .build();
 
         verificationRepository.save(stored);
@@ -46,6 +52,24 @@ class VerificationServiceTest {
         assertTrue(userRepository.findByEmail("test1@example.com").isPresent());
         assertFalse(verificationRepository.findByEmail("test1@example.com").isPresent());
     }
+
+    @Test
+    void verifyEmailOrganization_WhenCodeCorrect_AddsUserAndDeletesVerification() {
+        VerificationDTO dto = new VerificationDTO("test2@example.com", 999999);
+        Verfication stored = Verfication.builder()
+                .email("test2@example.com")
+                .password("encrypted-pass")
+                .code(999999)
+                .role("ORGANIZATION")
+                .build();
+
+        verificationRepository.save(stored);
+        boolean result = verificationService.verifyEmail(dto);
+        assertTrue(result);
+        assertTrue(organizationRepository.findByEmail("test2@example.com").isPresent());
+        assertFalse(verificationRepository.findByEmail("test2@example.com").isPresent());
+    }
+
 
     // -------------------------------------------------
     // TEST: verifyEmail wrong code
@@ -58,6 +82,30 @@ class VerificationServiceTest {
                 .email("test@example.com")
                 .password("encrypted-pass")
                 .code(222222)
+                .role("USER")
+                .build();
+
+        verificationRepository.save(stored);
+
+        boolean result = verificationService.verifyEmail(dto);
+
+        assertFalse(result);
+        assertFalse(organizationRepository.findByEmail("test@example.com").isPresent());
+        assertTrue(verificationRepository.findByEmail("test@example.com").isPresent());
+    }
+
+    // -------------------------------------------------
+    // TEST: verifyEmail wrong code
+    // -------------------------------------------------
+    @Test
+    void verifyEmailOrganization_WhenCodeIncorrect_ReturnsFalse() {
+        VerificationDTO dto = new VerificationDTO("test@example.com", 111111);
+
+        Verfication stored = Verfication.builder()
+                .email("test@example.com")
+                .password("encrypted-pass")
+                .code(222222)
+                .role("ORGANIZATION")
                 .build();
 
         verificationRepository.save(stored);

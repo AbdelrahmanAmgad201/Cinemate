@@ -25,7 +25,7 @@ public class UserService {
     @Autowired
     private VerificationService verificationService;
 
-    private Verfication addVerfication(String email, String password, int code) {
+    private Verfication addVerfication(String email, String password, int code, String role) {
         String hashedPassword = passwordEncoder.encode(password);
         Optional<Verfication> oldVerification = verificationRepository.findByEmail(email);
         oldVerification.ifPresent(verificationRepository::delete);
@@ -33,6 +33,7 @@ public class UserService {
                 .email(email)
                 .password(hashedPassword)
                 .code(code)
+                .role(role)
                 .build();
         return verificationRepository.save(verfication);
     }
@@ -41,13 +42,14 @@ public class UserService {
     public Verfication signUp(CredentialsRequest credentialsRequest) {
         String email = credentialsRequest.getEmail();
         String password = credentialsRequest.getPassword();
+        String role = credentialsRequest.getRole();
         Optional<User> user = userRepository.findByEmail(email);
         if (user.isPresent()) {
             throw new RuntimeException("User with this email already exists");
         }
         int code = 100000 + random.nextInt(900000);
         if(verificationService.sendVerificationEmail(email, code)){
-            return addVerfication(email, password,code);
+            return addVerfication(email, password,code,role);
         }
         else{
             return new Verfication();
