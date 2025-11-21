@@ -65,7 +65,6 @@ public class VerificationService {
             e.printStackTrace();
             return Optional.empty();
         }
-
     }
 
     public boolean sendVerificationEmail(String toEmail, int code) {
