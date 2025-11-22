@@ -1,10 +1,11 @@
 package org.example.backend.verification;
 
 import jakarta.transaction.Transactional;
-import org.example.backend.admin.Admin;
-import org.example.backend.admin.AdminRepository;
-import org.example.backend.organization.Organization;
-import org.example.backend.organization.OrganizationRepository;
+import lombok.RequiredArgsConstructor;
+import org.springframework.context.annotation.Lazy;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.example.backend.organization.OrganizationService;
 import org.example.backend.user.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -26,18 +27,17 @@ import lombok.Setter;
 @Getter
 @Setter
 
+@RequiredArgsConstructor
 @Service
 public class VerificationService {
 
     @Autowired
-    private UserRepository userRepository;
-    @Autowired
     private VerificationRepository verificationRepository;
     @Autowired
-    private AdminRepository adminRepository;
+    @Lazy
+    private UserService userService;
     @Autowired
-    private OrganizationRepository organizationRepository;
-
+    private OrganizationService organizationService;
     @Value("${sendgrid.api.key}")
     private String sendGridApiKey;
 
@@ -45,21 +45,20 @@ public class VerificationService {
     private String fromEmail;
 
     private final RestTemplate restTemplate = new RestTemplate();
+    private final PasswordEncoder passwordEncoder;
 
-    private void addUser(String email, String password) {
-        User user = User.builder()
+
+    public Verfication addVerfication(String email, String password, int code, String role) {
+        String hashedPassword = passwordEncoder.encode(password);
+        Optional<Verfication> oldVerification = verificationRepository.findByEmail(email);
+        oldVerification.ifPresent(verificationRepository::delete);
+        Verfication verfication= Verfication.builder()
                 .email(email)
-                .password(password)
+                .password(hashedPassword)
+                .code(code)
+                .role(role)
                 .build();
-        userRepository.save(user);
-    }
-    private void addOrganization(String email, String password) {
-        Organization organization = Organization.builder()
-                .email(email)
-                .password(password)
-                .name("Test Organization")
-                .build();
-        organizationRepository.save(organization);
+        return verificationRepository.save(verfication);
     }
 
     private Optional<Verfication> verify(String Email, int code) {
@@ -132,10 +131,10 @@ public class VerificationService {
                 String password = verification.get().getPassword();
                 switch (verification.get().getRole()) {
                     case "ORGANIZATION":
-                        addOrganization(email, password);
+                        organizationService.addOrganization(email, password);
                         break;
                     case "USER":
-                        addUser(email, password);
+                        userService.addUser(email, password);
                         break;
                 }
                 verificationRepository.delete(verification.get());

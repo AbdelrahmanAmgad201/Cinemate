@@ -22,7 +22,7 @@ public class Verfication {
     private int code;
     @Column(name="role")
     private String role;
-    @Column(name = "created-at")
+    @Column(name = "created_at")
     private LocalDateTime createdAt;
     @PrePersist
     protected void onCreate() {

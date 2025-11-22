@@ -1,6 +1,8 @@
 package org.example.backend.verification;
 
+import org.example.backend.BackendApplication;
 import org.example.backend.organization.OrganizationRepository;
+import org.example.backend.security.SecurityConfig;
 import org.example.backend.user.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -10,8 +12,7 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.annotation.Transactional;
 
 import static org.junit.jupiter.api.Assertions.*;
-
-@SpringBootTest
+@SpringBootTest(classes = {BackendApplication.class, SecurityConfig.class})
 @ActiveProfiles("test")
 @Transactional
 class VerificationServiceTest {
@@ -70,6 +71,18 @@ class VerificationServiceTest {
         assertFalse(verificationRepository.findByEmail("test2@example.com").isPresent());
     }
 
+    @Test
+    void addVerification() {
+        Verfication stored = Verfication.builder()
+                .email("test2@example.com")
+                .password("encrypted-pass")
+                .code(999999)
+                .role("ORGANIZATION")
+                .build();
+
+        verificationService.addVerfication("test2@example.com","encrypted-pass",999999,"ORGANIZATION");
+        assertTrue(verificationRepository.findByEmail("test2@example.com").isPresent());
+    }
 
     // -------------------------------------------------
     // TEST: verifyEmail wrong code
