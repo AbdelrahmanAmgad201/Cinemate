@@ -6,6 +6,7 @@ import {useState, useContext} from 'react';
 import { FcGoogle } from "react-icons/fc";
 import { Link } from "react-router-dom";
 import { AuthContext } from "../../context/AuthContext.jsx";
+import { LuEyeOff, LuEye } from "react-icons/lu";
 
 
 export default function SignIn({role = "User",
@@ -52,7 +53,9 @@ export default function SignIn({role = "User",
                     <label htmlFor = "password">Password</label>
                     <div className = "passwordWrapper">
                         <input type = {showPassword ? "text" : "password"} id = "password" name = "password" placeholder="Enter your password" required onChange = {(e) => {setPassword(e.target.value)}}/>
-                        <button type = "button" id = "showBtn" onClick = {() => setShowPassword(!showPassword)}>{showPassword ? "Hide" : "Show"}</button>
+                        <span className="password-toggle-icon" onClick={() => setShowPassword(!showPassword)} style={{cursor: "pointer"}}>
+                            {showPassword ? <LuEye /> : <LuEyeOff />}
+                        </span>
                     </div>
                 </div>
                 <button type="submit" >Sign In</button><br />
