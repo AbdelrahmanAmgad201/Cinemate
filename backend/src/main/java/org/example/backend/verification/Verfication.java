@@ -11,7 +11,7 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 @Builder
 @Entity
-@Table(name = "verfications")
+@Table(name = "verifications")
 public class Verfication {
     @Id
     @Column(name="email")
