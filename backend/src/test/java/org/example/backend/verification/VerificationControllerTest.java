@@ -11,6 +11,7 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.nullValue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
@@ -29,13 +30,21 @@ class VerificationControllerTest {
 
     @Test
     void testVerifySuccessful() throws Exception {
-
         VerificationDTO dto = new VerificationDTO();
         dto.setEmail("test@example.com");
         dto.setCode(1234);
 
+        VerificationResponseDTO response = VerificationResponseDTO.builder()
+                .success(true)
+                .message("Verification successful")
+                .token("mock-jwt-token-xyz")
+                .id(1L)
+                .email("test@example.com")
+                .role("USER")
+                .build();
+
         Mockito.when(verificationService.verifyEmail(Mockito.any(VerificationDTO.class)))
-                .thenReturn(true);
+                .thenReturn(response);
 
         mockMvc.perform(post("/api/verification/v1/verify")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -43,26 +52,65 @@ class VerificationControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.success", is(true)))
                 .andExpect(jsonPath("$.message", is("Verification successful")))
-                .andExpect(jsonPath("$.data", is(true)));
+                .andExpect(jsonPath("$.token", is("mock-jwt-token-xyz")))
+                .andExpect(jsonPath("$.id", is(1)))
+                .andExpect(jsonPath("$.email", is("test@example.com")))
+                .andExpect(jsonPath("$.role", is("USER")));
     }
 
     @Test
     void testVerifyFailed() throws Exception {
-
         VerificationDTO dto = new VerificationDTO();
         dto.setEmail("wrong@example.com");
         dto.setCode(5555);
 
+        VerificationResponseDTO response = VerificationResponseDTO.builder()
+                .success(false)
+                .message("Invalid or expired code")
+                .build();
+
         Mockito.when(verificationService.verifyEmail(Mockito.any(VerificationDTO.class)))
-                .thenReturn(false);
+                .thenReturn(response);
+
+        mockMvc.perform(post("/api/verification/v1/verify")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(dto)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.success", is(false)))
+                .andExpect(jsonPath("$.message", is("Invalid or expired code")))
+                .andExpect(jsonPath("$.token", nullValue()))
+                .andExpect(jsonPath("$.id", nullValue()))
+                .andExpect(jsonPath("$.email", nullValue()))
+                .andExpect(jsonPath("$.role", nullValue()));
+    }
+
+    @Test
+    void testVerifyOrganizationSuccessful() throws Exception {
+        VerificationDTO dto = new VerificationDTO();
+        dto.setEmail("org@example.com");
+        dto.setCode(9999);
+
+        VerificationResponseDTO response = VerificationResponseDTO.builder()
+                .success(true)
+                .message("Verification successful")
+                .token("mock-org-jwt-token")
+                .id(2L)
+                .email("org@example.com")
+                .role("ORGANIZATION")
+                .build();
+
+        Mockito.when(verificationService.verifyEmail(Mockito.any(VerificationDTO.class)))
+                .thenReturn(response);
 
         mockMvc.perform(post("/api/verification/v1/verify")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(dto)))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.success", is(false)))
-                .andExpect(jsonPath("$.message", is("Invalid or expired code")))
-                .andExpect(jsonPath("$.data", is(false)));
+                .andExpect(jsonPath("$.success", is(true)))
+                .andExpect(jsonPath("$.message", is("Verification successful")))
+                .andExpect(jsonPath("$.token", is("mock-org-jwt-token")))
+                .andExpect(jsonPath("$.id", is(2)))
+                .andExpect(jsonPath("$.email", is("org@example.com")))
+                .andExpect(jsonPath("$.role", is("ORGANIZATION")));
     }
-
 }

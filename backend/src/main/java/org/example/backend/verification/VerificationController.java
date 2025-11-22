@@ -1,6 +1,7 @@
 package org.example.backend.verification;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -17,14 +18,14 @@ public class VerificationController  {
 
 
     @PostMapping("/v1/verify")
-    public Map<String, Object> verify(@RequestBody VerificationDTO verificationDTO) {
-        boolean success = verificationService.verifyEmail(verificationDTO);
+    public ResponseEntity<VerificationResponseDTO> verify(@RequestBody VerificationDTO verificationDTO) {
+        VerificationResponseDTO response = verificationService.verifyEmail(verificationDTO);
 
-        return Map.of(
-                "success", success,
-                "message", success ? "Verification successful" : "Invalid or expired code",
-                "data", success
-        );
+        if (response.isSuccess()) {
+            return ResponseEntity.ok(response);
+        } else {
+            return ResponseEntity.badRequest().body(response);
+        }
     }
 
 }
