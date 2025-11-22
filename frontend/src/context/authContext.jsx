@@ -3,6 +3,9 @@ import signInApi from '../api/signInApi.jsx';
 import signOutApi from '../api/signOutApi.jsx';
 import signUpApi from '../api/signUpApi.jsx';
 import verifyApi from '../api/verifyApi.jsx';
+import signUpOrgDetailsApi from '../api/signUpOrgDetailsApi.jsx';
+import signUpUserDetailsApi from '../api/signUpUserDetailsApi.jsx';
+
 
 import {jwtDecode}  from "jwt-decode";
 
@@ -28,12 +31,13 @@ export default function AuthProvider({ children }){
         }
     }
 
-    const signUp = async (email, password, role) => {
+    const signUp = async (email, password, role, details) => {
 
         try {
             const res = await signUpApi({email, password, role});
 
-            setPendingUser(res.user)
+            localStorage.setItem('pendingUser', JSON.stringify({ email: email, role:role, details:details }));
+            setPendingUser({email, role, details})
             return {success: true}
         }
         catch (err){
@@ -50,12 +54,29 @@ export default function AuthProvider({ children }){
         localStorage.removeItem('token');
     }
 
-    const verifyEmail = async ({ email, code }) => {
-        // TODO: Might need to change code datatype
-        try {
-            const res = await verifyApi({ email, code });
+    const verifyEmail = async ( email, code ) => {
 
-            // verification success → backend returns ...
+        try {
+            const codeInt = Number(code.join(""));
+            const res = await verifyApi({ email, code:codeInt });
+
+            setUser(res.user)
+            //We're logged in, now send the rest of sign up info
+            if (res.user.role === "ROLE_USER") {
+                const details = pendingUser.details;
+
+                const resDetails = await signUpUserDetailsApi(details);
+                if (resDetails.success) {
+                    alert("User details saved successfully!");
+                }
+            }
+            else if (res.user.role === "ROLE_ORGANIZATION") {
+                const details = pendingUser.details;
+                const resDetails = await signUpOrgDetailsApi(details);
+                if (resDetails.success) {
+                    alert("Organization details saved successfully!");
+                }
+            }
 
             setPendingUser(null);
             localStorage.removeItem("pendingUser");
@@ -70,8 +91,11 @@ export default function AuthProvider({ children }){
 
     useEffect(() => {
         const savedPending = localStorage.getItem('pendingUser');
+
+
         if (savedPending) {
-            setPendingUser(JSON.parse(savedPending));
+            const { email, role, details } = JSON.parse(savedPending);
+            setPendingUser({ email, role, details });
         }
         setPendingRestored(true);
     }, []);
@@ -79,6 +103,7 @@ export default function AuthProvider({ children }){
 
     useEffect(()=>{
         const token = localStorage.getItem('token');
+        // const token = null; // uncomment this if you want to sign out
 
         if (!token){
             setLoading(false);

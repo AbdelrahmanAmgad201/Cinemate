@@ -2,6 +2,7 @@ import {useState, useRef, useEffect, useContext} from 'react';
 import { useNavigate } from 'react-router-dom';
 import './style/emailVerification.css';
 import {AuthContext} from "../../context/authContext.jsx";
+import verifyApi from "../../api/verifyApi.jsx";
 
 const regexDigit =  /^[0-9]$/
 
@@ -12,7 +13,7 @@ const EmailVerification = () => {
     const codeInputRef = useRef(Array(6));
     const [buttonTimer, setButtonTimer] = useState(0);
 
-    const { pendingUser, signIn, verifyEmail } = useContext(AuthContext);
+    const { pendingUser, verifyEmail } = useContext(AuthContext);
     if (!pendingUser) return null; // render nothing while redirecting
     const email = pendingUser.email;
 
@@ -25,7 +26,7 @@ const EmailVerification = () => {
     }, [code]);
 
     const handleSubmitCode = async () => {
-        // TODO: HANDLE BACK END INTEGRATION
+
         const res = await verifyEmail(email, code);
         if (res.success) {
             navigate("/")

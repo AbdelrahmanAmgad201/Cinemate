@@ -3,7 +3,6 @@ import { useState, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Link } from "react-router-dom";
 import { AuthContext } from "../../context/AuthContext.jsx";
-import signUpOrgDetails from "../../api/signUpOrgDetails.jsx";
 
 // Icons
 import { FcGoogle } from "react-icons/fc";
@@ -31,6 +30,25 @@ export default function UserSignUp ({role = "User", show = true, link = "/"}) {
 
     const { user, loading, signIn, signOut, signUp, isAuthenticated } = useContext(AuthContext);
 
+    function buildRequestBody(role) {
+        if (role === "USER") {
+            return {
+                firstName,
+                lastName,
+                birthday: birthDate,
+                gender: gender.toUpperCase(),
+                about,
+            };
+        }
+
+        if (role === "ORGANIZATION") {
+            return {
+                name: orgName,
+                about,
+            };
+        }
+    }
+
     const handleSubmit = async (e) => {
         e.preventDefault();
 
@@ -44,7 +62,7 @@ export default function UserSignUp ({role = "User", show = true, link = "/"}) {
 
         setErrors({});
 
-        const signUpResult = await signUp(email, password, role.toUpperCase());
+        const signUpResult = await signUp(email, password, role.toUpperCase(), buildRequestBody(role.toUpperCase()));
         // TODO: Handle User Details API
         // signUpOrgDetails
         // signUpUserDetails
@@ -96,9 +114,9 @@ export default function UserSignUp ({role = "User", show = true, link = "/"}) {
                     <div className="input-elem" style={{borderBottom: "none"}}>
                         <label htmlFor="gender" style={{marginBottom: "23px"}}>Gender</label>
                         <div className="gender-options">
-                            <input type="radio" id="male" name="gender" required onChange={(e) => {setGender(e.target.value)}} />
+                            <input type="radio" id="male" name="gender" value="MALE" required onChange={(e) => {setGender(e.target.value)}} />
                             <label htmlFor="male">Male</label>
-                            <input type="radio" id="female" name="gender" required onChange={(e) => {setGender(e.target.value)}} />
+                            <input type="radio" id="female" name="gender" value="FEMALE" required onChange={(e) => {setGender(e.target.value)}} />
                             <label htmlFor="female">Female</label>
                         </div>
                     </div>
