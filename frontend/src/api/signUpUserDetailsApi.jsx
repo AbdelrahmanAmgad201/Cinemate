@@ -1,10 +1,10 @@
 import api from './apiClient.jsx';
 
 
-export default async function signUpOrgDetails({ }) {
+export default async function signUpUserDetailsApi(details) {
     try{
-        // TODO: add correct api endpoint
-        const response = await api.post("/auth/v1/...", {});
+
+        const response = await api.post("/user/v1/set-user-data", details);
         const data = response.data;
 
 
