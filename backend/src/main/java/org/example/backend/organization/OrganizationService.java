@@ -9,12 +9,12 @@ public class OrganizationService {
     @Autowired
     private OrganizationRepository organizationRepository;
 
-    public void addOrganization(String email, String password) {
+    public Organization addOrganization(String email, String password) {
         Organization organization = Organization.builder()
                 .email(email)
                 .password(password)
                 .name("Test Organization")
                 .build();
-        organizationRepository.save(organization);
+        return organizationRepository.save(organization);
     }
 }

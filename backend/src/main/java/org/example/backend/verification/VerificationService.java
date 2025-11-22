@@ -2,8 +2,9 @@ package org.example.backend.verification;
 
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import org.example.backend.security.Authenticatable;
+import org.example.backend.security.JWTProvider;
 import org.springframework.context.annotation.Lazy;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.example.backend.organization.OrganizationService;
 import org.example.backend.user.*;
@@ -26,18 +27,23 @@ import lombok.Setter;
 
 @Getter
 @Setter
-
 @RequiredArgsConstructor
 @Service
 public class VerificationService {
 
     @Autowired
     private VerificationRepository verificationRepository;
+
     @Autowired
     @Lazy
     private UserService userService;
+
     @Autowired
     private OrganizationService organizationService;
+
+    @Autowired
+    private JWTProvider jwtTokenProvider;
+
     @Value("${sendgrid.api.key}")
     private String sendGridApiKey;
 
@@ -47,12 +53,12 @@ public class VerificationService {
     private final RestTemplate restTemplate = new RestTemplate();
     private final PasswordEncoder passwordEncoder;
 
-
+    @Transactional
     public Verfication addVerfication(String email, String password, int code, String role) {
         String hashedPassword = passwordEncoder.encode(password);
         Optional<Verfication> oldVerification = verificationRepository.findByEmail(email);
         oldVerification.ifPresent(verificationRepository::delete);
-        Verfication verfication= Verfication.builder()
+        Verfication verfication = Verfication.builder()
                 .email(email)
                 .password(hashedPassword)
                 .code(code)
@@ -65,18 +71,16 @@ public class VerificationService {
         Optional<Verfication> verification = verificationRepository.findByEmail(Email);
         try {
             if (verification.isPresent()) {
-                int verifiedCode =verification.get().getCode();
+                int verifiedCode = verification.get().getCode();
                 if (verifiedCode == code) {
                     return verification;
-                }
-                else  {
+                } else {
                     return Optional.empty();
                 }
-            }
-            else {
+            } else {
                 throw new RuntimeException("email not found in DB");
             }
-        }catch (Exception e){
+        } catch (Exception e) {
             e.printStackTrace();
             return Optional.empty();
         }
@@ -116,34 +120,55 @@ public class VerificationService {
             return true;
 
         } catch (Exception e) {
-            e.printStackTrace(); // <--- IMPORTANT
+            e.printStackTrace();
             return false;
         }
     }
 
     @Transactional
-    public boolean verifyEmail(VerificationDTO verificationDTO) {
+    public VerificationResponseDTO verifyEmail(VerificationDTO verificationDTO) {
         try {
             String email = verificationDTO.getEmail();
             int code = verificationDTO.getCode();
             Optional<Verfication> verification = verify(email, code);
+
             if (verification.isPresent()) {
                 String password = verification.get().getPassword();
-                switch (verification.get().getRole()) {
-                    case "ORGANIZATION":
-                        organizationService.addOrganization(email, password);
-                        break;
-                    case "USER":
-                        userService.addUser(email, password);
-                        break;
-                }
+                String role = verification.get().getRole();
+
+                Authenticatable account = switch (role) {
+                    case "ORGANIZATION" -> organizationService.addOrganization(email, password);
+                    case "USER" -> userService.addUser(email, password);
+                    default -> null;
+                };
+
                 verificationRepository.delete(verification.get());
-                return true;
+
+                if (account != null) {
+                    String token = jwtTokenProvider.generateToken(account);
+
+                    return VerificationResponseDTO.builder()
+                            .success(true)
+                            .message("Verification successful")
+                            .token(token)
+                            .id(account.getId())
+                            .email(account.getEmail())
+                            .role(account.getRole())
+                            .build();
+                }
             }
-            return false;
+
+            return VerificationResponseDTO.builder()
+                    .success(false)
+                    .message("Invalid or expired code")
+                    .build();
+
         } catch (Exception e) {
             e.printStackTrace();
-            return false;
+            return VerificationResponseDTO.builder()
+                    .success(false)
+                    .message("Verification failed: " + e.getMessage())
+                    .build();
         }
     }
 

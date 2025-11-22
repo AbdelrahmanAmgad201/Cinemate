@@ -21,12 +21,32 @@ public class UserService {
     private VerificationService verificationService;
 
 
-    public void addUser(String email, String password) {
+    public User addUser(String email, String password) {
         User user = User.builder()
                 .email(email)
                 .password(password)
                 .build();
+       return userRepository.save(user);
+    }
+
+
+    @Transactional
+    public String setUserData(Long userId, UserDataDTO userDataDTO) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        user.setFirstName(userDataDTO.getFirstName());
+        user.setLastName(userDataDTO.getLastName());
+        user.setAbout(userDataDTO.getAbout());
+        user.setBirthDate(userDataDTO.getBirthday());
+
+        if (userDataDTO.getGender() != null) {
+            user.setGender(Gender.valueOf(userDataDTO.getGender().toUpperCase()));
+        }
+
         userRepository.save(user);
+
+        return "User data updated successfully";
     }
 
     @Transactional

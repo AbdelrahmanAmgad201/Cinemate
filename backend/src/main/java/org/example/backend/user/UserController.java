@@ -11,6 +11,9 @@ import org.springframework.web.bind.annotation.*;
 @RequestMapping("/api/user")
 public class UserController {
 
+    @Autowired
+    private UserService userService;
+
     @GetMapping("/v1/profile")
     @PreAuthorize("hasRole('USER')")
     public ResponseEntity<?> getProfile(HttpServletRequest request) {
@@ -18,5 +21,18 @@ public class UserController {
         String email = (String) request.getAttribute("userEmail");
 
         return ResponseEntity.ok("User profile for ID: " + userId + ", Email: " + email);
+    }
+
+
+    @PostMapping("/v1/set-user-data")
+    @PreAuthorize("hasRole('USER')")
+    public ResponseEntity<String> setPersonalData(
+            HttpServletRequest request,
+            @RequestBody UserDataDTO userDataDTO) {
+
+        Long userId = (Long) request.getAttribute("userId");
+        String message = userService.setUserData(userId, userDataDTO);
+
+        return ResponseEntity.ok(message);
     }
 }
