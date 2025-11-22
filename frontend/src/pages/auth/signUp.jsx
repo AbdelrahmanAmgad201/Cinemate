@@ -1,18 +1,16 @@
 import './style/signUp.css';
-import { useState } from 'react';
+import { useState, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Link } from "react-router-dom";
-import { AuthContext } from "../../../context/AuthContext";
-import { useContext } from "react";
-
-import signUpApi from '../../../api/signUpApi';
+import { AuthContext } from "../../context/AuthContext.jsx";
+import signUpOrgDetails from "../../api/signUpOrgDetails.jsx";
 
 // Icons
 import { FcGoogle } from "react-icons/fc";
-import { HiOutlineMail } from "react-icons/hi";
+import { HiOutlineMail, HiOutlineLockClosed } from "react-icons/hi";
 import { AiOutlineUser } from "react-icons/ai";
-import { HiOutlineLockClosed } from "react-icons/hi";
 import { CiCalendar } from "react-icons/ci";
+import { LuEyeOff, LuEye } from "react-icons/lu";
 
 export default function UserSignUp ({role = "User", show = true, link = "/"}) {
 
@@ -25,21 +23,47 @@ export default function UserSignUp ({role = "User", show = true, link = "/"}) {
     const [gender, setGender] = useState("");
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
-    const [confirmPassword, setConfrimPassword] = useState("");
+    const [confirmPassword, setConfirmPassword] = useState("");
     const [about, setAbout] = useState("");
+    const [errors, setErrors] = useState({});
+    const [showPassword, setShowPassword] = useState(false);
+    const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
-    const { user, loading, signIn, signOut, isAuthenticated } = useContext(AuthContext);
+    const { user, loading, signIn, signOut, signUp, isAuthenticated } = useContext(AuthContext);
 
-    const handlesubmit = async (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
-        // The following is for testing and showing an example, THIS IS NOT FINALIZED
-        const signUpResult = await signUpApi({email:email, password:password, role:"USER"});
-        // await signIn({email:email, password:password, role:"USER"})
+
+        if (password !== confirmPassword) {
+            setErrors({password: "Passwords do not match"}); 
+            setPassword("");
+            setConfirmPassword("");   
+            console.log("Passwords do not match");
+            return;
+        }
+
+        setErrors({});
+
+        const signUpResult = await signUp(email, password, role.toUpperCase());
+        // TODO: Handle User Details API
+        // signUpOrgDetails
+        // signUpUserDetails
+
+        // DELETE THIS LINE AFTER TESTING
+        console.log("Sign Up API " + {email:email, password:password, role:role.toUpperCase()});
+
+        if (signUpResult.success){
+            navigate("/email-verification");
+        }
+        else{
+            alert("Error at sign up: see console ");
+            console.log("Error at sign up: " + signUpResult.message);
+        }
     }
 
     return (
         <div className="signup-container">
-            <form onSubmit={handlesubmit}>
+            <form onSubmit={handleSubmit}>
                 <h1>
                     {role} Sign Up
                 </h1>
@@ -88,29 +112,30 @@ export default function UserSignUp ({role = "User", show = true, link = "/"}) {
                     </div>
                 </div>
 
-                {show && <div className="input-elem">
-                    <label htmlFor="username">Username</label>
-                    <div className="icon-input">
-                        <AiOutlineUser />
-                        <input type="text" id="username" name="username" placeholder="Enter your username" required onChange={(e) => {setUsername(e.target.value)}} />
-                    </div>
-                </div>}
-
                 <div className="input-elem">
                     <label htmlFor="password">Password</label>
                     <div className="icon-input">
                         <HiOutlineLockClosed />
-                        <input type="password" id="password" name="password" placeholder="Enter your Password" required onChange={(e) => {setPassword(e.target.value)}} />
+                        <input type={showPassword ? "text" : "password"} id="password" name="password" placeholder="Enter your Password" required onChange={(e) => {setPassword(e.target.value)}} value={password} />
+                        <span className="password-toggle-icon" onClick={() => setShowPassword(!showPassword)} style={{cursor: "pointer"}}>
+                            {showPassword ? <LuEye /> : <LuEyeOff />}
+                        </span>
                     </div>
                 </div>
+                {errors.password && <span className="error-message" style={{color: "#ff6b6b", marginTop: "0"}}>{errors.password}</span>}
 
                 <div className="input-elem">
-                    <label htmlFor="confirmPassword">Confrim Password</label>
+                    <label htmlFor="confirmPassword">Confirm Password</label>
                     <div className="icon-input">
                         <HiOutlineLockClosed />
-                        <input type="password" id="confirmPassword" name="confirmPassword" placeholder="Confirm your Password" required onChange={(e) => {setConfrimPassword(e.target.value)}} />
+                        <input type={showConfirmPassword ? "text" : "password"} id="confirmPassword" name="confirmPassword" placeholder="Confirm your Password" required onChange={(e) => {setConfirmPassword(e.target.value)}} value={confirmPassword} />
+                        <span className="password-toggle-icon" onClick={() => setShowConfirmPassword(!showConfirmPassword)} style={{cursor: "pointer"}}>
+                            {showConfirmPassword ? <LuEye /> : <LuEyeOff />}
+                        </span>
                     </div>
+                   
                 </div>
+                {errors.password && <span className="error-message" style={{color: "#ff6b6b", marginTop: "0"}}>{errors.password}</span>}
                 {!show && <div className="input-elem">
                     <label htmlFor="about">About</label>
                     <textarea id="about" name="about" required placeholder = "About your organization" onChange={(e) => {setAbout(e.target.value)}} />

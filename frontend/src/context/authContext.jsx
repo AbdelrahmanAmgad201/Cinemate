@@ -1,6 +1,8 @@
 import {useState, useEffect, createContext} from 'react'
 import signInApi from '../api/signInApi.jsx';
 import signOutApi from '../api/signOutApi.jsx';
+import signUpApi from '../api/signUpApi.jsx';
+import verifyApi from '../api/verifyApi.jsx';
 
 import {jwtDecode}  from "jwt-decode";
 
@@ -10,6 +12,7 @@ export const AuthContext   = createContext(null);
 
 export default function AuthProvider({ children }){
     const [user, setUser] = useState(null);
+    const [pendingUser, setPendingUser] = useState(null);
     const [loading, setLoading] = useState(true);
 
     const signIn = async (email, password, role) => {
@@ -25,10 +28,54 @@ export default function AuthProvider({ children }){
         }
     }
 
+    const signUp = async (email, password, role) => {
+
+        try {
+            const res = await signUpApi({email, password, role});
+
+            setPendingUser(res.user)
+            return {success: true}
+        }
+        catch (err){
+            console.log(err);
+            return {success: false, message: err.response?.data?.error};
+        }
+    }
+
+
     const signOut = async () => {
         signOutApi();
         setUser(null);
+        setPendingUser(null);
+        localStorage.removeItem('token');
     }
+
+    const verifyEmail = async ({ email, code }) => {
+        // TODO: Might need to change code datatype
+        try {
+            const res = await verifyApi({ email, code });
+
+            // verification success → backend returns ...
+
+            setPendingUser(null);
+            localStorage.removeItem("pendingUser");
+
+            return { success: true };
+        } catch (err) {
+            return { success: false, message: err.response?.data?.error };
+        }
+    };
+
+    const [pendingRestored, setPendingRestored] = useState(false);
+
+    useEffect(() => {
+        const savedPending = localStorage.getItem('pendingUser');
+        if (savedPending) {
+            setPendingUser(JSON.parse(savedPending));
+        }
+        setPendingRestored(true);
+    }, []);
+
 
     useEffect(()=>{
         const token = localStorage.getItem('token');
@@ -64,7 +111,7 @@ export default function AuthProvider({ children }){
     }, [])
 
     return(
-        <AuthContext.Provider value={{ user, loading, signIn, signOut, isAuthenticated: !!user}}>
+        <AuthContext.Provider value={{ user, pendingUser, pendingRestored, loading, signIn, signUp, signOut, verifyEmail, isAuthenticated: !!user}}>
             {children}
         </AuthContext.Provider>
     )

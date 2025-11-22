@@ -1,0 +1,51 @@
+import {Routes, Route} from 'react-router-dom'
+import GuestOnlyRoute from './GuestOnlyRoute'
+import ProtectedRoute from "./ProtectedRoute.jsx";
+import PendingUserRoute from "./PendingUserRoute.jsx";
+
+import UserSignIn from "../pages/auth/signIn.jsx";
+import UserSignUp from "../pages/auth/signUp.jsx";
+import EmailVerification from "../pages/auth/emailVerification.jsx";
+import HomePage from "../pages/user/homePage.jsx";
+import OrgSignUp from "../pages/org/auth/orgSignUp.jsx";
+import OrgSignIn from "../pages/org/auth/orgSignIn.jsx";
+import AdminSignIn from "../pages/admin/auth/adminSignIn.jsx";
+
+
+export default function AppRoutes() {
+
+
+
+    return (
+        <Routes>
+
+            {/* public routes, currently the only public pages will be auth pages */}
+            <Route element={<GuestOnlyRoute />}>
+                {/*The following is equivalent to path = ""*/}
+                <Route index element={<UserSignIn />} />
+                <Route path={"/user-sign-up"} element={<UserSignUp />} />
+
+                <Route element={<PendingUserRoute />}>
+                    <Route path="/email-verification" element={<EmailVerification />} />
+                </Route>
+                <Route path="/org-sign-in" element={<OrgSignIn />} />
+                <Route path="/org-sign-up" element={<OrgSignUp />} />
+
+                <Route path="/admin-sign-in" element={<AdminSignIn />} />
+
+            </Route>
+
+
+            {/* protected routes (requires login + verified) */}
+            <Route element={<ProtectedRoute requireVerified={true} />}>
+                <Route path="/home-page" element={<HomePage />} />
+
+            </Route>
+
+            {/* If any unknown path is entered, it will be redirected to the UserSignIn page*/}
+            {/*<Route path="*" element={<NotFoundPage />} />*/}
+            <Route path="*" element={<UserSignIn />} />
+
+        </Routes>
+    )
+}

@@ -1,5 +1,5 @@
 import { Navigate, Outlet } from 'react-router-dom';
-import { AuthContext } from "../context/AuthContext";
+import { AuthContext } from "../context/authContext";
 import { useContext } from "react";
 
 export default function GuestOnlyRoute() {

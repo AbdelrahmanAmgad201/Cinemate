@@ -2,30 +2,42 @@ import './style/signUp.css';
 import './style/signIn.css';
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import {useState} from 'react';
+import {useState, useContext} from 'react';
 import { FcGoogle } from "react-icons/fc";
 import { Link } from "react-router-dom";
+import { AuthContext } from "../../context/AuthContext.jsx";
+import { LuEyeOff, LuEye } from "react-icons/lu";
 
 
 export default function SignIn({role = "User",
                                 button1 = "Organization",
-                                navigate1 = "/orgSignIn",
+                                navigate1 = "/org-sign-in",
                                 button2 = "Admin",
-                                navigate2 = "/adminSignIn",
+                                navigate2 = "/admin-sign-in",
                                 showParagraph = true,
-                                link = "/userSignUp"}) {
+                                link = "/user-sign-up"}) {
     const navigate = useNavigate();
 
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const [showPassword, setShowPassword] = useState(false);
 
-    const handleSubmit = (e) => {
-            e.preventDefault();
-            console.log(email, password);
-            navigate("/homePage")
-        }
+    const { user, loading, signIn, signOut, isAuthenticated } = useContext(AuthContext);
 
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+        const signInResult = await signIn(email, password, role.toUpperCase())
+        // DELETE THIS LINE AFTER TESTING
+        console.log("Sign In API " + {email:email, password:password, role:role.toUpperCase()});
+
+        if (signInResult.success){
+            navigate("/home-page")
+        }
+        else{
+            alert("Error at sign in: see console ");
+            console.log("Error at sign up: " + signInResult.message);
+        }
+    }
     return (
         <div className = "signup-container signIn-container">
             <form onSubmit = {handleSubmit}>
@@ -41,7 +53,9 @@ export default function SignIn({role = "User",
                     <label htmlFor = "password">Password</label>
                     <div className = "passwordWrapper">
                         <input type = {showPassword ? "text" : "password"} id = "password" name = "password" placeholder="Enter your password" required onChange = {(e) => {setPassword(e.target.value)}}/>
-                        <button type = "button" id = "showBtn" onClick = {() => setShowPassword(!showPassword)}>{showPassword ? "Hide" : "Show"}</button>
+                        <span className="password-toggle-icon" onClick={() => setShowPassword(!showPassword)} style={{cursor: "pointer"}}>
+                            {showPassword ? <LuEye /> : <LuEyeOff />}
+                        </span>
                     </div>
                 </div>
                 <button type="submit" >Sign In</button><br />

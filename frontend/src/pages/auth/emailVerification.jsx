@@ -1,6 +1,7 @@
-import {useState, useRef, useEffect} from 'react';
+import {useState, useRef, useEffect, useContext} from 'react';
 import { useNavigate } from 'react-router-dom';
-import './style/EmailVerification.css';
+import './style/emailVerification.css';
+import {AuthContext} from "../../context/authContext.jsx";
 
 const regexDigit =  /^[0-9]$/
 
@@ -11,7 +12,9 @@ const EmailVerification = () => {
     const codeInputRef = useRef(Array(6));
     const [buttonTimer, setButtonTimer] = useState(0);
 
-    const email = "example@example.com"; // temp, or get from props/context
+    const { pendingUser, signIn, verifyEmail } = useContext(AuthContext);
+    if (!pendingUser) return null; // render nothing while redirecting
+    const email = pendingUser.email;
 
     // Checks each time the code changes, so it sends the code to backend if all boxed are filled
     useEffect(() => {
@@ -21,10 +24,18 @@ const EmailVerification = () => {
         }
     }, [code]);
 
-    const handleSubmitCode = () => {
-        alert("Sending the code to backend")
+    const handleSubmitCode = async () => {
         // TODO: HANDLE BACK END INTEGRATION
+        const res = await verifyEmail(email, code);
+        if (res.success) {
+            navigate("/")
+        }
+        else {
+            alert("Error at verifying email: see console ")
+            console.log("Error at verifying email: " + res.message)
+        }
     }
+
     // When a user inputs a digit into a box, the focus is switched to the next box
     const handleChange = (e, i) => {
         const inputValue = e.target.value;
@@ -114,12 +125,12 @@ const EmailVerification = () => {
                     onClick={handleResendClick}
                     disabled={buttonTimer > 0}>
                 {buttonTimer > 0 ?
-                `Wait ${buttonTimer}s` : "Resend Verification Email"
+                    `Wait ${buttonTimer}s` : "Resend Verification Email"
                 }
             </button>
 
-    {/*<button type="submit" onClick={() => navigate("/homePage")}>Done</button>*/}
-    </div>
+            {/*<button type="submit" onClick={() => navigate("/homePage")}>Done</button>*/}
+        </div>
     );
 };
 
