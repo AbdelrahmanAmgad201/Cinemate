@@ -9,6 +9,7 @@ import UserSignIn from "../pages/user/auth/signIn.jsx";
 import UserSignUp from "../pages/user/auth/signUp.jsx";
 import EmailVerification from "../pages/user/auth/EmailVerification.jsx";
 import HomePage from "../pages/user/homePage.jsx";
+import OAuthRedirect from '../pages/user/auth/OAuthRedirect.jsx';
 
 
 export default function AppRoutes() {
@@ -24,6 +25,7 @@ export default function AppRoutes() {
                 <Route index element={<UserSignIn />} />
                 <Route path={"/userSignUp"} element={<UserSignUp />} />
                 <Route path={"/email-verify"} element={<EmailVerification />} />
+                <Route path={"/oauth2/redirect"} element={<OAuthRedirect />} />
 
                 {OrgRoutes()}
                 {AdminRoutes()}

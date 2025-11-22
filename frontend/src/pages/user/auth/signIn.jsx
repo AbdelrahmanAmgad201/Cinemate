@@ -4,6 +4,7 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import {useState} from 'react';
 import { FcGoogle } from "react-icons/fc";
+import oauthSignIn from '../../../api/oauthSignInApi.jsx';
 
 export default function SignIn({role = "User", button1 = "Organization", navigate1 = "/orgSignIn", button2 = "Admin", navigate2 = "/adminSignIn", showParagraph = true}) {
     const navigate = useNavigate();
@@ -41,8 +42,11 @@ export default function SignIn({role = "User", button1 = "Organization", navigat
                     <button type="submit" onClick={() => navigate(navigate2)}>Sign in as {button2}</button>
                 </div>
             </form>
-            {showParagraph && <button type="button" onClick={() => alert("Google")}><FcGoogle />Sign in using Google</button>}
-
+            {showParagraph && 
+            <div className="google-button" style={{width: "289px", margin: "30px auto"}}>
+            <button type="button" onClick={oauthSignIn}><FcGoogle />Sign in using Google</button>
+            </div>
+            }
         </div>
     );
 };

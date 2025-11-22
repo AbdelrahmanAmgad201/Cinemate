@@ -25,6 +25,8 @@ import java.util.List;
 public class SecurityConfig {
 
     private final JWTProvider jwtProvider;
+    private final OAuthSuccessHandler oAuthSuccessHandler;
+    private final JWTAuthenticationFilter jwtAuthenticationFilter;
 
     @Bean
     public JWTAuthenticationFilter jwtAuthenticationFilter() {
@@ -46,7 +48,12 @@ public class SecurityConfig {
                 .requestMatchers("/api/user/**").hasAuthority("ROLE_USER")
                 .anyRequest().authenticated()
         )
-                .addFilterBefore(jwtAuthenticationFilter(), UsernamePasswordAuthenticationFilter.class);
+        .oauth2Login(oauth2 -> oauth2
+                .authorizationEndpoint(authorization ->  authorization.baseUri("/oauth2/authorize"))
+                .redirectionEndpoint(redirection -> redirection.baseUri("/login/oauth2/code/*"))
+                .successHandler(oAuthSuccessHandler)
+        )
+            .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }

@@ -6,6 +6,7 @@ import { AuthContext } from "../../../context/AuthContext";
 import { useContext } from "react";
 
 import signUpApi from '../../../api/signUpApi';
+import oauthSignIn from '../../../api/oauthSignInApi.jsx';
 
 // Icons
 import { FcGoogle } from "react-icons/fc";
@@ -106,7 +107,9 @@ const UserSignUp = () => {
                     </div>
                 </div>
                 <button type="submit">Create Account</button><br />
-                <button type="button" onClick={() => alert("Google")}><FcGoogle />Sign up using Google</button>
+                <div className="google-button" style={{width: "289px", margin: "30px auto"}}>
+                <button type="button" onClick={oauthSignIn}><FcGoogle />Sign in using Google</button>
+                </div>
             </form>
         </div>
     );

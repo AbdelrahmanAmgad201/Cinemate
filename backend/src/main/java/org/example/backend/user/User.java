@@ -38,7 +38,7 @@ public class User implements Authenticatable {
     @Column(name = "email", unique = true, nullable = false)
     private String email;
 
-    @Column(name = "password", nullable = false)
+    @Column(name = "password"/*, nullable = false */)  // google oauth users will have this field null (no password)
     private String password;
 
     @Enumerated(EnumType.STRING)
@@ -57,13 +57,29 @@ public class User implements Authenticatable {
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
+    @Column(name = "provider")
+    @Builder.Default
+    private String provider = "local";
+
+    @Column(name = "provider_id")
+    private String providerId;
+
     @PrePersist
     protected void onCreate() {
         createdAt = LocalDateTime.now();
+        
+        if(provider == null){
+            provider = "local";
+        }
     }
 
     public String getRole(){
         return "ROLE_USER";
+    }
+
+    // Helper method to check if the user is an OAuth user (can change password or not)
+    public boolean isOAuthUser() {
+        return !"local".equals(provider);
     }
 
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)

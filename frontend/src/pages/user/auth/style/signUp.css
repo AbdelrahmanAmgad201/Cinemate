@@ -3,7 +3,7 @@
 }
 
 .signup-container{
-    background-image: linear-gradient(180deg, #01161ec3 0%, #0C3849 100%), url("../../../../assets/background.jpg");
+    background-image: linear-gradient(180deg, #01161ec3 0%, var(--ink-black-border) 100%), url("../../../../assets/background.jpg");
     background-size: cover;
     background-repeat: no-repeat;
     min-height: 100vh;
@@ -11,7 +11,7 @@
     flex-direction: column;
     justify-content: center;
     font-family: Poppins, Arial, Helvetica, sans-serif;
-    color: #fafaff;
+    color: var(--ghost-white);
 }
 
 /* HEADER */
@@ -41,7 +41,7 @@
 
 .signup-container label{
     font-size: 16px;
-    color: #fafaff;
+    color: var(--ghost-white);
     margin-bottom: 3px;
     margin-right: 25px;
 }
@@ -51,7 +51,7 @@
 .input-elem{
     flex-direction: column;
     margin: 17px 0;
-    border-bottom: 2px solid #fafaff;
+    border-bottom: 2px solid var(--ghost-white);
 }
 
 .icon-input{
@@ -67,12 +67,12 @@
     background: transparent;
     border: none;
     font-size: 16px;
-    color: #fafaff;
+    color: var(--ghost-white);
     transition: background-color 0.3s ease-out;
 }
 
 .signup-container input::placeholder{
-    color: #fafaff;
+    color: var(--ghost-white);
 }
 
 .signup-container input[type="date"]::-webkit-calendar-picker-indicator{
@@ -83,16 +83,16 @@
     -webkit-appearance: none;
     appearance: none;
     margin: 3px 4px;
-    color: #fafaff;
+    color: var(--ghost-white);
     width: 11px;
     height: 11px;
-    border: 1px solid #fafaff;
+    border: 1px solid var(--ghost-white);
     border-radius: 50%;
     transition: background-color 0.3s ease-out;
 }
 
 .signup-container input[type=radio]:checked{
-    background-color: #fafaff;
+    background-color: var(--ghost-white);
     border: 1px solid #0C3849;
 }
 
@@ -100,7 +100,7 @@
 
 .signup-container input:focus{
     background-color: #fafaff11;
-    color: #fafaff;
+    color: var(--ghost-white);
     outline: none;
 }
 
@@ -130,7 +130,7 @@
 
 .signup-container button{
     background-color: #36A1F3;
-    color: #fafaff;
+    color: var(--ghost-white);
     font-size: 21px;
     border: none;
     border-radius: 32px;
