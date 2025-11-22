@@ -2,16 +2,21 @@ package org.example.backend.verification;
 
 import org.example.backend.BackendApplication;
 import org.example.backend.organization.OrganizationRepository;
+import org.example.backend.security.JWTProvider;
 import org.example.backend.security.SecurityConfig;
 import org.example.backend.user.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.annotation.Transactional;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.when;
+
 @SpringBootTest(classes = {BackendApplication.class, SecurityConfig.class})
 @ActiveProfiles("test")
 @Transactional
@@ -29,6 +34,9 @@ class VerificationServiceTest {
     @Autowired
     private OrganizationRepository organizationRepository;
 
+    @MockBean
+    private JWTProvider jwtProvider;
+
     @BeforeEach
     void setup() {
         verificationRepository.deleteAll();
@@ -36,7 +44,11 @@ class VerificationServiceTest {
         organizationRepository.deleteAll();
         verificationService.setSendGridApiKey("TEST_KEY");
         verificationService.setFromEmail("noreply@example.com");
+
+        // Mock JWT token generation
+        when(jwtProvider.generateToken(any())).thenReturn("mock-jwt-token");
     }
+
     @Test
     void verifyEmail_WhenCodeCorrect_AddsUserAndDeletesVerification() {
         VerificationDTO dto = new VerificationDTO("test1@example.com", 999999);
@@ -48,14 +60,20 @@ class VerificationServiceTest {
                 .build();
 
         verificationRepository.save(stored);
-        boolean result = verificationService.verifyEmail(dto);
-        assertTrue(result);
+
+        VerificationResponseDTO response = verificationService.verifyEmail(dto);
+
+        assertTrue(response.isSuccess());
+        assertEquals("Verification successful", response.getMessage());
+        assertNotNull(response.getToken());
+        assertEquals("test1@example.com", response.getEmail());
+        assertEquals("ROLE_USER", response.getRole());
         assertTrue(userRepository.findByEmail("test1@example.com").isPresent());
         assertFalse(verificationRepository.findByEmail("test1@example.com").isPresent());
     }
 
     @Test
-    void verifyEmailOrganization_WhenCodeCorrect_AddsUserAndDeletesVerification() {
+    void verifyEmailOrganization_WhenCodeCorrect_AddsOrganizationAndDeletesVerification() {
         VerificationDTO dto = new VerificationDTO("test2@example.com", 999999);
         Verfication stored = Verfication.builder()
                 .email("test2@example.com")
@@ -65,28 +83,24 @@ class VerificationServiceTest {
                 .build();
 
         verificationRepository.save(stored);
-        boolean result = verificationService.verifyEmail(dto);
-        assertTrue(result);
+
+        VerificationResponseDTO response = verificationService.verifyEmail(dto);
+
+        assertTrue(response.isSuccess());
+        assertEquals("Verification successful", response.getMessage());
+        assertNotNull(response.getToken());
+        assertEquals("test2@example.com", response.getEmail());
+        assertEquals("ROLE_ORGANIZATION", response.getRole());
         assertTrue(organizationRepository.findByEmail("test2@example.com").isPresent());
         assertFalse(verificationRepository.findByEmail("test2@example.com").isPresent());
     }
 
     @Test
     void addVerification() {
-        Verfication stored = Verfication.builder()
-                .email("test2@example.com")
-                .password("encrypted-pass")
-                .code(999999)
-                .role("ORGANIZATION")
-                .build();
-
-        verificationService.addVerfication("test2@example.com","encrypted-pass",999999,"ORGANIZATION");
+        verificationService.addVerfication("test2@example.com", "encrypted-pass", 999999, "ORGANIZATION");
         assertTrue(verificationRepository.findByEmail("test2@example.com").isPresent());
     }
 
-    // -------------------------------------------------
-    // TEST: verifyEmail wrong code
-    // -------------------------------------------------
     @Test
     void verifyEmail_WhenCodeIncorrect_ReturnsFalse() {
         VerificationDTO dto = new VerificationDTO("test@example.com", 111111);
@@ -100,16 +114,15 @@ class VerificationServiceTest {
 
         verificationRepository.save(stored);
 
-        boolean result = verificationService.verifyEmail(dto);
+        VerificationResponseDTO response = verificationService.verifyEmail(dto);
 
-        assertFalse(result);
-        assertFalse(organizationRepository.findByEmail("test@example.com").isPresent());
+        assertFalse(response.isSuccess());
+        assertEquals("Invalid or expired code", response.getMessage());
+        assertNull(response.getToken());
+        assertFalse(userRepository.findByEmail("test@example.com").isPresent());
         assertTrue(verificationRepository.findByEmail("test@example.com").isPresent());
     }
 
-    // -------------------------------------------------
-    // TEST: verifyEmail wrong code
-    // -------------------------------------------------
     @Test
     void verifyEmailOrganization_WhenCodeIncorrect_ReturnsFalse() {
         VerificationDTO dto = new VerificationDTO("test@example.com", 111111);
@@ -123,23 +136,22 @@ class VerificationServiceTest {
 
         verificationRepository.save(stored);
 
-        boolean result = verificationService.verifyEmail(dto);
+        VerificationResponseDTO response = verificationService.verifyEmail(dto);
 
-        assertFalse(result);
-        assertFalse(userRepository.findByEmail("test@example.com").isPresent());
+        assertFalse(response.isSuccess());
+        assertEquals("Invalid or expired code", response.getMessage());
+        assertNull(response.getToken());
+        assertFalse(organizationRepository.findByEmail("test@example.com").isPresent());
         assertTrue(verificationRepository.findByEmail("test@example.com").isPresent());
     }
 
-    // -------------------------------------------------
-    // TEST: verifyEmail email not found
-    // -------------------------------------------------
     @Test
     void verifyEmail_WhenEmailNotFound_ReturnsFalse() {
         VerificationDTO dto = new VerificationDTO("notfound@example.com", 123456);
 
-        boolean result = verificationService.verifyEmail(dto);
+        VerificationResponseDTO response = verificationService.verifyEmail(dto);
 
-        assertFalse(result);
+        assertFalse(response.isSuccess());
         assertFalse(userRepository.findByEmail("notfound@example.com").isPresent());
     }
 }
