@@ -4,7 +4,7 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import {useState, useContext} from 'react';
 import { FcGoogle } from "react-icons/fc";
-import oauthSignIn from '../../../api/oauthSignInApi.jsx';
+import oauthSignIn from '../../api/oauthSignInApi.jsx';
 import { Link } from "react-router-dom";
 import { AuthContext } from "../../context/AuthContext.jsx";
 import { LuEyeOff, LuEye } from "react-icons/lu";
