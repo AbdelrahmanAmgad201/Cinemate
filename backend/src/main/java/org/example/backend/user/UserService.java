@@ -1,40 +1,69 @@
 package org.example.backend.user;
 
 import jakarta.transaction.Transactional;
+import org.example.backend.verification.Verfication;
+import org.example.backend.verification.VerificationService;
 import lombok.RequiredArgsConstructor;
 import org.example.backend.security.CredentialsRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
-import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.util.Optional;
+import java.util.Random;
 
 @Service
 @RequiredArgsConstructor
 public class UserService {
 
     private final UserRepository userRepository;
-    private final PasswordEncoder passwordEncoder;
+    private final Random random = new Random();
+    @Autowired
+    private VerificationService verificationService;
 
-    private User addUser(String email, String password) {
-        String hashedPassword = passwordEncoder.encode(password);
+
+    public User addUser(String email, String password) {
         User user = User.builder()
                 .email(email)
-                .password(hashedPassword)
+                .password(password)
                 .build();
-        return userRepository.save(user);
+       return userRepository.save(user);
+    }
+
+
+    @Transactional
+    public String setUserData(Long userId, UserDataDTO userDataDTO) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        user.setFirstName(userDataDTO.getFirstName());
+        user.setLastName(userDataDTO.getLastName());
+        user.setAbout(userDataDTO.getAbout());
+        user.setBirthDate(userDataDTO.getBirthday());
+
+        if (userDataDTO.getGender() != null) {
+            user.setGender(Gender.valueOf(userDataDTO.getGender().toUpperCase()));
+        }
+
+        userRepository.save(user);
+
+        return "User data updated successfully";
     }
 
     @Transactional
-    public User signUp(CredentialsRequest credentialsRequest) {
+    public Verfication signUp(CredentialsRequest credentialsRequest) {
         String email = credentialsRequest.getEmail();
         String password = credentialsRequest.getPassword();
-
-        userRepository.findByEmail(email).ifPresent(u -> {
-            throw new UserAlreadyExistsException("User with this email already exists");
-        });
-
-        return addUser(email, password);
+        String role = credentialsRequest.getRole();
+        Optional<User> user = userRepository.findByEmail(email);
+        if (user.isPresent()) {
+            throw new UserAlreadyExistsException(email);
+        }
+        int code = 100000 + random.nextInt(900000);
+        if(verificationService.sendVerificationEmail(email, code)){
+            return verificationService.addVerfication(email, password,code,role);
+        }
+        else{
+            return new Verfication();
+        }
     }
 }

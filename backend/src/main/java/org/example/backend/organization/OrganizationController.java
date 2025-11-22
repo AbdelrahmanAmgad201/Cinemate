@@ -1,21 +1,20 @@
-package org.example.backend.user;
+package org.example.backend.organization;
 
 import jakarta.servlet.http.HttpServletRequest;
-import org.example.backend.security.CredentialsRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
-@RequestMapping("/api/user")
-public class UserController {
+@RequestMapping("/api/organization")
+public class OrganizationController {
 
     @Autowired
-    private UserService userService;
+    private OrganizationService organizationService;
 
     @GetMapping("/v1/profile")
-    @PreAuthorize("hasRole('USER')")
+    @PreAuthorize("hasRole('ORGANIZATION')")
     public ResponseEntity<?> getProfile(HttpServletRequest request) {
         Long userId = (Long) request.getAttribute("userId");
         String email = (String) request.getAttribute("userEmail");
@@ -24,14 +23,14 @@ public class UserController {
     }
 
 
-    @PostMapping("/v1/set-user-data")
-    @PreAuthorize("hasRole('USER')")
+    @PostMapping("/v1/set-organization-data")
+    @PreAuthorize("hasRole('ORGANIZATION')")
     public ResponseEntity<String> setPersonalData(
             HttpServletRequest request,
-            @RequestBody UserDataDTO userDataDTO) {
+            @RequestBody OrganizationDataDTO organizationDataDTO) {
 
         Long userId = (Long) request.getAttribute("userId");
-        String message = userService.setUserData(userId, userDataDTO);
+        String message = organizationService.setOrganizationData(userId, organizationDataDTO);
 
         return ResponseEntity.ok(message);
     }

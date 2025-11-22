@@ -4,9 +4,10 @@
 
 .signup-container{
     background-image: linear-gradient(180deg, #01161ec3 0%, var(--ink-black-border) 100%), url("../../../../assets/background.jpg");
-    background-size: cover;
+    background-size: auto;
     background-repeat: no-repeat;
     min-height: 100vh;
+    width: auto;
     display: flex;
     flex-direction: column;
     justify-content: center;
@@ -61,7 +62,8 @@
     gap: 5px;
 }
 
-.signup-container input{
+.signup-container input,
+.signup-container textarea{
     height: 39px;
     width: 430px;
     background: transparent;
@@ -72,7 +74,7 @@
 }
 
 .signup-container input::placeholder{
-    color: var(--ghost-white);
+    color: #fafaff;
 }
 
 .signup-container input[type="date"]::-webkit-calendar-picker-indicator{

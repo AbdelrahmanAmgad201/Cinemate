@@ -1,3 +1,7 @@
+.signIn-container {
+    width: auto;
+}
+
 .passwordWrapper {
     display: flex;
     align-items: center;
@@ -10,12 +14,18 @@
 }
 
 #showBtn{
+    background-color: #36A1F3;
     width: auto;
     margin-top: 0;
     padding: 8px 16px;
     height: auto;
     font-size: 14px;
 }
+
+#showBtn:hover{
+    background-color: #2580e0;
+}
+
 .notUser{
     display: flex;
     align-items: center;
