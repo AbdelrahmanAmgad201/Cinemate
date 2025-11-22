@@ -5,6 +5,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import org.example.backend.user.Gender;
 import org.example.backend.user.User;
 import org.example.backend.user.UserRepository;
+import org.example.backend.user.OAuthUser;
 import org.example.backend.security.JWTProvider;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.Authentication;
@@ -27,22 +28,17 @@ public class OAuthSuccessHandler extends SimpleUrlAuthenticationSuccessHandler {
     public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response, Authentication authentication) throws IOException{
         OAuth2User oAuth2User = (OAuth2User) authentication.getPrincipal();
 
-        String email = oAuth2User.getAttribute("email");
-        String firstName = oAuth2User.getAttribute("given_name");
-        String lastName = oAuth2User.getAttribute("family_name");
-        String googleId = oAuth2User.getAttribute("sub");
-        String googleGender = oAuth2User.getAttribute("gender");
-        final Gender gender = parseGender(googleGender);
+        OAuthUser oauthUser = OAuthUser.from(oAuth2User);
 
         // Check if user exists, if not create new user
-        User user = userRepository.findByEmail(email).orElseGet(() -> {
+        User user = userRepository.findByEmail(oauthUser.getEmail()).orElseGet(() -> {
             User newUser = User.builder()
-            .email(email)
-            .firstName(firstName)
-            .lastName(lastName)
+            .email(oauthUser.getEmail())
+            .firstName(oauthUser.getFirstName())
+            .lastName(oauthUser.getLastName())
             .provider("google")
-            .providerId(googleId)
-            .gender(gender)
+            .providerId(oauthUser.getGoogleId())
+            .gender(null)
             .password(null)
             .build();
 
@@ -53,21 +49,16 @@ public class OAuthSuccessHandler extends SimpleUrlAuthenticationSuccessHandler {
         if(user.getId() != null){
             boolean needsUpdate = false;
             
-            if(!firstName.equals(user.getFirstName())){
-                user.setFirstName(firstName);
+            if(!oauthUser.getFirstName().equals(user.getFirstName())){
+                user.setFirstName(oauthUser.getFirstName());
                 needsUpdate = true;
             }
 
-            if(!lastName.equals(user.getLastName())){
-                user.setLastName(lastName);
+            if(!oauthUser.getLastName().equals(user.getLastName())){
+                user.setLastName(oauthUser.getLastName());
                 needsUpdate = true;
             }
 
-            if(gender != null && !gender.equals(user.getGender())){
-                user.setGender(gender);
-                needsUpdate = true;
-            }
-            
             if(needsUpdate){
                 userRepository.save(user);
             }
@@ -82,17 +73,5 @@ public class OAuthSuccessHandler extends SimpleUrlAuthenticationSuccessHandler {
         getRedirectStrategy().sendRedirect(request, response, redirectUrl);
 
         
-    }
-
-    private Gender parseGender(String googleGender){
-        if(googleGender == null){
-            return null;
-        }
-        try{
-            return Gender.valueOf(googleGender.toUpperCase());
-        }
-        catch(IllegalArgumentException e){
-            return null;
-        }
     }
 }
