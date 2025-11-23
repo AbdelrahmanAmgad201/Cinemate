@@ -12,27 +12,8 @@ jobs:
   backend-tests:
     runs-on: ubuntu-latest
 
-    # Start a MySQL service that tests can use
-    services:
-      mysql:
-        image: mysql:8.0
-        env:
-          MYSQL_ROOT_PASSWORD: root
-          MYSQL_DATABASE: cinematetest
-          MYSQL_USER: test
-          MYSQL_PASSWORD: test
-        ports:
-          - 3306:3306
-        options: >-
-          --health-cmd="mysqladmin ping --silent"
-          --health-interval=10s
-          --health-timeout=5s
-          --health-retries=10
-
-    env:
-      SPRING_DATASOURCE_URL: jdbc:mysql://127.0.0.1:3306/cinematetest?useSSL=false&allowPublicKeyRetrieval=true
-      SPRING_DATASOURCE_USERNAME: test
-      SPRING_DATASOURCE_PASSWORD: test
+    # NOTE: Removed MySQL service and SPRING_DATASOURCE_* env to allow tests to use the
+    # embedded H2 datasource configured in src/test/resources (or application-test.properties).
 
     steps:
       # 1. Checkout code
@@ -55,19 +36,6 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-maven-
 
-      # 4. Wait for MySQL service to be reachable
-      - name: Wait for MySQL to be ready
-        run: |
-          echo "Waiting for MySQL to accept connections on 127.0.0.1:3306..."
-          for i in {1..60}; do
-            if timeout 1 bash -c 'echo > /dev/tcp/127.0.0.1/3306' 2>/dev/null; then
-              echo "MySQL is up"
-              break
-            fi
-            echo "Waiting for MySQL ($i/60)..."
-            sleep 2
-          done
-
-      # 5. Build and run backend tests
+      # 4. Build and run backend tests (use test profile if you have one)
       - name: Build and run backend tests
-        run: mvn -f backend/pom.xml clean test
+        run: mvn -f backend/pom.xml clean test -Dspring.profiles.active=test
