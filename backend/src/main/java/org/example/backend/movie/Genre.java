@@ -2,5 +2,13 @@ package org.example.backend.movie;
 
 public enum Genre {
     MYSTERY,
-    COMEDY
+    COMEDY,
+    ANIMATION,
+    DOCUMENTARY,
+    ROMANCE,
+    THRILLER,
+    SCIFI,
+    HORROR,
+    DRAMA,
+    ACTION
 }
