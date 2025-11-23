@@ -1,29 +1,20 @@
 package org.example.backend.security;
 
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.mockito.Mockito.mock;
 
-@SpringBootTest
-class SecurityConfigTest {
-
-    @Autowired
-    private SecurityConfig securityConfig;
+class SecurityConfigUnitTest {
 
     @Test
-    void testJwtAuthenticationFilterBean() {
-        assertNotNull(securityConfig.jwtAuthenticationFilter());
-    }
+    void testBeansExist() {
+        // Mock dependencies
+        JWTProvider jwtProvider = mock(JWTProvider.class);
 
-    @Test
-    void testPasswordEncoderBean() {
+        SecurityConfig securityConfig = new SecurityConfig(jwtProvider);
+
         assertNotNull(securityConfig.passwordEncoder());
-    }
-
-    @Test
-    void testCorsConfigurationSourceBean() {
+        assertNotNull(securityConfig.jwtAuthenticationFilter());
         assertNotNull(securityConfig.corsConfigurationSource());
     }
 }
