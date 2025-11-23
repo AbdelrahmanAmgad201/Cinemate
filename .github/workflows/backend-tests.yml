@@ -1,14 +1,19 @@
 name: Run Backend Tests
 
 on:
+  push:
+    paths:
+      - 'backend/**'
   pull_request:
-    branches:
-      - main
-      - 'milestone_*'
+    paths:
+      - 'backend/**'
 
 jobs:
   backend-tests:
     runs-on: ubuntu-latest
+
+    # NOTE: Removed MySQL service and SPRING_DATASOURCE_* env to allow tests to use the
+    # embedded H2 datasource configured in src/test/resources (or application-test.properties).
 
     steps:
       # 1. Checkout code
@@ -31,7 +36,6 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-maven-
 
-      # 4. Run Maven tests in backend folder
+      # 4. Build and run backend tests (use test profile if you have one)
       - name: Build and run backend tests
-        run: mvn -f backend/pom.xml clean test
-
+        run: mvn -f backend/pom.xml clean test -Dspring.profiles.active=test

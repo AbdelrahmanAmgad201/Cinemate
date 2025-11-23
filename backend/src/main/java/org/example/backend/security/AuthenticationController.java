@@ -18,8 +18,7 @@ public class AuthenticationController {
 
     private final AuthenticationService authenticationService;
     private final JWTProvider jwtTokenProvider;
-    @Autowired
-    private UserService userService;
+    private final UserService userService;
 
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody CredentialsRequest request) {
