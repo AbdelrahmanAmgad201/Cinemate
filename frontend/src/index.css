@@ -5,6 +5,25 @@
     --ink-black-border: #0C3849;
     --ink-black-hover: #022237;
     --ink-black-disabled: gray;
+    --line-separator-faded-grey: #DFDCDC59;
+    --dark-teal: #124559;
+    --lighter-dark-teal: #1A3039;
+    --grey-text: #AAAAAA;
+    --button-hover-color: #FAFAFF opacity 50%;
+    --blue-bell: #36A1F3;
+    --faded-blue-bell: rgba(54, 161, 243, 0.7);
+    --dark-blue-bell: #3f5c87;
+    --review-card-gradient-color: linear-gradient(
+            to bottom right,
+            #24414D 0%,
+            #1E3942 100%
+    );
+    --review-card-gradient-color-faded: linear-gradient(
+            to bottom right,
+            rgba(36, 65, 77, 0.7) 0%,
+            rgba(30, 57, 66, 0.7) 100%
+    );
+
 }
 
 body {

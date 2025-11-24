@@ -11,7 +11,7 @@ import OrgSignUp from "../pages/org/auth/orgSignUp.jsx";
 import OrgSignIn from "../pages/org/auth/orgSignIn.jsx";
 import AdminSignIn from "../pages/admin/auth/adminSignIn.jsx";
 import OAuthRedirect from "../pages/user/auth/OAuthRedirect.jsx";
-
+import MoviePreviewPage from "../pages/user/moviePreviewPage.jsx";
 
 export default function AppRoutes() {
 
@@ -37,6 +37,8 @@ export default function AppRoutes() {
 
             </Route>
 
+            {/* TEMPORARY */}
+            <Route path="/movie" element={<MoviePreviewPage />} />
 
             {/* protected routes (requires login + verified) */}
             <Route element={<ProtectedRoute requireVerified={true} />}>
