@@ -49,6 +49,8 @@ public class SecurityConfig {
                 .requestMatchers("/api/movie-review/**").hasAuthority("ROLE_USER")
                 .requestMatchers("/api/watch-history/**").hasAuthority("ROLE_USER")
                 .requestMatchers("/api/liked-movie/**").hasAuthority("ROLE_USER")
+                .requestMatchers("/api/watch-later/**").hasAuthority("ROLE_USER")
+
                 .anyRequest().authenticated()
         )
                 .addFilterBefore(jwtAuthenticationFilter(), UsernamePasswordAuthenticationFilter.class);
