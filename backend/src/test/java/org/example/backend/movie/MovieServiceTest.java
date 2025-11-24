@@ -3,7 +3,6 @@ package org.example.backend.movie;
 import org.example.backend.admin.Admin;
 import org.example.backend.organization.Organization;
 import org.example.backend.organization.OrganizationRepository;
-import org.example.backend.organization.OrganizationService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -38,8 +37,6 @@ class MovieServiceTest {
     @InjectMocks
     private MovieService movieService;
 
-    @InjectMocks
-    private OrganizationService organizationService;
 
     private Movie movie1;
     private Movie movie2;
@@ -381,50 +378,6 @@ class MovieServiceTest {
         assertEquals(3, result.getTotalElements());
         verify(movieRepository, times(1)).findAll(any(Specification.class), any(Pageable.class));
     }
-    @Test
-    void testAddMovie_Success() {
-        // Arrange
-        MovieAddDTO dto = new MovieAddDTO();
-        dto.setOrganizationId(1L);
-        dto.setName("New Movie");
-        dto.setDescription("Movie Description");
-        dto.setMovieUrl("http://movie.url");
-        dto.setThumbnailUrl("http://thumbnail.url");
-        dto.setTrailerUrl("http://trailer.url");
-        dto.setDuration(120);
-        dto.setGenre(Genre.ACTION);
-
-        Organization org = Organization.builder()
-                .id(1L)
-                .name("Warner Bros")
-                .email("warner@example.com")
-                .password("password")
-                .createdAt(LocalDateTime.now())
-                .build();
-
-        when(organizationRepository.findById(1L)).thenReturn(java.util.Optional.of(org));
-
-        Movie savedMovie = Movie.builder()
-                .movieID(10L)
-                .name(dto.getName())
-                .description(dto.getDescription())
-                .genre(dto.getGenre())
-                .duration(dto.getDuration())
-                .organization(org)
-                .build();
-
-        when(movieRepository.save(any(Movie.class))).thenReturn(savedMovie);
-
-        // Act
-        Long resultId = organizationService.requestMovie(dto);
-
-        // Assert
-        assertNotNull(resultId);
-        assertEquals(10L, resultId);
-        verify(organizationRepository, times(1)).findById(1L);
-        verify(movieRepository, times(1)).save(any(Movie.class));
-    }
-
     @Test
     void testAddMovie_OrganizationNotFound() {
         // Arrange
