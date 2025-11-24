@@ -12,7 +12,7 @@
 .movie-preview-page-movie {
     display: flex;
     flex-direction: row;
-    gap: 40px;
+    gap: 60px;
     align-items: flex-start;
 
     /* SEPARATOR LINE */
@@ -40,7 +40,7 @@
 .movie-preview-page-movie-details-middle{
     display: flex;
     flex-direction: column;
-    gap: 20px;
+    gap: 30px;
     /*flex-grow: 1; !* Allow this column to take up the most space *!*/
     /*flex-shrink: 0;*/
     flex: 1 1 auto; /* grow and shrink as needed */
@@ -68,7 +68,7 @@
 }
 
 .movie-preview-page-movie-details-middle-description {
-    height: 300px;
+    height: 250px;
     max-width: 700px;
     overflow-y: auto; /* a vertical scrollbar if the content exceeds 170px */
     padding: 12px;
@@ -84,7 +84,7 @@
 }
 .movie-preview-page-movie-details-middle-buttons {
     display: flex;
-    gap: 20px;
+    gap: 30px;
     flex-direction: row;
 }
 .movie-preview-page-movie-details-middle-buttons button {
