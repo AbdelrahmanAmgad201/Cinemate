@@ -13,6 +13,7 @@ import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.security.web.authentication.SimpleUrlAuthenticationSuccessHandler;
 import org.springframework.stereotype.Component;
 import org.springframework.web.util.UriComponentsBuilder;
+import java.util.Objects;
 
 import java.io.IOException;
 
@@ -20,9 +21,12 @@ import java.io.IOException;
 public class OAuthSuccessHandler extends SimpleUrlAuthenticationSuccessHandler {
     @Autowired
     private JWTProvider jwtProvider;
-
-    @Autowired
     private UserRepository userRepository;
+
+    public OAuthSuccessHandler(JWTProvider jwtProvider, UserRepository userRepository) {
+        this.jwtProvider = jwtProvider;
+        this.userRepository = userRepository;
+    }
 
     @Override
     public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response, Authentication authentication) throws IOException{
@@ -54,7 +58,7 @@ public class OAuthSuccessHandler extends SimpleUrlAuthenticationSuccessHandler {
                 needsUpdate = true;
             }
 
-            if(!oauthUser.getLastName().equals(user.getLastName())){
+            if(!Objects.equals(oauthUser.getLastName(), user.getLastName())){
                 user.setLastName(oauthUser.getLastName());
                 needsUpdate = true;
             }

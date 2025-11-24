@@ -17,11 +17,6 @@ const OAuthRedirect = () => {
             localStorage.setItem('token', token);
 
             const userData = jwtDecode(token);
-            setUser({
-                id: userData.id,
-                email: userData.email,
-                role: userData.role,
-            });
 
             console.log("OAuth sign-in successful");
 

@@ -15,6 +15,7 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+import org.springframework.context.annotation.Lazy;
 
 import java.util.List;
 
@@ -25,8 +26,8 @@ import java.util.List;
 public class SecurityConfig {
 
     private final JWTProvider jwtProvider;
+    @Lazy
     private final OAuthSuccessHandler oAuthSuccessHandler;
-    private final JWTAuthenticationFilter jwtAuthenticationFilter;
 
     @Bean
     public JWTAuthenticationFilter jwtAuthenticationFilter() {
@@ -56,7 +57,7 @@ public class SecurityConfig {
                 .redirectionEndpoint(redirection -> redirection.baseUri("/login/oauth2/code/*"))
                 .successHandler(oAuthSuccessHandler)
         )
-            .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
+            .addFilterBefore((jwtAuthenticationFilter()), UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }
