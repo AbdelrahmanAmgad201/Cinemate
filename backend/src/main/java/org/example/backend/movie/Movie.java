@@ -1,5 +1,7 @@
 package org.example.backend.movie;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import lombok.*;
 import org.example.backend.admin.Admin;
@@ -45,11 +47,22 @@ public class Movie {
     @Column(name = "release_date")
     private LocalDate releaseDate;
 
+    @Column(name = "rating_sum")
+    private Long ratingSum;
+
+    @Column(name = "rating_count")
+    private Integer ratingCount;
+
+    @Column(name = "average_rating")
+    private Double averageRating;
+
     @ManyToOne
     @JoinColumn(name = "organization_id", nullable = false)
+    @JsonIgnoreProperties({"id", "email", "password", "about", "createdAt", "releasedMovies"})
     private Organization organization;
 
     @ManyToOne
     @JoinColumn(name = "admin_id", nullable = true)
+    @JsonIgnore
     private Admin admin;
 }
