@@ -56,12 +56,12 @@ public class Movie {
     @Column(name = "average_rating")
     private Double averageRating;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "organization_id", nullable = false)
     @JsonIgnoreProperties({"id", "email", "password", "about", "createdAt", "releasedMovies"})
     private Organization organization;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "admin_id", nullable = true)
     @JsonIgnore
     private Admin admin;

@@ -1,6 +1,8 @@
 package org.example.backend.organization;
 
 import jakarta.servlet.http.HttpServletRequest;
+import org.example.backend.movie.MovieAddDTO;
+import org.example.backend.movie.MovieService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -12,6 +14,8 @@ public class OrganizationController {
 
     @Autowired
     private OrganizationService organizationService;
+    @Autowired
+    private MovieService movieService;
 
     @GetMapping("/v1/profile")
     @PreAuthorize("hasRole('ORGANIZATION')")
@@ -34,4 +38,10 @@ public class OrganizationController {
 
         return ResponseEntity.ok(message);
     }
+    @PostMapping("/v1/add-movie")
+    @PreAuthorize("hasRole('ORGANIZATION')")
+    public Long addMovie(@RequestBody MovieAddDTO movieAddDTO) {
+        return movieService.addMovie(movieAddDTO);
+    }
+
 }

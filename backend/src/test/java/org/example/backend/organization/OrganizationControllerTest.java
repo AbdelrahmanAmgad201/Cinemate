@@ -1,5 +1,7 @@
 package org.example.backend.organization;
 
+import org.example.backend.movie.MovieAddDTO;
+import org.example.backend.movie.MovieService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
@@ -19,6 +21,9 @@ class OrganizationControllerTest {
 
     @Mock
     private OrganizationService organizationService;
+
+    @Mock
+    private MovieService movieService;
 
     @InjectMocks
     private OrganizationController organizationController;
@@ -41,9 +46,6 @@ class OrganizationControllerTest {
     @Test
     void testSetPersonalData() throws Exception {
         Long userId = 1L;
-        OrganizationDataDTO dto = new OrganizationDataDTO();
-        dto.setName("New Name");
-        dto.setAbout("New About");
 
         when(organizationService.setOrganizationData(eq(userId), any(OrganizationDataDTO.class)))
                 .thenReturn("User data updated successfully");
@@ -64,5 +66,35 @@ class OrganizationControllerTest {
 
         verify(organizationService, times(1))
                 .setOrganizationData(eq(userId), any(OrganizationDataDTO.class));
+    }
+
+    // =====================================================
+    // ✅ NEW TEST: /v1/add-movie
+    // =====================================================
+    @Test
+    void testAddMovie() throws Exception {
+
+        when(movieService.addMovie(any(MovieAddDTO.class))).thenReturn(99L);
+
+        String jsonBody = """
+            {
+                "name": "Movie name",
+                "description": "Description",
+                "movieUrl": "http://movie.com",
+                "thumbnailUrl": "http://thumb.com",
+                "trailerUrl": "http://trailer.com",
+                "duration": 120,
+                "genre": "ACTION",
+                "organizationId": 10
+            }
+            """;
+
+        mockMvc.perform(post("/api/organization/v1/add-movie")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(jsonBody))
+                .andExpect(status().isOk())
+                .andExpect(content().string("99"));
+
+        verify(movieService, times(1)).addMovie(any(MovieAddDTO.class));
     }
 }
