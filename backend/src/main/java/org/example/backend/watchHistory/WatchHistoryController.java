@@ -17,13 +17,13 @@ public class WatchHistoryController {
     @Autowired
     private WatchHistoryService watchHistoryService;
 
-    @PostMapping("/v1/add-review/{movieId}")
+    @PostMapping("/v1/add-watch-history/{movieId}")
     public ResponseEntity<WatchHistory> likeMovie(
             HttpServletRequest request,
             @PathVariable Long movieId) {
 
         Long userId = (Long) request.getAttribute("userId");
-        System.out.println("userId = " + userId);
+//        System.out.println("userId = " + userId);
         return ResponseEntity.ok(
                 watchHistoryService.addToWatchHistory(userId, movieId)
         );

@@ -1,5 +1,6 @@
 package org.example.backend.likedMovie;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.*;
 import org.example.backend.movie.Movie;
@@ -22,13 +23,22 @@ public class LikedMovie {
     @ManyToOne
     @MapsId("userId")
     @JoinColumn(name = "user_id")
+    @JsonIgnore
     private User user;
 
     @ManyToOne
     @MapsId("movieId")
     @JoinColumn(name = "movie_id")
+    @JsonIgnore
     private Movie movie;
 
     @Column(name = "date")
     private LocalDateTime dateLiked;
+
+    @PrePersist
+    protected void onCreate() {
+        if (dateLiked == null) {
+            dateLiked = LocalDateTime.now();
+        }
+    }
 }

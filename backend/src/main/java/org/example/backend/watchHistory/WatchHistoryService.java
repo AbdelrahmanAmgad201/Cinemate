@@ -1,5 +1,6 @@
 package org.example.backend.watchHistory;
 
+import jakarta.transaction.Transactional;
 import org.example.backend.movie.Movie;
 import org.example.backend.movie.MovieRepository;
 import org.example.backend.user.User;
@@ -18,6 +19,7 @@ public class WatchHistoryService {
     @Autowired
     MovieRepository movieRepository;
 
+    @Transactional
     public WatchHistory addToWatchHistory(Long userId, Long movieID){
         Movie movie = movieRepository.findById(movieID)
                 .orElseThrow(() -> new RuntimeException("Movie not found"));
