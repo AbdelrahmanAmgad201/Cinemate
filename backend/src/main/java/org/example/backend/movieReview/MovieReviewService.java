@@ -1,5 +1,6 @@
 package org.example.backend.movieReview;
 
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.example.backend.movie.Movie;
 import org.example.backend.movie.MovieRepository;
@@ -9,6 +10,8 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
+
 @Service
 @RequiredArgsConstructor
 public class MovieReviewService {
@@ -17,6 +20,7 @@ public class MovieReviewService {
     private final MovieRepository movieRepository;
     private final UserRepository userRepository;
 
+    @Transactional
     public MovieReview addOrUpdateReview(Long userId, MovieReviewDTO dto) {
 
         Movie movie = movieRepository.findById(dto.getMovieId())
@@ -58,4 +62,7 @@ public class MovieReviewService {
         return reviewRepository.save(review);
     }
 
+    public Page<MovieReview> getMovieReviews(Long movieId, Pageable pageable) {
+        return reviewRepository.findByMovie_MovieID(movieId, pageable);
+    }
 }
