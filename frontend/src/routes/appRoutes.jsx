@@ -38,7 +38,7 @@ export default function AppRoutes() {
             </Route>
 
             {/* TEMPORARY */}
-            <Route path="/movie" element={<MoviePreviewPage />} />
+            <Route path="/movie/:movieID" element={<MoviePreviewPage />} />
 
             {/* protected routes (requires login + verified) */}
             <Route element={<ProtectedRoute requireVerified={true} />}>
