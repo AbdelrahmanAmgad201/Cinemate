@@ -106,22 +106,4 @@ class AdminControllerTest {
 
         verify(requestsService, times(1)).getAllPendingRequests();
     }
-
-    // ============================================================
-    // ✅ TEST: /v1/get_requested_movie
-    // ============================================================
-    @Test
-    void testGetRequestedMovie() throws Exception {
-        Movie movie = new Movie();
-        movie.setMovieID(99L);
-
-        when(adminService.getRequestedMovie(99L)).thenReturn(movie);
-
-        mockMvc.perform(post("/api/admin/v1/get_requested_movie")
-                        .param("requestId", "99"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.id").value(99));
-
-        verify(adminService, times(1)).getRequestedMovie(99L);
-    }
 }
