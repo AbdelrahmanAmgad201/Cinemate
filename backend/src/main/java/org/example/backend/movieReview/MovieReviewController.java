@@ -1,11 +1,9 @@
 package org.example.backend.movieReview;
 
 import jakarta.servlet.http.HttpServletRequest;
-import org.example.backend.movie.Movie;
-import org.example.backend.movie.MovieRequestDTO;
-import org.example.backend.movie.MovieService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -25,6 +23,15 @@ public class MovieReviewController {
 
         return ResponseEntity.ok(
                 movieReviewService.addOrUpdateReview(userId, movieReviewDTO)
+        );
+    }
+    @GetMapping("/v1/get-movie-reviews/{movieId}")
+    public ResponseEntity<Page<MovieReview>> getMovieReviews(
+            @PathVariable Long movieId,
+            Pageable pageable) {
+
+        return ResponseEntity.ok(
+                movieReviewService.getMovieReviews(movieId, pageable)
         );
     }
 }
