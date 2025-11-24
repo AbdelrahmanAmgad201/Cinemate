@@ -15,6 +15,7 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+import org.springframework.context.annotation.Lazy;
 
 import java.util.List;
 
@@ -25,6 +26,8 @@ import java.util.List;
 public class SecurityConfig {
 
     private final JWTProvider jwtProvider;
+    @Lazy
+    private final OAuthSuccessHandler oAuthSuccessHandler;
 
     @Bean
     public JWTAuthenticationFilter jwtAuthenticationFilter() {
@@ -49,7 +52,12 @@ public class SecurityConfig {
                 .requestMatchers("/api/movie-review/**").hasAuthority("ROLE_USER")
                 .anyRequest().authenticated()
         )
-                .addFilterBefore(jwtAuthenticationFilter(), UsernamePasswordAuthenticationFilter.class);
+        .oauth2Login(oauth2 -> oauth2
+                .authorizationEndpoint(authorization ->  authorization.baseUri("/oauth2/authorize"))
+                .redirectionEndpoint(redirection -> redirection.baseUri("/login/oauth2/code/*"))
+                .successHandler(oAuthSuccessHandler)
+        )
+            .addFilterBefore((jwtAuthenticationFilter()), UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }
