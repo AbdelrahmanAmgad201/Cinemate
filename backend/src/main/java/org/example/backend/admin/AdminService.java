@@ -1,0 +1,56 @@
+package org.example.backend.admin;
+
+import jakarta.transaction.Transactional;
+import lombok.RequiredArgsConstructor;
+import org.example.backend.movie.Movie;
+import org.example.backend.movie.MovieRepository;
+import org.example.backend.organization.Organization;
+import org.example.backend.requests.Requests;
+import org.example.backend.requests.RequestsRepository;
+import org.example.backend.requests.State;
+import org.springframework.stereotype.Service;
+
+import java.time.LocalDateTime;
+
+
+@Service
+@RequiredArgsConstructor
+public class AdminService {
+    private final MovieRepository movieRepository;
+    private final RequestsRepository requestsRepository;
+    private final AdminRepository adminRepository;
+
+    @Transactional
+    public Movie getRequestedMovie(Long requestId) {
+        Requests request = requestsRepository.findById(requestId)
+                .orElseThrow(() -> new RuntimeException("Request not found"));
+        return request.getMovie();
+    }
+
+    @Transactional
+    public void acceptRequests(AcceptDTO acceptDTO) {
+        Long requestId = acceptDTO.getRequestId();
+        Admin admin = adminRepository.findById(acceptDTO.getAdminId())
+                .orElseThrow(() -> new RuntimeException("Admin not found"));
+        Requests requests = requestsRepository.findById(requestId)
+                .orElseThrow(() -> new RuntimeException("Movie not found"));
+        Movie movie = requests.getMovie();
+        requests.setState(State.ACCEPTED);
+        requests.setStateUpdatedAt(LocalDateTime.now());
+        requestsRepository.save(requests);
+        movie.setAdmin(admin);
+        movieRepository.save(movie);
+    }
+
+    @Transactional
+    public void declineRequest(Long requestId) {
+        Requests requests = requestsRepository.findById(requestId)
+                .orElseThrow(() -> new RuntimeException("Movie not found"));
+        Long movieId = requests.getMovie().getMovieID();
+        requests.setState(State.REJECTED);
+        requests.setMovie(null);
+        requests.setStateUpdatedAt(LocalDateTime.now());
+        requestsRepository.save(requests);
+        movieRepository.deleteById(movieId);
+    }
+}

@@ -1,9 +1,15 @@
 package org.example.backend.organization;
 
 import jakarta.transaction.Transactional;
+import org.example.backend.movie.Movie;
+import org.example.backend.movie.MovieAddDTO;
+import org.example.backend.movie.MovieRepository;
+import org.example.backend.movie.MovieService;
+import org.example.backend.requests.RequestsService;
 import org.example.backend.user.Gender;
 import org.example.backend.user.User;
 import org.example.backend.user.UserDataDTO;
+import org.example.backend.user.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -14,6 +20,10 @@ public class OrganizationService {
 
     @Autowired
     private OrganizationRepository organizationRepository;
+    @Autowired
+    private RequestsService requestsService;
+    @Autowired
+    private MovieService movieService;
 
     public Organization addOrganization(String email, String password) {
         Organization organization = Organization.builder()
@@ -37,4 +47,13 @@ public class OrganizationService {
 
         return "User data updated successfully";
     }
+
+    @Transactional
+    public Long requestMovie(MovieAddDTO movieAddDTO) {
+
+        Movie savedMovie = movieService.addMovie(movieAddDTO);
+        requestsService.addRequest(savedMovie);
+        return savedMovie.getMovieID();
+    }
+
 }

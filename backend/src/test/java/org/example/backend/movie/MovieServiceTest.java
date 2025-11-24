@@ -3,6 +3,7 @@ package org.example.backend.movie;
 import org.example.backend.admin.Admin;
 import org.example.backend.organization.Organization;
 import org.example.backend.organization.OrganizationRepository;
+import org.example.backend.organization.OrganizationService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -36,6 +37,9 @@ class MovieServiceTest {
 
     @InjectMocks
     private MovieService movieService;
+
+    @InjectMocks
+    private OrganizationService organizationService;
 
     private Movie movie1;
     private Movie movie2;
@@ -412,7 +416,7 @@ class MovieServiceTest {
         when(movieRepository.save(any(Movie.class))).thenReturn(savedMovie);
 
         // Act
-        Long resultId = movieService.addMovie(dto);
+        Long resultId = organizationService.requestMovie(dto);
 
         // Assert
         assertNotNull(resultId);

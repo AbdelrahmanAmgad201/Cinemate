@@ -2,6 +2,8 @@ package org.example.backend.organization;
 
 import org.example.backend.movie.MovieAddDTO;
 import org.example.backend.movie.MovieService;
+import org.example.backend.requests.Requests;
+import org.example.backend.requests.RequestsService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
@@ -10,6 +12,9 @@ import org.mockito.MockitoAnnotations;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
+
+import java.util.Arrays;
+import java.util.List;
 
 import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
@@ -24,6 +29,9 @@ class OrganizationControllerTest {
 
     @Mock
     private MovieService movieService;
+
+    @Mock
+    private RequestsService requestsService;
 
     @InjectMocks
     private OrganizationController organizationController;
@@ -69,12 +77,12 @@ class OrganizationControllerTest {
     }
 
     // =====================================================
-    // ✅ NEW TEST: /v1/add-movie
+    // ✅ TEST: /v1/add-movie
     // =====================================================
     @Test
     void testAddMovie() throws Exception {
 
-        when(movieService.addMovie(any(MovieAddDTO.class))).thenReturn(99L);
+        when(organizationService.requestMovie(any(MovieAddDTO.class))).thenReturn(99L);
 
         String jsonBody = """
             {
@@ -95,6 +103,26 @@ class OrganizationControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(content().string("99"));
 
-        verify(movieService, times(1)).addMovie(any(MovieAddDTO.class));
+        verify(organizationService, times(1)).requestMovie(any(MovieAddDTO.class));
+        verifyNoInteractions(movieService); // MUST NOT call movieService
+    }
+
+    // =====================================================
+    // ✅ NEW TEST: /v1/get_org_rquests
+    // =====================================================
+    @Test
+    void testGetOrgRequests() throws Exception {
+
+        List<Requests> mockList = Arrays.asList(
+                new Requests(), new Requests()
+        );
+
+        when(requestsService.getAllOrganizationRequests(10L)).thenReturn(mockList);
+
+        mockMvc.perform(post("/api/organization/v1/get_org_rquests?orgId=10"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(2));
+
+        verify(requestsService, times(1)).getAllOrganizationRequests(10L);
     }
 }
