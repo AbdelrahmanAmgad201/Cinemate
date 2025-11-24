@@ -1,5 +1,8 @@
 package org.example.backend.movieReview;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.persistence.*;
 import lombok.*;
 import org.example.backend.movie.Movie;
@@ -22,12 +25,23 @@ public class MovieReview {
     @ManyToOne
     @MapsId("movieId")
     @JoinColumn(name = "movie_id", nullable = false)
+    @JsonIgnore
     private Movie movie;
 
     @ManyToOne
     @MapsId("reviewerId")
     @JoinColumn(name = "reviewer_id", nullable = false)
+    @JsonIgnore
     private User reviewer;
+
+    @JsonProperty("reviewer")
+    public UserSummaryDTO getReviewerSummary() {
+        if (reviewer == null) return null;
+        return new UserSummaryDTO(
+                reviewer.getFirstName(),
+                reviewer.getLastName()
+        );
+    }
 
     @Column(name = "rating", nullable = false)
     private Integer rating;
