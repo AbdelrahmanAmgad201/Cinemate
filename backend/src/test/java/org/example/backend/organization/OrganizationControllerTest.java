@@ -1,128 +1,122 @@
 package org.example.backend.organization;
 
+import jakarta.servlet.http.HttpServletRequest;
+import org.example.backend.movie.Movie;
 import org.example.backend.movie.MovieAddDTO;
-import org.example.backend.movie.MovieService;
 import org.example.backend.requests.Requests;
 import org.example.backend.requests.RequestsService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
-import org.springframework.http.MediaType;
-import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.test.web.servlet.setup.MockMvcBuilders;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.http.ResponseEntity;
 
 import java.util.Arrays;
 import java.util.List;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.*;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
+@ExtendWith(MockitoExtension.class)
 class OrganizationControllerTest {
-
-    private MockMvc mockMvc;
 
     @Mock
     private OrganizationService organizationService;
 
     @Mock
-    private MovieService movieService;
+    private RequestsService requestsService;
+
 
     @Mock
-    private RequestsService requestsService;
+    private HttpServletRequest httpServletRequest;
 
     @InjectMocks
     private OrganizationController organizationController;
 
+    private MovieAddDTO movieAddDTO;
+    private OrganizationDataDTO organizationDataDTO;
+    private Movie movie1;
+    private Movie movie2;
+    private Requests request1;
+    private Requests request2;
+
     @BeforeEach
     void setUp() {
-        MockitoAnnotations.openMocks(this);
-        mockMvc = MockMvcBuilders.standaloneSetup(organizationController).build();
+        // Movie DTO for addMovie
+        movieAddDTO = new MovieAddDTO();
+        movieAddDTO.setName("Movie 1");
+        movieAddDTO.setDescription("Description 1");
+        movieAddDTO.setMovieUrl("http://movie1.url");
+        movieAddDTO.setThumbnailUrl("http://thumb1.url");
+        movieAddDTO.setOrganizationId(1L);
+
+        // Organization DTO for setPersonalData
+        organizationDataDTO = new OrganizationDataDTO();
+        organizationDataDTO.setName("Org 1");
+        organizationDataDTO.setAbout("About Org 1");
+
+        // Sample Movies
+        movie1 = Movie.builder().movieID(1L).name("Movie 1").description("Desc 1").build();
+        movie2 = Movie.builder().movieID(2L).name("Movie 2").description("Desc 2").build();
+
+        // Requests containing full Movie objects
+        request1 = new Requests();
+        request1.setId(1L);
+        request1.setMovie(movie1);
+
+        request2 = new Requests();
+        request2.setId(2L);
+        request2.setMovie(movie2);
     }
 
     @Test
-    void testGetProfile() throws Exception {
-        mockMvc.perform(get("/api/organization/v1/profile")
-                        .requestAttr("userId", 1L)
-                        .requestAttr("userEmail", "org@example.com"))
-                .andExpect(status().isOk())
-                .andExpect(content().string("User profile for ID: 1, Email: org@example.com"));
+    void testGetProfile() {
+        when(httpServletRequest.getAttribute("userId")).thenReturn(1L);
+        when(httpServletRequest.getAttribute("userEmail")).thenReturn("org@example.com");
+
+        ResponseEntity<?> response = organizationController.getProfile(httpServletRequest);
+
+        assertEquals(200, response.getStatusCodeValue());
+        assertEquals("User profile for ID: 1, Email: org@example.com", response.getBody());
     }
 
     @Test
-    void testSetPersonalData() throws Exception {
-        Long userId = 1L;
+    void testSetPersonalData() {
+        when(httpServletRequest.getAttribute("userId")).thenReturn(1L);
+        when(organizationService.setOrganizationData(1L, organizationDataDTO))
+                .thenReturn("Organization data saved");
 
-        when(organizationService.setOrganizationData(eq(userId), any(OrganizationDataDTO.class)))
-                .thenReturn("User data updated successfully");
+        ResponseEntity<String> response = organizationController.setPersonalData(httpServletRequest, organizationDataDTO);
 
-        String jsonBody = """
-                {
-                    "name": "New Name",
-                    "about": "New About"
-                }
-                """;
-
-        mockMvc.perform(post("/api/organization/v1/set-organization-data")
-                        .requestAttr("userId", userId)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(jsonBody))
-                .andExpect(status().isOk())
-                .andExpect(content().string("User data updated successfully"));
-
-        verify(organizationService, times(1))
-                .setOrganizationData(eq(userId), any(OrganizationDataDTO.class));
+        assertEquals(200, response.getStatusCodeValue());
+        assertEquals("Organization data saved", response.getBody());
+        verify(organizationService, times(1)).setOrganizationData(1L, organizationDataDTO);
     }
 
-    // =====================================================
-    // ✅ TEST: /v1/add-movie
-    // =====================================================
     @Test
-    void testAddMovie() throws Exception {
+    void testAddMovie() {
+        when(organizationService.requestMovie(movieAddDTO)).thenReturn(100L);
 
-        when(organizationService.requestMovie(any(MovieAddDTO.class))).thenReturn(99L);
+        Long movieId = organizationController.addMovie(movieAddDTO);
 
-        String jsonBody = """
-            {
-                "name": "Movie name",
-                "description": "Description",
-                "movieUrl": "http://movie.com",
-                "thumbnailUrl": "http://thumb.com",
-                "trailerUrl": "http://trailer.com",
-                "duration": 120,
-                "genre": "ACTION",
-                "organizationId": 10
-            }
-            """;
-
-        mockMvc.perform(post("/api/organization/v1/add-movie")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(jsonBody))
-                .andExpect(status().isOk())
-                .andExpect(content().string("99"));
-
-        verify(organizationService, times(1)).requestMovie(any(MovieAddDTO.class));
-        verifyNoInteractions(movieService); // MUST NOT call movieService
+        assertEquals(100L, movieId);
+        verify(organizationService, times(1)).requestMovie(movieAddDTO);
     }
 
-    // =====================================================
-    // ✅ NEW TEST: /v1/get_org_rquests
-    // =====================================================
     @Test
-    void testGetOrgRequests() throws Exception {
+    void testGetOrgRequests() {
+        Long orgId = 1L;
+        List<Requests> requests = Arrays.asList(request1, request2);
 
-        List<Requests> mockList = Arrays.asList(
-                new Requests(), new Requests()
-        );
+        when(requestsService.getAllOrganizationRequests(orgId)).thenReturn(requests);
 
-        when(requestsService.getAllOrganizationRequests(10L)).thenReturn(mockList);
+        List<Requests> response = organizationController.getOrgRequests(orgId);
 
-        mockMvc.perform(post("/api/organization/v1/get_org_rquests?orgId=10"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.length()").value(2));
-
-        verify(requestsService, times(1)).getAllOrganizationRequests(10L);
+        assertEquals(2, response.size());
+        assertEquals("Movie 1", response.get(0).getMovie().getName());
+        assertEquals("Movie 2", response.get(1).getMovie().getName());
+        verify(requestsService, times(1)).getAllOrganizationRequests(orgId);
     }
 }

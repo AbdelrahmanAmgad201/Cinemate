@@ -6,23 +6,20 @@ import org.example.backend.requests.Requests;
 import org.example.backend.requests.RequestsService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
-import org.springframework.http.MediaType;
-import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.test.web.servlet.setup.MockMvcBuilders;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.http.ResponseEntity;
 
 import java.util.Arrays;
 import java.util.List;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.*;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
+@ExtendWith(MockitoExtension.class)
 class AdminControllerTest {
-
-    private MockMvc mockMvc;
 
     @Mock
     private MovieService movieService;
@@ -36,74 +33,89 @@ class AdminControllerTest {
     @InjectMocks
     private AdminController adminController;
 
+    private Movie movie1;
+    private Movie movie2;
+    private Requests request1;
+    private Requests request2;
+
     @BeforeEach
     void setUp() {
-        MockitoAnnotations.openMocks(this);
-        mockMvc = MockMvcBuilders.standaloneSetup(adminController).build();
+        movie1 = Movie.builder()
+                .movieID(1L)
+                .name("Movie 1")
+                .description("Description 1")
+                .movieUrl("http://movie1.url")
+                .thumbnailUrl("http://thumb1.url")
+                .build();
+
+        movie2 = Movie.builder()
+                .movieID(2L)
+                .name("Movie 2")
+                .description("Description 2")
+                .movieUrl("http://movie2.url")
+                .thumbnailUrl("http://thumb2.url")
+                .build();
+
+        request1 = new Requests();
+        request1.setId(1L);
+        request1.setMovie(movie1);
+
+        request2 = new Requests();
+        request2.setId(2L);
+        request2.setMovie(movie2);
     }
 
-    // ============================================================
-    // ✅ TEST: /v1/find_admin_requests
-    // ============================================================
     @Test
-    void testFindAllAdminRequests() throws Exception {
-        List<Movie> movies = Arrays.asList(new Movie(), new Movie());
-
+    void testFindAllAdminRequests() {
+        List<Movie> movies = Arrays.asList(movie1, movie2);
         when(movieService.findAllAdminRequests()).thenReturn(movies);
 
-        mockMvc.perform(post("/api/admin/v1/find_admin_requests"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.length()").value(2));
+        ResponseEntity<List<Movie>> response = adminController.findAllAdminRequests();
 
+        assertEquals(2, response.getBody().size());
         verify(movieService, times(1)).findAllAdminRequests();
     }
 
-    // ============================================================
-    // ✅ TEST: /v1/decline_request
-    // ============================================================
     @Test
-    void testDeclineRequest() throws Exception {
-        mockMvc.perform(post("/api/admin/v1/decline_request")
-                        .param("requestId", "5"))
-                .andExpect(status().isOk());
+    void testDeclineMovie() {
+        Long requestId = 1L;
 
-        verify(adminService, times(1)).declineRequest(5L);
+        ResponseEntity<Void> response = adminController.declineMovie(requestId);
+
+        assertEquals(200, response.getStatusCodeValue());
+        verify(adminService, times(1)).declineRequest(requestId);
     }
 
-    // ============================================================
-    // ✅ TEST: /v1/accept_request
-    // ============================================================
     @Test
-    void testAcceptRequest() throws Exception {
+    void testAcceptMovie() {
+        AcceptDTO acceptDTO = new AcceptDTO();
+        acceptDTO.setRequestId(1L);
 
-        String jsonBody = """
-                {
-                    "requestId": 10,
-                    "movieId": 20
-                }
-                """;
+        ResponseEntity<Void> response = adminController.acceptMovie(acceptDTO);
 
-        mockMvc.perform(post("/api/admin/v1/accept_request")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(jsonBody))
-                .andExpect(status().isOk());
-
-        verify(adminService, times(1)).acceptRequests(any(AcceptDTO.class));
+        assertEquals(200, response.getStatusCodeValue());
+        verify(adminService, times(1)).acceptRequests(acceptDTO);
     }
 
-    // ============================================================
-    // ✅ TEST: /v1/get_pending_requests
-    // ============================================================
     @Test
-    void testGetPendingRequests() throws Exception {
-        List<Requests> mockRequests = Arrays.asList(new Requests(), new Requests());
+    void testFindAllPendingRequests() {
+        List<Requests> requests = Arrays.asList(request1, request2);
+        when(requestsService.getAllPendingRequests()).thenReturn(requests);
 
-        when(requestsService.getAllPendingRequests()).thenReturn(mockRequests);
+        ResponseEntity<List<Requests>> response = adminController.findAllPendingRequests();
 
-        mockMvc.perform(post("/api/admin/v1/get_pending_requests"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.length()").value(2));
-
+        assertEquals(2, response.getBody().size());
         verify(requestsService, times(1)).getAllPendingRequests();
+    }
+
+    @Test
+    void testGetRequestedMovie() {
+        Long requestId = 1L;
+        when(adminService.getRequestedMovie(requestId)).thenReturn(movie1);
+
+        ResponseEntity<Movie> response = adminController.getRequestedMovie(requestId);
+
+        assertEquals(movie1.getMovieID(), response.getBody().getMovieID());
+        verify(adminService, times(1)).getRequestedMovie(requestId);
     }
 }

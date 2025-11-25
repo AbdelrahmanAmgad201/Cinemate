@@ -4,7 +4,6 @@ import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.example.backend.movie.Movie;
 import org.example.backend.movie.MovieRepository;
-import org.example.backend.organization.Organization;
 import org.example.backend.requests.Requests;
 import org.example.backend.requests.RequestsRepository;
 import org.example.backend.requests.State;
