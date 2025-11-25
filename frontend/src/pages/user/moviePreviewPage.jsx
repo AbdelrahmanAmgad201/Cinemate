@@ -3,7 +3,7 @@ import { AuthContext } from "../../context/AuthContext.jsx";
 import './style/moviePreviewPage.css'
 import ReviewCard from "../../components/reviewCard.jsx";
 import { dummyReviews } from "../../data/dummyReviews";
-import { useParams, useLocation  } from "react-router-dom";
+import {useParams, useLocation, useNavigate} from "react-router-dom";
 
 
 import playIcon from "../../assets/icons/play-black.png";
@@ -13,6 +13,20 @@ import likeIcon from "../../assets/icons/like-black.png";
 import watchPartyIcon from "../../assets/icons/watch-party-black.png";
 import addIcon from "./../../assets/icons/add-white.png"
 import clockIcon from "../../assets/icons/clock-white.png";
+
+const dummyMovie = {
+    id: 1,
+    title: "Interstellar",
+    description: "A team of explorers travel through a wormhole in space in an attempt to ensure humanity's survival.",
+    poster: "https://via.placeholder.com/600x900?text=Interstellar+Poster",
+    videoUrl: "15sve8pnzi",
+    trailerUrl: "15sve8pnzi",
+    genres: ["Sci-Fi"],
+    rating: 8.6,
+    runtime: "2h 49m",
+    releaseDate: "2014-11-07"
+};
+
 
 function mapMovieBackendToFrontend(m) {
     return {
@@ -39,16 +53,18 @@ function formatRuntime(minutes) {
 export default function MoviePreviewPage() {
 
     // Movie details
-    const { movieID } = useParams();
+    // const { movieID } = useParams();
+    const movieID = 1;
     const location = useLocation();
+    const navigate = useNavigate();
     // In home-page, use as follow
     // <Link to={`/movie/${movie.id}`} state={{ movie }}>
     //     <MovieCard/>
     // </Link>
-    const [movie, setMovie] = useState(location.state?.movie ?? null);
+    // const [movie, setMovie] = useState(location.state?.movie ?? null);
+    const [movie, setMovie] = useState(dummyMovie);
     const [movieLoading, setMovieLoading] = useState(false);
     const [movieError, setMovieError] = useState(null);
-
 
 
     // Reviews and modal
@@ -95,7 +111,7 @@ export default function MoviePreviewPage() {
         setShowForm(false);
         setSubmitting(false);
 
-        await getReviews();
+        await fetchReviews();
 
     };
 
@@ -143,8 +159,6 @@ export default function MoviePreviewPage() {
             fetchingRef.current = false;
         }
 
-
-
         setReviews(dummyReviews);
     }
 
@@ -153,14 +167,6 @@ export default function MoviePreviewPage() {
         setMovieLoading(true);
         // TODO: send to backend
 
-
-    }
-
-    const handlePlay = async (e) => {
-
-    }
-
-    const handlePlayTrailer = async (e) => {
 
     }
 
@@ -220,9 +226,10 @@ export default function MoviePreviewPage() {
     }, [sentinelRef.current, page, totalPages, movieID]);
 
 
-    if (movieLoading) return <div className="loader">Loading movie...</div>;
-    if (movieError) return <div className="error">Error: {movieError}</div>;
-    if (!movie) return <div className="no-movie">No movie selected.</div>;
+    // COMMENT TO TEST
+    // if (movieLoading) return <div className="loader">Loading movie...</div>;
+    // if (movieError) return <div className="error">Error: {movieError}</div>;
+    // if (!movie) return <div className="no-movie">No movie selected.</div>;
 
     return (
         <div className="movie-preview-page">
@@ -247,13 +254,13 @@ export default function MoviePreviewPage() {
                     </div>
 
                     <div className="movie-preview-page-movie-details-middle-buttons">
-                        <button title="Play" onClick={e => handlePlay(e, movie.videoUrl)}>
+                        <button title="Play" onClick={() => navigate(`/watch/${movie.videoUrl}`, { state: { movie } })}>
                             <img src={playIcon} alt="Play" className="button-icon" />
                             Play
                             <span className="tooltip">Play movie</span>
                         </button>
 
-                        <button title="Watch Trailer" onClick={e => handlePlayTrailer(e, movie.trailerUrl)}>
+                        <button title="Watch Trailer" onClick={() => navigate(`/watch/${movie.trailerUrl}`, { state: { movie } })}>
                             <img src={trailerIcon} alt="Trailer" className="button-icon" />
                             <span className="tooltip">Watch Trailer</span>
                         </button>
@@ -290,16 +297,6 @@ export default function MoviePreviewPage() {
 
                     <div className="movie-preview-page-movie-details-right-credits">
                         <dl>
-                            {/*<dt>Directors</dt>*/}
-                            {/*<dd>James Gunn</dd>*/}
-                            {/*<dt>Writers</dt>*/}
-                            {/*<dd>James Gunn, Others</dd>*/}
-                            {/*<dt>Cast</dt>*/}
-                            {/*<dd>James Gunn, Others</dd>*/}
-                            {/*<dt>Producers</dt>*/}
-                            {/*<dd>James Gunn, Others</dd>*/}
-                            {/*<dt>Studio</dt>*/}
-                            {/*<dd>Marvel Studio</dd>*/}
                             <dt>Release Date</dt>
                             <dd>{movie.releaseDate}</dd>
                         </dl>
