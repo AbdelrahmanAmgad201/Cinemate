@@ -35,4 +35,7 @@ public class RequestsService {
     public List<Requests> getAllOrganizationRequests(Long organizationId) {
         return requestsRepository.findAllByOrganization_Id(organizationId);
     }
+    public List<Requests> getAllAdminRequests(Long adminId) {
+        return requestsRepository.findByAdmin_Id(adminId);
+    }
 }

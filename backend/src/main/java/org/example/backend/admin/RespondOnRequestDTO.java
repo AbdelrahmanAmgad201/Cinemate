@@ -1,11 +1,14 @@
 package org.example.backend.admin;
 
-import lombok.Getter;
-import lombok.Setter;
+import lombok.*;
 
+
+@Builder
 @Getter
 @Setter
-public class AcceptDTO {
+@AllArgsConstructor
+@NoArgsConstructor
+public class RespondOnRequestDTO {
     private Long requestId;
     private Long adminId;
     }

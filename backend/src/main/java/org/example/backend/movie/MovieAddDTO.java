@@ -21,4 +21,5 @@ public class MovieAddDTO {
     private Integer duration;
     private Genre genre;
     private Long organizationId;
+    private Long adminId;
 }

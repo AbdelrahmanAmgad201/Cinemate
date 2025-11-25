@@ -21,4 +21,6 @@ public interface RequestsRepository extends JpaRepository<Requests, Long> {
 
     List<Requests> findAllByState(State state);
     List<Requests> findAllByOrganization_Id(Long id);
+
+    List<Requests> findByAdmin_Id(Long id);
 }

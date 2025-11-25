@@ -27,6 +27,8 @@ public class Requests {
     @Enumerated(EnumType.STRING)
     @Column(name = "state")
     private State state;
+    @Column (name = "admin_id")
+    private Long adminId;
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "organization_id", nullable = false)
     private Organization organization;

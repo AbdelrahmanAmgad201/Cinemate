@@ -56,11 +56,6 @@ public class MovieService {
     }
 
     @Transactional
-    public List<Movie> findAllAdminRequests(){
-        return  movieRepository.findByAdminIsNull();
-    }
-
-    @Transactional
     public Movie getMovie(Long id){
         return movieRepository.findById(id).orElseThrow(() -> new RuntimeException("Movie not found"));
     }
