@@ -72,14 +72,11 @@ class AdminServiceTest {
     // -----------------------------------------------------
     @Test
     void testAcceptRequests() {
-        RespondOnRequestDTO dto = new RespondOnRequestDTO();
-        dto.setRequestId(1L);
-        dto.setAdminId(5L);
 
         when(adminRepository.findById(5L)).thenReturn(Optional.of(admin));
         when(requestsRepository.findById(1L)).thenReturn(Optional.of(request));
 
-        adminService.acceptRequests(dto);
+        adminService.acceptRequests(5L,1L);
 
         assertEquals(State.ACCEPTED, request.getState());
         assertNotNull(request.getStateUpdatedAt());
@@ -105,12 +102,7 @@ class AdminServiceTest {
 
         when(adminRepository.findById(1L)).thenReturn(Optional.of(admin));
 
-        RespondOnRequestDTO respondOnRequestDTO = RespondOnRequestDTO.builder()
-                .adminId(1L)
-                .requestId(1L)
-                .build();
-
-        adminService.declineRequest(respondOnRequestDTO);
+        adminService.declineRequest(1L,1L);
 
         assertEquals(State.REJECTED, request.getState());
         assertNull(request.getMovie());

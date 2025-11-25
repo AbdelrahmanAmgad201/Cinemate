@@ -22,7 +22,6 @@ import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -382,13 +381,12 @@ class MovieServiceTest {
     void testAddMovie_OrganizationNotFound() {
         // Arrange
         MovieAddDTO dto = new MovieAddDTO();
-        dto.setOrganizationId(99L); // Nonexistent
 
         when(organizationRepository.findById(99L)).thenReturn(java.util.Optional.empty());
 
         // Act & Assert
         RuntimeException exception = assertThrows(RuntimeException.class, () -> {
-            movieService.addMovie(dto);
+            movieService.addMovie(99L,dto);
         });
 
         assertEquals("Organization not found", exception.getMessage());

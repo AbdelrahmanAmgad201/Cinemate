@@ -17,8 +17,6 @@ import static org.mockito.Mockito.*;
 @ExtendWith(MockitoExtension.class)
 class OrganizationServiceTest {
 
-    @Mock
-    private OrganizationRepository organizationRepository;
 
     @Mock
     private RequestsService requestsService;
@@ -36,7 +34,6 @@ class OrganizationServiceTest {
     void setUp() {
         movieAddDTO = new MovieAddDTO();
         movieAddDTO.setName("Test Movie");
-        movieAddDTO.setOrganizationId(1L);
 
         savedMovie = Movie.builder()
                 .movieID(10L)
@@ -48,16 +45,16 @@ class OrganizationServiceTest {
     void testRequestMovie() {
 
         // Mock: when movieService.addMovie() is called -> return savedMovie
-        when(movieService.addMovie(movieAddDTO)).thenReturn(savedMovie);
+        when(movieService.addMovie(1L,movieAddDTO)).thenReturn(savedMovie);
 
         // Execute
-        Long result = organizationService.requestMovie(movieAddDTO);
+        Long result = organizationService.requestMovie(1L,movieAddDTO);
 
         // Assertions
         assertEquals(10L, result);
 
         // Verify calls
-        verify(movieService, times(1)).addMovie(movieAddDTO);
+        verify(movieService, times(1)).addMovie(1L,movieAddDTO);
         verify(requestsService, times(1)).addRequest(savedMovie);
         verifyNoMoreInteractions(movieService, requestsService);
     }

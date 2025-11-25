@@ -50,9 +50,9 @@ public class OrganizationService {
     }
 
     @Transactional
-    public Long requestMovie(MovieAddDTO movieAddDTO) {
+    public Long requestMovie(Long orgId,MovieAddDTO movieAddDTO) {
 
-        Movie savedMovie = movieService.addMovie(movieAddDTO);
+        Movie savedMovie = movieService.addMovie(orgId,movieAddDTO);
         requestsService.addRequest(savedMovie);
         return savedMovie.getMovieID();
     }

@@ -1,5 +1,6 @@
 package org.example.backend.admin;
 
+import jakarta.servlet.http.HttpServletRequest;
 import org.example.backend.movie.Movie;
 import org.example.backend.movie.MovieService;
 import org.example.backend.requests.Requests;
@@ -29,6 +30,9 @@ class AdminControllerTest {
 
     @Mock
     private RequestsService requestsService;
+
+    @Mock
+    private HttpServletRequest httpRequest;
 
     @InjectMocks
     private AdminController adminController;
@@ -80,7 +84,8 @@ class AdminControllerTest {
         List<Requests> requests = Arrays.asList(request1, request2);
         when(requestsService.getAllAdminRequests(adminId)).thenReturn(requests);
 
-        ResponseEntity<List<Requests>> response = adminController.findAllAdminRequests(adminId);
+
+        ResponseEntity<List<Requests>> response = adminController.findAllAdminRequests(httpRequest,adminId);
 
         assertEquals(2, response.getBody().size());
         verify(requestsService, times(1)).getAllAdminRequests(adminId);
@@ -88,28 +93,22 @@ class AdminControllerTest {
 
     @Test
     void testDeclineMovie() {
-        RespondOnRequestDTO dto = RespondOnRequestDTO.builder()
-                .adminId(1L)
-                .requestId(1L)
-                .build();
 
-        ResponseEntity<Void> response = adminController.declineMovie(dto);
+        when(httpRequest.getAttribute("userId")).thenReturn(1L);
+        ResponseEntity<Void> response = adminController.declineMovie(httpRequest,1L);
 
         assertEquals(200, response.getStatusCodeValue());
-        verify(adminService, times(1)).declineRequest(dto);
+        verify(adminService, times(1)).declineRequest(1L,1L);
     }
 
     @Test
     void testAcceptMovie() {
-        RespondOnRequestDTO dto = RespondOnRequestDTO.builder()
-                .adminId(1L)
-                .requestId(1L)
-                .build();
 
-        ResponseEntity<Void> response = adminController.acceptMovie(dto);
+        when(httpRequest.getAttribute("userId")).thenReturn(1L);
+        ResponseEntity<Void> response = adminController.acceptMovie(httpRequest,1L);
 
         assertEquals(200, response.getStatusCodeValue());
-        verify(adminService, times(1)).acceptRequests(dto);
+        verify(adminService, times(1)).acceptRequests(1L,1L);
     }
 
     @Test
@@ -117,7 +116,7 @@ class AdminControllerTest {
         List<Requests> requests = Arrays.asList(request1, request2);
         when(requestsService.getAllPendingRequests()).thenReturn(requests);
 
-        ResponseEntity<List<Requests>> response = adminController.findAllPendingRequests();
+        ResponseEntity<List<Requests>> response = adminController.findAllPendingRequests(httpRequest);
 
         assertEquals(2, response.getBody().size());
         verify(requestsService, times(1)).getAllPendingRequests();
@@ -129,7 +128,7 @@ class AdminControllerTest {
 
         when(adminService.getRequestedMovie(requestId)).thenReturn(movie1);
 
-        ResponseEntity<Movie> response = adminController.getRequestedMovie(requestId);
+        ResponseEntity<Movie> response = adminController.getRequestedMovie(httpRequest,requestId);
 
         assertEquals(movie1, response.getBody());
         verify(adminService, times(1)).getRequestedMovie(requestId);

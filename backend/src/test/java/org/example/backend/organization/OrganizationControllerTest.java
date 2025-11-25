@@ -50,7 +50,6 @@ class OrganizationControllerTest {
         movieAddDTO.setDescription("Description 1");
         movieAddDTO.setMovieUrl("http://movie1.url");
         movieAddDTO.setThumbnailUrl("http://thumb1.url");
-        movieAddDTO.setOrganizationId(1L);
 
         // Organization DTO for setPersonalData
         organizationDataDTO = new OrganizationDataDTO();
@@ -97,12 +96,13 @@ class OrganizationControllerTest {
 
     @Test
     void testAddMovie() {
-        when(organizationService.requestMovie(movieAddDTO)).thenReturn(100L);
-
-        Long movieId = organizationController.addMovie(movieAddDTO);
+        when(httpServletRequest.getAttribute("userId")).thenReturn(1L);
+        when(organizationService.requestMovie(1L, movieAddDTO))
+                .thenReturn(100L);
+        Long movieId = organizationController.addMovie(httpServletRequest,movieAddDTO);
 
         assertEquals(100L, movieId);
-        verify(organizationService, times(1)).requestMovie(movieAddDTO);
+        verify(organizationService, times(1)).requestMovie(1L,movieAddDTO);
     }
 
     @Test
@@ -110,9 +110,10 @@ class OrganizationControllerTest {
         Long orgId = 1L;
         List<Requests> requests = Arrays.asList(request1, request2);
 
+        when(httpServletRequest.getAttribute("userId")).thenReturn(1L);
         when(requestsService.getAllOrganizationRequests(orgId)).thenReturn(requests);
 
-        List<Requests> response = organizationController.getOrgRequests(orgId);
+        List<Requests> response = organizationController.getOrgRequests(httpServletRequest);
 
         assertEquals(2, response.size());
         assertEquals("Movie 1", response.get(0).getMovie().getName());

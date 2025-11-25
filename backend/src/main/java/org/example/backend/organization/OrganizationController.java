@@ -20,10 +20,6 @@ public class OrganizationController {
     @Autowired
     private OrganizationService organizationService;
     @Autowired
-    private MovieService movieService;
-    @Autowired
-    private RequestsRepository requestsRepository;
-    @Autowired
     private RequestsService requestsService;
 
     @GetMapping("/v1/profile")
@@ -47,12 +43,14 @@ public class OrganizationController {
     }
 
     @PostMapping("/v1/add-movie")
-    public Long addMovie(@RequestBody MovieAddDTO movieAddDTO) {
-        return organizationService.requestMovie(movieAddDTO);
+    public Long addMovie(HttpServletRequest request,@RequestBody MovieAddDTO movieAddDTO) {
+        Long userId = (Long) request.getAttribute("userId");
+        return organizationService.requestMovie(userId,movieAddDTO);
     }
 
     @PostMapping("/v1/get_org_rquests")
-    public List<Requests> getOrgRequests(@RequestParam Long orgId) {
+    public List<Requests> getOrgRequests(HttpServletRequest request) {
+        Long orgId = (Long) request.getAttribute("userId");
         return requestsService.getAllOrganizationRequests(orgId);
     }
 

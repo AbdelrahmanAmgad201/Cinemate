@@ -27,9 +27,8 @@ public class AdminService {
     }
 
     @Transactional
-    public void acceptRequests(RespondOnRequestDTO respondOnRequestDTO) {
-        Long requestId = respondOnRequestDTO.getRequestId();
-        Admin admin = adminRepository.findById(respondOnRequestDTO.getAdminId())
+    public void acceptRequests(Long adminId,Long requestId) {
+        Admin admin = adminRepository.findById(adminId)
                 .orElseThrow(() -> new RuntimeException("Admin not found"));
         Requests requests = requestsRepository.findById(requestId)
                 .orElseThrow(() -> new RuntimeException("Movie not found"));
@@ -43,10 +42,10 @@ public class AdminService {
     }
 
     @Transactional
-    public void declineRequest(RespondOnRequestDTO respondOnRequestDTO) {
-        Requests requests = requestsRepository.findById(respondOnRequestDTO.getRequestId())
+    public void declineRequest(Long adminId,Long requestId) {
+        Requests requests = requestsRepository.findById(requestId)
                 .orElseThrow(() -> new RuntimeException("Movie not found"));
-        Admin admin = adminRepository.findById(respondOnRequestDTO.getAdminId())
+        Admin admin = adminRepository.findById(adminId)
                 .orElseThrow(() -> new RuntimeException("Admin not found"));
         Long movieId = requests.getMovie().getMovieID();
         requests.setState(State.REJECTED);

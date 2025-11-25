@@ -36,9 +36,9 @@ public class MovieService {
     }
 
     @Transactional
-    public Movie addMovie(MovieAddDTO movieAddDTO) {
+    public Movie addMovie(Long orgId,MovieAddDTO movieAddDTO) {
 
-        Organization organization = organizationRepository.findById(movieAddDTO.getOrganizationId())
+        Organization organization = organizationRepository.findById(orgId)
                 .orElseThrow(() -> new RuntimeException("Organization not found"));
 
         Movie movie = Movie.builder()

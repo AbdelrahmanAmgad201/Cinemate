@@ -1,5 +1,6 @@
 package org.example.backend.admin;
 
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.example.backend.movie.Movie;
 import org.example.backend.requests.Requests;
@@ -19,29 +20,31 @@ public class AdminController {
     private final RequestsService requestsService;
 
     @PostMapping("/v1/find_admin_requests")
-    public ResponseEntity<List<Requests>> findAllAdminRequests(@RequestParam Long adminId) {
+    public ResponseEntity<List<Requests>> findAllAdminRequests(HttpServletRequest request,@RequestParam Long adminId) {
         return ResponseEntity.ok(requestsService.getAllAdminRequests(adminId));
     }
 
     @PostMapping("/v1/decline_request")
-    public ResponseEntity<Void> declineMovie(@RequestBody RespondOnRequestDTO respondOnRequestDTO) {
-        adminService.declineRequest(respondOnRequestDTO);
+    public ResponseEntity<Void> declineMovie(HttpServletRequest request,@RequestParam Long requestId) {
+        Long userId = (Long) request.getAttribute("userId");
+        adminService.declineRequest(userId,requestId);
         return ResponseEntity.ok().build();
     }
 
     @PostMapping("/v1/accept_request")
-    public ResponseEntity<Void> acceptMovie(@RequestBody RespondOnRequestDTO respondOnRequestDTO) {
-        adminService.acceptRequests(respondOnRequestDTO);
+    public ResponseEntity<Void> acceptMovie(HttpServletRequest request, @RequestParam Long requestId) {
+        Long userId = (Long) request.getAttribute("userId");
+        adminService.acceptRequests(userId,requestId);
         return ResponseEntity.ok().build();
     }
 
     @PostMapping("/v1/get_pending_requests")
-    public ResponseEntity<List<Requests>> findAllPendingRequests() {
+    public ResponseEntity<List<Requests>> findAllPendingRequests(HttpServletRequest request) {
         return ResponseEntity.ok(requestsService.getAllPendingRequests());
     }
 
     @PostMapping("/v1/get_requested_movie")
-    public ResponseEntity<Movie> getRequestedMovie(@RequestParam Long requestId) {
+    public ResponseEntity<Movie> getRequestedMovie(HttpServletRequest request,@RequestParam Long requestId) {
         return ResponseEntity.ok(adminService.getRequestedMovie(requestId));
     }
 }
