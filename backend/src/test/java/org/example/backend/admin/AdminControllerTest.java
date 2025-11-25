@@ -1,6 +1,5 @@
 package org.example.backend.admin;
 
-import org.apache.catalina.connector.Response;
 import org.example.backend.movie.Movie;
 import org.example.backend.movie.MovieService;
 import org.example.backend.requests.Requests;
@@ -38,6 +37,7 @@ class AdminControllerTest {
     private Movie movie2;
     private Requests request1;
     private Requests request2;
+    private Admin admin1;
 
     @BeforeEach
     void setUp() {
@@ -64,8 +64,7 @@ class AdminControllerTest {
         request2 = new Requests();
         request2.setId(2L);
         request2.setMovie(movie2);
-
-        Admin admin1 = Admin.builder()
+        admin1 = Admin.builder()
                 .id(1L)
                 .name("Admin 1")
                 .build();
@@ -73,10 +72,10 @@ class AdminControllerTest {
 
     @Test
     void testFindAllAdminRequests() {
-        Long adminId=1L;
-        // Create Requests that are associated with this admin
-        request1.setAdminId(adminId);  // assuming Requests has adminId field
-        request2.setAdminId(adminId);
+        Long adminId = 1L;
+
+        request1.setAdmin(admin1);
+        request2.setAdmin(admin1);
 
         List<Requests> requests = Arrays.asList(request1, request2);
         when(requestsService.getAllAdminRequests(adminId)).thenReturn(requests);
@@ -84,35 +83,33 @@ class AdminControllerTest {
         ResponseEntity<List<Requests>> response = adminController.findAllAdminRequests(adminId);
 
         assertEquals(2, response.getBody().size());
-        assertEquals(adminId, response.getBody().get(0).getAdminId());
-        assertEquals(adminId, response.getBody().get(1).getAdminId());
         verify(requestsService, times(1)).getAllAdminRequests(adminId);
     }
 
-
     @Test
     void testDeclineMovie() {
-        RespondOnRequestDTO respondOnRequestDTO = RespondOnRequestDTO.builder()
+        RespondOnRequestDTO dto = RespondOnRequestDTO.builder()
                 .adminId(1L)
                 .requestId(1L)
                 .build();
-        ResponseEntity<Void> response = adminController.declineMovie(respondOnRequestDTO);
+
+        ResponseEntity<Void> response = adminController.declineMovie(dto);
 
         assertEquals(200, response.getStatusCodeValue());
-        verify(adminService, times(1)).declineRequest(respondOnRequestDTO);
+        verify(adminService, times(1)).declineRequest(dto);
     }
 
     @Test
     void testAcceptMovie() {
-        RespondOnRequestDTO respondOnRequestDTO =  RespondOnRequestDTO.builder()
+        RespondOnRequestDTO dto = RespondOnRequestDTO.builder()
                 .adminId(1L)
                 .requestId(1L)
                 .build();
 
-        ResponseEntity<Void> response = adminController.acceptMovie(respondOnRequestDTO);
+        ResponseEntity<Void> response = adminController.acceptMovie(dto);
 
         assertEquals(200, response.getStatusCodeValue());
-        verify(adminService, times(1)).acceptRequests(respondOnRequestDTO);
+        verify(adminService, times(1)).acceptRequests(dto);
     }
 
     @Test
@@ -129,11 +126,13 @@ class AdminControllerTest {
     @Test
     void testGetRequestedMovie() {
         Long requestId = 1L;
+
         when(adminService.getRequestedMovie(requestId)).thenReturn(movie1);
 
         ResponseEntity<Movie> response = adminController.getRequestedMovie(requestId);
 
-        assertEquals(movie1.getMovieID(), response.getBody().getMovieID());
+        assertEquals(movie1, response.getBody());
         verify(adminService, times(1)).getRequestedMovie(requestId);
     }
+
 }

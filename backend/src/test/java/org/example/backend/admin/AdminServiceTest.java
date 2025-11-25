@@ -97,7 +97,15 @@ class AdminServiceTest {
     @Test
     void testDeclineRequest() {
         when(requestsRepository.findById(1L)).thenReturn(Optional.of(request));
-        RespondOnRequestDTO respondOnRequestDTO =RespondOnRequestDTO.builder()
+
+        Admin admin = Admin.builder()
+                .id(1L)
+                .name("Test Admin")
+                .build();
+
+        when(adminRepository.findById(1L)).thenReturn(Optional.of(admin));
+
+        RespondOnRequestDTO respondOnRequestDTO = RespondOnRequestDTO.builder()
                 .adminId(1L)
                 .requestId(1L)
                 .build();
@@ -111,4 +119,5 @@ class AdminServiceTest {
         verify(requestsRepository).save(request);
         verify(movieRepository).deleteById(10L);
     }
+
 }

@@ -2,6 +2,7 @@ package org.example.backend.requests;
 
 import jakarta.persistence.*;
 import lombok.*;
+import org.example.backend.admin.Admin;
 import org.example.backend.movie.Movie;
 import org.example.backend.organization.Organization;
 
@@ -27,8 +28,9 @@ public class Requests {
     @Enumerated(EnumType.STRING)
     @Column(name = "state")
     private State state;
-    @Column (name = "admin_id")
-    private Long adminId;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "admin_id")
+    private Admin admin;
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "organization_id", nullable = false)
     private Organization organization;
