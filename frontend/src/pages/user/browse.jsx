@@ -1,16 +1,13 @@
 import React from 'react';
-import Slider from '../../components/Carousel';
 import NavBar from '../../components/NavBar';
 
-const HomePage = () => {
+export default function Browse() {
     return (
         <div>
             <NavBar />
             <h1>
-                Home Page
+                Browse Page
             </h1>
         </div>
     );
-};
-
-export default HomePage;
+}
