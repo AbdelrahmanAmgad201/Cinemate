@@ -50,6 +50,10 @@ public class SecurityConfig {
                 .requestMatchers("/api/user/**").hasAuthority("ROLE_USER")
                 .requestMatchers("/api/movie/**").hasAuthority("ROLE_USER")
                 .requestMatchers("/api/movie-review/**").hasAuthority("ROLE_USER")
+                .requestMatchers("/api/watch-history/**").hasAuthority("ROLE_USER")
+                .requestMatchers("/api/liked-movie/**").hasAuthority("ROLE_USER")
+                .requestMatchers("/api/watch-later/**").hasAuthority("ROLE_USER")
+
                 .anyRequest().authenticated()
         )
         .oauth2Login(oauth2 -> oauth2

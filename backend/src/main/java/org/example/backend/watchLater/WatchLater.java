@@ -1,5 +1,6 @@
 package org.example.backend.watchLater;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.*;
 import org.example.backend.movie.Movie;
@@ -22,11 +23,13 @@ public class WatchLater {
     @ManyToOne
     @MapsId("id")
     @JoinColumn(name = "user_id")
+    @JsonIgnore
     private User user;
 
     @ManyToOne
     @MapsId("movieId")
     @JoinColumn(name = "movie_id")
+    @JsonIgnore
     private Movie movie;
 
     @Column(name = "date")

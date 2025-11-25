@@ -1,5 +1,6 @@
 package org.example.backend.watchHistory;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.*;
 import org.example.backend.movie.Movie;
@@ -23,10 +24,12 @@ public class WatchHistory {
 
     @ManyToOne
     @JoinColumn(name = "user_id", nullable = false)
+    @JsonIgnore
     private User user;
 
     @ManyToOne
     @JoinColumn(name = "movie_id", nullable = false)
+    @JsonIgnore
     private Movie movie;
 
     @Column(name = "watched_at", nullable = false, updatable = false)
