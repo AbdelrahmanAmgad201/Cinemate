@@ -25,6 +25,7 @@ public class OrganizationService {
     @Autowired
     private MovieService movieService;
 
+    @Transactional
     public Organization addOrganization(String email, String password) {
         Organization organization = Organization.builder()
                 .email(email)
