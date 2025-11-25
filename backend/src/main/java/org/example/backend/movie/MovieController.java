@@ -24,5 +24,14 @@ public class MovieController {
         return ResponseEntity.ok(movies);
     }
 
+    @PostMapping("/v1/get_specepic_movie")
+    public ResponseEntity<Movie> getSpecePicMovie(
+            HttpServletRequest request,
+            @RequestParam Long movieId
+    ){
+        Movie movie = movieService.getMovie(movieId);
+        return ResponseEntity.ok(movie);
+    }
+
 
 }
