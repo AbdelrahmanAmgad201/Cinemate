@@ -27,7 +27,7 @@ public class Organization implements Authenticatable {
     @Column(name = "name", nullable = false)
     private String name;
 
-    @Column(name = "email", unique = true, nullable = false)
+    @Column(name = "email", unique = true)
     private String email;
 
     @Column(name = "password", nullable = false)

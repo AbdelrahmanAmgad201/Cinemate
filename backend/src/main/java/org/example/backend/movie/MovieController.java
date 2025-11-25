@@ -1,12 +1,9 @@
 package org.example.backend.movie;
 
 import jakarta.servlet.http.HttpServletRequest;
-import org.example.backend.user.UserDataDTO;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -24,8 +21,8 @@ public class MovieController {
         return ResponseEntity.ok(movies);
     }
 
-    @PostMapping("/v1/get_specepic_movie")
-    public ResponseEntity<Movie> getSpecePicMovie(
+    @PostMapping("/v1/get_specific_movie")
+    public ResponseEntity<Movie> getSpecificPicMovie(
             HttpServletRequest request,
             @RequestParam Long movieId
     ){

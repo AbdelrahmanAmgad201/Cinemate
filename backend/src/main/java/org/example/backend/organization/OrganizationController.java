@@ -48,7 +48,7 @@ public class OrganizationController {
         return organizationService.requestMovie(userId,movieAddDTO);
     }
 
-    @PostMapping("/v1/get_org_rquests")
+    @PostMapping("/v1/get-all-organization-requests")
     public List<Requests> getOrgRequests(HttpServletRequest request) {
         Long orgId = (Long) request.getAttribute("userId");
         return requestsService.getAllOrganizationRequests(orgId);

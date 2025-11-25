@@ -30,7 +30,6 @@ public class OrganizationService {
         Organization organization = Organization.builder()
                 .email(email)
                 .password(password)
-                .name("Test Organization")
                 .build();
         return organizationRepository.save(organization);
     }
