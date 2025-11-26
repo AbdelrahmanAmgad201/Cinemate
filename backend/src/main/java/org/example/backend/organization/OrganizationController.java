@@ -4,6 +4,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import org.example.backend.movie.Movie;
 import org.example.backend.movie.MovieAddDTO;
 import org.example.backend.movie.MovieService;
+import org.example.backend.movie.OneMovieOverView;
 import org.example.backend.requests.Requests;
 import org.example.backend.requests.RequestsService;
 import org.springframework.beans.factory.annotation.Autowired;

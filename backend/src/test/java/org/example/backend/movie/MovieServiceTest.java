@@ -1,7 +1,6 @@
 package org.example.backend.movie;
 
 import org.example.backend.organization.MoviesOverview;
-import org.example.backend.organization.OneMovieOverView;
 import org.example.backend.organization.Organization;
 import org.example.backend.organization.OrganizationRepository;
 import org.example.backend.requests.RequestsRepository;
@@ -10,12 +9,10 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.*;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 
