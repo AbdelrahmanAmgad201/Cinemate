@@ -1,27 +1,25 @@
 package org.example.backend.movie;
 
-import org.example.backend.admin.Admin;
+import org.example.backend.organization.MoviesOverview;
+import org.example.backend.organization.OneMovieOverView;
 import org.example.backend.organization.Organization;
 import org.example.backend.organization.OrganizationRepository;
+import org.example.backend.requests.RequestsRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageImpl;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.jpa.domain.Specification;
+import org.springframework.data.domain.*;
 
-import java.time.LocalDate;
-import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -33,365 +31,206 @@ class MovieServiceTest {
     @Mock
     private OrganizationRepository organizationRepository;
 
+    @Mock
+    private RequestsRepository requestsRepository;
+
     @InjectMocks
     private MovieService movieService;
 
-
-    private Movie movie1;
-    private Movie movie2;
-    private Movie movie3;
     private Organization organization;
-    private Admin admin;
+    private Movie movie;
+    private MovieAddDTO movieAddDTO;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         organization = Organization.builder()
                 .id(1L)
-                .name("Warner Bros")
-                .email("warner@example.com")
-                .password("password")
-                .createdAt(LocalDateTime.now())
+                .email("org@test.com")
+                .name("Test Org")
                 .build();
 
-        admin = Admin.builder()
-                .id(1L)
-                .name("Admin User")
-                .email("admin@example.com")
-                .password("password")
-                .build();
-
-        movie1 = Movie.builder()
-                .movieID(1L)
-                .name("The Dark Knight")
-                .description("Batman fights the Joker")
+        movie = Movie.builder()
+                .movieID(10L)
+                .name("Test Movie")
                 .genre(Genre.ACTION)
-                .releaseDate(LocalDate.of(2008, 7, 18))
-                .duration(152)
-                .ratingSum(450L)
-                .ratingCount(100)
-                .averageRating(4.5)
                 .organization(organization)
-                .admin(admin)
                 .build();
 
-        movie2 = Movie.builder()
-                .movieID(2L)
-                .name("Inception")
-                .description("Dream within a dream")
-                .genre(Genre.SCIFI)
-                .releaseDate(LocalDate.of(2010, 7, 16))
-                .duration(148)
-                .ratingSum(480L)
-                .ratingCount(100)
-                .averageRating(4.8)
-                .organization(organization)
-                .admin(admin)
-                .build();
-
-        movie3 = Movie.builder()
-                .movieID(3L)
-                .name("The Conjuring")
-                .description("Horror story")
-                .genre(Genre.HORROR)
-                .releaseDate(LocalDate.of(2013, 7, 19))
-                .duration(112)
-                .ratingSum(400L)
-                .ratingCount(100)
-                .averageRating(4.0)
-                .organization(organization)
-                .admin(admin)
+        movieAddDTO = MovieAddDTO.builder()
+                .name("Test Movie")
+                .description("desc")
+                .thumbnailUrl("thumb")
+                .movieUrl("video")
+                .trailerUrl("trailer")
+                .duration(100)
+                .genre(Genre.ACTION)
                 .build();
     }
 
+    // -------------------------------------------------------------------
+    // TEST getMovies()
+    // -------------------------------------------------------------------
     @Test
-    void testGetMovies_WithAllFilters() {
-        // Arrange
-        MovieRequestDTO requestDTO = new MovieRequestDTO(
-                "dark",
-                Genre.ACTION,
-                "rating",
-                "desc",
-                0,
-                10
-        );
+    void testGetMovies() {
+        MovieRequestDTO req = new MovieRequestDTO();
+        req.setPage(0);
+        req.setPageSize(5);
 
-        List<Movie> movieList = Arrays.asList(movie1);
-        Page<Movie> moviePage = new PageImpl<>(movieList, PageRequest.of(0, 10), movieList.size());
+        List<Movie> movieList = List.of(movie);
+        Page<Movie> moviePage = new PageImpl<>(movieList);
 
-        when(movieRepository.findAll(any(Specification.class), any(Pageable.class)))
+        when(movieRepository.findAllByAdminIsNotNull(any(), any(Pageable.class)))
                 .thenReturn(moviePage);
 
-        // Act
-        Page<Movie> result = movieService.getMovies(requestDTO);
+        Page<Movie> result = movieService.getMovies(req);
 
-        // Assert
-        assertNotNull(result);
         assertEquals(1, result.getTotalElements());
-        assertEquals("The Dark Knight", result.getContent().get(0).getName());
-        verify(movieRepository, times(1)).findAll(any(Specification.class), any(Pageable.class));
+        verify(movieRepository, times(1))
+                .findAllByAdminIsNotNull(any(), any(Pageable.class));
+    }
+
+    // -------------------------------------------------------------------
+    // TEST addMovie()
+    // -------------------------------------------------------------------
+    @Test
+    void testAddMovie() {
+        when(organizationRepository.findById(1L)).thenReturn(Optional.of(organization));
+        when(movieRepository.save(any(Movie.class))).thenReturn(movie);
+
+        Movie result = movieService.addMovie(1L, movieAddDTO);
+
+        assertNotNull(result);
+        assertEquals("Test Movie", result.getName());
+        verify(movieRepository).save(any(Movie.class));
     }
 
     @Test
-    void testGetMovies_WithNameFilterOnly() {
-        // Arrange
-        MovieRequestDTO requestDTO = new MovieRequestDTO(
-                "inception",
-                null,
-                null,
-                null,
-                0,
-                10
+    void testAddMovie_OrgNotFound() {
+        when(organizationRepository.findById(1L)).thenReturn(Optional.empty());
+
+        assertThrows(RuntimeException.class,
+                () -> movieService.addMovie(1L, movieAddDTO));
+    }
+
+    // -------------------------------------------------------------------
+    // TEST getMovie()
+    // -------------------------------------------------------------------
+    @Test
+    void testGetMovie() {
+        when(movieRepository.findById(10L)).thenReturn(Optional.of(movie));
+
+        Movie result = movieService.getMovie(10L);
+
+        assertEquals(10L, result.getMovieID());
+        verify(movieRepository).findById(10L);
+    }
+
+    @Test
+    void testGetMovie_NotFound() {
+        when(movieRepository.findById(10L)).thenReturn(Optional.empty());
+
+        assertThrows(RuntimeException.class, () -> movieService.getMovie(10L));
+    }
+
+    // -------------------------------------------------------------------
+    // TEST getMoviesOverview()
+    // -------------------------------------------------------------------
+    @Test
+    void testGetMoviesOverview() {
+        // 5 movies, 100 views
+        Object[] countViewObj = new Object[]{5L, 100L};
+
+        // Most popular genres (List<Object[]>)
+        List<Object[]> genres = new ArrayList<>();
+        genres.add(new Object[]{Genre.ACTION, 50L});
+
+        when(movieRepository.getMovieCountAndTotalViews(1L))
+                .thenReturn(countViewObj);
+
+        when(movieRepository.getGenresOrderedByViews(1L))
+                .thenReturn(genres);
+
+        MoviesOverview overview = movieService.getMoviesOverview(1L);
+
+        assertEquals(5L, overview.getNumberOfMovies());
+        assertEquals(100L, overview.getTotalViewsAcrossAllMovies());
+        assertEquals(Genre.ACTION, overview.getMostPopularGenre());
+    }
+
+
+
+
+    @Test
+    void testGetMoviesOverview_NoGenres() {
+        Object[] countViewsObj = new Object[]{3L, 20L};
+
+        when(movieRepository.getMovieCountAndTotalViews(1L)).thenReturn(countViewsObj);
+        when(movieRepository.getGenresOrderedByViews(1L)).thenReturn(List.of());
+
+        MoviesOverview overview = movieService.getMoviesOverview(1L);
+
+        assertNull(overview.getMostPopularGenre());
+    }
+
+    // -------------------------------------------------------------------
+    // TEST getOrganizationMovies()
+    // -------------------------------------------------------------------
+    @Test
+    void testGetOrganizationMovies() {
+        when(movieRepository.findByAdminIsNotNullAndOrganization_Id(1L))
+                .thenReturn(List.of(movie));
+
+        List<Movie> result = movieService.getOrganizationMovies(1L);
+
+        assertEquals(1, result.size());
+        verify(movieRepository).findByAdminIsNotNullAndOrganization_Id(1L);
+    }
+
+    // -------------------------------------------------------------------
+    // TEST getMovieStatsByMovieId()
+    // -------------------------------------------------------------------
+    @Test
+    void testGetMovieStatsByMovieId() {
+        OneMovieOverView overview = new OneMovieOverView(
+                100L, 50L, 30L, 30L, 4.5, 20L
         );
 
-        List<Movie> movieList = Arrays.asList(movie2);
-        Page<Movie> moviePage = new PageImpl<>(movieList, PageRequest.of(0, 10), movieList.size());
+        when(movieRepository.getMovieOverview(10L)).thenReturn(overview);
 
-        when(movieRepository.findAll(any(Specification.class), any(Pageable.class)))
-                .thenReturn(moviePage);
+        OneMovieOverView result = movieService.getMovieStatsByMovieId(10L);
 
-        // Act
-        Page<Movie> result = movieService.getMovies(requestDTO);
+        assertEquals(100, result.getViews());
+        assertEquals(20, result.getNumberOfWatchLaters());
+    }
 
-        // Assert
-        assertNotNull(result);
-        assertEquals(1, result.getTotalElements());
-        assertEquals("Inception", result.getContent().get(0).getName());
-        verify(movieRepository, times(1)).findAll(any(Specification.class), any(Pageable.class));
+    // -------------------------------------------------------------------
+    // TEST OrganizationOwnMovie()
+    // -------------------------------------------------------------------
+    @Test
+    void testOrganizationOwnMovie_True() {
+        when(movieRepository.findById(10L)).thenReturn(Optional.of(movie));
+
+        boolean result = movieService.OrganizationOwnMovie(1L, 10L);
+
+        assertTrue(result);
     }
 
     @Test
-    void testGetMovies_WithGenreFilterOnly() {
-        // Arrange
-        MovieRequestDTO requestDTO = new MovieRequestDTO(
-                null,
-                Genre.HORROR,
-                null,
-                null,
-                0,
-                10
-        );
+    void testOrganizationOwnMovie_False() {
+        Organization otherOrg = Organization.builder().id(2L).build();
+        Movie otherMovie = Movie.builder().movieID(10L).organization(otherOrg).build();
 
-        List<Movie> movieList = Arrays.asList(movie3);
-        Page<Movie> moviePage = new PageImpl<>(movieList, PageRequest.of(0, 10), movieList.size());
+        when(movieRepository.findById(10L)).thenReturn(Optional.of(otherMovie));
 
-        when(movieRepository.findAll(any(Specification.class), any(Pageable.class)))
-                .thenReturn(moviePage);
-
-        // Act
-        Page<Movie> result = movieService.getMovies(requestDTO);
-
-        // Assert
-        assertNotNull(result);
-        assertEquals(1, result.getTotalElements());
-        assertEquals(Genre.HORROR, result.getContent().get(0).getGenre());
-        verify(movieRepository, times(1)).findAll(any(Specification.class), any(Pageable.class));
+        assertFalse(movieService.OrganizationOwnMovie(1L, 10L));
     }
 
     @Test
-    void testGetMovies_NoFilters() {
-        // Arrange
-        MovieRequestDTO requestDTO = new MovieRequestDTO(
-                null,
-                null,
-                null,
-                null,
-                0,
-                10
-        );
+    void testOrganizationOwnMovie_NotFound() {
+        when(movieRepository.findById(10L)).thenReturn(Optional.empty());
 
-        List<Movie> movieList = Arrays.asList(movie1, movie2, movie3);
-        Page<Movie> moviePage = new PageImpl<>(movieList, PageRequest.of(0, 10), movieList.size());
-
-        when(movieRepository.findAll(any(Specification.class), any(Pageable.class)))
-                .thenReturn(moviePage);
-
-        // Act
-        Page<Movie> result = movieService.getMovies(requestDTO);
-
-        // Assert
-        assertNotNull(result);
-        assertEquals(3, result.getTotalElements());
-        verify(movieRepository, times(1)).findAll(any(Specification.class), any(Pageable.class));
-    }
-
-    @Test
-    void testGetMovies_WithSortByRatingAscending() {
-        // Arrange
-        MovieRequestDTO requestDTO = new MovieRequestDTO(
-                null,
-                null,
-                "rating",
-                "asc",
-                0,
-                10
-        );
-
-        List<Movie> movieList = Arrays.asList(movie3, movie1, movie2);
-        Page<Movie> moviePage = new PageImpl<>(movieList, PageRequest.of(0, 10), movieList.size());
-
-        when(movieRepository.findAll(any(Specification.class), any(Pageable.class)))
-                .thenReturn(moviePage);
-
-        // Act
-        Page<Movie> result = movieService.getMovies(requestDTO);
-
-        // Assert
-        assertNotNull(result);
-        assertEquals(3, result.getTotalElements());
-        verify(movieRepository, times(1)).findAll(any(Specification.class), any(Pageable.class));
-    }
-
-    @Test
-    void testGetMovies_WithSortByReleaseDateDescending() {
-        // Arrange
-        MovieRequestDTO requestDTO = new MovieRequestDTO(
-                null,
-                null,
-                "releaseDate",
-                "desc",
-                0,
-                10
-        );
-
-        List<Movie> movieList = Arrays.asList(movie3, movie2, movie1);
-        Page<Movie> moviePage = new PageImpl<>(movieList, PageRequest.of(0, 10), movieList.size());
-
-        when(movieRepository.findAll(any(Specification.class), any(Pageable.class)))
-                .thenReturn(moviePage);
-
-        // Act
-        Page<Movie> result = movieService.getMovies(requestDTO);
-
-        // Assert
-        assertNotNull(result);
-        assertEquals(3, result.getTotalElements());
-        verify(movieRepository, times(1)).findAll(any(Specification.class), any(Pageable.class));
-    }
-
-    @Test
-    void testGetMovies_WithPagination() {
-        // Arrange
-        MovieRequestDTO requestDTO = new MovieRequestDTO(
-                null,
-                null,
-                null,
-                null,
-                1,
-                2
-        );
-
-        List<Movie> movieList = Arrays.asList(movie3);
-        Page<Movie> moviePage = new PageImpl<>(movieList, PageRequest.of(1, 2), 3);
-
-        when(movieRepository.findAll(any(Specification.class), any(Pageable.class)))
-                .thenReturn(moviePage);
-
-        // Act
-        Page<Movie> result = movieService.getMovies(requestDTO);
-
-        // Assert
-        assertNotNull(result);
-        assertEquals(1, result.getContent().size());
-        assertEquals(3, result.getTotalElements());
-        assertEquals(1, result.getNumber());
-        verify(movieRepository, times(1)).findAll(any(Specification.class), any(Pageable.class));
-    }
-
-    @Test
-    void testGetMovies_EmptyResult() {
-        // Arrange
-        MovieRequestDTO requestDTO = new MovieRequestDTO(
-                "nonexistent",
-                null,
-                null,
-                null,
-                0,
-                10
-        );
-
-        Page<Movie> moviePage = new PageImpl<>(Arrays.asList(), PageRequest.of(0, 10), 0);
-
-        when(movieRepository.findAll(any(Specification.class), any(Pageable.class)))
-                .thenReturn(moviePage);
-
-        // Act
-        Page<Movie> result = movieService.getMovies(requestDTO);
-
-        // Assert
-        assertNotNull(result);
-        assertEquals(0, result.getTotalElements());
-        assertTrue(result.getContent().isEmpty());
-        verify(movieRepository, times(1)).findAll(any(Specification.class), any(Pageable.class));
-    }
-
-    @Test
-    void testGetMovies_WithEmptyNameString() {
-        // Arrange
-        MovieRequestDTO requestDTO = new MovieRequestDTO(
-                "   ",
-                null,
-                null,
-                null,
-                0,
-                10
-        );
-
-        List<Movie> movieList = Arrays.asList(movie1, movie2, movie3);
-        Page<Movie> moviePage = new PageImpl<>(movieList, PageRequest.of(0, 10), movieList.size());
-
-        when(movieRepository.findAll(any(Specification.class), any(Pageable.class)))
-                .thenReturn(moviePage);
-
-        // Act
-        Page<Movie> result = movieService.getMovies(requestDTO);
-
-        // Assert
-        assertNotNull(result);
-        assertEquals(3, result.getTotalElements());
-        verify(movieRepository, times(1)).findAll(any(Specification.class), any(Pageable.class));
-    }
-
-    @Test
-    void testGetMovies_WithSortByName() {
-        // Arrange
-        MovieRequestDTO requestDTO = new MovieRequestDTO(
-                null,
-                null,
-                "name",
-                "asc",
-                0,
-                10
-        );
-
-        List<Movie> movieList = Arrays.asList(movie2, movie1, movie3);
-        Page<Movie> moviePage = new PageImpl<>(movieList, PageRequest.of(0, 10), movieList.size());
-
-        when(movieRepository.findAll(any(Specification.class), any(Pageable.class)))
-                .thenReturn(moviePage);
-
-        // Act
-        Page<Movie> result = movieService.getMovies(requestDTO);
-
-        // Assert
-        assertNotNull(result);
-        assertEquals(3, result.getTotalElements());
-        verify(movieRepository, times(1)).findAll(any(Specification.class), any(Pageable.class));
-    }
-    @Test
-    void testAddMovie_OrganizationNotFound() {
-        // Arrange
-        MovieAddDTO dto = new MovieAddDTO();
-
-        when(organizationRepository.findById(99L)).thenReturn(java.util.Optional.empty());
-
-        // Act & Assert
-        RuntimeException exception = assertThrows(RuntimeException.class, () -> {
-            movieService.addMovie(99L,dto);
-        });
-
-        assertEquals("Organization not found", exception.getMessage());
-        verify(organizationRepository, times(1)).findById(99L);
-        verify(movieRepository, never()).save(any(Movie.class));
+        assertThrows(RuntimeException.class,
+                () -> movieService.OrganizationOwnMovie(1L, 10L));
     }
 
 }
