@@ -38,7 +38,7 @@ export default function AppRoutes() {
                 <Route path="/admin-sign-in" element={<AdminSignIn />} />
 
             </Route>
-
+            {/*Added here for testing*/}
             <Route path="/org-add-movie" element={<OrgAddMovie />} />
             <Route path="/org-movies-and-analytics" element={<OrgMoviesAndAnalytics />} />
 
