@@ -14,6 +14,8 @@ import OAuthRedirect from "../pages/user/auth/OAuthRedirect.jsx";
 import MoviePreviewPage from "../pages/user/moviePreviewPage.jsx";
 import WatchPage from "../pages/user/watchPage.jsx";
 
+import NotFoundPage from "../components/notFoundPage.jsx";
+import TestSandBox from "../pages/testSandBox.jsx";
 
 export default function AppRoutes() {
 
@@ -39,21 +41,18 @@ export default function AppRoutes() {
 
             </Route>
 
-            {/* TEMPORARY */}
-            {/*<Route path="/movie/:movieID" element={<MoviePreviewPage />} />*/}
-            {/*<Route path="/watch" element={<WatchPage />} />*/}
+            {/*<Route path="/test-sand-box" element={<TestSandBox />} />*/}
 
             {/* protected routes (requires login + verified) */}
             <Route element={<ProtectedRoute requireVerified={true} />}>
                 <Route path="/home-page" element={<HomePage />} />
-                <Route path="/movie/:movieID" element={<MoviePreviewPage />} />
+                <Route path="/movie/:movieId" element={<MoviePreviewPage />} />
                 <Route path="/watch" element={<WatchPage />} />
 
             </Route>
 
             {/* If any unknown path is entered, it will be redirected to the UserSignIn page*/}
-            {/*<Route path="*" element={<NotFoundPage />} />*/}
-            <Route path="*" element={<UserSignIn />} />
+            <Route path="*" element={<NotFoundPage />} />
 
         </Routes>
     )

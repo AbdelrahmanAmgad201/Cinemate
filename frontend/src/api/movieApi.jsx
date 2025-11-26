@@ -16,6 +16,14 @@ function mapBackendReviews(data) {
     }));
 }
 
+function formatRuntime(minutes) {
+    if (!minutes) return "";
+    const h = Math.floor(minutes / 60);
+    const m = minutes % 60;
+    return `${h}h ${m}m`;
+}
+
+
 function mapMovieBackendToFrontend(m) {
     return {
         id: m.movieID,
@@ -31,19 +39,18 @@ function mapMovieBackendToFrontend(m) {
     };
 }
 
-export async function getMovieApi({movieId}) {
-    try{
-        // movieId;
-        const response = await api.get(`/movie/v1/get_specific_movie/${movieId}`)
-
+export async function getMovieApi({ movieId }) {
+    try {
+        const response = await api.post(`/movie/v1/get-specific-movie/${movieId}`);
         const data = response.data;
-        const mappedMovie = mapMovieBackendToFrontend(data);
-        return { success: true, data: mappedMovie}
 
-    }catch(err){
-        return { success: false , message: err.response?.data?.error };
+        const mappedMovie = mapMovieBackendToFrontend(data);
+        return { success: true, data: mappedMovie };
+    } catch (err) {
+        console.error(err);
+        return { success: false, message: err.message };
     }
-};
+}
 
 export async function getReviewsApi({movieId, page, size}) {
     try{
@@ -62,7 +69,7 @@ export async function getReviewsApi({movieId, page, size}) {
         };
 
     }catch(err){
-        return { success: false , message: err.response?.data?.error };
+        return { success: false , message: err.response?.data?.error || err.message };
     }
 };
 
@@ -82,7 +89,7 @@ export async function postReviewApi({movieId, comment, rating}) {
     }
     catch(err){
         console.log(err);
-        return { success: false , message: err.response?.data?.error };
+        return { success: false , message: err.response?.data?.error || err.message };
     }
 };
 
@@ -98,6 +105,6 @@ export async function deleteReviewApi({movieId}) {
     }
     catch(err){
         console.log(err);
-        return { success: false , message: err.response?.data?.error };
+        return { success: false , message: err.response?.data?.error || err.message };
     }
 };

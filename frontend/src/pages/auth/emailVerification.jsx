@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import './style/emailVerification.css';
 import {AuthContext} from "../../context/authContext.jsx";
 import verifyApi from "../../api/verifyApi.jsx";
+import {ErrorToastContext} from "../../context/errorToastContext.jsx";
 
 const regexDigit =  /^[0-9]$/
 
@@ -14,6 +15,8 @@ const EmailVerification = () => {
     const [buttonTimer, setButtonTimer] = useState(0);
 
     const { pendingUser, verifyEmail } = useContext(AuthContext);
+    const { showError } = useContext(ErrorToastContext);
+
     if (!pendingUser) return null; // render nothing while redirecting
     const email = pendingUser.email;
 
@@ -28,12 +31,11 @@ const EmailVerification = () => {
     const handleSubmitCode = async () => {
 
         const res = await verifyEmail(email, code);
-        if (res.success) {
+        if (res.success === true) {
             navigate("/")
         }
         else {
-            alert("Error at verifying email: see console ")
-            console.log("Error at verifying email: " + res.message)
+            showError("Verification failed.", res.message || "Verification failed. Please try again.")
         }
     }
 

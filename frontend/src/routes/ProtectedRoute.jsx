@@ -2,13 +2,14 @@ import {Navigate, Outlet} from 'react-router-dom'
 import { AuthContext } from "../context/AuthContext";
 import { useContext } from "react";
 
+import LoadingFallback from "../components/loadingFallback.jsx";
 export default function ProtectedRoute(){
 
     const { user, loading, signIn, signOut, isAuthenticated } = useContext(AuthContext);
 
     if (loading) {
-        
-        return <div>Loading...</div>;
+
+        return <LoadingFallback />;
     }
 
     if (!isAuthenticated){

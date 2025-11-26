@@ -6,6 +6,7 @@ import { dummyReviews } from "../../data/dummyReviews";
 import {useParams, useLocation, useNavigate} from "react-router-dom";
 
 import {getMovieApi, getReviewsApi, postReviewApi, deleteReviewApi} from "../../api/movieApi.jsx";
+import {ErrorToastContext} from "../../context/errorToastContext.jsx";
 
 import playIcon from "../../assets/icons/play-black.png";
 import trailerIcon from "../../assets/icons/film-black.png";
@@ -15,69 +16,23 @@ import watchPartyIcon from "../../assets/icons/watch-party-black.png";
 import addIcon from "./../../assets/icons/add-white.png"
 import clockIcon from "../../assets/icons/clock-white.png";
 
-const dummyMovie = {
-    id: 1,
-    title: "Interstellar",
-    description: "A team of explorers travel through a wormhole in space in an attempt to ensure humanity's survival.",
-    poster: "https://via.placeholder.com/600x900?text=Interstellar+Poster",
-    videoUrl: "15sve8pnzi",
-    trailerUrl: "15sve8pnzi",
-    genres: ["Sci-Fi"],
-    rating: 8.6,
-    runtime: "2h 49m",
-    releaseDate: "2014-11-07"
-};
 
 
-import axios from 'axios';
-import api from "../../api/apiClient.jsx";
-function mapMovieBackendToFrontend(m) {
-    return {
-        id: m.movieID,
-        title: m.name,
-        description: m.description,
-        poster: m.thumbnailUrl,       // rename to poster for UI
-        videoUrl: m.movieUrl,
-        trailerUrl: m.trailerUrl,
-        genres: [m.genre],            // backend gives ONE genre — UI expects array
-        rating: m.averageRating,
-        runtime: formatRuntime(m.duration),
-        releaseDate: m.releaseDate
-    };
-}
 
-async function fetchSingleMovie() {
-    try {
-        const requestBody = {
-            name: "A Star is Born",   // search by title
-            genre: null,             // or 'DRAMA', 'ACTION', etc.
-            sortBy: "releaseDate",    // optional
-            sortDirection: "desc",    // optional
-            page: 0,                  // first page
-            pageSize: 1               // grab only 1 movie
-        };
-
-        const response = await api.post(
-            "/movie/v1/search",
-            requestBody
-        );
-        console.log("Response:", response);
-        const movies = response.data.content ?? response.data; // handle Page<Movie> structure
-        if (movies.length > 0) {
-            const movie = movies[0];
-            console.log("Fetched movie:", movie);
-            return mapMovieBackendToFrontend(movie);
-        } else {
-            console.log("No movies found");
-            return null;
-        }
-
-    } catch (err) {
-        console.error("Failed to fetch movie:", err.response?.data || err.message);
-    }
-}
-
-
+// function mapMovieBackendToFrontend(m) {
+//     return {
+//         id: m.movieId,
+//         title: m.name,
+//         description: m.description,
+//         poster: m.thumbnailUrl,       // rename to poster for UI
+//         videoUrl: m.movieUrl,
+//         trailerUrl: m.trailerUrl,
+//         genres: [m.genre],            // backend gives ONE genre — UI expects array
+//         rating: m.averageRating,
+//         runtime: formatRuntime(m.duration),
+//         releaseDate: m.releaseDate
+//     };
+// }
 
 
 function formatRuntime(minutes) {
@@ -91,7 +46,6 @@ export default function MoviePreviewPage() {
 
     // Movie details
     const { movieId } = useParams();
-    // const movieId = 1;
     const location = useLocation();
     const navigate = useNavigate();
     // In home-page, use as follow
@@ -99,7 +53,6 @@ export default function MoviePreviewPage() {
     //     <MovieCard/>
     // </Link>
     const [movie, setMovie] = useState(location.state?.movie ?? null);
-    // const [movie, setMovie] = useState(dummyMovie);
     const [movieLoading, setMovieLoading] = useState(false);
     const [movieError, setMovieError] = useState(null);
 
@@ -110,7 +63,7 @@ export default function MoviePreviewPage() {
     const [reviewsError, setReviewsError] = useState(null);
 
     const [page, setPage] = useState(0);
-    const [size] = useState(10);            // change page size if you want
+    const [size] = useState(10);            // page size
     const [totalPages, setTotalPages] = useState(1);
 
     const sentinelRef = useRef(null);       // for intersection observer
@@ -122,7 +75,7 @@ export default function MoviePreviewPage() {
     const [formDesc, setFormDesc] = useState("");
 
     const { user, loading, signIn, signOut, isAuthenticated } = useContext(AuthContext);
-
+    const { showError } = useContext(ErrorToastContext);
 
     // add a new review
     const handleAdd = async (e) => {
@@ -134,13 +87,18 @@ export default function MoviePreviewPage() {
         setSubmitting(true);
 
         // TODO: send to backend
+        console.log({movieId, formDesc, formRating})
         const res = await postReviewApi({movieId, comment: formDesc, rating: Number(formRating)});
         const review = res.data
         // res is my review, so put it first it to the list of reviews
-        if (res.success) {
-            setReviews(prev => [review, ...prev]);
-        } else {
-            alert("Failed to submit review: " + (res.message || "unknown error"));
+        if (res.success === true) {
+            const review = res.data;
+            setReviews(prev => [review, ...prev]); // show immediately
+            setPage(0);
+            await fetchReviews(movieId, 0, false); // sync with backend
+        }
+        else {
+            showError("Failed to submit review", res.message || "unknown error")
         }
 
 
@@ -149,7 +107,7 @@ export default function MoviePreviewPage() {
         setShowForm(false);
         setSubmitting(false);
 
-        await fetchReviews();
+        await fetchReviews(movieId, page, true);
 
     };
 
@@ -161,9 +119,9 @@ export default function MoviePreviewPage() {
         setReviews(r => r.filter(x => x.id !== id));
         // const res = await deleteReviewApi({ reviewId: id });
         const res = await deleteReviewApi({movieId});
-        if (!res.success) {
+        if (res.success === false) {
             setReviews(prev); // rollback
-            alert("Failed to delete review");
+            showError("Failed to delete review", res.message || "unknown error")
         }
     };
 
@@ -180,9 +138,11 @@ export default function MoviePreviewPage() {
         try{
             // TODO: review the following again. Send to backend
             // movieId, page, size
+
             const res = await getReviewsApi({movieId, page:pageToFetch, size});
-            if (!res.success) {
-                console.error("Failed to fetch reviews:", res.statusText);
+            if (res.success === false) {
+                // console.error("Failed to fetch reviews:", res.statusText);
+                showError("Failed to fetch reviews", res.message || "unknown error")
             }
             const data = res.data
             console.log(data)
@@ -200,12 +160,13 @@ export default function MoviePreviewPage() {
 
         }catch (err){
             setReviewsError(err.message || "Failed to load reviews");
+            showError("Failed to fetch reviews", err.message || "unknown error")
+
         }finally {
             setReviewsLoading(false);
             fetchingRef.current = false;
         }
 
-        // setReviews(dummyReviews);
     }
 
     const fetchMovie = async () => {
@@ -214,10 +175,14 @@ export default function MoviePreviewPage() {
         // TODO: send to backend
         try {
             const res = await getMovieApi({ movieId });
-            if (!res.success) throw new Error(res.message || "Failed to load movie");
+            if (res.success === false){
+                // throw new Error(res.message || "Failed to load movie");
+                showError("Failed to fetch movie", res.message || "unknown error")
+            }
             setMovie(res.data);
         } catch (err) {
             setMovieError(err.message || "Failed to load movie");
+            showError("Failed to fetch movie", err.message || "unknown error")
         } finally {
             setMovieLoading(false);
         }
@@ -226,14 +191,8 @@ export default function MoviePreviewPage() {
 
     // Fetches reviews and maybe movie details from backend
     useEffect(() => {
-        const fetchMovieDetails = async () => {
-            const mmm = await fetchSingleMovie()
-            console.log(mmm)
-            setMovie(mmm);
-            await fetchReviews(1, 0, true);
-        }
-        fetchMovieDetails()
         // If movie details are passed in via location state (clicked on from home page), use them
+
         if (location.state?.movie) {
 
             // const m = mapMovieBackendToFrontend(location.state.movie);
