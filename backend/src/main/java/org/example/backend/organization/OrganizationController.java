@@ -1,10 +1,19 @@
 package org.example.backend.organization;
 
 import jakarta.servlet.http.HttpServletRequest;
+import org.example.backend.movie.MovieAddDTO;
+import org.example.backend.movie.MovieService;
+import org.example.backend.requests.Requests;
+import org.example.backend.requests.RequestsRepository;
+import org.example.backend.requests.RequestsService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/organization")
@@ -12,9 +21,10 @@ public class OrganizationController {
 
     @Autowired
     private OrganizationService organizationService;
+    @Autowired
+    private RequestsService requestsService;
 
     @GetMapping("/v1/profile")
-    @PreAuthorize("hasRole('ORGANIZATION')")
     public ResponseEntity<?> getProfile(HttpServletRequest request) {
         Long userId = (Long) request.getAttribute("userId");
         String email = (String) request.getAttribute("userEmail");
@@ -24,7 +34,6 @@ public class OrganizationController {
 
 
     @PostMapping("/v1/set-organization-data")
-    @PreAuthorize("hasRole('ORGANIZATION')")
     public ResponseEntity<String> setPersonalData(
             HttpServletRequest request,
             @RequestBody OrganizationDataDTO organizationDataDTO) {
@@ -34,4 +43,35 @@ public class OrganizationController {
 
         return ResponseEntity.ok(message);
     }
+
+    @PostMapping("/v1/add-movie")
+    public ResponseEntity<?> addMovie(HttpServletRequest request, @RequestBody MovieAddDTO movieAddDTO) {
+        Long userId = (Long) request.getAttribute("userId");
+        try {
+            Long movieId = organizationService.requestMovie(userId, movieAddDTO);
+
+            return ResponseEntity.ok().body(
+                    Map.of(
+                            "success", true,
+                            "message", "Movie request submitted successfully",
+                            "movieId", movieId
+                    )
+            );
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(
+                    Map.of(
+                            "success", false,
+                            "message", "Failed to request movie: " + e.getMessage()
+                    )
+            );
+        }
+    }
+
+
+    @PostMapping("/v1/get-all-organization-requests")
+    public List<Requests> getOrgRequests(HttpServletRequest request) {
+        Long orgId = (Long) request.getAttribute("userId");
+        return requestsService.getAllOrganizationRequests(orgId);
+    }
+
 }

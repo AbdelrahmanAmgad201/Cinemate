@@ -2,6 +2,7 @@ package org.example.backend.movie;
 
 import org.example.backend.admin.Admin;
 import org.example.backend.organization.Organization;
+import org.example.backend.organization.OrganizationRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -21,7 +22,6 @@ import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -30,8 +30,12 @@ class MovieServiceTest {
     @Mock
     private MovieRepository movieRepository;
 
+    @Mock
+    private OrganizationRepository organizationRepository;
+
     @InjectMocks
     private MovieService movieService;
+
 
     private Movie movie1;
     private Movie movie2;
@@ -373,4 +377,21 @@ class MovieServiceTest {
         assertEquals(3, result.getTotalElements());
         verify(movieRepository, times(1)).findAll(any(Specification.class), any(Pageable.class));
     }
+    @Test
+    void testAddMovie_OrganizationNotFound() {
+        // Arrange
+        MovieAddDTO dto = new MovieAddDTO();
+
+        when(organizationRepository.findById(99L)).thenReturn(java.util.Optional.empty());
+
+        // Act & Assert
+        RuntimeException exception = assertThrows(RuntimeException.class, () -> {
+            movieService.addMovie(99L,dto);
+        });
+
+        assertEquals("Organization not found", exception.getMessage());
+        verify(organizationRepository, times(1)).findById(99L);
+        verify(movieRepository, never()).save(any(Movie.class));
+    }
+
 }
