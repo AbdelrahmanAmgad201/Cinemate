@@ -23,7 +23,7 @@ public class Admin implements Authenticatable {
     @Column(name = "admin_id")
     private Long id;
 
-    @Column(name = "name", nullable = false)
+    @Column(name = "name", nullable = true)
     private String name;
 
     @Column(name = "email", unique = true, nullable = false)

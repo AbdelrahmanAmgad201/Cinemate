@@ -1,23 +1,35 @@
 package org.example.backend.organization;
 
 import jakarta.transaction.Transactional;
+import org.example.backend.movie.Movie;
+import org.example.backend.movie.MovieAddDTO;
+import org.example.backend.movie.MovieRepository;
+import org.example.backend.movie.MovieService;
+import org.example.backend.requests.RequestsService;
 import org.example.backend.user.Gender;
 import org.example.backend.user.User;
 import org.example.backend.user.UserDataDTO;
+import org.example.backend.user.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+
+import java.util.Optional;
 
 @Service
 public class OrganizationService {
 
     @Autowired
     private OrganizationRepository organizationRepository;
+    @Autowired
+    private RequestsService requestsService;
+    @Autowired
+    private MovieService movieService;
 
+    @Transactional
     public Organization addOrganization(String email, String password) {
         Organization organization = Organization.builder()
                 .email(email)
                 .password(password)
-                .name("Test Organization")
                 .build();
         return organizationRepository.save(organization);
     }
@@ -35,4 +47,13 @@ public class OrganizationService {
 
         return "User data updated successfully";
     }
+
+    @Transactional
+    public Long requestMovie(Long orgId,MovieAddDTO movieAddDTO) {
+
+        Movie savedMovie = movieService.addMovie(orgId,movieAddDTO);
+        requestsService.addRequest(savedMovie);
+        return savedMovie.getMovieID();
+    }
+
 }
