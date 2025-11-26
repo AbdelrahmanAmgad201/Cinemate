@@ -3,11 +3,12 @@ import WistiaEmbed from "../../components/wistiaEmbed.jsx";
 import './style/watchPage.css';
 
 export default function WatchPage() {
-    const { videoID } = useParams();
-
+    // const { movieID } = useParams();
+    const location = useLocation();
+    const wistiaId = location.state;
     return (
         <div className="watch-page">
-            <WistiaEmbed wistiaId={videoID} className="wistia_full" />
+            <WistiaEmbed wistiaId={wistiaId} className="wistia_full" />
         </div>
     );
 }

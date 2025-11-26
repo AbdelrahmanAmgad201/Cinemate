@@ -40,12 +40,14 @@ export default function AppRoutes() {
             </Route>
 
             {/* TEMPORARY */}
-            <Route path="/movie/:movieID" element={<MoviePreviewPage />} />
-            <Route path="/watch/:videoID" element={<WatchPage />} />
+            {/*<Route path="/movie/:movieID" element={<MoviePreviewPage />} />*/}
+            {/*<Route path="/watch" element={<WatchPage />} />*/}
 
             {/* protected routes (requires login + verified) */}
             <Route element={<ProtectedRoute requireVerified={true} />}>
                 <Route path="/home-page" element={<HomePage />} />
+                <Route path="/movie/:movieID" element={<MoviePreviewPage />} />
+                <Route path="/watch" element={<WatchPage />} />
 
             </Route>
 

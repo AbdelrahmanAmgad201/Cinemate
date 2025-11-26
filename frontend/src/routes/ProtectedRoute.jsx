@@ -6,6 +6,11 @@ export default function ProtectedRoute(){
 
     const { user, loading, signIn, signOut, isAuthenticated } = useContext(AuthContext);
 
+    if (loading) {
+        
+        return <div>Loading...</div>;
+    }
+
     if (!isAuthenticated){
         // Not logged in
         return <Navigate to = "" replace />;

@@ -5,6 +5,7 @@ import ReviewCard from "../../components/reviewCard.jsx";
 import { dummyReviews } from "../../data/dummyReviews";
 import {useParams, useLocation, useNavigate} from "react-router-dom";
 
+import {getMovieApi, getReviewsApi, postReviewApi, deleteReviewApi} from "../../api/movieApi.jsx";
 
 import playIcon from "../../assets/icons/play-black.png";
 import trailerIcon from "../../assets/icons/film-black.png";
@@ -28,6 +29,8 @@ const dummyMovie = {
 };
 
 
+import axios from 'axios';
+import api from "../../api/apiClient.jsx";
 function mapMovieBackendToFrontend(m) {
     return {
         id: m.movieID,
@@ -43,6 +46,40 @@ function mapMovieBackendToFrontend(m) {
     };
 }
 
+async function fetchSingleMovie() {
+    try {
+        const requestBody = {
+            name: "A Star is Born",   // search by title
+            genre: null,             // or 'DRAMA', 'ACTION', etc.
+            sortBy: "releaseDate",    // optional
+            sortDirection: "desc",    // optional
+            page: 0,                  // first page
+            pageSize: 1               // grab only 1 movie
+        };
+
+        const response = await api.post(
+            "/movie/v1/search",
+            requestBody
+        );
+        console.log("Response:", response);
+        const movies = response.data.content ?? response.data; // handle Page<Movie> structure
+        if (movies.length > 0) {
+            const movie = movies[0];
+            console.log("Fetched movie:", movie);
+            return mapMovieBackendToFrontend(movie);
+        } else {
+            console.log("No movies found");
+            return null;
+        }
+
+    } catch (err) {
+        console.error("Failed to fetch movie:", err.response?.data || err.message);
+    }
+}
+
+
+
+
 function formatRuntime(minutes) {
     if (!minutes) return "";
     const h = Math.floor(minutes / 60);
@@ -53,16 +90,16 @@ function formatRuntime(minutes) {
 export default function MoviePreviewPage() {
 
     // Movie details
-    // const { movieID } = useParams();
-    const movieID = 1;
+    const { movieId } = useParams();
+    // const movieId = 1;
     const location = useLocation();
     const navigate = useNavigate();
     // In home-page, use as follow
     // <Link to={`/movie/${movie.id}`} state={{ movie }}>
     //     <MovieCard/>
     // </Link>
-    // const [movie, setMovie] = useState(location.state?.movie ?? null);
-    const [movie, setMovie] = useState(dummyMovie);
+    const [movie, setMovie] = useState(location.state?.movie ?? null);
+    // const [movie, setMovie] = useState(dummyMovie);
     const [movieLoading, setMovieLoading] = useState(false);
     const [movieError, setMovieError] = useState(null);
 
@@ -97,14 +134,15 @@ export default function MoviePreviewPage() {
         setSubmitting(true);
 
         // TODO: send to backend
-        const newReview = {
-            userId: user.id,
-            rating: Number(formRating),
-            description: formDesc
-        };
+        const res = await postReviewApi({movieId, comment: formDesc, rating: Number(formRating)});
+        const review = res.data
+        // res is my review, so put it first it to the list of reviews
+        if (res.success) {
+            setReviews(prev => [review, ...prev]);
+        } else {
+            alert("Failed to submit review: " + (res.message || "unknown error"));
+        }
 
-        // optimistic UI update
-        // setReviews(prev => [newReview, ...prev]);
 
         setFormDesc("");
         setFormRating(5);
@@ -115,11 +153,18 @@ export default function MoviePreviewPage() {
 
     };
 
-    // GUI-only delete (optimistic)
+    /////////////////////////////////////////////////////////// TODO /////////////////////////////////////////////////////
     const handleDelete = async (id) => {
-        // const prev = reviews;
+
+        if (!window.confirm("Delete this review?")) return;
+        const prev = reviews;
         setReviews(r => r.filter(x => x.id !== id));
-        // TODO: send to backend
+        // const res = await deleteReviewApi({ reviewId: id });
+        const res = await deleteReviewApi({movieId});
+        if (!res.success) {
+            setReviews(prev); // rollback
+            alert("Failed to delete review");
+        }
     };
 
     const fetchReviews = async (movieId, pageToFetch = 0, append = false) => {
@@ -134,12 +179,13 @@ export default function MoviePreviewPage() {
 
         try{
             // TODO: review the following again. Send to backend
-            const res = null;
-            // const res = await getReviewsApi();
+            // movieId, page, size
+            const res = await getReviewsApi({movieId, page:pageToFetch, size});
             if (!res.success) {
                 console.error("Failed to fetch reviews:", res.statusText);
             }
             const data = res.data
+            console.log(data)
             const pageContent = data.content ?? data;
             setTotalPages(data.totalPages ?? Math.max(1, Math.ceil((data.totalElements ?? pageContent.length) / size)));
             setPage(pageToFetch);
@@ -159,43 +205,59 @@ export default function MoviePreviewPage() {
             fetchingRef.current = false;
         }
 
-        setReviews(dummyReviews);
+        // setReviews(dummyReviews);
     }
 
-    const fetchMovie = async (id) => {
+    const fetchMovie = async () => {
         setMovieError(null);
         setMovieLoading(true);
         // TODO: send to backend
-
+        try {
+            const res = await getMovieApi({ movieId });
+            if (!res.success) throw new Error(res.message || "Failed to load movie");
+            setMovie(res.data);
+        } catch (err) {
+            setMovieError(err.message || "Failed to load movie");
+        } finally {
+            setMovieLoading(false);
+        }
 
     }
 
     // Fetches reviews and maybe movie details from backend
     useEffect(() => {
-
+        const fetchMovieDetails = async () => {
+            const mmm = await fetchSingleMovie()
+            console.log(mmm)
+            setMovie(mmm);
+            await fetchReviews(1, 0, true);
+        }
+        fetchMovieDetails()
         // If movie details are passed in via location state (clicked on from home page), use them
         if (location.state?.movie) {
 
-            const m = mapMovieBackendToFrontend(location.state.movie);
+            // const m = mapMovieBackendToFrontend(location.state.movie);
+            const m = location.state.movie;
             setMovie(m);
-            const id = m.id ?? movieID;
-            if (id)
+            const id = m.id ?? movieId;
+            if (id) {
                 // reset pagination
                 setReviews([]);
                 setPage(0);
                 setTotalPages(1);
                 fetchReviews(id);
+            }
         }
         // If someone goes to the movie page directly, fetch movie details from backend
-        else if (movieID){
+        else if (movieId){
             (async () => {
-                await fetchMovie(movieID);
+                await fetchMovie();
 
                 // reset pagination
                 setReviews([]);
                 setPage(0);
                 setTotalPages(1);
-                await fetchReviews(movieID, 0, true);
+                await fetchReviews(movieId, 0, true);
             })();
         }
         else {
@@ -203,7 +265,7 @@ export default function MoviePreviewPage() {
             setMovie(null);
             console.error("Movie ID not found in location state or params.");
         }
-    }, [movieID, location.state?.movie]);
+    }, [movieId, location.state?.movie]);
 
     // the following is for infinite scrolling on reviews, i do not understand it
     useEffect(() => {
@@ -223,13 +285,13 @@ export default function MoviePreviewPage() {
         observer.observe(sentinelRef.current);
         return () => observer.disconnect();
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [sentinelRef.current, page, totalPages, movieID]);
+    }, [sentinelRef.current, page, totalPages, movieId]);
 
 
     // COMMENT TO TEST
-    // if (movieLoading) return <div className="loader">Loading movie...</div>;
-    // if (movieError) return <div className="error">Error: {movieError}</div>;
-    // if (!movie) return <div className="no-movie">No movie selected.</div>;
+    if (movieLoading) return <div className="loader">Loading movie...</div>;
+    if (movieError) return <div className="error">Error: {movieError}</div>;
+    if (!movie) return <div className="no-movie">No movie selected.</div>;
 
     return (
         <div className="movie-preview-page">
@@ -254,13 +316,13 @@ export default function MoviePreviewPage() {
                     </div>
 
                     <div className="movie-preview-page-movie-details-middle-buttons">
-                        <button title="Play" onClick={() => navigate(`/watch/${movie.videoUrl}`, { state: { movie } })}>
+                        <button title="Play" onClick={() => navigate(`/watch`, { state:  movie.videoUrl  })}>
                             <img src={playIcon} alt="Play" className="button-icon" />
                             Play
                             <span className="tooltip">Play movie</span>
                         </button>
 
-                        <button title="Watch Trailer" onClick={() => navigate(`/watch/${movie.trailerUrl}`, { state: { movie } })}>
+                        <button title="Watch Trailer" onClick={() => navigate(`/watch`, { state: movie.trailerUrl })}>
                             <img src={trailerIcon} alt="Trailer" className="button-icon" />
                             <span className="tooltip">Watch Trailer</span>
                         </button>
@@ -348,14 +410,27 @@ export default function MoviePreviewPage() {
                                         type="number"
                                         min="0"
                                         max="10"
+                                        step="1"
                                         value={formRating}
-                                        onChange={e => setFormRating(e.target.value)}
+                                        onChange={e => setFormRating(Number(e.target.value))}
                                     />
                                 </label>
 
                                 <label>
                                     Description
-                                    <textarea rows="5" value={formDesc} onChange={e => setFormDesc(e.target.value)} />
+                                    <textarea
+                                        rows="5"
+                                        value={formDesc} onChange={e => {
+
+                                            const words = e.target.value.trim().split(/\s+/);
+                                            if (words.length <= 500) {
+                                                setFormDesc(e.target.value);
+                                            }
+                                        }}
+                                          placeholder="Write your review (max 500 words)"
+                                          required
+                                    />
+                                    <small>{formDesc.trim().split(/\s+/).length} / 500 words</small>
                                 </label>
 
                                 <div className="modal-actions">
