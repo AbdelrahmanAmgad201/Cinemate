@@ -16,12 +16,15 @@ export default function Browse() {
     const [genres, setGenres] = useState([]);
     const [loading, setLoading] = useState(true);
 
+    const [newReleasesPage, setNewReleasesPage] = useState(0);
+    const [topRatedPage, setTopRatedPage] = useState(0);
+
     
     const navigate = useNavigate();
 
     useEffect(() => {
         fetchMovies();
-    }, []);
+    }, [newReleasesPage, topRatedPage]);
 
     const fetchMovies = async () => {
        try{
@@ -30,7 +33,7 @@ export default function Browse() {
             genre: null,
             sortBy: "releaseDate",
             sortDirection: "desc",
-            page: 0,
+            page: newReleasesPage,
             pageSize: 6
         };
 
@@ -39,7 +42,7 @@ export default function Browse() {
             genre: null,
             sortBy: "rating",
             sortDirection: "desc",
-            page: 0,
+            page: topRatedPage,
             pageSize: 6
         };
 
@@ -53,7 +56,7 @@ export default function Browse() {
                 title: movie.name,
                 poster: movie.thumbnailUrl,
                 duration: movie.duration,
-                rating: movie.rating || "N/A"
+                rating: movie.averageRating || "N/A"
             }));
             setNewReleases(mappedNewReleases);
         }
@@ -63,7 +66,7 @@ export default function Browse() {
                 title: movie.name,
                 poster: movie.thumbnailUrl,
                 duration: movie.duration,
-                rating: movie.rating || "N/A"
+                rating: movie.averageRating || "N/A"
             }));
             setTopRated(mappedTopRated);
         } else {
@@ -138,12 +141,11 @@ export default function Browse() {
                     <Carousel />
                 </div>
                 <div style={{display: "flex", flexDirection: "column", gap: "60px"}}>
-                    <MoviesList list={newReleases} name={"New Releases"} />
-                    <MoviesList list={topRated} name={"Top Rated"} />
+                    <MoviesList list={newReleases} name={"New Releases"} page={newReleasesPage} setPage={setNewReleasesPage} />
+                    <MoviesList list={topRated} name={"Top Rated"} page={topRatedPage} setPage={setTopRatedPage} />
                     <MoviesList list={genres} name={"Genres"} onClick={(genre) => navigate(`/genre/${genre}`)} />
                 </div>
             </main>
-            
             <Footer />
         </div>
     );

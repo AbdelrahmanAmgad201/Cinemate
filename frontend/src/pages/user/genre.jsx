@@ -5,6 +5,7 @@ import p1 from '../../assets/p1.jpg';
 import p2 from '../../assets/p2.jpg';
 import NavBar from '../../components/NavBar';
 import Footer from '../../components/footer';
+import MoviesDetailsApi from '../../api/moviesDetailsApi';
 
 const Genre = ({ listGenre }) => {
 
@@ -76,7 +77,7 @@ const Genre = ({ listGenre }) => {
                 title: movie.name,
                 poster: movie.thumbnailUrl,
                 duration: movie.duration,
-                rating: movie.rating || "N/A"
+                rating: movie.averageRating || "N/A"
             }));
             setMovies(mappedMovies);
         }else {
@@ -98,7 +99,7 @@ const Genre = ({ listGenre }) => {
                 <main style={{ flex: '1' }}>
                     <div style={{display: "flex", flexDirection: "column", gap: "60px"}}>
                         <NavBar />
-                        <MoviesList list={newReleasesTemp} name={title} />
+                        <MoviesList list={movies} name={title} />
                     </div>
                 </main>
             <Footer />

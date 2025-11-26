@@ -41,7 +41,7 @@ public class Movie {
     private Integer duration;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "genre")
+    @Column(name = "genre", length = 20)
     private Genre genre;
 
     @Column(name = "release_date")
