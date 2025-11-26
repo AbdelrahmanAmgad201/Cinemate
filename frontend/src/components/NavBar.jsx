@@ -3,12 +3,14 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { IoSearch } from "react-icons/io5";
 import { CgProfile } from "react-icons/cg";
 import { AuthContext } from '../context/authContext.jsx';
+import MoviesDetailsApi from '../api/moviesDetailsApi.jsx';
 import './style/navBar.css';
 
 function NavBar() {
 
     const isActive = (path) => location.pathname === path;
     const [searchValue, setSearchValue] = useState('');
+    const [movies, setMovies] = useState([]);
     const [menuShow, setMenuShow] = useState(false);
     const [resultsShow, setResultsShow] = useState(false);
     const menuRef = useRef(null);
@@ -20,25 +22,59 @@ function NavBar() {
 
     const [results, setResults] = useState(["Movie 1", "Movie 2", "Movie 3"]);
 
-    const handleSearch = () => {
-        console.log("Searching for:", searchValue);
-        if (searchValue.trim()) {
-            setResults(["Movie 1", "Movie 2", "Movie 3"]);
-            setResultsShow(true);
-        } else {
-            setResults([]);
-            setResultsShow(false);
-        }
-    };
+    useEffect(() => {
+        handleSearch();
+    }, [searchValue]);
+    
+    const handleSearch = async () => {
+        try{
 
+            if (!searchValue.trim()) {
+                setResultsShow(false);
+                return;
+            }
+
+            const moviesRequest = {
+                name: searchValue,
+                genre: null,
+                sortBy: null,
+                sortDirection: null,
+                page: null,
+                pageSize: 10
+            };
+
+            const moviesResponse = await MoviesDetailsApi(moviesRequest);
+
+            console.log("Response from MoviesDetailsApi:", moviesResponse);
+            if (moviesResponse.success) {
+                const mappedMovies = moviesResponse.movies.map(movie => ({
+                    title: movie.name,
+                    id: movie.movieID
+                }));
+                setMovies(mappedMovies);
+                setResultsShow(true);
+            }else {
+                console.log("Error fetching movies in else loop:", response.message);
+                setMovies([]);
+                setResultsShow(false);
+            }
+        }
+         catch(err){
+                console.log("Error fetching movies:", err);
+                setMovies([]);
+                setResultsShow(false);
+         }
+     }
+
+     
     const handleInputChange = (e) => {
         setSearchValue(e.target.value);
-        if (e.target.value.trim()) {
-            setResults(["Movie 1", "Movie 2", "Movie 3"]);
-            setResultsShow(true);
-        } else {
-            setResultsShow(false);
-        }
+    };
+
+    const handleResultClick = (movieId) => {
+        navigate(`/movie/${movieId}`);
+        setResultsShow(false);
+        setSearchValue('');
     };
 
     const handleSignOut = async () => {
@@ -77,12 +113,12 @@ function NavBar() {
                 Browse
             </Link>
             <div className="navbar-search" ref={searchRef}>
-                <input type="text" placeholder="Search movies..." onChange={handleInputChange} onKeyPress={(e) => e.key === 'Enter' && handleSearch()} /><IoSearch onClick={handleSearch} />
-                {resultsShow && results.length > 0 && (
+                <input type="text" placeholder="Search movies..." onChange={handleInputChange} /><IoSearch onClick={handleSearch} />
+                {resultsShow && movies.length > 0 && (
                     <div className="search-results">
-                            {results.map((result, index) => (
-                                        <div key={index} className="search-result-item" onClick={() => {console.log("Clicked:", result); setResultsShow(false);}}>
-                                            {result}
+                            {movies.map((movie, index) => (
+                                        <div key={movie.id || index} className="search-result-item" onClick={() => handleResultClick(movie.id)}>
+                                            {movie.title}
                                         </div>
                             ))}
                         </div>

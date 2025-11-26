@@ -53,6 +53,7 @@ export default function Browse() {
         console.log("Response from MoviesDetailsApi:", newReleasesResponse, ",", topRatedResponse);
         if (newReleasesResponse.success) {
             const mappedNewReleases = newReleasesResponse.movies.map(movie => ({
+                id: movie.movieID,
                 title: movie.name,
                 poster: movie.thumbnailUrl,
                 duration: movie.duration,
@@ -63,6 +64,7 @@ export default function Browse() {
 
         if (topRatedResponse.success) {
             const mappedTopRated = topRatedResponse.movies.map(movie => ({
+                id: movie.movieID,
                 title: movie.name,
                 poster: movie.thumbnailUrl,
                 duration: movie.duration,
@@ -141,8 +143,8 @@ export default function Browse() {
                     <Carousel />
                 </div>
                 <div style={{display: "flex", flexDirection: "column", gap: "60px"}}>
-                    <MoviesList list={newReleases} name={"New Releases"} page={newReleasesPage} setPage={setNewReleasesPage} />
-                    <MoviesList list={topRated} name={"Top Rated"} page={topRatedPage} setPage={setTopRatedPage} />
+                    <MoviesList list={newReleases} name={"New Releases"} page={newReleasesPage} setPage={setNewReleasesPage} onClick={(id) => navigate(`/movie/${id}`)} />
+                    <MoviesList list={topRated} name={"Top Rated"} page={topRatedPage} setPage={setTopRatedPage} onClick={(id) => navigate(`/movie/${id}`)} />
                     <MoviesList list={genres} name={"Genres"} onClick={(genre) => navigate(`/genre/${genre}`)} />
                 </div>
             </main>

@@ -1,5 +1,5 @@
 import { React, useState, useEffect} from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import MoviesList from '../../components/moviesList';
 import p1 from '../../assets/p1.jpg';
 import p2 from '../../assets/p2.jpg';
@@ -12,6 +12,8 @@ const Genre = ({ listGenre }) => {
     const [loading, setLoading] = useState(true);
     const [movies, setMovies] = useState([]);;
     const { title } = useParams();
+
+    const navigate = useNavigate();
 
     console.log("name:", title);
 
@@ -54,6 +56,8 @@ const Genre = ({ listGenre }) => {
         }
     ];
 
+    const [currPage, setCurrPage] = useState(0)
+
     useEffect(() => {
         fetchMovies();
     }, [title]);
@@ -65,7 +69,7 @@ const Genre = ({ listGenre }) => {
             genre: title.toUpperCase(),
             sortBy: null,
             sortDirection: null,
-            page: 0,
+            page: currPage,
             pageSize: 20
         };
 
@@ -74,6 +78,7 @@ const Genre = ({ listGenre }) => {
         console.log("Response from MoviesDetailsApi:", moviesResponse);
         if (moviesResponse.success) {
             const mappedMovies = moviesResponse.movies.map(movie => ({
+                id: movie.movieID,
                 title: movie.name,
                 poster: movie.thumbnailUrl,
                 duration: movie.duration,
@@ -99,7 +104,7 @@ const Genre = ({ listGenre }) => {
                 <main style={{ flex: '1' }}>
                     <div style={{display: "flex", flexDirection: "column", gap: "60px"}}>
                         <NavBar />
-                        <MoviesList list={movies} name={title} />
+                        <MoviesList list={movies} name={title} page={currPage} setPage={setCurrPage} onClick={(id) => navigate(`/movie/${id}`)}  />
                     </div>
                 </main>
             <Footer />

@@ -77,7 +77,7 @@
     background-color: #182B33;
     color: var(--ghost-white);
     border-radius: 5px;
-    max-height: 200px;
+    max-height: 400px;
     overflow-y: auto;
     z-index: 1;
 

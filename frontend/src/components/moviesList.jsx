@@ -18,7 +18,7 @@ export default function MoviesList({ list, name, page, setPage, onClick }) {
                 )
                 :
                 list.map((movie, index) => (
-                    <div key={index} className="movie-item" onClick={() => onClick && onClick(movie.title)}>
+                    <div key={index} className="movie-item" onClick={() => onClick && onClick(movie.id != null ? movie.id : movie.title)}>
                         <img src={movie.poster} alt={movie.title} className="movie-poster" />
                         <h3 className="movie-title">{movie.title}</h3>
                         {movie.duration && movie.rating && (
