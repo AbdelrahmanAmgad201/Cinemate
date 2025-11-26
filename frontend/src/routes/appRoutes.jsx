@@ -11,6 +11,8 @@ import OrgSignUp from "../pages/org/auth/orgSignUp.jsx";
 import OrgSignIn from "../pages/org/auth/orgSignIn.jsx";
 import AdminSignIn from "../pages/admin/auth/adminSignIn.jsx";
 import OAuthRedirect from "../pages/user/auth/OAuthRedirect.jsx";
+import OrgAddMovie from "../pages/org/auth/orgAddMovie.jsx";
+import OrgMoviesAndAnalytics from "../pages/org/auth/orgMoviesAndAnalytics.jsx";
 import MoviePreviewPage from "../pages/user/moviePreviewPage.jsx";
 import WatchPage from "../pages/user/watchPage.jsx";
 
@@ -40,6 +42,9 @@ export default function AppRoutes() {
                 <Route path="/admin-sign-in" element={<AdminSignIn />} />
 
             </Route>
+            {/*Added here for testing*/}
+            <Route path="/org-add-movie" element={<OrgAddMovie />} />
+            <Route path="/org-movies-and-analytics" element={<OrgMoviesAndAnalytics />} />
 
             {/*<Route path="/test-sand-box" element={<TestSandBox />} />*/}
 

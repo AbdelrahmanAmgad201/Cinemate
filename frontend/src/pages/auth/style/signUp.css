@@ -73,7 +73,8 @@
     transition: background-color 0.3s ease-out;
 }
 
-.signup-container input::placeholder{
+.signup-container input::placeholder,
+.signup-container textarea::placeholder{
     color: var(--ghost-white);;
 }
 
