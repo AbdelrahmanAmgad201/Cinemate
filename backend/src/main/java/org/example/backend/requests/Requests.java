@@ -31,6 +31,7 @@ public class Requests {
     private State state;
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "admin_id")
+    @JsonIgnore
     private Admin admin;
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "organization_id", nullable = false)

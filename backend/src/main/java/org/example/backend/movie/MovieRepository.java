@@ -1,6 +1,6 @@
 package org.example.backend.movie;
 
-import org.example.backend.organization.OneMovieOverView;
+import org.example.backend.organization.Organization;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
@@ -39,7 +39,7 @@ public interface MovieRepository extends JpaRepository<Movie, Long>, JpaSpecific
     List<Movie> findByAdminIsNotNullAndOrganization_Id(Long orgId);
 
     @Query("""
-            SELECT new org.example.backend.organization.OneMovieOverView(
+            SELECT new org.example.backend.movie.OneMovieOverView(
                 (SELECT COUNT(wh) FROM WatchHistory wh WHERE wh.movie.movieID = :movieId),
                 (SELECT COUNT(DISTINCT wh.user.id) FROM WatchHistory wh WHERE wh.movie.movieID = :movieId),
                 (SELECT COUNT(mr) FROM MovieReview mr WHERE mr.movie.movieID = :movieId),
@@ -49,6 +49,31 @@ public interface MovieRepository extends JpaRepository<Movie, Long>, JpaSpecific
             )
             """)
     OneMovieOverView getMovieOverview(@Param("movieId") Long movieId);
+    @Query("""
+       SELECT lm.movie.movieID
+       FROM LikedMovie lm
+       GROUP BY lm.movie.movieID
+       ORDER BY COUNT(lm) DESC
+       """)
+    List<Long> getMostLikedMovie(Pageable pageable);
+
+    @Query("""
+       SELECT mr.movie.movieID
+       FROM MovieReview mr
+       GROUP BY mr.movie.movieID
+       ORDER BY COUNT(mr) DESC
+       """)
+    List<Long> getMostRatedMovie(Pageable pageable);
+
+    @Query("""
+       SELECT m.organization.id
+       FROM WatchHistory wh
+       JOIN wh.movie m
+       GROUP BY m.organization.id
+       ORDER BY COUNT(wh) DESC
+       """)
+    List<Organization> getMostPopularOrganization(Pageable pageable);
 
 
+    Long countByAdminIsNotNull();
 }

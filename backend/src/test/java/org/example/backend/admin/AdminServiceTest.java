@@ -1,115 +1,118 @@
 package org.example.backend.admin;
 
-import org.example.backend.movie.Movie;
 import org.example.backend.movie.MovieRepository;
-import org.example.backend.requests.Requests;
+import org.example.backend.organization.Organization;
 import org.example.backend.requests.RequestsRepository;
-import org.example.backend.requests.State;
+import org.example.backend.user.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.PageRequest;
 
-import java.util.Optional;
+import java.util.Collections;
+import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
-@ExtendWith(MockitoExtension.class)
 class AdminServiceTest {
 
-    @Mock
     private MovieRepository movieRepository;
-
-    @Mock
     private RequestsRepository requestsRepository;
-
-    @Mock
     private AdminRepository adminRepository;
+    private UserRepository userRepository;
 
-    @InjectMocks
     private AdminService adminService;
 
-    private Requests request;
-    private Movie movie;
-    private Admin admin;
-
     @BeforeEach
-    void setUp() {
-        movie = Movie.builder()
-                .movieID(10L)
-                .name("Test Movie")
-                .build();
-        admin = Admin.builder()
-                .id(5L)
-                .name("Admin User")
-                .build();
+    void setup() {
+        movieRepository = mock(MovieRepository.class);
+        requestsRepository = mock(RequestsRepository.class);
+        adminRepository = mock(AdminRepository.class);
+        userRepository = mock(UserRepository.class);
 
-        request = Requests.builder()
-                .id(1L)
-                .movie(movie)
-                .state(State.PENDING)
-                .build();
+        adminService = new AdminService(movieRepository, requestsRepository, adminRepository, userRepository);
     }
 
-    // -----------------------------------------------------
-    // TEST: getRequestedMovie()
-    // -----------------------------------------------------
     @Test
-    void testGetRequestedMovie() {
-        when(requestsRepository.findById(1L)).thenReturn(Optional.of(request));
+    void testGetSystemOverview_WithOrganizations() {
+        // Mock counts
+        when(userRepository.count()).thenReturn(50L);
+        when(movieRepository.countByAdminIsNotNull()).thenReturn(20L);
 
-        Movie result = adminService.getRequestedMovie(1L);
-
-        assertEquals(movie, result);
-        verify(requestsRepository).findById(1L);
-    }
-
-    // -----------------------------------------------------
-    // TEST: acceptRequests()
-    // -----------------------------------------------------
-    @Test
-    void testAcceptRequests() {
-
-        when(adminRepository.findById(5L)).thenReturn(Optional.of(admin));
-        when(requestsRepository.findById(1L)).thenReturn(Optional.of(request));
-
-        adminService.acceptRequests(5L,1L);
-
-        assertEquals(State.ACCEPTED, request.getState());
-        assertNotNull(request.getStateUpdatedAt());
-        assertEquals(admin, movie.getAdmin());
-
-        verify(adminRepository).findById(5L);
-        verify(requestsRepository).findById(1L);
-        verify(requestsRepository).save(request);
-        verify(movieRepository).save(movie);
-    }
-
-    // -----------------------------------------------------
-    // TEST: declineRequest()
-    // -----------------------------------------------------
-    @Test
-    void testDeclineRequest() {
-        when(requestsRepository.findById(1L)).thenReturn(Optional.of(request));
-
-        Admin admin = Admin.builder()
-                .id(1L)
-                .name("Test Admin")
+        // Create organization objects
+        Organization org1 = Organization.builder()
+                .id(3L)
+                .name("Organization A")
+                .email("orgA@example.com")
+                .password("pass")
                 .build();
 
-        when(adminRepository.findById(1L)).thenReturn(Optional.of(admin));
+        // Mock repository to return a list of organizations
+        when(movieRepository.getMostPopularOrganization(PageRequest.of(0,1)))
+                .thenReturn(List.of(org1));
 
-        adminService.declineRequest(1L,1L);
+        // Mock most rated movie
+        when(movieRepository.getMostRatedMovie(PageRequest.of(0,1)))
+                .thenReturn(List.of(101L));
 
-        assertEquals(State.REJECTED, request.getState());
-        assertNull(request.getMovie());
-        assertNotNull(request.getStateUpdatedAt());
+        // Mock most liked movie
+        when(movieRepository.getMostLikedMovie(PageRequest.of(0,1)))
+                .thenReturn(List.of(201L));
 
-        verify(requestsRepository).save(request);
-        verify(movieRepository).deleteById(10L);
+        // Call service
+        SystemOverview overview = adminService.getSystemOverview();
+
+        // Verify
+        assertEquals(50L, overview.getNumberOfUsers());
+        assertEquals(20L, overview.getNumberOfMovies());
+        assertEquals(3L, overview.getMostPopularOrganization().getId());
+        assertEquals(101L, overview.getMostRatedMovie());
+        assertEquals(201L, overview.getMostLikedMovie());
     }
 
+    @Test
+    void testGetSystemOverview_EmptyData() {
+        // Mock counts
+        when(userRepository.count()).thenReturn(0L);
+        when(movieRepository.countByAdminIsNotNull()).thenReturn(0L);
+
+        // Empty lists for metrics
+        when(movieRepository.getMostPopularOrganization(PageRequest.of(0,1)))
+                .thenReturn(Collections.emptyList());
+        when(movieRepository.getMostRatedMovie(PageRequest.of(0,1)))
+                .thenReturn(Collections.emptyList());
+        when(movieRepository.getMostLikedMovie(PageRequest.of(0,1)))
+                .thenReturn(Collections.emptyList());
+
+        SystemOverview overview = adminService.getSystemOverview();
+
+        assertEquals(0L, overview.getNumberOfUsers());
+        assertEquals(0L, overview.getNumberOfMovies());
+        assertNull(overview.getMostPopularOrganization());
+        assertNull(overview.getMostRatedMovie());
+        assertNull(overview.getMostLikedMovie());
+    }
+
+    @Test
+    void testGetSystemOverview_PartialData() {
+        // Mock counts
+        when(userRepository.count()).thenReturn(5L);
+        when(movieRepository.countByAdminIsNotNull()).thenReturn(10L);
+
+        // Only most liked movie exists
+        when(movieRepository.getMostPopularOrganization(PageRequest.of(0,1)))
+                .thenReturn(Collections.emptyList());
+        when(movieRepository.getMostRatedMovie(PageRequest.of(0,1)))
+                .thenReturn(Collections.emptyList());
+        when(movieRepository.getMostLikedMovie(PageRequest.of(0,1)))
+                .thenReturn(List.of(77L));
+
+        SystemOverview overview = adminService.getSystemOverview();
+
+        assertEquals(5L, overview.getNumberOfUsers());
+        assertEquals(10L, overview.getNumberOfMovies());
+        assertNull(overview.getMostPopularOrganization());
+        assertNull(overview.getMostRatedMovie());
+        assertEquals(77L, overview.getMostLikedMovie());
+    }
 }

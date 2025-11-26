@@ -7,6 +7,8 @@ import org.example.backend.movie.MovieRepository;
 import org.example.backend.requests.Requests;
 import org.example.backend.requests.RequestsRepository;
 import org.example.backend.requests.State;
+import org.example.backend.user.UserRepository;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -18,6 +20,7 @@ public class AdminService {
     private final MovieRepository movieRepository;
     private final RequestsRepository requestsRepository;
     private final AdminRepository adminRepository;
+    private final UserRepository userRepository;
 
     @Transactional
     public Movie getRequestedMovie(Long requestId) {
@@ -63,4 +66,23 @@ public class AdminService {
                 .build();
         return adminRepository.save(admin);
     }
+    @Transactional
+    public SystemOverview getSystemOverview() {
+        SystemOverview systemOverview = new SystemOverview();
+
+        systemOverview.setNumberOfUsers(userRepository.count());
+        systemOverview.setNumberOfMovies(movieRepository.countByAdminIsNotNull());
+
+        var popularOrgList = movieRepository.getMostPopularOrganization(PageRequest.of(0,1));
+        systemOverview.setMostPopularOrganization(popularOrgList.isEmpty() ? null : popularOrgList.get(0));
+
+        var mostRatedList = movieRepository.getMostRatedMovie(PageRequest.of(0,1));
+        systemOverview.setMostRatedMovie(mostRatedList.isEmpty() ? null : mostRatedList.get(0));
+
+        var mostLikedList = movieRepository.getMostLikedMovie(PageRequest.of(0,1));
+        systemOverview.setMostLikedMovie(mostLikedList.isEmpty() ? null : mostLikedList.get(0));
+
+        return systemOverview;
+    }
+
 }

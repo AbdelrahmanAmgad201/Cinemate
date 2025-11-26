@@ -3,10 +3,11 @@ package org.example.backend.admin;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.example.backend.movie.Movie;
+import org.example.backend.movie.MovieService;
+import org.example.backend.movie.OneMovieOverView;
 import org.example.backend.requests.Requests;
 import org.example.backend.requests.RequestsService;
 import org.springframework.http.HttpStatus;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -20,10 +21,12 @@ public class AdminController {
 
     private final AdminService adminService;
     private final RequestsService requestsService;
+    private final MovieService movieService;
 
     @PostMapping("/v1/find-admin-requests")
-    public ResponseEntity<List<Requests>> findAllAdminRequests(HttpServletRequest request,@RequestParam Long adminId) {
-        return ResponseEntity.ok(requestsService.getAllAdminRequests(adminId));
+    public ResponseEntity<List<Requests>> findAllAdminRequests(HttpServletRequest request) {
+        Long userId = (Long) request.getAttribute("userId");
+        return ResponseEntity.ok(requestsService.getAllAdminRequests(userId));
     }
 
     @PostMapping("/v1/decline-request")
@@ -60,5 +63,16 @@ public class AdminController {
     @PostMapping("/v1/get-requested-movie")
     public ResponseEntity<Movie> getRequestedMovie(HttpServletRequest request,@RequestParam Long requestId) {
         return ResponseEntity.ok(adminService.getRequestedMovie(requestId));
+    }
+
+    @PostMapping("/v1/get-specific-movie-overview")
+    public ResponseEntity<OneMovieOverView> getSpecificMovieOverview(HttpServletRequest request,@RequestParam Long movieId) {
+            OneMovieOverView overview = movieService.getMovieStatsByMovieId(movieId);
+            return ResponseEntity.ok(overview);
+    }
+
+    @PostMapping("/v1/get-system-overview")
+    public ResponseEntity<SystemOverview> getSystemOverview(HttpServletRequest request) {
+        return ResponseEntity.ok().body(adminService.getSystemOverview());
     }
 }

@@ -3,7 +3,6 @@ package org.example.backend.movie;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.example.backend.organization.MoviesOverview;
-import org.example.backend.organization.OneMovieOverView;
 import org.example.backend.organization.Organization;
 import org.example.backend.organization.OrganizationRepository;
 import org.example.backend.requests.RequestsRepository;
