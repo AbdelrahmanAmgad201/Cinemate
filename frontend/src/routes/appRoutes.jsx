@@ -11,6 +11,8 @@ import OrgSignUp from "../pages/org/auth/orgSignUp.jsx";
 import OrgSignIn from "../pages/org/auth/orgSignIn.jsx";
 import AdminSignIn from "../pages/admin/auth/adminSignIn.jsx";
 import OAuthRedirect from "../pages/user/auth/OAuthRedirect.jsx";
+import OrgAddMovie from "../pages/org/auth/orgAddMovie.jsx";
+import OrgMoviesAndAnalytics from "../pages/org/auth/orgMoviesAndAnalytics.jsx";
 
 
 export default function AppRoutes() {
@@ -37,6 +39,8 @@ export default function AppRoutes() {
 
             </Route>
 
+            <Route path="/org-add-movie" element={<OrgAddMovie />} />
+            <Route path="/org-movies-and-analytics" element={<OrgMoviesAndAnalytics />} />
 
             {/* protected routes (requires login + verified) */}
             <Route element={<ProtectedRoute requireVerified={true} />}>
