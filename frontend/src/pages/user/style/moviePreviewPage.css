@@ -1,0 +1,279 @@
+/* Movie Section*/
+.movie-preview-page {
+    display: flex;
+    flex-direction: column;
+    margin: 40px;
+    border: none;
+    padding: 10px;
+    gap: 40px;
+    color: var(--ghost-white);
+}
+
+.movie-preview-page-movie {
+    display: flex;
+    flex-direction: row;
+    gap: 60px;
+    align-items: flex-start;
+
+    /* SEPARATOR LINE */
+    border-bottom: 4px solid var(--line-separator-faded-grey);
+    padding-bottom: 40px;
+}
+
+.movie-preview-page-movie-poster{
+    /*fixed width and height 342 513*/
+    /*width: 342px;*/
+    flex: 0 0 342px;
+    height: 513px;
+    flex-shrink: 0;
+    box-shadow: 0 6px 18px rgba(0,0,0,0.45);
+}
+
+.movie-preview-page-movie-poster img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 8px;
+    /*display: block;*/
+}
+
+.movie-preview-page-movie-details-middle{
+    display: flex;
+    flex-direction: column;
+    gap: 30px;
+    /*flex-grow: 1; !* Allow this column to take up the most space *!*/
+    /*flex-shrink: 0;*/
+    flex: 1 1 auto; /* grow and shrink as needed */
+    min-width: 280px;
+
+}
+
+.movie-preview-page-movie-details-middle-title h1 {
+    margin: 0;
+    font-size: 36px;
+    line-height: 1.05;
+}
+
+.movie-preview-page-movie-details-middle-genres {
+    display: flex;
+    flex-direction: row;
+    gap: 10px;
+}
+.genre-tag {
+    background: var(--lighter-dark-teal);
+    padding: 6px 10px;
+    border-radius: 999px;
+    font-size: 13px;
+    color: var(--grey-text);
+}
+
+.movie-preview-page-movie-details-middle-description {
+    height: 250px;
+    max-width: 700px;
+    overflow-y: auto; /* a vertical scrollbar if the content exceeds 170px */
+    padding: 12px;
+    background: rgba(255,255,255,0.01);
+    border-radius: 8px;
+    border: 1px solid rgba(255,255,255,0.03);
+    color: var(--ghost-white);
+}
+
+.movie-preview-page-movie-details-middle-description p {
+    margin: 0;
+    line-height: 1.5;
+}
+.movie-preview-page-movie-details-middle-buttons {
+    display: flex;
+    gap: 30px;
+    flex-direction: row;
+}
+.movie-preview-page-movie-details-middle-buttons button {
+    /*background-color: var(--dark-blue-bell);*/
+    background-color: var(--faded-blue-bell);
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    color: var(--ink-black);
+    font-weight: 700;
+    border: none;
+    padding: 6px 12px;
+
+    border-radius: 999px;
+    min-width: 60px;
+    height: 50px;
+    cursor: pointer;
+    transition: background-color 0.2s, color 0.2s;
+    position: relative;
+
+}
+.movie-preview-page-movie-details-middle-buttons .button-icon {
+    width: 34px;
+    height: 34px;
+    object-fit: contain;
+    display: block;
+}
+
+.movie-preview-page-movie-details-middle-buttons button:hover {
+    background-color: #FAFAFF;
+    color: #0b1b20;
+}
+.movie-preview-page-movie-details-right{
+    display: flex;
+    flex-direction: column;
+    gap: 60px;
+    flex-shrink: 0;
+    flex-basis: 250px; /* fixed width for stability */
+}
+.movie-preview-page-movie-details-right-top{
+    display: flex;
+    flex-direction: row;
+    gap: 15px;
+    color: var(--grey-text);
+    align-items: center;
+}
+
+.rating, .runtime {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    color: var(--grey-text);
+    background: rgba(255,255,255,0.04);
+    padding: 6px 10px;
+    border-radius: 8px;
+
+}
+
+.rating-star-icon{
+    color: #FFD166;
+    font-size: 18px;
+    vertical-align: middle;
+}
+.clock-icon {
+    width: 20px;
+    height: 20px;
+}
+
+.movie-preview-page-movie-details-right-credits {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.movie-preview-page-movie-details-right-credits dl {
+    display: flex;
+    flex-direction: column;
+    gap: 10px; /* space between Director, Writer, Cast blocks */
+}
+
+.movie-preview-page-movie-details-right-credits dt {
+    font-weight: 700;
+    color: var(--ghost-white);
+}
+
+.movie-preview-page-movie-details-right-credits dd {
+    margin: 0 0 8px 0;
+    color: var(--grey-text);
+}
+
+
+/* Reviews Section */
+.movie-preview-page-reviews{
+    display: flex;
+    flex-direction: row;
+    gap: 40px;
+    width: 100%;
+    align-items: flex-start;
+    /*padding-top: 24px;*/
+// same width as picture so review card is to the right
+}
+.reviews-add-button {
+    cursor: pointer;
+    background-color: transparent;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    color: white;
+    border: none;
+    padding: 6px 12px;
+    border-radius: 999px;
+    min-width: 36px;
+    height: 36px;
+    transition: background-color 0.2s, color 0.2s;
+    position: relative;
+}
+.reviews-add-button .button-icon {
+    width: 50px;
+    height: 50px;
+    object-fit: contain;
+    display: block;
+}
+.reviews-add-button:hover {
+    transform: scale(1.1);
+}
+
+.movie-preview-page-reviews-header-row {
+    display: flex;
+    flex-direction: row;
+    flex-shrink: 0;
+    width: 400px;
+    gap: 30px;
+
+}
+
+
+.movie-preview-page-reviews-list {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
+    flex-grow: 1;
+}
+
+/* modal */
+.modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+}
+
+.modal {
+    background: #0b1b20;
+    padding: 20px;
+    border-radius: 12px;
+    width: 90%;
+    max-width: 560px;
+    color: #FAFAFF;
+}
+
+.modal label {
+    display: block;
+    margin-bottom: 12px;
+}
+
+.modal input, .modal textarea {
+    width: 100%;
+    padding: 8px 10px;
+    border-radius: 8px;
+    border: 1px solid rgba(255,255,255,0.06);
+    background: rgba(255,255,255,0.02);
+    color: #FAFAFF;
+    box-sizing: border-box;
+}
+
+.modal-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+    margin-top: 12px;
+}
+
+.modal button {
+    padding: 8px 12px;
+    border-radius: 8px;
+    border: none;
+    cursor: pointer;
+}

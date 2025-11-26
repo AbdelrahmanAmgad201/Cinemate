@@ -23,12 +23,13 @@ public class MovieController {
         return ResponseEntity.ok(movies);
     }
 
-    @PostMapping("/v1/get-specific-movie")
+    @PostMapping("/v1/get-specific-movie/{movieId}")
     public ResponseEntity<Movie> getSpecificMovie(
             HttpServletRequest request,
-            @RequestParam Long movieId
+            @PathVariable Long movieId
     ){
         Movie movie = movieService.getMovie(movieId);
+        System.out.println(movie.getName());
         return ResponseEntity.ok(movie);
     }
 

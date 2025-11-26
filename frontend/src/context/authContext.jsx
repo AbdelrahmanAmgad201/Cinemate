@@ -22,6 +22,10 @@ export default function AuthProvider({ children }){
         try {
             const res = await signInApi({email, password, role});
 
+            if (!res?.success) {
+                return { success: false, message: res?.message || "Sign in failed" };
+            }
+
             setUser(res.user)
             return {success: true}
         }
@@ -35,6 +39,10 @@ export default function AuthProvider({ children }){
 
         try {
             const res = await signUpApi({email, password, role});
+
+            if (!res?.success) {
+                return { success: false, message: res?.message || "Sign up failed" };
+            }
 
             localStorage.setItem('pendingUser', JSON.stringify({ email: email, role:role, details:details }));
             setPendingUser({email, role, details})
@@ -59,6 +67,10 @@ export default function AuthProvider({ children }){
         try {
             const codeInt = Number(code.join(""));
             const res = await verifyApi({ email, code:codeInt });
+
+            if (!res?.success) {
+                return { success: false, message: res?.message || "Sign up failed" };
+            }
 
             setUser(res.user)
             //We're logged in, now send the rest of sign up info
@@ -103,6 +115,7 @@ export default function AuthProvider({ children }){
 
     useEffect(()=>{
         const token = localStorage.getItem('token');
+        console.log(token);
         // const token = null; // uncomment this if you want to sign out
 
         if (!token){
