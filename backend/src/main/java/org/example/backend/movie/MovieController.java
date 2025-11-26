@@ -22,7 +22,7 @@ public class MovieController {
     }
 
     @PostMapping("/v1/get-specific-movie")
-    public ResponseEntity<Movie> getSpecificPicMovie(
+    public ResponseEntity<Movie> getSpecificMovie(
             HttpServletRequest request,
             @RequestParam Long movieId
     ){
