@@ -1,8 +1,10 @@
 package org.example.backend.movie;
 
 import jakarta.servlet.http.HttpServletRequest;
+import org.example.backend.organization.OneMovieOverView;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -21,12 +23,13 @@ public class MovieController {
         return ResponseEntity.ok(movies);
     }
 
-    @PostMapping("/v1/get-specific-movie")
+    @PostMapping("/v1/get-specific-movie/{movieId}")
     public ResponseEntity<Movie> getSpecificMovie(
             HttpServletRequest request,
-            @RequestParam Long movieId
+            @PathVariable Long movieId
     ){
         Movie movie = movieService.getMovie(movieId);
+        System.out.println(movie.getName());
         return ResponseEntity.ok(movie);
     }
 

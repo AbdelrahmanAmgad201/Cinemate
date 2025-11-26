@@ -11,6 +11,7 @@ import { HiOutlineMail, HiOutlineLockClosed } from "react-icons/hi";
 import { AiOutlineUser } from "react-icons/ai";
 import { CiCalendar } from "react-icons/ci";
 import { LuEyeOff, LuEye } from "react-icons/lu";
+import { ErrorToastContext } from "./../../context/ErrorToastContext";
 
 export default function UserSignUp ({role = "User", show = true, link = "/"}) {
 
@@ -30,6 +31,7 @@ export default function UserSignUp ({role = "User", show = true, link = "/"}) {
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
     const { user, loading, signIn, signOut, signUp, isAuthenticated } = useContext(AuthContext);
+    const { showError } = useContext(ErrorToastContext);
 
     function buildRequestBody(role) {
         if (role === "USER") {
@@ -64,19 +66,13 @@ export default function UserSignUp ({role = "User", show = true, link = "/"}) {
         setErrors({});
 
         const signUpResult = await signUp(email, password, role.toUpperCase(), buildRequestBody(role.toUpperCase()));
-        // TODO: Handle User Details API
-        // signUpOrgDetails
-        // signUpUserDetails
 
-        // DELETE THIS LINE AFTER TESTING
-        console.log("Sign Up API " + {email:email, password:password, role:role.toUpperCase()});
-
-        if (signUpResult.success){
+        if (signUpResult.success === true){
             navigate("/email-verification");
         }
         else{
-            alert("Error at sign up: see console ");
-            console.log("Error at sign up: " + signUpResult.message);
+            console.log(signUpResult.message);
+            showError("Sign up failed.", signUpResult.message || "Sign up failed. Please try again.");
         }
     }
 

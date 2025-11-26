@@ -3,6 +3,7 @@ package org.example.backend.requests;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.example.backend.movie.Movie;
+import org.example.backend.organization.RequestsOverView;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -42,5 +43,9 @@ public class RequestsService {
     @Transactional
     public List<Requests> getAllAdminRequests(Long adminId) {
         return requestsRepository.findByAdmin_Id(adminId);
+    }
+    @Transactional
+    public RequestsOverView getRequestsOverView(Long orgId) {
+        return requestsRepository.getRequestsOverviewByOrgId(orgId);
     }
 }

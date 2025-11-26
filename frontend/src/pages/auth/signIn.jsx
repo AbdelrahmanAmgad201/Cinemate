@@ -8,6 +8,7 @@ import oauthSignIn from '../../api/oauthSignInApi.jsx';
 import { Link } from "react-router-dom";
 import { AuthContext } from "../../context/AuthContext.jsx";
 import { LuEyeOff, LuEye } from "react-icons/lu";
+import {ErrorToastContext} from "../../context/errorToastContext.jsx";
 
 
 export default function SignIn({role = "User",
@@ -24,19 +25,17 @@ export default function SignIn({role = "User",
     const [showPassword, setShowPassword] = useState(false);
 
     const { user, loading, signIn, signOut, isAuthenticated } = useContext(AuthContext);
+    const { showError } = useContext(ErrorToastContext);
 
     const handleSubmit = async (e) => {
         e.preventDefault();
         const signInResult = await signIn(email, password, role.toUpperCase())
-        // DELETE THIS LINE AFTER TESTING
-        console.log("Sign In API " + {email:email, password:password, role:role.toUpperCase()});
 
-        if (signInResult.success){
+        if (signInResult.success === true){
             navigate("/home-page")
         }
         else{
-            alert("Error at sign in: see console ");
-            console.log("Error at sign up: " + signInResult.message);
+            showError("Sign in failed.", signInResult.message || "Sign in failed. Please try again.")
         }
     }
     return (

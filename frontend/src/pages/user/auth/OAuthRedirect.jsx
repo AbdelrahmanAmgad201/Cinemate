@@ -20,20 +20,20 @@ const OAuthRedirect = () => {
 
             console.log("OAuth sign-in successful");
 
-            navigate('/homePage');
+            navigate('/home-page');
         }
         catch(err){
             console.log("Error decoding token:", err);
-            navigate('/signIn');
+            navigate('/');
         }
     }
     else if(error){
         console.log("OAuth sign-in error:", error);
-        navigate('/signIn');
+        navigate('/');
     }
     else{
         console.log("No token or error found in URL");
-        navigate('/signIn');
+        navigate('/');
     }
   }, [searchParams, setUser, navigate]);
   
