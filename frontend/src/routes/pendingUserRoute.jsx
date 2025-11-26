@@ -1,14 +1,18 @@
 import { useContext } from "react";
 import { Navigate, Outlet } from "react-router-dom";
 import { AuthContext } from "../context/authContext";
+import LoadingFallback from "../components/loadingFallback.jsx";
 
 export default function PendingUserRoute() {
-    const { pendingUser, pendingRestored } = useContext(AuthContext);
+    const { loading, pendingUser, pendingRestored } = useContext(AuthContext);
 
-    if (!pendingRestored) return null; // don’t redirect until state is restored
+    if (loading || !pendingRestored) {
+
+        return <LoadingFallback />;
+    }
 
     if (!pendingUser) {
-        console.log("pendingUser is null, redirecting");
+        console.log("pendingUser is null, redirecting to sign in");
         return <Navigate to="/user-sign-in" replace />;
     }
 

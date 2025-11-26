@@ -1,0 +1,113 @@
+.review-card {
+    display: flex;
+    flex-direction: column;
+    max-width: 700px;
+    min-width: 650px;
+    background: var(--review-card-gradient-color-faded);
+    padding: 16px;
+    gap: 16px;
+    border-radius: 20px;
+    box-shadow: 0 6px 18px rgba(0,0,0,0.45);
+    border: 1px solid rgba(255,255,255,0.04);
+}
+
+.review-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+}
+.review-card-header-left {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+.review-card-header-left-avatar-wrapper {
+    width: 48px;
+    height: 48px;
+    flex: 0 0 48px;
+    border-radius: 999px;
+    overflow: hidden;
+    background: rgba(255,255,255,0.06);
+}
+
+.review-card-header-left-avatar {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    /*display: block;*/
+}
+
+.review-card-header-left-meta {
+    display: flex;
+    flex-direction: row;
+    gap: 10px;
+}
+.review-card-header-left-name {
+    font-weight: 700;
+    font-size: 14px;
+    color: var(--ghost-white);
+}
+
+.review-card a {
+    color: inherit;
+    text-decoration: none;
+    font-weight: 500;
+}
+
+.review-card a:hover {
+    text-decoration: underline; /* optional */
+}
+
+.review-card-header-left-date{
+    font-size: 12px;
+    color: var(--grey-text);
+}
+.review-card-header-right{
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+.review-card-header-right-stars{
+    display: inline-flex;
+    gap: 4px;
+    font-size: 16px;
+    color: rgba(255,255,255,0.35);
+}
+.rc-star.filled{
+    color: #FFD166;
+}
+.review-card-header-right-rating{
+    font-weight: 700;
+    background: rgba(255,255,255,0.06);
+    padding: 6px 8px;
+    border-radius: 8px;
+    font-size: 13px;
+    color: var(--ghost-white);
+}
+.review-card-description{
+    font-size: 15px;
+    line-height: 1.6;
+    color: var(--ghost-white);
+}
+
+
+.review-card-footer {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: 12px;
+}
+
+.review-card-delete{
+    background: transparent;
+    border: 1px solid rgba(255,255,255,0.06);
+    color: #FAFAFF;
+    padding: 6px 10px;
+    border-radius: 8px;
+    cursor: pointer;
+}
+
+.review-card-delete:hover {
+    background: rgba(255,255,255,0.03);
+
+}
