@@ -1,15 +1,14 @@
 package org.example.backend.organization;
 
 import jakarta.servlet.http.HttpServletRequest;
+import org.example.backend.movie.Movie;
 import org.example.backend.movie.MovieAddDTO;
 import org.example.backend.movie.MovieService;
 import org.example.backend.requests.Requests;
-import org.example.backend.requests.RequestsRepository;
 import org.example.backend.requests.RequestsService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -23,6 +22,8 @@ public class OrganizationController {
     private OrganizationService organizationService;
     @Autowired
     private RequestsService requestsService;
+    @Autowired
+    private MovieService movieService;
 
     @GetMapping("/v1/profile")
     public ResponseEntity<?> getProfile(HttpServletRequest request) {
@@ -74,4 +75,33 @@ public class OrganizationController {
         return requestsService.getAllOrganizationRequests(orgId);
     }
 
+    @PostMapping("/v1/movies-overview")
+    public ResponseEntity<MoviesOverview> getMoviesOverview(HttpServletRequest request) {
+        Long userId = (Long) request.getAttribute("userId");
+        return ResponseEntity.ok().body(movieService.getMoviesOverview(userId));
+    }
+
+    @PostMapping("/v1/get-organization-movies")
+    public ResponseEntity<List<Movie>> getOrganizationMovies(HttpServletRequest request) {
+        Long userId = (Long) request.getAttribute("userId");
+        return ResponseEntity.ok().body(movieService.getOrganizationMovies(userId));
+    }
+
+    @PostMapping("/v1/get-specific-movie-overview")
+    public ResponseEntity<OneMovieOverView> getSpecificMovieOverview(HttpServletRequest request,
+                                                                     @RequestParam Long movieId) {
+        Long userId = (Long) request.getAttribute("userId");
+
+        if (movieService.OrganizationOwnMovie(userId, movieId)) {
+            OneMovieOverView overview = movieService.getMovieStatsByMovieId(movieId);
+            return ResponseEntity.ok(overview);
+        }
+        return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+    }
+
+    @PostMapping("/v1/get-requests-over-view")
+    public ResponseEntity<RequestsOverView> getRequestsOverview(HttpServletRequest request) {
+        Long userId = (Long) request.getAttribute("userId");
+        return ResponseEntity.ok().body(requestsService.getRequestsOverView(userId));
+    }
 }

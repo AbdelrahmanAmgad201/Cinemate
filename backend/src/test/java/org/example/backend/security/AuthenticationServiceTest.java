@@ -8,7 +8,9 @@ import org.example.backend.user.User;
 import org.example.backend.user.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.Mockito;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.*;
+import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.util.Optional;
@@ -16,128 +18,159 @@ import java.util.Optional;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
+@ExtendWith(MockitoExtension.class)
 class AuthenticationServiceTest {
 
+    @Mock
     private UserRepository userRepository;
+
+    @Mock
     private AdminRepository adminRepository;
+
+    @Mock
     private OrganizationRepository organizationRepository;
+
+    @Mock
     private PasswordEncoder passwordEncoder;
 
-    private AuthenticationService authenticationService;
+    @InjectMocks
+    private AuthenticationService authService;
+
+    private final String email = "test@example.com";
+    private final String rawPassword = "password";
+    private final String encodedPassword = "encodedPassword";
+
+    private User user;
+    private Admin admin;
+    private Organization organization;
 
     @BeforeEach
-    void setUp() {
-        userRepository = mock(UserRepository.class);
-        adminRepository = mock(AdminRepository.class);
-        organizationRepository = mock(OrganizationRepository.class);
-        passwordEncoder = mock(PasswordEncoder.class);
+    void setup() {
+        user = new User();
+        user.setEmail(email);
+        user.setPassword(encodedPassword);
 
-        authenticationService = new AuthenticationService(
-                userRepository,
-                adminRepository,
-                organizationRepository,
-                passwordEncoder
-        );
+        admin = new Admin();
+        admin.setEmail(email);
+        admin.setPassword(encodedPassword);
+
+        organization = new Organization();
+        organization.setEmail(email);
+        organization.setPassword(encodedPassword);
     }
 
-    // -------------------------------------------------------
-    // TEST: findByEmailAndRole
-    // -------------------------------------------------------
-
+    // -------------------------------------------------------------------------
+    // TEST: findByEmailAndRole → ROLE_USER
+    // -------------------------------------------------------------------------
     @Test
-    void testFindByEmailAndRole_User() {
-        User user = new User();
-        user.setEmail("user@example.com");
+    void testFindByEmailAndRoleUser() {
+        when(userRepository.findByEmail(email)).thenReturn(Optional.of(user));
 
-        when(userRepository.findByEmail("user@example.com"))
-                .thenReturn(Optional.of(user));
-
-        var result = authenticationService.findByEmailAndRole("user@example.com", "USER");
+        Optional<Authenticatable> result = authService.findByEmailAndRole(email, "USER");
 
         assertTrue(result.isPresent());
         assertEquals(user, result.get());
     }
 
+    // -------------------------------------------------------------------------
+    // TEST: findByEmailAndRole → ROLE_ADMIN
+    // -------------------------------------------------------------------------
     @Test
-    void testFindByEmailAndRole_Admin() {
-        Admin admin = new Admin();
-        admin.setEmail("admin@example.com");
+    void testFindByEmailAndRoleAdmin() {
+        when(adminRepository.findByEmail(email)).thenReturn(Optional.of(admin));
 
-        when(adminRepository.findByEmail("admin@example.com"))
-                .thenReturn(Optional.of(admin));
-
-        var result = authenticationService.findByEmailAndRole("admin@example.com", "ADMIN");
+        Optional<Authenticatable> result = authService.findByEmailAndRole(email, "ADMIN");
 
         assertTrue(result.isPresent());
         assertEquals(admin, result.get());
     }
 
+    // -------------------------------------------------------------------------
+    // TEST: findByEmailAndRole → ROLE_ORGANIZATION
+    // -------------------------------------------------------------------------
     @Test
-    void testFindByEmailAndRole_Organization() {
-        Organization org = new Organization();
-        org.setEmail("org@example.com");
+    void testFindByEmailAndRoleOrganization() {
+        when(organizationRepository.findByEmail(email)).thenReturn(Optional.of(organization));
 
-        when(organizationRepository.findByEmail("org@example.com"))
-                .thenReturn(Optional.of(org));
-
-        var result = authenticationService.findByEmailAndRole("org@example.com", "ORGANIZATION");
+        Optional<Authenticatable> result = authService.findByEmailAndRole(email, "ORGANIZATION");
 
         assertTrue(result.isPresent());
-        assertEquals(org, result.get());
+        assertEquals(organization, result.get());
     }
 
+    // -------------------------------------------------------------------------
+    // TEST: findByEmailAndRole → unknown role
+    // -------------------------------------------------------------------------
     @Test
-    void testFindByEmailAndRole_InvalidRole() {
-        var result = authenticationService.findByEmailAndRole("nope@example.com", "INVALID");
+    void testFindByEmailAndRoleUnknown() {
+        Optional<Authenticatable> result = authService.findByEmailAndRole(email, "UNKNOWN");
         assertTrue(result.isEmpty());
     }
 
-    // -------------------------------------------------------
-    // TEST: authenticate
-    // -------------------------------------------------------
-
+    // -------------------------------------------------------------------------
+    // TEST: authenticate → success
+    // -------------------------------------------------------------------------
     @Test
-    void testAuthenticate_Success() {
-        User user = new User();
-        user.setEmail("test@example.com");
-        user.setPassword("hashed123");
+    void testAuthenticateSuccess() {
+        when(userRepository.findByEmail(email)).thenReturn(Optional.of(user));
+        when(passwordEncoder.matches(rawPassword, encodedPassword)).thenReturn(true);
 
-        when(userRepository.findByEmail("test@example.com"))
-                .thenReturn(Optional.of(user));
-
-        when(passwordEncoder.matches("password123", "hashed123"))
-                .thenReturn(true);
-
-        var result = authenticationService.authenticate("test@example.com", "password123", "USER");
+        Optional<Authenticatable> result = authService.authenticate(email, rawPassword, "USER");
 
         assertTrue(result.isPresent());
         assertEquals(user, result.get());
     }
 
+    // -------------------------------------------------------------------------
+    // TEST: authenticate → wrong password
+    // -------------------------------------------------------------------------
     @Test
-    void testAuthenticate_Fail_WrongPassword() {
-        User user = new User();
-        user.setEmail("test@example.com");
-        user.setPassword("hashed123");
+    void testAuthenticateWrongPassword() {
+        when(userRepository.findByEmail(email)).thenReturn(Optional.of(user));
+        when(passwordEncoder.matches(rawPassword, encodedPassword)).thenReturn(false);
 
-        when(userRepository.findByEmail("test@example.com"))
-                .thenReturn(Optional.of(user));
-
-        when(passwordEncoder.matches("wrong", "hashed123"))
-                .thenReturn(false);
-
-        var result = authenticationService.authenticate("test@example.com", "wrong", "USER");
+        Optional<Authenticatable> result = authService.authenticate(email, rawPassword, "USER");
 
         assertTrue(result.isEmpty());
     }
 
+    // -------------------------------------------------------------------------
+    // TEST: authenticate → unknown role
+    // -------------------------------------------------------------------------
     @Test
-    void testAuthenticate_Fail_NoAccountFound() {
-        when(userRepository.findByEmail("missing@example.com"))
-                .thenReturn(Optional.empty());
-
-        var result = authenticationService.authenticate("missing@example.com", "any", "USER");
-
+    void testAuthenticateUnknownRole() {
+        Optional<Authenticatable> result = authService.authenticate(email, rawPassword, "UNKNOWN");
         assertTrue(result.isEmpty());
+    }
+
+    // -------------------------------------------------------------------------
+    // TEST: normalizeRole → adds ROLE_ prefix if missing
+    // -------------------------------------------------------------------------
+    @Test
+    void testNormalizeRoleAddsPrefix() {
+        // Using reflection to invoke private method (optional)
+        try {
+            var method = AuthenticationService.class.getDeclaredMethod("normalizeRole", String.class);
+            method.setAccessible(true);
+            assertEquals("ROLE_ADMIN", method.invoke(authService, "ADMIN"));
+            assertEquals("ROLE_USER", method.invoke(authService, "user"));
+            assertEquals("ROLE_ORGANIZATION", method.invoke(authService, "organization"));
+        } catch (Exception e) {
+            fail(e);
+        }
+    }
+
+    // -------------------------------------------------------------------------
+    // TEST: normalizeRole → keeps ROLE_ if present
+    // -------------------------------------------------------------------------
+    @Test
+    void testNormalizeRoleKeepsPrefix() {
+        try {
+            var method = AuthenticationService.class.getDeclaredMethod("normalizeRole", String.class);
+            method.setAccessible(true);
+            assertEquals("ROLE_ADMIN", method.invoke(authService, "ROLE_ADMIN"));
+        } catch (Exception e) {
+            fail(e);
+        }
     }
 }

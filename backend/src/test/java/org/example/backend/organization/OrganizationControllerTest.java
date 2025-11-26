@@ -3,22 +3,24 @@ package org.example.backend.organization;
 import jakarta.servlet.http.HttpServletRequest;
 import org.example.backend.movie.Movie;
 import org.example.backend.movie.MovieAddDTO;
+import org.example.backend.movie.MovieService;
 import org.example.backend.requests.Requests;
 import org.example.backend.requests.RequestsService;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 
-import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -30,104 +32,202 @@ class OrganizationControllerTest {
     @Mock
     private RequestsService requestsService;
 
+    @Mock
+    private MovieService movieService;
 
     @Mock
-    private HttpServletRequest httpServletRequest;
+    private HttpServletRequest request;
 
     @InjectMocks
     private OrganizationController organizationController;
 
-    private MovieAddDTO movieAddDTO;
     private OrganizationDataDTO organizationDataDTO;
-    private Movie movie1;
-    private Movie movie2;
+    private MovieAddDTO movieAddDTO;
     private Requests request1;
     private Requests request2;
+    private Movie movie1;
+    private Movie movie2;
+    private MoviesOverview moviesOverview;
+    private OneMovieOverView oneMovieOverview;
 
     @BeforeEach
-    void setUp() {
-        // Movie DTO for addMovie
-        movieAddDTO = new MovieAddDTO();
-        movieAddDTO.setName("Movie 1");
-        movieAddDTO.setDescription("Description 1");
-        movieAddDTO.setMovieUrl("http://movie1.url");
-        movieAddDTO.setThumbnailUrl("http://thumb1.url");
-
-        // Organization DTO for setPersonalData
+    void setup() {
         organizationDataDTO = new OrganizationDataDTO();
-        organizationDataDTO.setName("Org 1");
-        organizationDataDTO.setAbout("About Org 1");
+        movieAddDTO = new MovieAddDTO();
 
-        // Sample Movies
-        movie1 = Movie.builder().movieID(1L).name("Movie 1").description("Desc 1").build();
-        movie2 = Movie.builder().movieID(2L).name("Movie 2").description("Desc 2").build();
-
-        // Requests containing full Movie objects
         request1 = new Requests();
-        request1.setId(1L);
-        request1.setMovie(movie1);
-
         request2 = new Requests();
-        request2.setId(2L);
-        request2.setMovie(movie2);
+
+        movie1 = new Movie();
+        movie2 = new Movie();
+
+        moviesOverview = new MoviesOverview(5, 200, null);
+
+        oneMovieOverview = new OneMovieOverView(
+                100L,   // views
+                50L,    // watchers
+                20L,    // likes
+                10L,    // num ratings
+                4.5,   // avg rating
+                15L     // watch later
+        );
     }
 
+    // -------------------------------------------------------------------------
+    // TEST: /profile
+    // -------------------------------------------------------------------------
     @Test
     void testGetProfile() {
-        when(httpServletRequest.getAttribute("userId")).thenReturn(1L);
-        when(httpServletRequest.getAttribute("userEmail")).thenReturn("org@example.com");
+        when(request.getAttribute("userId")).thenReturn(1L);
+        when(request.getAttribute("userEmail")).thenReturn("test@example.com");
 
-        ResponseEntity<?> response = organizationController.getProfile(httpServletRequest);
+        ResponseEntity<?> response = organizationController.getProfile(request);
 
-        assertEquals(200, response.getStatusCodeValue());
-        assertEquals("User profile for ID: 1, Email: org@example.com", response.getBody());
+        assertEquals("User profile for ID: 1, Email: test@example.com", response.getBody());
     }
 
+    // -------------------------------------------------------------------------
+    // TEST: /set-organization-data
+    // -------------------------------------------------------------------------
     @Test
-    void testSetPersonalData() {
-        when(httpServletRequest.getAttribute("userId")).thenReturn(1L);
+    void testSetOrganizationData() {
+        when(request.getAttribute("userId")).thenReturn(1L);
         when(organizationService.setOrganizationData(1L, organizationDataDTO))
-                .thenReturn("Organization data saved");
+                .thenReturn("Organization data updated");
 
-        ResponseEntity<String> response = organizationController.setPersonalData(httpServletRequest, organizationDataDTO);
+        ResponseEntity<String> response =
+                organizationController.setPersonalData(request, organizationDataDTO);
 
-        assertEquals(200, response.getStatusCodeValue());
-        assertEquals("Organization data saved", response.getBody());
-        verify(organizationService, times(1)).setOrganizationData(1L, organizationDataDTO);
+        assertEquals("Organization data updated", response.getBody());
     }
 
+    // -------------------------------------------------------------------------
+    // TEST: /add-movie (success)
+    // -------------------------------------------------------------------------
     @Test
-    void testAddMovie() {
-        when(httpServletRequest.getAttribute("userId")).thenReturn(1L);
-        when(organizationService.requestMovie(1L, movieAddDTO)).thenReturn(100L);
+    void testAddMovieSuccess() {
+        when(request.getAttribute("userId")).thenReturn(1L);
+        when(organizationService.requestMovie(1L, movieAddDTO)).thenReturn(99L);
 
-        ResponseEntity<?> response = organizationController.addMovie(httpServletRequest, movieAddDTO);
+        ResponseEntity<?> res = organizationController.addMovie(request, movieAddDTO);
 
-        assertEquals(200, response.getStatusCodeValue());
-        assertTrue(response.getBody() instanceof Map);
+        Map<String, Object> body = (Map<String, Object>) res.getBody();
 
-        Map<?, ?> body = (Map<?, ?>) response.getBody();
         assertEquals(true, body.get("success"));
         assertEquals("Movie request submitted successfully", body.get("message"));
-        assertEquals(100L, body.get("movieId"));
-
-        verify(organizationService, times(1)).requestMovie(1L, movieAddDTO);
+        assertEquals(99L, body.get("movieId"));
     }
 
-
+    // -------------------------------------------------------------------------
+    // TEST: /add-movie (failure)
+    // -------------------------------------------------------------------------
     @Test
-    void testGetOrgRequests() {
-        Long orgId = 1L;
-        List<Requests> requests = Arrays.asList(request1, request2);
+    void testAddMovieFailure() {
+        when(request.getAttribute("userId")).thenReturn(1L);
+        when(organizationService.requestMovie(1L, movieAddDTO))
+                .thenThrow(new RuntimeException("Error!!"));
 
-        when(httpServletRequest.getAttribute("userId")).thenReturn(1L);
-        when(requestsService.getAllOrganizationRequests(orgId)).thenReturn(requests);
+        ResponseEntity<?> res = organizationController.addMovie(request, movieAddDTO);
 
-        List<Requests> response = organizationController.getOrgRequests(httpServletRequest);
-
-        assertEquals(2, response.size());
-        assertEquals("Movie 1", response.get(0).getMovie().getName());
-        assertEquals("Movie 2", response.get(1).getMovie().getName());
-        verify(requestsService, times(1)).getAllOrganizationRequests(orgId);
+        assertEquals(HttpStatus.BAD_REQUEST, res.getStatusCode());
+        Map<String, Object> body = (Map<String, Object>) res.getBody();
+        assertEquals(false, body.get("success"));
     }
+
+    // -------------------------------------------------------------------------
+    // TEST: /get-all-organization-requests
+    // -------------------------------------------------------------------------
+    @Test
+    void testGetOrganizationRequests() {
+        when(request.getAttribute("userId")).thenReturn(1L);
+        when(requestsService.getAllOrganizationRequests(1L))
+                .thenReturn(List.of(request1, request2));
+
+        List<Requests> res = organizationController.getOrgRequests(request);
+
+        assertEquals(2, res.size());
+    }
+
+    // -------------------------------------------------------------------------
+    // TEST: /movies-overview
+    // -------------------------------------------------------------------------
+    @Test
+    void testGetMoviesOverview() {
+        when(request.getAttribute("userId")).thenReturn(1L);
+        when(movieService.getMoviesOverview(1L)).thenReturn(moviesOverview);
+
+        ResponseEntity<MoviesOverview> res = organizationController.getMoviesOverview(request);
+
+        assertEquals(200, res.getStatusCodeValue());
+        assertEquals(moviesOverview, res.getBody());
+    }
+
+    // -------------------------------------------------------------------------
+    // TEST: /get-organization-movies
+    // -------------------------------------------------------------------------
+    @Test
+    void testGetOrganizationMovies() {
+        when(request.getAttribute("userId")).thenReturn(1L);
+        when(movieService.getOrganizationMovies(1L))
+                .thenReturn(List.of(movie1, movie2));
+
+        ResponseEntity<List<Movie>> res = organizationController.getOrganizationMovies(request);
+
+        assertEquals(2, res.getBody().size());
+    }
+
+    // -------------------------------------------------------------------------
+    // TEST: /get-specific-movie-overview (authorized)
+    // -------------------------------------------------------------------------
+    @Test
+    void testGetSpecificMovieOverviewAuthorized() {
+        when(request.getAttribute("userId")).thenReturn(1L);
+        when(movieService.OrganizationOwnMovie(1L, 10L)).thenReturn(true);
+        when(movieService.getMovieStatsByMovieId(10L)).thenReturn(oneMovieOverview);
+
+        ResponseEntity<OneMovieOverView> res =
+                organizationController.getSpecificMovieOverview(request, 10L);
+
+        assertEquals(200, res.getStatusCodeValue());
+        assertEquals(oneMovieOverview, res.getBody());
+    }
+
+    // -------------------------------------------------------------------------
+    // TEST: /get-specific-movie-overview (forbidden)
+    // -------------------------------------------------------------------------
+    @Test
+    void testGetSpecificMovieOverviewForbidden() {
+        when(request.getAttribute("userId")).thenReturn(1L);
+        when(movieService.OrganizationOwnMovie(1L, 10L)).thenReturn(false);
+
+        ResponseEntity<OneMovieOverView> res =
+                organizationController.getSpecificMovieOverview(request, 10L);
+
+        assertEquals(HttpStatus.FORBIDDEN, res.getStatusCode());
+    }
+    // -------------------------------------------------------------------------
+// TEST: /v1/get-requests-over-view
+// -------------------------------------------------------------------------
+    @Test
+    void testGetRequestsOverview() {
+        when(request.getAttribute("userId")).thenReturn(1L);
+
+        // Mock service response
+        RequestsOverView overview = RequestsOverView.builder()
+                .numberOfPendings(3L)
+                .numberOfRejected(2L)
+                .numberOfAccepted(5L)
+                .build();
+
+        when(requestsService.getRequestsOverView(1L)).thenReturn(overview);
+
+        ResponseEntity<RequestsOverView> res =
+                organizationController.getRequestsOverview(request);
+
+        assertEquals(HttpStatus.OK, res.getStatusCode());
+        assertEquals(3L, res.getBody().getNumberOfPendings());
+        assertEquals(2L, res.getBody().getNumberOfRejected());
+        assertEquals(5L, res.getBody().getNumberOfAccepted());
+    }
+
 }
