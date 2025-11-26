@@ -7,11 +7,13 @@ import org.example.backend.requests.Requests;
 import org.example.backend.requests.RequestsRepository;
 import org.example.backend.requests.RequestsService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/organization")
@@ -43,10 +45,28 @@ public class OrganizationController {
     }
 
     @PostMapping("/v1/add-movie")
-    public Long addMovie(HttpServletRequest request,@RequestBody MovieAddDTO movieAddDTO) {
+    public ResponseEntity<?> addMovie(HttpServletRequest request, @RequestBody MovieAddDTO movieAddDTO) {
         Long userId = (Long) request.getAttribute("userId");
-        return organizationService.requestMovie(userId,movieAddDTO);
+        try {
+            Long movieId = organizationService.requestMovie(userId, movieAddDTO);
+
+            return ResponseEntity.ok().body(
+                    Map.of(
+                            "success", true,
+                            "message", "Movie request submitted successfully",
+                            "movieId", movieId
+                    )
+            );
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(
+                    Map.of(
+                            "success", false,
+                            "message", "Failed to request movie: " + e.getMessage()
+                    )
+            );
+        }
     }
+
 
     @PostMapping("/v1/get-all-organization-requests")
     public List<Requests> getOrgRequests(HttpServletRequest request) {

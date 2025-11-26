@@ -55,4 +55,12 @@ public class AdminService {
         requestsRepository.save(requests);
         movieRepository.deleteById(movieId);
     }
+    @Transactional
+    public Admin addAdmin(String email, String password) {
+        Admin admin = Admin.builder()
+                .email(email)
+                .password(password)
+                .build();
+        return adminRepository.save(admin);
+    }
 }

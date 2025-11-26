@@ -1,5 +1,6 @@
 package org.example.backend.requests;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.*;
 import org.example.backend.admin.Admin;
@@ -33,6 +34,7 @@ public class Requests {
     private Admin admin;
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "organization_id", nullable = false)
+    @JsonIgnore
     private Organization organization;
     @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "movie_id", nullable = true)

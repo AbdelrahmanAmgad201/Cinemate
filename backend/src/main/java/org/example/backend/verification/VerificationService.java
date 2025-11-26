@@ -2,6 +2,7 @@ package org.example.backend.verification;
 
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import org.example.backend.admin.AdminService;
 import org.example.backend.security.Authenticatable;
 import org.example.backend.security.JWTProvider;
 import org.springframework.context.annotation.Lazy;
@@ -40,6 +41,9 @@ public class VerificationService {
 
     @Autowired
     private OrganizationService organizationService;
+
+    @Autowired
+    private AdminService adminService;
 
     @Autowired
     private JWTProvider jwtTokenProvider;
@@ -139,6 +143,7 @@ public class VerificationService {
                 Authenticatable account = switch (role) {
                     case "ORGANIZATION" -> organizationService.addOrganization(email, password);
                     case "USER" -> userService.addUser(email, password);
+                    case "ADMIN" -> adminService.addAdmin(email, password);
                     default -> null;
                 };
 

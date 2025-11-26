@@ -15,8 +15,10 @@ import org.springframework.http.ResponseEntity;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -97,13 +99,21 @@ class OrganizationControllerTest {
     @Test
     void testAddMovie() {
         when(httpServletRequest.getAttribute("userId")).thenReturn(1L);
-        when(organizationService.requestMovie(1L, movieAddDTO))
-                .thenReturn(100L);
-        Long movieId = organizationController.addMovie(httpServletRequest,movieAddDTO);
+        when(organizationService.requestMovie(1L, movieAddDTO)).thenReturn(100L);
 
-        assertEquals(100L, movieId);
-        verify(organizationService, times(1)).requestMovie(1L,movieAddDTO);
+        ResponseEntity<?> response = organizationController.addMovie(httpServletRequest, movieAddDTO);
+
+        assertEquals(200, response.getStatusCodeValue());
+        assertTrue(response.getBody() instanceof Map);
+
+        Map<?, ?> body = (Map<?, ?>) response.getBody();
+        assertEquals(true, body.get("success"));
+        assertEquals("Movie request submitted successfully", body.get("message"));
+        assertEquals(100L, body.get("movieId"));
+
+        verify(organizationService, times(1)).requestMovie(1L, movieAddDTO);
     }
+
 
     @Test
     void testGetOrgRequests() {

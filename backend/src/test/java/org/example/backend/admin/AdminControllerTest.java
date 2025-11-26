@@ -17,6 +17,7 @@ import java.util.Arrays;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -92,24 +93,23 @@ class AdminControllerTest {
     }
 
     @Test
-    void testDeclineMovie() {
-
+    void testDeclineRequest() {
         when(httpRequest.getAttribute("userId")).thenReturn(1L);
-        ResponseEntity<Void> response = adminController.declineMovie(httpRequest,1L);
-
+        ResponseEntity<String> response = adminController.declineRequest(httpRequest, 1L);
         assertEquals(200, response.getStatusCodeValue());
-        verify(adminService, times(1)).declineRequest(1L,1L);
+        assertTrue(response.getBody().contains("declined successfully"));
+        verify(adminService, times(1)).declineRequest(1L, 1L);
     }
 
     @Test
-    void testAcceptMovie() {
-
+    void testAcceptRequest() {
         when(httpRequest.getAttribute("userId")).thenReturn(1L);
-        ResponseEntity<Void> response = adminController.acceptMovie(httpRequest,1L);
-
+        ResponseEntity<String> response = adminController.acceptRequest(httpRequest, 1L);
         assertEquals(200, response.getStatusCodeValue());
-        verify(adminService, times(1)).acceptRequests(1L,1L);
+        assertTrue(response.getBody().contains("accepted successfully"));
+        verify(adminService, times(1)).acceptRequests(1L, 1L);
     }
+
 
     @Test
     void testFindAllPendingRequests() {
