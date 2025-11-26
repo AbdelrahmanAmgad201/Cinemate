@@ -1,12 +1,9 @@
 package org.example.backend.movie;
 
 import jakarta.servlet.http.HttpServletRequest;
-import org.example.backend.user.UserDataDTO;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -22,6 +19,15 @@ public class MovieController {
 
         Page<Movie> movies = movieService.getMovies(requestDTO);
         return ResponseEntity.ok(movies);
+    }
+
+    @PostMapping("/v1/get-specific-movie")
+    public ResponseEntity<Movie> getSpecificMovie(
+            HttpServletRequest request,
+            @RequestParam Long movieId
+    ){
+        Movie movie = movieService.getMovie(movieId);
+        return ResponseEntity.ok(movie);
     }
 
 
