@@ -76,14 +76,14 @@ class MovieServiceTest {
         List<Movie> movieList = List.of(movie);
         Page<Movie> moviePage = new PageImpl<>(movieList);
 
-        when(movieRepository.findAllByAdminIsNotNull(any(), any(Pageable.class)))
+        when(movieRepository.findAllByAdminIsNotNull(any(Pageable.class)))
                 .thenReturn(moviePage);
 
         Page<Movie> result = movieService.getMovies(req);
 
         assertEquals(1, result.getTotalElements());
         verify(movieRepository, times(1))
-                .findAllByAdminIsNotNull(any(), any(Pageable.class));
+                .findAllByAdminIsNotNull(any(Pageable.class));
     }
 
     // -------------------------------------------------------------------

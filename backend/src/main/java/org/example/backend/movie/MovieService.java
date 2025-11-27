@@ -24,14 +24,15 @@ public class MovieService {
 
     @Transactional
     public Page<Movie> getMovies(MovieRequestDTO movieRequestDTO) {
-        Specification<Movie> spec = MovieSpecification.filterMovies(movieRequestDTO);
+        Specification<Movie> spec = MovieSpecification.filterMovies(movieRequestDTO)
+                .and((root, query, cb) -> cb.isNotNull(root.get("admin")));
 
         Pageable pageable = PageRequest.of(
                 movieRequestDTO.getPage(),
                 movieRequestDTO.getPageSize()
         );
 
-        return movieRepository.findAllByAdminIsNotNull(spec, pageable);
+        return movieRepository.findAll(spec, pageable);
     }
 
     @Transactional
