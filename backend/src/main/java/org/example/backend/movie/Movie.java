@@ -10,6 +10,7 @@ import org.example.backend.movieReview.UserSummaryDTO;
 import org.example.backend.organization.Organization;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 @Getter
 @Setter
@@ -72,5 +73,10 @@ public class Movie {
     public String getOrganizationName() {
         return organization != null ? organization.getName() : null;
     }
-
+    @PreUpdate
+    protected void onCreate() {
+        if (releaseDate == null && admin !=null) {
+            releaseDate = LocalDate.now();
+        }
+    }
 }
