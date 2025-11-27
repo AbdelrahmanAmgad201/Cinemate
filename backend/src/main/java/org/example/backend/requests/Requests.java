@@ -51,4 +51,8 @@ public class Requests {
     public String getOrganizationName() {
         return organization != null ? organization.getName() : null;
     }
+    @JsonProperty("admin")
+    public String getAdminName() {
+        return admin != null ? admin.getName() : null;
+    }
 }
