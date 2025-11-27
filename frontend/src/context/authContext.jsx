@@ -74,7 +74,7 @@ export default function AuthProvider({ children }){
 
             setUser(res.user)
             //We're logged in, now send the rest of sign up info
-            if (res.user.role === "ROLE_USER") {
+            if (res.user.role === "USER") {
                 const details = pendingUser.details;
 
                 const resDetails = await signUpUserDetailsApi(details);
@@ -82,7 +82,7 @@ export default function AuthProvider({ children }){
                     alert("User details saved successfully!");
                 }
             }
-            else if (res.user.role === "ROLE_ORGANIZATION") {
+            else if (res.user.role === "ORGANIZATION") {
                 const details = pendingUser.details;
                 const resDetails = await signUpOrgDetailsApi(details);
                 if (resDetails.success) {
@@ -115,7 +115,6 @@ export default function AuthProvider({ children }){
 
     useEffect(()=>{
         const token = localStorage.getItem('token');
-        console.log(token);
         // const token = null; // uncomment this if you want to sign out
 
         if (!token){
@@ -134,7 +133,7 @@ export default function AuthProvider({ children }){
                 setUser({
                     id: userData.id,
                     email: userData.email,
-                    role: userData.role,
+                    role: userData.role.replace("ROLE_", ""),
                 });
             }
 

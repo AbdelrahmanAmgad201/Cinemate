@@ -14,7 +14,7 @@ const EmailVerification = () => {
     const codeInputRef = useRef(Array(6));
     const [buttonTimer, setButtonTimer] = useState(0);
 
-    const { pendingUser, verifyEmail } = useContext(AuthContext);
+    const { pendingUser, verifyEmail, user } = useContext(AuthContext);
     const { showError } = useContext(ErrorToastContext);
 
     if (!pendingUser) return null; // render nothing while redirecting
@@ -32,7 +32,8 @@ const EmailVerification = () => {
 
         const res = await verifyEmail(email, code);
         if (res.success === true) {
-            navigate("/")
+            if (user.role === "USER") navigate("/home-page")
+            else if (user.role === "ORGANIZATION") navigate("/org-add-movie")
         }
         else {
             showError("Verification failed.", res.message || "Verification failed. Please try again.")

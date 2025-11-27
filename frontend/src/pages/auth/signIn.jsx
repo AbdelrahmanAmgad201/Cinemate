@@ -32,7 +32,9 @@ export default function SignIn({role = "User",
         const signInResult = await signIn(email, password, role.toUpperCase())
 
         if (signInResult.success === true){
-            navigate("/home-page")
+            if (user.role === "USER") navigate("/home-page")
+            else if (user.role === "ORGANIZATION") navigate("/org-add-movie")
+            else if (user.role === "ADMIN") navigate("/review-movies")
         }
         else{
             showError("Sign in failed.", signInResult.message || "Sign in failed. Please try again.")

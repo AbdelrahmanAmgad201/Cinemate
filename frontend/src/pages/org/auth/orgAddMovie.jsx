@@ -1,10 +1,12 @@
 import '../../auth/style/signUp.css';
 import './style/addMovie.css';
 import addMovieApi from '../../../api/addMovieApi.jsx';
-import {useState} from 'react';
+import {useContext, useState} from 'react';
 import { CiCalendar } from "react-icons/ci";
 import { useNavigate } from 'react-router-dom';
 import {Link} from 'react-router-dom';
+import ProfileAvatar from "../../../components/profileAvatar.jsx";
+import {AuthContext} from "../../../context/authContext.jsx";
 
 const OrgAddMovie = () => {
 
@@ -41,12 +43,20 @@ const OrgAddMovie = () => {
              }
          };
 
+    const {signOut} = useContext(AuthContext);
+    const avatarMenuItems = [
+        // { label: "Profile", onClick: () => console.log("Profile clicked") },
+        // { label: "Settings", onClick: () => console.log("Settings clicked") },
+        { label: "Sign Out", onClick: signOut },
+    ];
+
      return (
          <div>
              <div className = "navigationBar">
-                 <Link to = "/"><h1>Home Page</h1></Link>
+                 {/*<Link to = "/"><h1>Home Page</h1></Link>*/}
                  <Link to = "/org-add-movie"><h1>Add Movie</h1></Link>
                  <Link to = "/org-movies-and-analytics"><h1>My Movies and Analytics</h1></Link>
+                 <ProfileAvatar menuItems={avatarMenuItems} />
              </div>
              <div className = "signup-container addMovie-container">
                  <form onSubmit={handleSubmit}>

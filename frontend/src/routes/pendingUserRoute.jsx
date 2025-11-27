@@ -13,7 +13,7 @@ export default function PendingUserRoute() {
 
     if (!pendingUser) {
         console.log("pendingUser is null, redirecting to sign in");
-        return <Navigate to="/user-sign-in" replace />;
+        return <Navigate to="" replace />;
     }
 
     return <Outlet />;
