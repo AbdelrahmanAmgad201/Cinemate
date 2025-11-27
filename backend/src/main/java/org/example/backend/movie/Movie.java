@@ -73,8 +73,20 @@ public class Movie {
     public String getOrganizationName() {
         return organization != null ? organization.getName() : null;
     }
-    @PreUpdate
+    @PrePersist
     protected void onCreate() {
+        if (ratingSum == null) {
+            ratingSum = 0L;
+        }
+        if (ratingCount == null) {
+            ratingCount = 1;
+        }
+        if (averageRating == null) {
+            averageRating = 0D;
+        }
+    }
+    @PreUpdate
+    protected void onUpdate() {
         if (releaseDate == null && admin !=null) {
             releaseDate = LocalDate.now();
         }
