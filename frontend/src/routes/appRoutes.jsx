@@ -6,6 +6,8 @@ import UserSignIn from "../pages/auth/signIn.jsx";
 import UserSignUp from "../pages/auth/signUp.jsx";
 import EmailVerification from "../pages/auth/emailVerification.jsx";
 import HomePage from "../pages/user/homePage.jsx";
+import Browse from "../pages/user/browse.jsx";
+import Genre from '../pages/user/genre.jsx';
 import OrgSignUp from "../pages/org/auth/orgSignUp.jsx";
 import OrgSignIn from "../pages/org/auth/orgSignIn.jsx";
 import AdminSignIn from "../pages/admin/auth/adminSignIn.jsx";
@@ -65,6 +67,8 @@ export default function AppRoutes() {
             {/* protected routes (requires login + verified) */}
             <Route element={<RoleRoute allowedRoles={["USER"]} />}>
                 <Route path="/home-page" element={<HomePage />} />
+                <Route path="/browse" element={<Browse />} />
+                <Route path="/genre/:title" element={<Genre />} />
                 <Route path="/movie/:movieId" element={<MoviePreviewPage />} />
                 <Route path="/watch" element={<WatchPage />} />
 
