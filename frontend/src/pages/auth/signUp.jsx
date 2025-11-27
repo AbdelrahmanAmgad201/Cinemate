@@ -2,7 +2,7 @@ import './style/signUp.css';
 import { useState, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Link } from "react-router-dom";
-import { AuthContext } from "../../context/AuthContext.jsx";
+import { AuthContext } from "../../context/authContext.jsx";
 import oauthSignIn from '../../api/oauthSignInApi.jsx';
 
 // Icons
