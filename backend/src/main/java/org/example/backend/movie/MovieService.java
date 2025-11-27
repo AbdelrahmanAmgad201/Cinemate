@@ -56,8 +56,16 @@ public class MovieService {
 
     @Transactional
     public Movie getMovie(Long id){
-        return movieRepository.findById(id).orElseThrow(() -> new RuntimeException("Movie not found"));
+        Movie movie = movieRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Movie not found"));
+
+        if (movie.getAdmin() == null) {
+            throw new RuntimeException("Movie not found");
+        }
+
+        return movie;
     }
+
     @Transactional
     public MoviesOverview getMoviesOverview(Long orgId){
         Object resultObj = movieRepository.getMovieCountAndTotalViews(orgId);

@@ -1,5 +1,6 @@
 package org.example.backend.movie;
 
+import org.example.backend.admin.Admin;
 import org.example.backend.organization.MoviesOverview;
 import org.example.backend.organization.Organization;
 import org.example.backend.organization.OrganizationRepository;
@@ -37,6 +38,7 @@ class MovieServiceTest {
     private Organization organization;
     private Movie movie;
     private MovieAddDTO movieAddDTO;
+    private Admin admin;
 
     @BeforeEach
     void setup() {
@@ -45,12 +47,16 @@ class MovieServiceTest {
                 .email("org@test.com")
                 .name("Test Org")
                 .build();
-
+        admin = admin.builder()
+                .id(1L)
+                .email("admin@test.com")
+                .build();
         movie = Movie.builder()
                 .movieID(10L)
                 .name("Test Movie")
                 .genre(Genre.ACTION)
                 .organization(organization)
+                .admin(admin)
                 .build();
 
         movieAddDTO = MovieAddDTO.builder()

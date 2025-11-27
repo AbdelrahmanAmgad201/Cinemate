@@ -2,9 +2,11 @@ package org.example.backend.movie;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.persistence.*;
 import lombok.*;
 import org.example.backend.admin.Admin;
+import org.example.backend.movieReview.UserSummaryDTO;
 import org.example.backend.organization.Organization;
 
 import java.time.LocalDate;
@@ -65,4 +67,10 @@ public class Movie {
     @JoinColumn(name = "admin_id", nullable = true)
     @JsonIgnore
     private Admin admin;
+
+    @JsonProperty("organization")
+    public String getOrganizationName() {
+        return organization != null ? organization.getName() : null;
+    }
+
 }
