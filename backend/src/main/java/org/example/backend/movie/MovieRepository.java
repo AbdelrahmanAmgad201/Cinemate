@@ -34,7 +34,7 @@ public interface MovieRepository extends JpaRepository<Movie, Long>, JpaSpecific
        """)
     List<Object[]> getGenresOrderedByViews(@Param("orgId") Long orgId);
 
-    Page<Movie> findAllByAdminIsNotNull(Pageable pageable);
+    Page<Movie> findAllByAdminIsNotNull(Specification<Movie> spec, Pageable pageable);
 
     List<Movie> findByAdminIsNotNullAndOrganization_Id(Long orgId);
 
