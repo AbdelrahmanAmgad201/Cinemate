@@ -123,15 +123,15 @@ const EmailVerification = () => {
 
             <p>Can't find the email? Check your <b>spam folder</b></p>
 
-            <p>Still can't find the email?</p>
+            {/*<p>Still can't find the email?</p>*/}
 
-            <button className="Resend-Verification-Email-button"
-                    onClick={handleResendClick}
-                    disabled={buttonTimer > 0}>
-                {buttonTimer > 0 ?
-                    `Wait ${buttonTimer}s` : "Resend Verification Email"
-                }
-            </button>
+            {/*{<button className="Resend-Verification-Email-button"*/}
+            {/*        onClick={handleResendClick}*/}
+            {/*        disabled={buttonTimer > 0}>*/}
+            {/*    {buttonTimer > 0 ?*/}
+            {/*        `Wait ${buttonTimer}s` : "Resend Verification Email"*/}
+            {/*    }*/}
+            {/*</button>*/}
 
             {/*<button type="submit" onClick={() => navigate("/homePage")}>Done</button>*/}
         </div>

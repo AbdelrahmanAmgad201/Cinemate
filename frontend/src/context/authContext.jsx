@@ -27,7 +27,7 @@ export default function AuthProvider({ children }){
             }
 
             setUser(res.user)
-            return {success: true}
+            return {success: true, data: res.user}
         }
         catch(err){
             console.log(err);
@@ -115,6 +115,7 @@ export default function AuthProvider({ children }){
 
     useEffect(()=>{
         const token = localStorage.getItem('token');
+        // console.log(token);
         // const token = null; // uncomment this if you want to sign out
 
         if (!token){
@@ -148,7 +149,7 @@ export default function AuthProvider({ children }){
     }, [])
 
     return(
-        <AuthContext.Provider value={{ user, pendingUser, pendingRestored, loading, signIn, signUp, signOut, verifyEmail, isAuthenticated: !!user}}>
+        <AuthContext.Provider value={{ user, setUser, pendingUser, pendingRestored, loading, signIn, signUp, signOut, verifyEmail, isAuthenticated: !!user}}>
             {children}
         </AuthContext.Provider>
     )

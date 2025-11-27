@@ -16,7 +16,19 @@ const OAuthRedirect = () => {
         try{
             localStorage.setItem('token', token);
 
-            const userData = jwtDecode(token);
+            const userData = jwtDecode(token); // returns { id, email, role, iat }
+            // if (userData.exp * 1000 < Date.now()) {
+            //     // token expired
+            //     localStorage.removeItem("token");
+            //     setUser(null);
+            // }
+
+            setUser({
+                id: userData.id,
+                email: userData.email,
+                role: userData.role.replace("ROLE_", ""),
+            });
+
 
             console.log("OAuth sign-in successful");
 

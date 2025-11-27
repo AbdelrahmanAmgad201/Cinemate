@@ -66,8 +66,8 @@ const OrgAddMovie = () => {
                              <input type = "text" id = "movieName" name = "movieName" required  placeHolder = "Enter movie name" onChange={(e) => {setMovieName(e.target.value)}}/>
                          </div>
                          <div className = "input-elem">
-                             <label htmlFor = "movieURL">Movie URL</label>
-                             <input type = "text" id = "movieURL" name = "movieURL" required placeHolder = "Enter movie URL" onChange={(e) => {setMovieURL(e.target.value)}}/>
+                             <label htmlFor = "movieURL">Movie</label>
+                             <input type = "text" id = "movieURL" name = "movieURL" required placeHolder = "Enter wistia id" onChange={(e) => {setMovieURL(e.target.value)}}/>
                          </div>
                          <div className = "input-elem">
                              <label htmlFor = "thumbnailURL">Thumbnail URL</label>
@@ -76,22 +76,22 @@ const OrgAddMovie = () => {
                      </div>
                          <div className = "name">
                              <div className = "input-elem">
-                                 <label htmlFor = "trailerURL">Trailer URL</label>
-                                 <input type = "text" id = "trailerURL" name = "trailerURL" required placeHolder = "Enter movie trailer URL" onChange={(e) => {setTrailerURL(e.target.value)}}/>
+                                 <label htmlFor = "trailerURL">Trailer</label>
+                                 <input type = "text" id = "trailerURL" name = "trailerURL" required placeHolder = "Enter wistia id" onChange={(e) => {setTrailerURL(e.target.value)}}/>
                              </div>
                              <div className = "input-elem">
                                  <label htmlFor = "movieDuration">Movie Duration</label>
                                  <input type = "number" id = "movieDuration" name = "movieDuration" required placeHolder = "Enter movie duration (in minutes)" onChange={(e) => {setMovieDuration(e.target.value)}}/>
                              </div>
-                             <div className="date-gender">
-                                 <div className="input-elem">
-                                     <label htmlFor="releaseDate">Release Date</label><br />
-                                     <div className="icon-input">
-                                         <CiCalendar />
-                                         <input type="date" id="releaseDate" name="releaseDate" required style={{width: "200px"}} onChange={(e) => {setReleaseDate(e.target.value)}} />
-                                     </div>
-                                 </div>
-                             </div>
+                             {/*<div className="date-gender">*/}
+                             {/*    <div className="input-elem">*/}
+                             {/*        <label htmlFor="releaseDate">Release Date</label><br />*/}
+                             {/*        <div className="icon-input">*/}
+                             {/*            <CiCalendar />*/}
+                             {/*            <input type="date" id="releaseDate" name="releaseDate" required style={{width: "200px"}} onChange={(e) => {setReleaseDate(e.target.value)}} />*/}
+                             {/*        </div>*/}
+                             {/*    </div>*/}
+                             {/*</div>*/}
                          </div>
                      <div className="input-elem" style={{borderBottom: "none"}}>
                          <label htmlFor="genre">Genre</label>

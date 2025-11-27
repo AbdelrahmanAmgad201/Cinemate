@@ -1,63 +1,62 @@
-import React, {useContext, useEffect, useState} from 'react';
-import { getReviewsApi, postReviewApi } from "../api/movieApi.jsx";
-import {getPendingRequestsApi, acceptRequestApi, declineRequestApi, getRequestsHistoryApi} from "../api/adminApi.jsx";
-import {AuthContext} from "../context/authContext.jsx";
+import React, { useState } from 'react';
+import MoviesDetailsApi from '../api/MoviesDetailsApi.jsx';
 
-export default function TestSandbox() {
+export default function TestSandBox() {
+    const [newReleases, setNewReleases] = useState([]);
+    const [topRated, setTopRated] = useState([]);
+    const [loading, setLoading] = useState(false);
 
-    const { user, loading, signIn, signOut, isAuthenticated } = useContext(AuthContext);
+    const newReleasesRequest = {
+        name: null,
+        genre: null,
+        sortBy: "releaseDate",
+        sortDirection: "desc",
+        page: 0,
+        pageSize: 6
+    };
 
-    async function processPendingRequests() {
-        try {
-            // Accept request with ID 1
-            const acceptRes = await acceptRequestApi({ requestId: 1 });
-            if (acceptRes.success) {
-                console.log("Request 1 accepted:", acceptRes.data);
-            } else {
-                console.error("Failed to accept request 1:", acceptRes.message);
-            }
+    const topRatedRequest = {
+        name: null,
+        genre: null,
+        sortBy: "rating",
+        sortDirection: "desc",
+        page: 0,
+        pageSize: 6
+    };
 
-            // Decline request with ID 2
-            const declineRes = await declineRequestApi({ requestId: 2 });
-            if (declineRes.success) {
-                console.log("Request 2 declined:", declineRes.data);
-            } else {
-                console.error("Failed to decline request 2:", declineRes.message);
-            }
-        } catch (err) {
-            console.error("Error processing requests:", err);
+    const fetchNewReleases = async () => {
+        setLoading(true);
+        const result = await MoviesDetailsApi(newReleasesRequest);
+        if (result.success) {
+            console.log("New Releases:", result.movies);
+            setNewReleases(result.movies);
         }
-    }
+        setLoading(false);
+    };
 
-    // Fetch reviews on mount
-    useEffect(() => {
-        // Wait until auth finishes loading and user exists
-        if (loading || !user) return;
-
-        const fetchRequests = async () => {
-            try {
-                console.log("Logged-in admin:", user);
-                const pending = await getPendingRequestsApi({ adminId: user.id });
-                const history = await getRequestsHistoryApi({ adminId: user.id });
-
-                console.log("Pending requests:", pending);
-                console.log("Requests history:", history);
-
-                await processPendingRequests()
-            } catch (err) {
-                console.error("Error fetching requests:", err);
-            }
-        };
-
-        fetchRequests();
-    }, [loading, user]); // run again if loading/user changes
-
-
-
+    const fetchTopRated = async () => {
+        setLoading(true);
+        const result = await MoviesDetailsApi(topRatedRequest);
+        if (result.success) {
+            console.log("Top Rated:", result.movies);
+            setTopRated(result.movies);
+        }
+        setLoading(false);
+    };
 
     return (
         <div>
-            Sandbox
+            <h1>Test Search API</h1>
+            <button onClick={fetchNewReleases}>Fetch New Releases</button>
+            <button onClick={fetchTopRated}>Fetch Top Rated</button>
+
+            {loading && <p>Loading...</p>}
+
+            <h2>New Releases</h2>
+            <pre>{JSON.stringify(newReleases, null, 2)}</pre>
+
+            <h2>Top Rated</h2>
+            <pre>{JSON.stringify(topRated, null, 2)}</pre>
         </div>
     );
 }

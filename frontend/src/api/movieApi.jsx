@@ -24,7 +24,7 @@ function formatRuntime(minutes) {
 }
 
 
-function mapMovieBackendToFrontend(m) {
+export function mapMovieBackendToFrontend(m) {
     return {
         id: m.movieID,
         title: m.name,
@@ -43,6 +43,7 @@ export async function getMovieApi({ movieId }) {
     try {
         const response = await api.post(`/movie/v1/get-specific-movie/${movieId}`);
         const data = response.data;
+        console.log(data);
 
         const mappedMovie = mapMovieBackendToFrontend(data);
         return { success: true, data: mappedMovie };
@@ -98,6 +99,57 @@ export async function deleteReviewApi({movieId}) {
     try{
         const response = await api.delete(`/delete-movie-review/${movieId}`);
 
+        const data = response.data;
+
+
+        return { success: true,};
+    }
+    catch(err){
+        console.log(err);
+        return { success: false , message: err.response?.data?.error || err.message };
+    }
+};
+
+
+
+// Like and watch later
+export async function likeMovieApi({movieId}) {
+    // private Long movieId;
+    try{
+        const response = await api.post(`/liked-movie/v1/like-movie/${movieId}`);
+        console.log(response);
+        const data = response.data;
+
+
+        return { success: true,};
+    }
+    catch(err){
+        console.log(err);
+        return { success: false , message: err.response?.data?.error || err.message };
+    }
+};
+
+export async function addToWatchLaterApi({movieId}) {
+    // private Long movieId;
+    try{
+        const response = await api.post(`/watch-later/v1/watch-later/${movieId}`);
+        console.log(response);
+        const data = response.data;
+
+
+        return { success: true,};
+    }
+    catch(err){
+        console.log(err);
+        return { success: false , message: err.response?.data?.error || err.message };
+    }
+};
+
+export async function addToWatchHistoryApi({movieId}) {
+    // private Long movieId;
+    try{
+        const response = await api.post(`/watch-history/v1/add-watch-history/${movieId}`);
+        console.log(response);
         const data = response.data;
 
 

@@ -4,6 +4,7 @@ export async function getRequestsHistoryApi() {
     try{
         const response = await api.post("/admin/v1/find-admin-requests");
         const rawRequestsHistory = response.data;
+        console.log(rawRequestsHistory);
         const RequestsHistoryMapped = rawRequestsHistory.map(req => ({
             id: req.id,
             movieName: req.movieName,
@@ -12,7 +13,7 @@ export async function getRequestsHistoryApi() {
             stateUpdatedAt: req.stateUpdatedAt,
             movie: req.movie,
             admin: req.admin,
-            organization: req.organization,
+            organizationName: req.organization,
         }));
 
         // const requests = response.data;
@@ -64,10 +65,10 @@ export async function acceptRequestApi({requestId}) {
 }
 
 export async function getPendingRequestsApi() {
-    console.log("getPendingRequestsApi");
+
     try{
         const response = await api.post("/admin/v1/get-pending-requests");
-
+        console.log(response.data);
         const pendingRequests = response.data;
         const pendingRequestsArray = pendingRequests.map(req => ({
             id: req.id,
@@ -77,13 +78,70 @@ export async function getPendingRequestsApi() {
             stateUpdatedAt: req.stateUpdatedAt,
             movie: req.movie,
             admin: req.admin,
-            organization: req.organization,
+            organizationName: req.movie.organization,
         }));
 
         // console.log(pendingRequestsArray);
 
 
         return { success: true, data: pendingRequestsArray};
+    }
+    catch(err){
+        console.log(err);
+        return { success: false , message: err.response?.data?.error || err.message  };
+    }
+}
+
+
+// ANALYTICS
+
+export async function getSystemAnalyticsApi() {
+    try {
+        const response = await api.post("/admin/v1/get-system-overview");
+        const systemAnalytics = response.data;
+
+        // Mapping based on your provided console log
+        const analyticsData = {
+            numberOfUsers: systemAnalytics.numberOfUsers,
+            numberOfMovies: systemAnalytics.numberOfMovies,
+            // Access the nested name immediately for easier UI use
+            mostPopularOrgName: systemAnalytics.mostPopularOrganization?.name || "N/A",
+            // Store IDs to generate links
+            mostLikedMovieId: systemAnalytics.mostLikedMovie,
+            mostRatedMovieId: systemAnalytics.mostRatedMovie
+        };
+
+        return { success: true, data: analyticsData };
+    } catch (err) {
+        console.log(err);
+        return { success: false, message: err.response?.data?.error || err.message };
+    }
+}
+
+export async function getMovieAnalyticsApi({ movieId }) {
+
+    try{
+        const response = await api.post("/admin/v1/get-specific-movie-overview", null,  {
+            params: { movieId },
+        });
+        const movieAnalytics = response.data;
+        console.log(movieAnalytics);
+
+        // private Long numberOfUsers;
+        // private Long numberOfMovies;
+        // private Organization mostPopularOrganization;
+        // private Long mostLikedMovie;
+        // private Long mostRatedMovie;
+
+        const analyticsData ={
+            numberOfUsers: movieAnalytics.numberOfUsers,
+            numberOfMovies: movieAnalytics.numberOfMovies,
+            mostPopularOrganization: movieAnalytics.mostPopularOrganization, // could map .name if you want
+            mostLikedMovie: movieAnalytics.mostLikedMovie,
+            mostRatedMovie: movieAnalytics.mostRatedMovie
+        };
+
+        return { success: true, data: analyticsData};
     }
     catch(err){
         console.log(err);

@@ -5,7 +5,7 @@ import ReviewCard from "../../components/reviewCard.jsx";
 import { dummyReviews } from "../../data/dummyReviews";
 import {useParams, useLocation, useNavigate} from "react-router-dom";
 
-import {getMovieApi, getReviewsApi, postReviewApi, deleteReviewApi} from "../../api/movieApi.jsx";
+import {getMovieApi, getReviewsApi, postReviewApi, deleteReviewApi, likeMovieApi, addToWatchHistoryApi, addToWatchLaterApi} from "../../api/movieApi.jsx";
 import {ErrorToastContext} from "../../context/errorToastContext.jsx";
 
 import playIcon from "../../assets/icons/play-black.png";
@@ -15,32 +15,6 @@ import likeIcon from "../../assets/icons/like-black.png";
 import watchPartyIcon from "../../assets/icons/watch-party-black.png";
 import addIcon from "./../../assets/icons/add-white.png"
 import clockIcon from "../../assets/icons/clock-white.png";
-
-
-
-
-// function mapMovieBackendToFrontend(m) {
-//     return {
-//         id: m.movieId,
-//         title: m.name,
-//         description: m.description,
-//         poster: m.thumbnailUrl,       // rename to poster for UI
-//         videoUrl: m.movieUrl,
-//         trailerUrl: m.trailerUrl,
-//         genres: [m.genre],            // backend gives ONE genre — UI expects array
-//         rating: m.averageRating,
-//         runtime: formatRuntime(m.duration),
-//         releaseDate: m.releaseDate
-//     };
-// }
-
-
-function formatRuntime(minutes) {
-    if (!minutes) return "";
-    const h = Math.floor(minutes / 60);
-    const m = minutes % 60;
-    return `${h}h ${m}m`;
-}
 
 export default function MoviePreviewPage() {
 
@@ -142,7 +116,7 @@ export default function MoviePreviewPage() {
             const res = await getReviewsApi({movieId, page:pageToFetch, size});
             if (res.success === false) {
                 // console.error("Failed to fetch reviews:", res.statusText);
-                showError("Failed to fetch reviews", res.message || "unknown error")
+                {user.role === "USER" && showError("Failed to fetch reviews", res.message || "unknown error")}
             }
             const data = res.data
             console.log(data)
@@ -160,7 +134,7 @@ export default function MoviePreviewPage() {
 
         }catch (err){
             setReviewsError(err.message || "Failed to load reviews");
-            showError("Failed to fetch reviews", err.message || "unknown error")
+            {user.role === "USER" && showError("Failed to fetch reviews", err.message || "unknown error")}
 
         }finally {
             setReviewsLoading(false);
@@ -187,6 +161,38 @@ export default function MoviePreviewPage() {
             setMovieLoading(false);
         }
 
+    }
+
+    const handleLike = async () => {
+        try {
+            const res = await likeMovieApi({ movieId });
+            if (res.success === false){
+
+                showError("Failed to like movie", res.message || "unknown error")
+            }
+            else {
+                alert("Liked movie")
+            }
+
+        } catch (err) {
+            showError("Failed to like movie", err.message || "unknown error")
+        }
+    }
+
+    const handleWatchLater = async () => {
+        try {
+            const res = await addToWatchLaterApi({ movieId });
+            if (res.success === false){
+
+                showError("Failed to add movie to watch later", res.message || "unknown error")
+            }
+            else {
+                alert("Movie added to watch later")
+            }
+
+        } catch (err) {
+            showError("Failed to add movie to watch later", err.message || "unknown error")
+        }
     }
 
     // Fetches reviews and maybe movie details from backend
@@ -249,7 +255,7 @@ export default function MoviePreviewPage() {
 
     // COMMENT TO TEST
     if (movieLoading) return <div className="loader">Loading movie...</div>;
-    if (movieError) return <div className="error">Error: {movieError}</div>;
+    // if (movieError) return <div className="error">Error: {movieError}</div>;
     if (!movie) return <div className="no-movie">No movie selected.</div>;
 
     return (
@@ -275,7 +281,10 @@ export default function MoviePreviewPage() {
                     </div>
 
                     <div className="movie-preview-page-movie-details-middle-buttons">
-                        <button title="Play" onClick={() => navigate(`/watch`, { state:  movie.videoUrl  })}>
+                        <button title="Play" onClick={() => {
+                            addToWatchHistoryApi({movieId});
+                            navigate(`/watch`, { state:  movie.videoUrl  })
+                        }}>
                             <img src={playIcon} alt="Play" className="button-icon" />
                             Play
                             <span className="tooltip">Play movie</span>
@@ -286,20 +295,20 @@ export default function MoviePreviewPage() {
                             <span className="tooltip">Watch Trailer</span>
                         </button>
 
-                        <button title="Watchlist">
-                            <img src={watchlistIcon} alt="Watchlist" className="button-icon" />
+                        {user.role === "USER" && <button title="Watchlist">
+                            <img src={watchlistIcon} alt="Watchlist" className="button-icon" onClick={handleWatchLater}/>
                             <span className="tooltip">Watchlist</span>
-                        </button>
+                        </button>}
 
-                        <button title="Like">
-                            <img src={likeIcon} alt="Like" className="button-icon" />
+                        {user.role === "USER" && <button title="Like">
+                            <img src={likeIcon} alt="Like" className="button-icon" onClick={handleLike} />
                             <span className="tooltip">Like</span>
-                        </button>
+                        </button>}
 
-                        <button title="Watch-Party">
+                        {user.role === "USER" && <button title="Watch-Party">
                             <img src={watchPartyIcon} alt="Watch-Party" className="button-icon" />
                             <span className="tooltip">Start Watch-Party</span>
-                        </button>
+                        </button>}
 
                     </div>
                 </div>
@@ -326,7 +335,7 @@ export default function MoviePreviewPage() {
             </div>
 
             {/* Vertical (Columns) elements*/}
-            <div className="movie-preview-page-reviews">
+            {user.role === "USER" && <div className="movie-preview-page-reviews">
                 <div className="movie-preview-page-reviews-header-row">
                     <h2 className="reviews-title">User Reviews ({reviews.length})</h2>
                     <button className="reviews-add-button" title="Add Review" onClick={() => setShowForm(true)}>
@@ -401,7 +410,7 @@ export default function MoviePreviewPage() {
                     </div>
                 )}
 
-            </div>
+            </div>}
 
         </div>
     )

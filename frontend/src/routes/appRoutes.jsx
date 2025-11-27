@@ -58,18 +58,24 @@ export default function AppRoutes() {
             <Route element={<RoleRoute allowedRoles={["ADMIN"]} redirectTo="/admin-sign-in" />}>
                 <Route path="/review-movies" element={<ReviewMovies />} />
                 <Route path="/admin-site-analytics" element={<SiteAnalytics />} />
+                {/*<Route path="/movie/:movieId" element={<MoviePreviewPage />} />*/}
+            </Route>
 
+            <Route element={<RoleRoute allowedRoles={["USER","ADMIN"]} />}>
+                {/*<Route path="/home-page" element={<HomePage />} />*/}
+                {/*<Route path="/browse" element={<Browse />} />*/}
+                <Route path="/movie/:movieId" element={<MoviePreviewPage />} />
             </Route>
 
             {/*Added here for testing*/}
-            <Route path="/test-sand-box" element={<TestSandBox />} />
+            {/*<Route path="/test-sand-box" element={<TestSandBox />} />*/}
 
             {/* protected routes (requires login + verified) */}
             <Route element={<RoleRoute allowedRoles={["USER"]} />}>
                 <Route path="/home-page" element={<HomePage />} />
                 <Route path="/browse" element={<Browse />} />
                 <Route path="/genre/:title" element={<Genre />} />
-                <Route path="/movie/:movieId" element={<MoviePreviewPage />} />
+                {/*<Route path="/movie/:movieId" element={<MoviePreviewPage />} />*/}
                 <Route path="/watch" element={<WatchPage />} />
 
             </Route>
