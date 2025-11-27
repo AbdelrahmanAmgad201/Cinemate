@@ -1,0 +1,141 @@
+-- Insert dummy organizations with password (you should use BCrypt hashed passwords in production)
+INSERT INTO organizations (name, email, password, about, created_at)
+VALUES
+('Warner Bros Entertainment', 'contact@warnerbros.com', '$2a$10$XYZ123...', 'Leading entertainment company producing films and TV shows', NOW()),
+('Universal Pictures', 'contact@universal.com', '$2a$10$ABC456...', 'American film production and distribution company', NOW()),
+('Paramount Pictures', 'contact@paramount.com', '$2a$10$DEF789...', 'Film and television production company', NOW());
+
+-- Insert dummy admins with password
+INSERT INTO admins (name, email, password)
+VALUES
+('John Admin', 'john.admin@moviedb.com', '$2a$10$GHI012...'),
+('Sarah Admin', 'sarah.admin@moviedb.com', '$2a$10$JKL345...'),
+('Michael Admin', 'michael.admin@moviedb.com', '$2a$10$MNO678...');
+
+-- Insert dummy movies
+INSERT INTO movies (name, description, movie_url, thumbnail_url, trailer_url, duration, genre, release_date, rating_sum, rating_count, average_rating, organization_id, admin_id)
+VALUES
+-- Action Movies
+('The Dark Knight', 'When the menace known as the Joker wreaks havoc on Gotham, Batman must accept one of the greatest psychological and physical tests.',
+'https://example.com/movies/dark-knight.mp4', 'https://example.com/thumbnails/dark-knight.jpg', 'https://youtube.com/watch?v=dark-knight',
+152, 'ACTION', '2008-07-18', 450, 50, 9.0, 1, 1),
+
+('Mad Max: Fury Road', 'In a post-apocalyptic wasteland, Max teams up with Furiosa to escape a tyrant and his army.',
+'https://example.com/movies/mad-max.mp4', 'https://example.com/thumbnails/mad-max.jpg', 'https://youtube.com/watch?v=mad-max',
+120, 'ACTION', '2015-05-15', 420, 50, 8.4, 1, 1),
+
+('John Wick', 'An ex-hitman comes out of retirement to track down the gangsters who took everything from him.',
+'https://example.com/movies/john-wick.mp4', 'https://example.com/thumbnails/john-wick.jpg', 'https://youtube.com/watch?v=john-wick',
+101, 'ACTION', '2014-10-24', 385, 50, 7.7, 2, 2),
+
+('Mission: Impossible - Fallout', 'Ethan Hunt and his team race against time after a mission gone wrong.',
+'https://example.com/movies/mi-fallout.mp4', 'https://example.com/thumbnails/mi-fallout.jpg', 'https://youtube.com/watch?v=mi-fallout',
+147, 'ACTION', '2018-07-27', 395, 50, 7.9, 3, 1),
+
+-- Comedy Movies
+('The Grand Budapest Hotel', 'A writer encounters the owner of an aging hotel who tells him of his youth working there.',
+'https://example.com/movies/budapest.mp4', 'https://example.com/thumbnails/budapest.jpg', 'https://youtube.com/watch?v=budapest',
+100, 'COMEDY', '2014-03-07', 410, 50, 8.2, 1, 1),
+
+('Superbad', 'Two co-dependent high school seniors are forced to deal with separation anxiety after their plan to party goes awry.',
+'https://example.com/movies/superbad.mp4', 'https://example.com/thumbnails/superbad.jpg', 'https://youtube.com/watch?v=superbad',
+113, 'COMEDY', '2007-08-17', 380, 50, 7.6, 2, 2),
+
+('The Hangover', 'Three buddies wake up from a bachelor party in Las Vegas with no memory and the groom missing.',
+'https://example.com/movies/hangover.mp4', 'https://example.com/thumbnails/hangover.jpg', 'https://youtube.com/watch?v=hangover',
+100, 'COMEDY', '2009-06-05', 390, 50, 7.8, 1, 3),
+
+-- Drama Movies
+('The Shawshank Redemption', 'Two imprisoned men bond over years, finding redemption through acts of decency.',
+'https://example.com/movies/shawshank.mp4', 'https://example.com/thumbnails/shawshank.jpg', 'https://youtube.com/watch?v=shawshank',
+142, 'DRAMA', '1994-09-23', 470, 50, 9.4, 1, 1),
+
+('Forrest Gump', 'The presidencies of Kennedy and Johnson unfold through the perspective of an Alabama man with an IQ of 75.',
+'https://example.com/movies/forrest-gump.mp4', 'https://example.com/thumbnails/forrest-gump.jpg', 'https://youtube.com/watch?v=forrest',
+142, 'DRAMA', '1994-07-06', 440, 50, 8.8, 3, 2),
+
+('Parasite', 'Greed and class discrimination threaten the newly formed symbiotic relationship between two families.',
+'https://example.com/movies/parasite.mp4', 'https://example.com/thumbnails/parasite.jpg', 'https://youtube.com/watch?v=parasite',
+132, 'DRAMA', '2019-05-30', 430, 50, 8.6, 2, 1),
+
+('12 Years a Slave', 'In the antebellum United States, Solomon Northup is abducted and sold into slavery.',
+'https://example.com/movies/12-years.mp4', 'https://example.com/thumbnails/12-years.jpg', 'https://youtube.com/watch?v=12-years',
+134, 'DRAMA', '2013-10-18', 410, 50, 8.2, 1, 3),
+
+-- Horror Movies
+('Get Out', 'A young African-American visits his white girlfriend''s parents for the weekend where things take a sinister turn.',
+'https://example.com/movies/get-out.mp4', 'https://example.com/thumbnails/get-out.jpg', 'https://youtube.com/watch?v=get-out',
+104, 'HORROR', '2017-02-24', 390, 50, 7.8, 2, 2),
+
+('A Quiet Place', 'In a post-apocalyptic world, a family is forced to live in silence while hiding from creatures that hunt by sound.',
+'https://example.com/movies/quiet-place.mp4', 'https://example.com/thumbnails/quiet-place.jpg', 'https://youtube.com/watch?v=quiet',
+90, 'HORROR', '2018-04-06', 370, 50, 7.4, 3, 1),
+
+('Hereditary', 'A grieving family is haunted by tragic and disturbing occurrences.',
+'https://example.com/movies/hereditary.mp4', 'https://example.com/thumbnails/hereditary.jpg', 'https://youtube.com/watch?v=hereditary',
+127, 'HORROR', '2018-06-08', 360, 50, 7.2, 1, 2),
+
+-- Sci-Fi Movies
+('Inception', 'A thief who steals corporate secrets through dream-sharing technology is given the inverse task.',
+'https://example.com/movies/inception.mp4', 'https://example.com/thumbnails/inception.jpg', 'https://youtube.com/watch?v=inception',
+148, 'SCIFI', '2010-07-16', 435, 50, 8.7, 1, 1),
+
+('Interstellar', 'A team of explorers travel through a wormhole in space in an attempt to ensure humanity''s survival.',
+'https://example.com/movies/interstellar.mp4', 'https://example.com/thumbnails/interstellar.jpg', 'https://youtube.com/watch?v=interstellar',
+169, 'SCIFI', '2014-11-07', 425, 50, 8.5, 3, 2),
+
+('The Matrix', 'A computer hacker learns from mysterious rebels about the true nature of his reality.',
+'https://example.com/movies/matrix.mp4', 'https://example.com/thumbnails/matrix.jpg', 'https://youtube.com/watch?v=matrix',
+136, 'SCIFI', '1999-03-31', 445, 50, 8.9, 1, 1),
+
+('Blade Runner 2049', 'A young blade runner discovers a secret that could plunge society into chaos.',
+'https://example.com/movies/blade-runner.mp4', 'https://example.com/thumbnails/blade-runner.jpg', 'https://youtube.com/watch?v=blade',
+164, 'SCIFI', '2017-10-06', 400, 50, 8.0, 2, 3),
+
+-- Thriller Movies
+('Se7en', 'Two detectives hunt a serial killer who uses the seven deadly sins as his motives.',
+'https://example.com/movies/se7en.mp4', 'https://example.com/thumbnails/se7en.jpg', 'https://youtube.com/watch?v=se7en',
+127, 'THRILLER', '1995-09-22', 415, 50, 8.3, 2, 2),
+
+('Gone Girl', 'A husband becomes the prime suspect in his wife''s disappearance on their fifth wedding anniversary.',
+'https://example.com/movies/gone-girl.mp4', 'https://example.com/thumbnails/gone-girl.jpg', 'https://youtube.com/watch?v=gone-girl',
+149, 'THRILLER', '2014-10-03', 405, 50, 8.1, 1, 1),
+
+('Shutter Island', 'A U.S. Marshal investigates the disappearance of a murderer who escaped from a hospital for the criminally insane.',
+'https://example.com/movies/shutter-island.mp4', 'https://example.com/thumbnails/shutter-island.jpg', 'https://youtube.com/watch?v=shutter',
+138, 'THRILLER', '2010-02-19', 395, 50, 7.9, 3, 3),
+
+-- Romance Movies
+('The Notebook', 'A poor yet passionate young man falls in love with a rich young woman in 1940s South Carolina.',
+'https://example.com/movies/notebook.mp4', 'https://example.com/thumbnails/notebook.jpg', 'https://youtube.com/watch?v=notebook',
+123, 'ROMANCE', '2004-06-25', 375, 50, 7.5, 2, 2),
+
+('La La Land', 'A jazz pianist and an aspiring actress fall in love while pursuing their dreams in Los Angeles.',
+'https://example.com/movies/lalaland.mp4', 'https://example.com/thumbnails/lalaland.jpg', 'https://youtube.com/watch?v=lalaland',
+128, 'ROMANCE', '2016-12-09', 400, 50, 8.0, 1, 1),
+
+('Pride and Prejudice', 'Sparks fly when spirited Elizabeth Bennet meets single, rich, and proud Mr. Darcy.',
+'https://example.com/movies/pride.mp4', 'https://example.com/thumbnails/pride.jpg', 'https://youtube.com/watch?v=pride',
+129, 'ROMANCE', '2005-11-11', 385, 50, 7.7, 3, 3),
+
+-- Animation Movies
+('Spider-Man: Into the Spider-Verse', 'Teen Miles Morales becomes Spider-Man and joins others from across the Spider-Verse.',
+'https://example.com/movies/spiderverse.mp4', 'https://example.com/thumbnails/spiderverse.jpg', 'https://youtube.com/watch?v=spiderverse',
+117, 'ANIMATION', '2018-12-14', 440, 50, 8.8, 2, 2),
+
+('Toy Story', 'A cowboy doll is profoundly threatened when a new spaceman toy supplants him as top toy.',
+'https://example.com/movies/toy-story.mp4', 'https://example.com/thumbnails/toy-story.jpg', 'https://youtube.com/watch?v=toy-story',
+81, 'ANIMATION', '1995-11-22', 410, 50, 8.2, 3, 1),
+
+('Coco', 'A young boy named Miguel embarks on a journey to the magical Land of the Dead.',
+'https://example.com/movies/coco.mp4', 'https://example.com/thumbnails/coco.jpg', 'https://youtube.com/watch?v=coco',
+105, 'ANIMATION', '2017-11-22', 425, 50, 8.5, 1, 2),
+
+-- Documentary
+('Planet Earth II', 'David Attenborough returns to narrate this landmark documentary series about nature.',
+'https://example.com/movies/planet-earth.mp4', 'https://example.com/thumbnails/planet-earth.jpg', 'https://youtube.com/watch?v=planet',
+300, 'DOCUMENTARY', '2016-11-06', 460, 50, 9.2, 1, 1),
+
+('Free Solo', 'Follow Alex Honnold as he attempts to become the first person to free solo climb El Capitan.',
+'https://example.com/movies/free-solo.mp4', 'https://example.com/thumbnails/free-solo.jpg', 'https://youtube.com/watch?v=free-solo',
+100, 'DOCUMENTARY', '2018-09-28', 420, 50, 8.4, 2, 3);

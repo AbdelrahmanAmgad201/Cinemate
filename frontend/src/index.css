@@ -1,0 +1,56 @@
+:root {
+    --background-gradient-dark-blue:linear-gradient(to bottom, #01161E 0%, #0C3849 100%);
+    --ghost-white: #FAFAFF; /* for text */
+    --ink-black: #01161E; /* button */
+    --ink-black-border: #0C3849;
+    --ink-black-hover: #022237;
+    --ink-black-disabled: gray;
+    --line-separator-faded-grey: #DFDCDC59;
+    --dark-teal: #124559;
+    --lighter-dark-teal: #1A3039;
+    --grey-text: #AAAAAA;
+    --button-hover-color: #FAFAFF opacity 50%;
+    --blue-bell: #36A1F3;
+    --faded-blue-bell: rgba(54, 161, 243, 0.7);
+    --dark-blue-bell: #3f5c87;
+    --review-card-gradient-color: linear-gradient(
+            to bottom right,
+            #24414D 0%,
+            #1E3942 100%
+    );
+    --review-card-gradient-color-faded: linear-gradient(
+            to bottom right,
+            rgba(36, 65, 77, 0.7) 0%,
+            rgba(30, 57, 66, 0.7) 100%
+    );
+    --tooltip-background-color: rgba(250, 250, 255, 0.5);
+
+}
+
+body {
+    min-height: 100vh;
+    font-family: 'Roboto', sans-serif;
+    background: var(--background-gradient-dark-blue);
+    color: var(--ghost-white);
+}
+
+/* to add a tooltip, add a div with class "tooltip" to the button
+EX: <span className="tooltip">Play movie</span>  */
+.tooltip {
+    position: absolute;
+    background-color: var(--tooltip-background-color);
+    color: var(--ink-black);
+    padding: 6px 10px;
+    border-radius: 8px;
+    font-size: 12px;
+    white-space: nowrap;
+    z-index: 10;
+    opacity: 0;
+    transition: opacity 0.2s ease-in-out, transform 0.2s ease-in-out;
+
+}
+
+button:hover .tooltip {
+    opacity: 1;
+    transform: translateY(-50px); /* appear higher when visible */
+}

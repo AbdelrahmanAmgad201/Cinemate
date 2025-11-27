@@ -1,0 +1,88 @@
+import {Routes, Route} from 'react-router-dom'
+import GuestOnlyRoute from './GuestOnlyRoute'
+import PendingUserRoute from "./PendingUserRoute.jsx";
+
+import UserSignIn from "../pages/auth/signIn.jsx";
+import UserSignUp from "../pages/auth/signUp.jsx";
+import EmailVerification from "../pages/auth/emailVerification.jsx";
+import HomePage from "../pages/user/homePage.jsx";
+import Browse from "../pages/user/browse.jsx";
+import Genre from '../pages/user/genre.jsx';
+import OrgSignUp from "../pages/org/auth/orgSignUp.jsx";
+import OrgSignIn from "../pages/org/auth/orgSignIn.jsx";
+import AdminSignIn from "../pages/admin/auth/adminSignIn.jsx";
+import OAuthRedirect from "../pages/user/auth/OAuthRedirect.jsx";
+import OrgAddMovie from "../pages/org/auth/orgAddMovie.jsx";
+import OrgMoviesAndAnalytics from "../pages/org/auth/orgMoviesAndAnalytics.jsx";
+import MoviePreviewPage from "../pages/user/moviePreviewPage.jsx";
+import WatchPage from "../pages/user/watchPage.jsx";
+
+import NotFoundPage from "../components/notFoundPage.jsx";
+import TestSandBox from "../pages/testSandBox.jsx";
+
+import ReviewMovies from "../pages/admin/reviewMovies.jsx";
+import SiteAnalytics from "../pages/admin/siteAnalytics.jsx";
+
+import RoleRoute from "./roleRoute.jsx";
+
+export default function AppRoutes() {
+
+
+
+    return (
+        <Routes>
+
+            {/* public routes, currently the only public pages will be auth pages */}
+            <Route element={<GuestOnlyRoute />}>
+                {/*The following is equivalent to path = ""*/}
+                <Route index element={<UserSignIn />} />
+                <Route path={"/user-sign-up"} element={<UserSignUp />} />
+                <Route path={"/oauth2/redirect"} element={<OAuthRedirect />} />
+
+                <Route path="/org-sign-in" element={<OrgSignIn />} />
+                <Route path="/org-sign-up" element={<OrgSignUp />} />
+
+                <Route path="/admin-sign-in" element={<AdminSignIn />} />
+
+                <Route element={<PendingUserRoute />}>
+                    <Route path="/email-verification" element={<EmailVerification />} />
+                </Route>
+
+            </Route>
+
+            <Route element={<RoleRoute allowedRoles={["ORGANIZATION"]} redirectTo="/org-sign-in" />}>
+                <Route path="/org-add-movie" element={<OrgAddMovie />} />
+                <Route path="/org-movies-and-analytics" element={<OrgMoviesAndAnalytics />} />
+            </Route>
+
+            <Route element={<RoleRoute allowedRoles={["ADMIN"]} redirectTo="/admin-sign-in" />}>
+                <Route path="/review-movies" element={<ReviewMovies />} />
+                <Route path="/admin-site-analytics" element={<SiteAnalytics />} />
+                {/*<Route path="/movie/:movieId" element={<MoviePreviewPage />} />*/}
+            </Route>
+
+            <Route element={<RoleRoute allowedRoles={["USER","ADMIN"]} />}>
+                {/*<Route path="/home-page" element={<HomePage />} />*/}
+                {/*<Route path="/browse" element={<Browse />} />*/}
+                <Route path="/movie/:movieId" element={<MoviePreviewPage />} />
+            </Route>
+
+            {/*Added here for testing*/}
+            {/*<Route path="/test-sand-box" element={<TestSandBox />} />*/}
+
+            {/* protected routes (requires login + verified) */}
+            <Route element={<RoleRoute allowedRoles={["USER"]} />}>
+                <Route path="/home-page" element={<HomePage />} />
+                <Route path="/browse" element={<Browse />} />
+                <Route path="/genre/:title" element={<Genre />} />
+                {/*<Route path="/movie/:movieId" element={<MoviePreviewPage />} />*/}
+                <Route path="/watch" element={<WatchPage />} />
+
+            </Route>
+
+            {/* If any unknown path is entered, it will be redirected to the UserSignIn page*/}
+            <Route path="*" element={<NotFoundPage />} />
+
+        </Routes>
+    )
+}
