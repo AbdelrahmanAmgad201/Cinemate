@@ -90,12 +90,12 @@ export default function UserSignUp ({role = "User", show = true, link = "/"}) {
                 {show && <div className="name">
                     <div className="input-elem">
                     <label htmlFor="firstName">First Name</label>
-                    <input type="text" id="firstName" name="firstName" required style={{width: "200px"}} onChange={(e) => {setFirstName(e.target.value)}} />
+                    <input type="text" id="firstName" name="firstName" maxLength={255} required style={{width: "200px"}} onChange={(e) => {setFirstName(e.target.value)}} />
                     </div>
                     
                     <div className="input-elem">
                     <label htmlFor="lastName">Last Name</label>
-                    <input type="text" id="lastName" name="lastName" required style={{width: "200px"}} onChange={(e) => {setLastName(e.target.value)}} />
+                    <input type="text" id="lastName" name="lastName" maxLength={255} required style={{width: "200px"}} onChange={(e) => {setLastName(e.target.value)}} />
                     </div>
                 </div>}
 
@@ -123,7 +123,7 @@ export default function UserSignUp ({role = "User", show = true, link = "/"}) {
                     <label htmlFor="email">Email</label>
                     <div className="icon-input">
                         <HiOutlineMail />
-                        <input type="email" id="email" name="email" placeholder="Enter your email address" required onChange={(e) => {setEmail(e.target.value)}} />
+                        <input type="email" id="email" name="email" maxLength={255} placeholder="Enter your email address" required onChange={(e) => {setEmail(e.target.value)}} />
                     </div>
                 </div>
 
@@ -131,7 +131,7 @@ export default function UserSignUp ({role = "User", show = true, link = "/"}) {
                     <label htmlFor="password">Password</label>
                     <div className="icon-input">
                         <HiOutlineLockClosed />
-                        <input type={showPassword ? "text" : "password"} id="password" name="password" placeholder="Enter your Password" required onChange={(e) => {setPassword(e.target.value)}} value={password} />
+                        <input type={showPassword ? "text" : "password"} id="password" name="password" maxLength={255} placeholder="Enter your Password" required onChange={(e) => {setPassword(e.target.value)}} value={password} />
                         <span className="password-toggle-icon" onClick={() => setShowPassword(!showPassword)} style={{cursor: "pointer"}}>
                             {showPassword ? <LuEye /> : <LuEyeOff />}
                         </span>
@@ -143,7 +143,7 @@ export default function UserSignUp ({role = "User", show = true, link = "/"}) {
                     <label htmlFor="confirmPassword">Confirm Password</label>
                     <div className="icon-input">
                         <HiOutlineLockClosed />
-                        <input type={showConfirmPassword ? "text" : "password"} id="confirmPassword" name="confirmPassword" placeholder="Confirm your Password" required onChange={(e) => {setConfirmPassword(e.target.value)}} value={confirmPassword} />
+                        <input type={showConfirmPassword ? "text" : "password"} id="confirmPassword" name="confirmPassword" minLength={8} maxLength={255} placeholder="Confirm your Password" required onChange={(e) => {setConfirmPassword(e.target.value)}} value={confirmPassword} />
                         <span className="password-toggle-icon" onClick={() => setShowConfirmPassword(!showConfirmPassword)} style={{cursor: "pointer"}}>
                             {showConfirmPassword ? <LuEye /> : <LuEyeOff />}
                         </span>

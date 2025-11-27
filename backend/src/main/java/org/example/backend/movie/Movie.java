@@ -2,12 +2,15 @@ package org.example.backend.movie;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.persistence.*;
 import lombok.*;
 import org.example.backend.admin.Admin;
+import org.example.backend.movieReview.UserSummaryDTO;
 import org.example.backend.organization.Organization;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 @Getter
 @Setter
@@ -65,4 +68,27 @@ public class Movie {
     @JoinColumn(name = "admin_id", nullable = true)
     @JsonIgnore
     private Admin admin;
+
+    @JsonProperty("organization")
+    public String getOrganizationName() {
+        return organization != null ? organization.getName() : null;
+    }
+    @PrePersist
+    protected void onCreate() {
+        if (ratingSum == null) {
+            ratingSum = 0L;
+        }
+        if (ratingCount == null) {
+            ratingCount = 1;
+        }
+        if (averageRating == null) {
+            averageRating = 0D;
+        }
+    }
+    @PreUpdate
+    protected void onUpdate() {
+        if (releaseDate == null && admin !=null) {
+            releaseDate = LocalDate.now();
+        }
+    }
 }

@@ -1,51 +1,62 @@
-import React, { useEffect, useState } from 'react';
-import { getReviewsApi, postReviewApi } from "../api/movieApi.jsx";
+import React, { useState } from 'react';
+import MoviesDetailsApi from '../api/MoviesDetailsApi.jsx';
 
-export default function TestSandbox() {
-    const [reviews, setReviews] = useState([]);
-    const [newReview, setNewReview] = useState(null);
-    const movieId = 6; // example movieId
+export default function TestSandBox() {
+    const [newReleases, setNewReleases] = useState([]);
+    const [topRated, setTopRated] = useState([]);
+    const [loading, setLoading] = useState(false);
 
-    // Fetch reviews on mount
-    useEffect(() => {
-        const fetchReviews = async () => {
-            const res = await getReviewsApi({ movieId, page: 0, size: 10 });
-            console.log("Fetched reviews:", res);
-            if (res.success) setReviews(res.data.content);
-        };
+    const newReleasesRequest = {
+        name: null,
+        genre: null,
+        sortBy: "releaseDate",
+        sortDirection: "desc",
+        page: 0,
+        pageSize: 6
+    };
 
-        fetchReviews();
-    }, []);
+    const topRatedRequest = {
+        name: null,
+        genre: null,
+        sortBy: "rating",
+        sortDirection: "desc",
+        page: 0,
+        pageSize: 6
+    };
 
-    // Example: add a review
-    const handleAddReview = async () => {
-        const res = await postReviewApi({
-            movieId,
-            comment: "This is a test review",
-            rating: 9
-        });
-        console.log("Added review:", res);
-        if (res.success) setNewReview(res.data);
+    const fetchNewReleases = async () => {
+        setLoading(true);
+        const result = await MoviesDetailsApi(newReleasesRequest);
+        if (result.success) {
+            console.log("New Releases:", result.movies);
+            setNewReleases(result.movies);
+        }
+        setLoading(false);
+    };
+
+    const fetchTopRated = async () => {
+        setLoading(true);
+        const result = await MoviesDetailsApi(topRatedRequest);
+        if (result.success) {
+            console.log("Top Rated:", result.movies);
+            setTopRated(result.movies);
+        }
+        setLoading(false);
     };
 
     return (
         <div>
-            <h1>Test Sandbox</h1>
-            <button onClick={handleAddReview}>Add Test Review</button>
-            <h2>Reviews:</h2>
-            <ul>
-                {reviews.map(r => (
-                    <li key={r.id}>
-                        {r.name} ({r.rating}): {r.description}
-                    </li>
-                ))}
-            </ul>
-            {newReview && (
-                <div>
-                    <h3>New Review Added:</h3>
-                    <p>{newReview.name} ({newReview.rating}): {newReview.description}</p>
-                </div>
-            )}
+            <h1>Test Search API</h1>
+            <button onClick={fetchNewReleases}>Fetch New Releases</button>
+            <button onClick={fetchTopRated}>Fetch Top Rated</button>
+
+            {loading && <p>Loading...</p>}
+
+            <h2>New Releases</h2>
+            <pre>{JSON.stringify(newReleases, null, 2)}</pre>
+
+            <h2>Top Rated</h2>
+            <pre>{JSON.stringify(topRated, null, 2)}</pre>
         </div>
     );
 }

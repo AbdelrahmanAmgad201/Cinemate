@@ -1,6 +1,5 @@
 import {Routes, Route} from 'react-router-dom'
 import GuestOnlyRoute from './GuestOnlyRoute'
-import ProtectedRoute from "./ProtectedRoute.jsx";
 import PendingUserRoute from "./PendingUserRoute.jsx";
 
 import UserSignIn from "../pages/auth/signIn.jsx";
@@ -21,6 +20,11 @@ import WatchPage from "../pages/user/watchPage.jsx";
 import NotFoundPage from "../components/notFoundPage.jsx";
 import TestSandBox from "../pages/testSandBox.jsx";
 
+import ReviewMovies from "../pages/admin/reviewMovies.jsx";
+import SiteAnalytics from "../pages/admin/siteAnalytics.jsx";
+
+import RoleRoute from "./roleRoute.jsx";
+
 export default function AppRoutes() {
 
 
@@ -35,27 +39,43 @@ export default function AppRoutes() {
                 <Route path={"/user-sign-up"} element={<UserSignUp />} />
                 <Route path={"/oauth2/redirect"} element={<OAuthRedirect />} />
 
-                <Route element={<PendingUserRoute />}>
-                    <Route path="/email-verification" element={<EmailVerification />} />
-                </Route>
                 <Route path="/org-sign-in" element={<OrgSignIn />} />
                 <Route path="/org-sign-up" element={<OrgSignUp />} />
 
                 <Route path="/admin-sign-in" element={<AdminSignIn />} />
 
-            </Route>
-            {/*Added here for testing*/}
-            <Route path="/org-add-movie" element={<OrgAddMovie />} />
-            <Route path="/org-movies-and-analytics" element={<OrgMoviesAndAnalytics />} />
+                <Route element={<PendingUserRoute />}>
+                    <Route path="/email-verification" element={<EmailVerification />} />
+                </Route>
 
+            </Route>
+
+            <Route element={<RoleRoute allowedRoles={["ORGANIZATION"]} redirectTo="/org-sign-in" />}>
+                <Route path="/org-add-movie" element={<OrgAddMovie />} />
+                <Route path="/org-movies-and-analytics" element={<OrgMoviesAndAnalytics />} />
+            </Route>
+
+            <Route element={<RoleRoute allowedRoles={["ADMIN"]} redirectTo="/admin-sign-in" />}>
+                <Route path="/review-movies" element={<ReviewMovies />} />
+                <Route path="/admin-site-analytics" element={<SiteAnalytics />} />
+                {/*<Route path="/movie/:movieId" element={<MoviePreviewPage />} />*/}
+            </Route>
+
+            <Route element={<RoleRoute allowedRoles={["USER","ADMIN"]} />}>
+                {/*<Route path="/home-page" element={<HomePage />} />*/}
+                {/*<Route path="/browse" element={<Browse />} />*/}
+                <Route path="/movie/:movieId" element={<MoviePreviewPage />} />
+            </Route>
+
+            {/*Added here for testing*/}
             {/*<Route path="/test-sand-box" element={<TestSandBox />} />*/}
 
             {/* protected routes (requires login + verified) */}
-            <Route element={<ProtectedRoute requireVerified={true} />}>
+            <Route element={<RoleRoute allowedRoles={["USER"]} />}>
                 <Route path="/home-page" element={<HomePage />} />
                 <Route path="/browse" element={<Browse />} />
                 <Route path="/genre/:title" element={<Genre />} />
-                <Route path="/movie/:movieId" element={<MoviePreviewPage />} />
+                {/*<Route path="/movie/:movieId" element={<MoviePreviewPage />} />*/}
                 <Route path="/watch" element={<WatchPage />} />
 
             </Route>

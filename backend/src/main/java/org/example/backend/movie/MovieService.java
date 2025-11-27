@@ -24,14 +24,15 @@ public class MovieService {
 
     @Transactional
     public Page<Movie> getMovies(MovieRequestDTO movieRequestDTO) {
-        Specification<Movie> spec = MovieSpecification.filterMovies(movieRequestDTO);
+        Specification<Movie> spec = MovieSpecification.filterMovies(movieRequestDTO)
+                .and((root, query, cb) -> cb.isNotNull(root.get("admin")));
 
         Pageable pageable = PageRequest.of(
                 movieRequestDTO.getPage(),
                 movieRequestDTO.getPageSize()
         );
 
-        return movieRepository.findAllByAdminIsNotNull(spec, pageable);
+        return movieRepository.findAll(spec, pageable);
     }
 
     @Transactional
@@ -56,8 +57,16 @@ public class MovieService {
 
     @Transactional
     public Movie getMovie(Long id){
-        return movieRepository.findById(id).orElseThrow(() -> new RuntimeException("Movie not found"));
+        Movie movie = movieRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Movie not found"));
+
+        if (movie.getAdmin() == null) {
+            throw new RuntimeException("Movie not found");
+        }
+
+        return movie;
     }
+
     @Transactional
     public MoviesOverview getMoviesOverview(Long orgId){
         Object resultObj = movieRepository.getMovieCountAndTotalViews(orgId);

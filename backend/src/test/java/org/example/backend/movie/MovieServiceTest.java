@@ -1,5 +1,6 @@
 package org.example.backend.movie;
 
+import org.example.backend.admin.Admin;
 import org.example.backend.organization.MoviesOverview;
 import org.example.backend.organization.Organization;
 import org.example.backend.organization.OrganizationRepository;
@@ -11,6 +12,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.*;
+import org.springframework.data.jpa.domain.Specification;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -37,6 +39,7 @@ class MovieServiceTest {
     private Organization organization;
     private Movie movie;
     private MovieAddDTO movieAddDTO;
+    private Admin admin;
 
     @BeforeEach
     void setup() {
@@ -45,12 +48,16 @@ class MovieServiceTest {
                 .email("org@test.com")
                 .name("Test Org")
                 .build();
-
+        admin = admin.builder()
+                .id(1L)
+                .email("admin@test.com")
+                .build();
         movie = Movie.builder()
                 .movieID(10L)
                 .name("Test Movie")
                 .genre(Genre.ACTION)
                 .organization(organization)
+                .admin(admin)
                 .build();
 
         movieAddDTO = MovieAddDTO.builder()
@@ -76,14 +83,17 @@ class MovieServiceTest {
         List<Movie> movieList = List.of(movie);
         Page<Movie> moviePage = new PageImpl<>(movieList);
 
-        when(movieRepository.findAllByAdminIsNotNull(any(), any(Pageable.class)))
+        // Mock the correct repository method
+        when(movieRepository.findAll(any(Specification.class), any(Pageable.class)))
                 .thenReturn(moviePage);
 
         Page<Movie> result = movieService.getMovies(req);
 
+        assertNotNull(result);
         assertEquals(1, result.getTotalElements());
+
         verify(movieRepository, times(1))
-                .findAllByAdminIsNotNull(any(), any(Pageable.class));
+                .findAll(any(Specification.class), any(Pageable.class));
     }
 
     // -------------------------------------------------------------------

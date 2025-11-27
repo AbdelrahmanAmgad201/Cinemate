@@ -66,12 +66,12 @@ public interface MovieRepository extends JpaRepository<Movie, Long>, JpaSpecific
     List<Long> getMostRatedMovie(Pageable pageable);
 
     @Query("""
-       SELECT m.organization.id
-       FROM WatchHistory wh
-       JOIN wh.movie m
-       GROUP BY m.organization.id
-       ORDER BY COUNT(wh) DESC
-       """)
+   SELECT m.organization
+   FROM WatchHistory wh
+   JOIN wh.movie m
+   GROUP BY m.organization
+   ORDER BY COUNT(wh) DESC
+   """)
     List<Organization> getMostPopularOrganization(Pageable pageable);
 
 

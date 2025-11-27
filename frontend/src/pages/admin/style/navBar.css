@@ -1,0 +1,24 @@
+.navigationBar {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+
+    background-color: #1a2332;
+    padding: 15px 30px;
+    position: fixed;
+    top: 0;
+    width: 100%;
+    z-index: 1000;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+
+    box-sizing: border-box;
+}
+
+
+.navigationBar h1 {
+    color: #36A1F3;
+    margin: 0;
+    font-size: 24px;
+    font-weight: 600;
+    margin-right: 50px;
+}

@@ -48,7 +48,7 @@ public class SecurityConfig {
                 .requestMatchers("/api/admin/**").hasAuthority("ROLE_ADMIN")
                 .requestMatchers("/api/organization/**").hasAuthority("ROLE_ORGANIZATION")
                 .requestMatchers("/api/user/**").hasAuthority("ROLE_USER")
-                .requestMatchers("/api/movie/**").hasAuthority("ROLE_USER")
+                .requestMatchers("/api/movie/**").permitAll()
                 .requestMatchers("/api/movie-review/**").hasAuthority("ROLE_USER")
                 .requestMatchers("/api/watch-history/**").hasAuthority("ROLE_USER")
                 .requestMatchers("/api/liked-movie/**").hasAuthority("ROLE_USER")

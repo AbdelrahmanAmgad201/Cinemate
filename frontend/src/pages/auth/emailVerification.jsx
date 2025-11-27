@@ -14,7 +14,7 @@ const EmailVerification = () => {
     const codeInputRef = useRef(Array(6));
     const [buttonTimer, setButtonTimer] = useState(0);
 
-    const { pendingUser, verifyEmail } = useContext(AuthContext);
+    const { pendingUser, verifyEmail, user } = useContext(AuthContext);
     const { showError } = useContext(ErrorToastContext);
 
     if (!pendingUser) return null; // render nothing while redirecting
@@ -32,7 +32,8 @@ const EmailVerification = () => {
 
         const res = await verifyEmail(email, code);
         if (res.success === true) {
-            navigate("/")
+            if (user.role === "USER") navigate("/home-page")
+            else if (user.role === "ORGANIZATION") navigate("/org-add-movie")
         }
         else {
             showError("Verification failed.", res.message || "Verification failed. Please try again.")
@@ -122,15 +123,15 @@ const EmailVerification = () => {
 
             <p>Can't find the email? Check your <b>spam folder</b></p>
 
-            <p>Still can't find the email?</p>
+            {/*<p>Still can't find the email?</p>*/}
 
-            <button className="Resend-Verification-Email-button"
-                    onClick={handleResendClick}
-                    disabled={buttonTimer > 0}>
-                {buttonTimer > 0 ?
-                    `Wait ${buttonTimer}s` : "Resend Verification Email"
-                }
-            </button>
+            {/*{<button className="Resend-Verification-Email-button"*/}
+            {/*        onClick={handleResendClick}*/}
+            {/*        disabled={buttonTimer > 0}>*/}
+            {/*    {buttonTimer > 0 ?*/}
+            {/*        `Wait ${buttonTimer}s` : "Resend Verification Email"*/}
+            {/*    }*/}
+            {/*</button>*/}
 
             {/*<button type="submit" onClick={() => navigate("/homePage")}>Done</button>*/}
         </div>

@@ -30,9 +30,11 @@ export default function SignIn({role = "User",
     const handleSubmit = async (e) => {
         e.preventDefault();
         const signInResult = await signIn(email, password, role.toUpperCase())
-
+        console.log(signInResult);
         if (signInResult.success === true){
-            navigate("/home-page")
+            if (signInResult.data.role === "USER") navigate("/home-page")
+            else if (signInResult.data.role === "ORGANIZATION") navigate("/org-add-movie")
+            else if (signInResult.data.role === "ADMIN") navigate("/review-movies")
         }
         else{
             showError("Sign in failed.", signInResult.message || "Sign in failed. Please try again.")
@@ -47,12 +49,12 @@ export default function SignIn({role = "User",
                 {showParagraph && <p>If you don't have an account register <br /> you can <Link to = {link}>Register here!</Link> </p>}
                 <div className = "input-elem">
                     <label htmlFor = "email">Email</label>
-                    <input type = "text" id = "email" name = "email" placeholder="Enter your email address" required onChange = {(e) => {setEmail(e.target.value)}} />
+                    <input type = "text" id = "email" name = "email" maxLength={255} placeholder="Enter your email address" required onChange = {(e) => {setEmail(e.target.value)}} />
                 </div>
                 <div className = "input-elem">
                     <label htmlFor = "password">Password</label>
                     <div className = "passwordWrapper">
-                        <input type = {showPassword ? "text" : "password"} id = "password" name = "password" placeholder="Enter your password" required onChange = {(e) => {setPassword(e.target.value)}}/>
+                        <input type = {showPassword ? "text" : "password"} id = "password" name = "password" maxLength={255} placeholder="Enter your password" required onChange = {(e) => {setPassword(e.target.value)}}/>
                         <span className="password-toggle-icon" onClick={() => setShowPassword(!showPassword)} style={{cursor: "pointer"}}>
                             {showPassword ? <LuEye /> : <LuEyeOff />}
                         </span>

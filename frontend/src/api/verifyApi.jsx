@@ -11,7 +11,7 @@ export default async function verifyApi({email, code}) {
         const user = {
             id: data.id,
             email: data.email,
-            role: data.role
+            role: data.role.replace("ROLE_", "")
         }
 
         localStorage.setItem('token', token);
