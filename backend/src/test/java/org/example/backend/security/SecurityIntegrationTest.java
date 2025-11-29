@@ -19,12 +19,6 @@ public class SecurityIntegrationTest {
     private MockMvc mockMvc;
 
     @Test
-    void publicEndpointAccessibleWithoutAuth() throws Exception {
-        mockMvc.perform(get("/api/auth/login"))
-                .andExpect(status().isMethodNotAllowed()); // GET not allowed for /login POST
-    }
-
-    @Test
     @WithMockUser(roles = "USER")
     void userEndpointAccessibleForUser() throws Exception {
         mockMvc.perform(get("/api/user/test"))

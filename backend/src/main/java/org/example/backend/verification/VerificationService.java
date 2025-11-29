@@ -54,6 +54,7 @@ public class VerificationService {
     @Value("${sendgrid.from.email}")
     private String fromEmail;
 
+
     private final RestTemplate restTemplate = new RestTemplate();
     private final PasswordEncoder passwordEncoder;
 
