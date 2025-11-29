@@ -25,6 +25,7 @@ class VerificationRepositoryTest {
         Verfication v = new Verfication();
         v.setEmail("user@example.com");
         v.setCode(123456);
+        v.setRole("USER");
         v.setCreatedAt(LocalDateTime.now());
 
         verificationRepository.save(v);
