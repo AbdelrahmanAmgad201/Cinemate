@@ -10,7 +10,7 @@ export default async function signUpApi({email, password, role}) {
         return { success: true , user: user };
     }
     catch(err){
-        console.log(err);
-        return { success: false , message: err.response?.data?.error || err.message };
+        // console.log(err);
+        return { success: false , message: err.message };
     }
 };

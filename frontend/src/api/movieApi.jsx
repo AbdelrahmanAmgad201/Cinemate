@@ -70,7 +70,7 @@ export async function getReviewsApi({movieId, page, size}) {
         };
 
     }catch(err){
-        return { success: false , message: err.response?.data?.error || err.message };
+        return { success: false , message: err.message };
     }
 };
 
@@ -90,7 +90,7 @@ export async function postReviewApi({movieId, comment, rating}) {
     }
     catch(err){
         console.log(err);
-        return { success: false , message: err.response?.data?.error || err.message };
+        return { success: false , message: err.message };
     }
 };
 
@@ -106,7 +106,7 @@ export async function deleteReviewApi({movieId}) {
     }
     catch(err){
         console.log(err);
-        return { success: false , message: err.response?.data?.error || err.message };
+        return { success: false , message: err.message };
     }
 };
 
@@ -125,7 +125,7 @@ export async function likeMovieApi({movieId}) {
     }
     catch(err){
         console.log(err);
-        return { success: false , message: err.response?.data?.error || err.message };
+        return { success: false , message: err.message };
     }
 };
 
@@ -141,7 +141,7 @@ export async function addToWatchLaterApi({movieId}) {
     }
     catch(err){
         console.log(err);
-        return { success: false , message: err.response?.data?.error || err.message };
+        return { success: false , message: err.message };
     }
 };
 
@@ -156,7 +156,7 @@ export async function addToWatchHistoryApi({movieId}) {
         return { success: true,};
     }
     catch(err){
-        console.log(err);
-        return { success: false , message: err.response?.data?.error || err.message };
+        // console.log(err);
+        return { success: false , message: err.message };
     }
 };

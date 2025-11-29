@@ -23,8 +23,8 @@ export async function getRequestsHistoryApi() {
         return { success: true, data: RequestsHistoryMapped};
     }
     catch(err){
-        console.log(err);
-        return { success: false , message: err.response?.data?.error || err.message  };
+        // console.log(err);
+        return { success: false , message: err.message };
     }
 }
 
@@ -41,8 +41,8 @@ export async function declineRequestApi({requestId}) {
         return { success: true, data: data};
     }
     catch(err){
-        console.log(err);
-        return { success: false , message: err.response?.data?.error || err.message  };
+        // console.log(err);
+        return { success: false , message: err.message };
     }
 }
 
@@ -59,8 +59,8 @@ export async function acceptRequestApi({requestId}) {
         return { success: true, data: data};
     }
     catch(err){
-        console.log(err);
-        return { success: false , message: err.response?.data?.error || err.message  };
+        // console.log(err);
+        return { success: false , message: err.message };
     }
 }
 
@@ -87,8 +87,8 @@ export async function getPendingRequestsApi() {
         return { success: true, data: pendingRequestsArray};
     }
     catch(err){
-        console.log(err);
-        return { success: false , message: err.response?.data?.error || err.message  };
+        // console.log(err);
+        return { success: false , message: err.message };
     }
 }
 
@@ -113,8 +113,8 @@ export async function getSystemAnalyticsApi() {
 
         return { success: true, data: analyticsData };
     } catch (err) {
-        console.log(err);
-        return { success: false, message: err.response?.data?.error || err.message };
+        // console.log(err);
+        return { success: false, message: err.message };
     }
 }
 
@@ -144,7 +144,7 @@ export async function getMovieAnalyticsApi({ movieId }) {
         return { success: true, data: analyticsData};
     }
     catch(err){
-        console.log(err);
-        return { success: false , message: err.response?.data?.error || err.message  };
+        // console.log(err);
+        return { success: false , message: err.message };
     }
 }

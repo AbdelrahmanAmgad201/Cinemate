@@ -11,7 +11,7 @@ export default async function signUpUserDetailsApi(details) {
         return { success: true };
     }
     catch(err){
-        console.log(err);
-        return { success: false , message: err.response?.data?.error || err.message };
+        // console.log(err);
+        return { success: false , message: err.message };
     }
 };

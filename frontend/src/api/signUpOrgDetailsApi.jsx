@@ -11,7 +11,7 @@ export default async function signUpOrgDetailsApi(details) {
         return { success: true };
     }
     catch(err){
-        console.log(err);
+        // console.log(err);
         return { success: false , message: err.response?.data?.error || err.message };
     }
 };

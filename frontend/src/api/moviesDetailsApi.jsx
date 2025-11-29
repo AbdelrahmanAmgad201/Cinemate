@@ -9,6 +9,6 @@ export default async function MoviesDetailsApi( request) {
         return { success: true, movies: data.content };
     } catch (err) {
         console.log(err);
-        return { success: false, message: err.response?.data?.error || err.message };
+        return { success: false , message: err.message };
     }
 }
