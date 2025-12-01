@@ -1,6 +1,8 @@
 package org.example.backend.security;
 
 import lombok.RequiredArgsConstructor;
+import org.example.backend.errorHandler.CustomAccessDeniedHandler;
+import org.example.backend.errorHandler.CustomAuthEntryPoint;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -25,6 +27,8 @@ import java.util.List;
 @RequiredArgsConstructor
 public class SecurityConfig {
 
+    private final CustomAuthEntryPoint authEntryPoint;
+    private final CustomAccessDeniedHandler accessDeniedHandler;
     private final JWTProvider jwtProvider;
     @Lazy
     private final OAuthSuccessHandler oAuthSuccessHandler;
@@ -56,12 +60,17 @@ public class SecurityConfig {
 
                 .anyRequest().authenticated()
         )
+        .exceptionHandling(ex -> ex
+                .authenticationEntryPoint(authEntryPoint)
+                .accessDeniedHandler(accessDeniedHandler)
+        )
         .oauth2Login(oauth2 -> oauth2
                 .authorizationEndpoint(authorization ->  authorization.baseUri("/oauth2/authorize"))
                 .redirectionEndpoint(redirection -> redirection.baseUri("/login/oauth2/code/*"))
                 .successHandler(oAuthSuccessHandler)
         )
             .addFilterBefore((jwtAuthenticationFilter()), UsernamePasswordAuthenticationFilter.class);
+
 
         return http.build();
     }

@@ -20,7 +20,7 @@ public class Verfication {
     private String password;
     @Column(name = "code")
     private int code;
-    @Column(name="role")
+    @Column(name="role",nullable = false)
     private String role;
     @Column(name = "created_at")
     private LocalDateTime createdAt;

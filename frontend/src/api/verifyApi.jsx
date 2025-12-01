@@ -20,7 +20,7 @@ export default async function verifyApi({email, code}) {
 
     }
     catch(err){
-        console.log(err);
-        return { success: false , message: err.response?.data?.error || err.message };
+        // console.log(err);
+        return { success: false , message: err.message };
     }
 };

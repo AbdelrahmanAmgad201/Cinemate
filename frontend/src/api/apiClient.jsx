@@ -20,11 +20,25 @@ api.interceptors.request.use(config => {
 api.interceptors.response.use(
     res => res,
     err => {
-        if (err.response?.status === 401) {
+
+        const status = err.response?.status;
+        const data = err.response?.data;
+
+        if (status === 401) {
             // logout user if token has error
             signOutApi();
         }
-        return Promise.reject(err);
+
+        // now matches backend error design
+        const message = data?.message || data?.error || err.message;
+
+        return Promise.reject({
+            success: false,
+            status,
+            message,
+            path: data?.path,
+            raw: err
+        });
     }
 );
 
