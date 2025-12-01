@@ -16,6 +16,8 @@ import watchPartyIcon from "../../assets/icons/watch-party-black.png";
 import addIcon from "./../../assets/icons/add-white.png"
 import clockIcon from "../../assets/icons/clock-white.png";
 
+import {MAX_LENGTHS} from "../../constants/constants.jsx";
+
 export default function MoviePreviewPage() {
 
     // Movie details
@@ -389,14 +391,14 @@ export default function MoviePreviewPage() {
                                     <textarea
                                         rows="5"
                                         value={formDesc} onChange={e => {
-
-                                            const words = e.target.value.trim().split(/\s+/);
-                                            if (words.length <= 500) {
-                                                setFormDesc(e.target.value);
+                                            const inputValue = e.target.value;
+                                            if (inputValue.length <= MAX_LENGTHS.TEXTAREA) {
+                                                setFormDesc(inputValue);
                                             }
                                         }}
-                                          placeholder="Write your review (max 500 words)"
-                                          required
+                                        placeholder={`Write your review (max ${MAX_LENGTHS.TEXTAREA} words)`}
+                                        maxLength={MAX_LENGTHS.TEXTAREA}
+                                        required
                                     />
                                     <small>{formDesc.trim().split(/\s+/).length} / 500 words</small>
                                 </label>
