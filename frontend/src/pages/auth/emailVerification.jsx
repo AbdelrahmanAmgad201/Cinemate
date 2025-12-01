@@ -1,8 +1,9 @@
+import './style/emailVerification.css';
+
 import {useState, useRef, useEffect, useContext} from 'react';
 import { useNavigate } from 'react-router-dom';
-import './style/emailVerification.css';
+
 import {AuthContext} from "../../context/authContext.jsx";
-import verifyApi from "../../api/verifyApi.jsx";
 import {ErrorToastContext} from "../../context/errorToastContext.jsx";
 
 const regexDigit =  /^[0-9]$/

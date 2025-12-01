@@ -2,8 +2,6 @@ import './style/signUp.css';
 import { useState, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Link } from "react-router-dom";
-import { AuthContext } from "../../context/authContext.jsx";
-import oauthSignIn from '../../api/oauthSignInApi.jsx';
 
 // Icons
 import { FcGoogle } from "react-icons/fc";
@@ -11,7 +9,11 @@ import { HiOutlineMail, HiOutlineLockClosed } from "react-icons/hi";
 import { AiOutlineUser } from "react-icons/ai";
 import { CiCalendar } from "react-icons/ci";
 import { LuEyeOff, LuEye } from "react-icons/lu";
+
+import oauthSignIn from '../../api/oauthSignInApi.jsx';
+import { AuthContext } from "../../context/authContext.jsx";
 import { ErrorToastContext } from "./../../context/ErrorToastContext";
+import {MAX_LENGTHS, MAX_VALUES, MIN_LENGTHS} from "../../constants/constants.jsx";
 
 export default function UserSignUp ({role = "User", show = true, link = "/"}) {
 
@@ -30,7 +32,7 @@ export default function UserSignUp ({role = "User", show = true, link = "/"}) {
     const [showPassword, setShowPassword] = useState(false);
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
-    const { user, loading, signIn, signOut, signUp, isAuthenticated } = useContext(AuthContext);
+    const { signUp } = useContext(AuthContext);
     const { showError } = useContext(ErrorToastContext);
 
     function buildRequestBody(role) {
@@ -85,17 +87,17 @@ export default function UserSignUp ({role = "User", show = true, link = "/"}) {
                 <p>If you already have an account registered<br />You can <Link to={link}>Login here!</Link></p>
                 {!show && <div className="input-elem">
                     <label htmlFor="orgName">Organization Name</label>
-                    <input type="text" id="orgName" name="orgName" required placeholder = "Enter your organization name" onChange={(e) => {setOrgName(e.target.value)}} />
+                    <input type="text" id="orgName" name="orgName" maxLength={MAX_LENGTHS.INPUT} required placeholder = "Enter your organization name" onChange={(e) => {setOrgName(e.target.value)}} />
                 </div>}
                 {show && <div className="name">
                     <div className="input-elem">
                     <label htmlFor="firstName">First Name</label>
-                    <input type="text" id="firstName" name="firstName" maxLength={255} required style={{width: "200px"}} onChange={(e) => {setFirstName(e.target.value)}} />
+                    <input type="text" id="firstName" name="firstName" maxLength={MAX_LENGTHS.INPUT} required style={{width: "200px"}} onChange={(e) => {setFirstName(e.target.value)}} />
                     </div>
                     
                     <div className="input-elem">
                     <label htmlFor="lastName">Last Name</label>
-                    <input type="text" id="lastName" name="lastName" maxLength={255} required style={{width: "200px"}} onChange={(e) => {setLastName(e.target.value)}} />
+                    <input type="text" id="lastName" name="lastName" maxLength={MAX_LENGTHS.INPUT} required style={{width: "200px"}} onChange={(e) => {setLastName(e.target.value)}} />
                     </div>
                 </div>}
 
@@ -104,7 +106,13 @@ export default function UserSignUp ({role = "User", show = true, link = "/"}) {
                         <label htmlFor="birthDate">Date of Birth</label><br />
                         <div className="icon-input">
                             <CiCalendar />
-                            <input type="date" id="birthDate" name="birthDate" required style={{width: "200px"}} onChange={(e) => {setBirthDate(e.target.value)}} />
+                            <input type="date" id="birthDate" name="birthDate" required style={{width: "200px"}}
+                                   onChange={(e) => setBirthDate(e.target.value)}
+                                   min={new Date(new Date().setFullYear(new Date().getFullYear() - MAX_VALUES.BIRTHYEARS))
+                                       .toISOString()
+                                       .split("T")[0]}
+                                   max={new Date().toISOString().split("T")[0]}
+                            />
                         </div>
                     </div>
 
@@ -123,7 +131,7 @@ export default function UserSignUp ({role = "User", show = true, link = "/"}) {
                     <label htmlFor="email">Email</label>
                     <div className="icon-input">
                         <HiOutlineMail />
-                        <input type="email" id="email" name="email" maxLength={255} placeholder="Enter your email address" required onChange={(e) => {setEmail(e.target.value)}} />
+                        <input type="email" id="email" name="email" maxLength={MAX_LENGTHS.INPUT} placeholder="Enter your email address" required onChange={(e) => {setEmail(e.target.value)}} />
                     </div>
                 </div>
 
@@ -131,7 +139,7 @@ export default function UserSignUp ({role = "User", show = true, link = "/"}) {
                     <label htmlFor="password">Password</label>
                     <div className="icon-input">
                         <HiOutlineLockClosed />
-                        <input type={showPassword ? "text" : "password"} id="password" name="password" maxLength={255} placeholder="Enter your Password" required onChange={(e) => {setPassword(e.target.value)}} value={password} />
+                        <input type={showPassword ? "text" : "password"} id="password" name="password" minLength={MIN_LENGTHS.PASSWORD} maxLength={MAX_LENGTHS.INPUT} placeholder="Enter your Password" required onChange={(e) => {setPassword(e.target.value)}} value={password} />
                         <span className="password-toggle-icon" onClick={() => setShowPassword(!showPassword)} style={{cursor: "pointer"}}>
                             {showPassword ? <LuEye /> : <LuEyeOff />}
                         </span>
@@ -143,7 +151,7 @@ export default function UserSignUp ({role = "User", show = true, link = "/"}) {
                     <label htmlFor="confirmPassword">Confirm Password</label>
                     <div className="icon-input">
                         <HiOutlineLockClosed />
-                        <input type={showConfirmPassword ? "text" : "password"} id="confirmPassword" name="confirmPassword" minLength={8} maxLength={255} placeholder="Confirm your Password" required onChange={(e) => {setConfirmPassword(e.target.value)}} value={confirmPassword} />
+                        <input type={showConfirmPassword ? "text" : "password"} id="confirmPassword" name="confirmPassword" minLength={MIN_LENGTHS.PASSWORD} maxLength={MAX_LENGTHS.INPUT} placeholder="Confirm your Password" required onChange={(e) => {setConfirmPassword(e.target.value)}} value={confirmPassword} />
                         <span className="password-toggle-icon" onClick={() => setShowConfirmPassword(!showConfirmPassword)} style={{cursor: "pointer"}}>
                             {showConfirmPassword ? <LuEye /> : <LuEyeOff />}
                         </span>

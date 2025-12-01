@@ -1,15 +1,12 @@
+import "./style/reviewMoviesPage.css";
+import "./style/navBar.css";
+
 import { useState, useEffect, useContext } from "react";
 import { Link, useNavigate } from "react-router-dom";
+
 import { AuthContext } from "../../context/authContext.jsx";
 import ProfileAvatar from "../../components/profileAvatar.jsx";
-import {
-    getPendingRequestsApi,
-    getRequestsHistoryApi,
-    acceptRequestApi,
-    declineRequestApi
-} from "../../api/adminApi"; // Assuming your API file is here
-import "./style/reviewMoviesPage.css";
-import "./style/navBar.css"; // Using your existing navbar styles
+import { getPendingRequestsApi, getRequestsHistoryApi, acceptRequestApi, declineRequestApi} from "../../api/adminApi";
 import {mapMovieBackendToFrontend} from "../../api/movieApi.jsx";
 
 export default function ReviewRequestsPage() {
@@ -80,11 +77,8 @@ export default function ReviewRequestsPage() {
 
     // Navigate to MoviePreviewPage with state
     const handlePreviewMovie = (movie) => {
-        // We pass the movie object in state so MoviePreviewPage can render it immediately
-        // We also use the ID in the URL for good routing practice
-        // console.log(movie);
+
         const mappedMovie = mapMovieBackendToFrontend(movie);
-        // console.log(mappedMovie);
         navigate(`/movie/${mappedMovie.id}`, { state: { movie: mappedMovie } });
     };
 

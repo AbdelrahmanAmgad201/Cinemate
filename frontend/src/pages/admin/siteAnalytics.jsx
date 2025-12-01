@@ -1,11 +1,14 @@
+import "./style/siteAnalytics.css";
+import "./style/navBar.css";
+
 import { useState, useEffect, useContext } from "react";
 import { Link, useNavigate } from "react-router-dom";
+
 import { AuthContext } from "../../context/authContext.jsx";
 import ProfileAvatar from "../../components/profileAvatar.jsx";
 import { getSystemAnalyticsApi } from "../../api/adminApi";
 import { getMovieApi } from "../../api/movieApi";
-import "./style/siteAnalytics.css";
-import "./style/navBar.css";
+
 
 const icons = {
     users: "👥",

@@ -5,6 +5,7 @@ import { CgProfile } from "react-icons/cg";
 import { AuthContext } from '../context/authContext.jsx';
 import MoviesDetailsApi from '../api/moviesDetailsApi.jsx';
 import './style/navBar.css';
+import {MAX_LENGTHS} from "../constants/constants.jsx";
 
 function NavBar() {
 
@@ -113,7 +114,7 @@ function NavBar() {
                 Browse
             </Link>
             <div className="navbar-search" ref={searchRef}>
-                <input type="text" placeholder="Search movies..." onChange={handleInputChange} /><IoSearch onClick={handleSearch} />
+                <input type="text" placeholder="Search movies..." maxLength={MAX_LENGTHS.INPUT} onChange={handleInputChange} /><IoSearch onClick={handleSearch} />
                 {resultsShow && movies.length > 0 && (
                     <div className="search-results">
                             {movies.map((movie, index) => (
