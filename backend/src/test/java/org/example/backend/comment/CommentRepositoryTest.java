@@ -17,6 +17,7 @@ class CommentRepositoryTest {
 
     @Test
     void shouldCreateAndRetrieveComment() {
+        // Arrange
         ObjectId postId = new ObjectId();
         ObjectId ownerId = new ObjectId();
 
