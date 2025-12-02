@@ -11,23 +11,32 @@ on:
 jobs:
   backend-tests:
     runs-on: ubuntu-latest
-
-    # NOTE: Removed MySQL service and SPRING_DATASOURCE_* env to allow tests to use the
-    # embedded H2 datasource configured in src/test/resources (or application-test.properties).
-
     steps:
-      # 1. Checkout code
+
       - name: Checkout repository
         uses: actions/checkout@v3
 
-      # 2. Set up Java 21
       - name: Set up JDK 21
         uses: actions/setup-java@v3
         with:
           distribution: 'temurin'
           java-version: '21'
 
-      # 3. Cache Maven dependencies
+      # Install Docker for Testcontainers
+      - name: Install Docker
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y docker.io
+          sudo systemctl start docker
+          docker --version
+
+      # Required sysctl settings to allow Mongo containers to start
+      - name: Enable Docker for Testcontainers
+        run: |
+          sudo sysctl -w vm.max_map_count=262144
+          echo "TESTCONTAINERS_RYUK_DISABLED=false" >> $GITHUB_ENV
+          echo "TESTCONTAINERS_CHECKS_DISABLE=true" >> $GITHUB_ENV
+
       - name: Cache Maven packages
         uses: actions/cache@v3
         with:
@@ -36,6 +45,6 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-maven-
 
-      # 4. Build and run backend tests (use test profile if you have one)
       - name: Build and run backend tests
         run: mvn -f backend/pom.xml clean test -Dspring.profiles.active=test
+
