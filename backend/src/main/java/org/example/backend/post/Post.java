@@ -51,7 +51,6 @@ public class Post {
     private Instant createdAt;
     private Instant lastActivityAt;  // Updated when comment added
 
-    // Soft delete
     @Builder.Default
     private Boolean isDeleted = false;
 
