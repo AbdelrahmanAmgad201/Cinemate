@@ -12,8 +12,8 @@ import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-@DataMongoTest
-@ActiveProfiles("test")
+//@DataMongoTest
+//@ActiveProfiles("test")
 class PostRepositoryTest extends AbstractMongoIntegrationTest {
 
     @Autowired

@@ -10,7 +10,7 @@ import java.time.Instant;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-@DataMongoTest
+//@DataMongoTest
 class CommentRepositoryTest extends AbstractMongoIntegrationTest{
 
     @Autowired
