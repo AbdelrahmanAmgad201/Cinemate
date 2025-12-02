@@ -1,4 +1,4 @@
-package org.example.backend.forumFollow;
+package org.example.backend.forumfollowing;
 
 import lombok.*;
 import org.bson.types.ObjectId;
