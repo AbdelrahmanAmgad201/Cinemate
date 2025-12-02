@@ -1,6 +1,7 @@
 package org.example.backend.post;
 
 import org.bson.types.ObjectId;
+import org.example.backend.AbstractMongoIntegrationTest;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.data.mongo.DataMongoTest;
@@ -13,7 +14,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 @DataMongoTest
 @ActiveProfiles("test")
-class PostRepositoryTest {
+class PostRepositoryTest extends AbstractMongoIntegrationTest {
 
     @Autowired
     private PostRepository postRepository;

@@ -1,6 +1,7 @@
 package org.example.backend.forum;
 
 import org.bson.types.ObjectId;
+import org.example.backend.AbstractMongoIntegrationTest;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.data.mongo.DataMongoTest;
@@ -10,7 +11,7 @@ import java.time.Instant;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @DataMongoTest
-class ForumRepositoryTest {
+class ForumRepositoryTest extends AbstractMongoIntegrationTest {
 
     @Autowired
     private ForumRepository forumRepository;
