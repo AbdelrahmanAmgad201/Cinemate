@@ -10,15 +10,13 @@ import org.example.backend.comment.CommentRepository;
 import org.bson.types.ObjectId;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
 
 import java.time.Instant;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-@SpringBootTest
-class ForumPostCommentIntegrationTest {
+class ForumPostCommentIntegrationTest extends AbstractMongoIntegrationTest {
 
     @Autowired
     private ForumRepository forumRepository;
@@ -31,7 +29,6 @@ class ForumPostCommentIntegrationTest {
 
     @Test
     void fullFlow_createForum_addPosts_addComments() {
-
         // create forum
         Forum forum = Forum.builder()
                 .id(new ObjectId())
@@ -45,6 +42,7 @@ class ForumPostCommentIntegrationTest {
 
         Forum savedForum = forumRepository.findById(forum.getId()).orElse(null);
         assertThat(savedForum).isNotNull();
+        assertThat(savedForum.getName()).isEqualTo("Programming Forum");
 
         // add posts to forum
         Post post1 = Post.builder()
@@ -74,11 +72,7 @@ class ForumPostCommentIntegrationTest {
         List<Post> forumPosts = postRepository.findByForumId(forum.getId());
         assertThat(forumPosts).hasSize(2);
 
-
-        // ============================
-        // 3. Add comments on post1
-        // ============================
-
+        // Add comments on post1
         Comment c1 = Comment.builder()
                 .id(new ObjectId())
                 .postId(post1.getId())
@@ -90,7 +84,7 @@ class ForumPostCommentIntegrationTest {
         Comment c2 = Comment.builder()
                 .id(new ObjectId())
                 .postId(post1.getId())
-                .parentId(c1.getId()) // Reply to c1
+                .parentId(c1.getId())
                 .depth(1)
                 .ownerId(new ObjectId())
                 .content("Thanks!")
