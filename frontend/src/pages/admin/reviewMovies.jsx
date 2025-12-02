@@ -1,16 +1,13 @@
 import "./style/reviewMoviesPage.css";
-import "./style/navBar.css";
-
 import { useState, useEffect, useContext } from "react";
 import { Link, useNavigate } from "react-router-dom";
-
-import { AuthContext } from "../../context/authContext.jsx";
-import ProfileAvatar from "../../components/profileAvatar.jsx";
+// import { AuthContext } from "../../context/authContext.jsx";
 import { getPendingRequestsApi, getRequestsHistoryApi, acceptRequestApi, declineRequestApi} from "../../api/adminApi";
 import {mapMovieBackendToFrontend} from "../../api/movieApi.jsx";
+import NavBar from "../../components/OrgAdminNavBar.jsx";
 
 export default function ReviewRequestsPage() {
-    const { signOut } = useContext(AuthContext);
+    // const { signOut } = useContext(AuthContext);
     const navigate = useNavigate();
 
     const [activeTab, setActiveTab] = useState("pending"); // 'pending' or 'history'
@@ -18,9 +15,9 @@ export default function ReviewRequestsPage() {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
 
-    const avatarMenuItems = [
-        { label: "Sign Out", onClick: signOut },
-    ];
+    // const avatarMenuItems = [
+    //     { label: "Sign Out", onClick: signOut },
+    // ];
 
     // Fetch data whenever the active tab changes
     useEffect(() => {
@@ -85,11 +82,12 @@ export default function ReviewRequestsPage() {
     return (
         <div className="review-requests-page">
             {/* Standard Navigation Bar */}
-            <div className="navigationBar">
+            {/* <div className="navigationBar">
                 <Link to="/review-movies"><h1>Review Movies</h1></Link>
                 <Link to="/admin-site-analytics"><h1>Site Movies and Analytics</h1></Link>
                 <ProfileAvatar menuItems={avatarMenuItems} />
-            </div>
+            </div> */}
+            <NavBar />
 
             <div className="content-container">
                 <div className="page-header">

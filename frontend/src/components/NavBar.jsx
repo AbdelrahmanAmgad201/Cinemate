@@ -1,27 +1,22 @@
 import { useState, useContext, useEffect, useRef } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { IoSearch } from "react-icons/io5";
-import { CgProfile } from "react-icons/cg";
-import { AuthContext } from '../context/authContext.jsx';
 import MoviesDetailsApi from '../api/moviesDetailsApi.jsx';
 import './style/navBar.css';
 import {MAX_LENGTHS} from "../constants/constants.jsx";
+import ProfileAvatar from './profileAvatar.jsx';
 
 function NavBar() {
 
     const isActive = (path) => location.pathname === path;
     const [searchValue, setSearchValue] = useState('');
     const [movies, setMovies] = useState([]);
-    const [menuShow, setMenuShow] = useState(false);
     const [resultsShow, setResultsShow] = useState(false);
     const menuRef = useRef(null);
     const searchRef = useRef(null);
 
     const location = useLocation();
     const navigate = useNavigate();
-    const { signOut } = useContext(AuthContext);
-
-    const [results, setResults] = useState(["Movie 1", "Movie 2", "Movie 3"]);
 
     useEffect(() => {
         handleSearch();
@@ -78,12 +73,6 @@ function NavBar() {
         setSearchValue('');
     };
 
-    const handleSignOut = async () => {
-        await signOut();
-        setMenuShow(false);
-        navigate('/', { replace: true });
-    }
-
     useEffect(() => {
         const handleClickOutside = (event) => {
             if (menuRef.current && !menuRef.current.contains(event.target)) {
@@ -94,14 +83,14 @@ function NavBar() {
             }
         };
 
-        if (menuShow || resultsShow) {
+        if (resultsShow) {
             document.addEventListener('mousedown', handleClickOutside);
         }
 
         return () => {
             document.removeEventListener('mousedown', handleClickOutside);
         };
-    }, [menuShow, resultsShow]);
+    }, [resultsShow]);
 
     return (
         <>
@@ -126,16 +115,7 @@ function NavBar() {
                     )}
             </div>  
         </div>
-        <div className="profile-icon" ref={menuRef} >
-            <CgProfile onClick={() => setMenuShow(prev => !prev)} />
-            {menuShow && (
-                <div className="menu">
-                    <ul>
-                        <li onClick={handleSignOut}>Sign Out</li>
-                    </ul>
-                </div>
-            )}
-        </div>
+        <ProfileAvatar />
         </>
     );
 

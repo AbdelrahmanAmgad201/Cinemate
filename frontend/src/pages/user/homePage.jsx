@@ -1,6 +1,6 @@
 import React from 'react';
 import Slider from '../../components/carousel';
-import NavBar from '../../components/navBar';
+import NavBar from '../../components/NavBar';
 
 const HomePage = () => {
     return (

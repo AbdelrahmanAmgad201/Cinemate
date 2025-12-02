@@ -3,8 +3,9 @@ import { Link } from 'react-router-dom';
 import '../style/orgAnalytics.css';
 import {useContext, useEffect, useState} from 'react';
 import fetchOrgAnalytics, { fetchOrgRequests } from '../../../api/orgAnalyticsApi';
-import ProfileAvatar from "../../../components/profileAvatar.jsx";
+// import ProfileAvatar from "../../../components/profileAvatar.jsx";
 import {AuthContext} from "../../../context/authContext.jsx";
+import NavBar from "../../../components/OrgAdminNavBar.jsx";
 
 const StatCard = ({ title, value, subtitle, children }) => (
     <div className="stat-card">
@@ -180,12 +181,13 @@ const OrgMoviesAndAnalytics = () => {
 
     return (
         <div className="org-analytics-page">
-            <div className="navigationBar">
-                {/*<Link to="/"><h1>Home Page</h1></Link>*/}
+            {/* <div className="navigationBar">
+                // <Link to="/"><h1>Home Page</h1></Link>
                 <Link to="/org-add-movie"><h1>Add Movie</h1></Link>
                 <Link to="/org-movies-and-analytics"><h1>My Movies and Analytics</h1></Link>
                 <ProfileAvatar menuItems={avatarMenuItems} />
-            </div>
+            </div> */}
+            <NavBar />
             <div className={`analytics-grid ${loading ? 'loading' : ''}`}>
                 <StatCard title="Total Movies Added" value={loading ? '—' : data.totalMovies} />
                 <StatCard title="Total Views" value={loading ? '—' : data.totalViews?.toLocaleString?.() ?? data.totalViews} />

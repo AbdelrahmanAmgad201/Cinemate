@@ -5,8 +5,9 @@ import {useContext, useState} from 'react';
 import { CiCalendar } from "react-icons/ci";
 import { useNavigate } from 'react-router-dom';
 import {Link} from 'react-router-dom';
-import ProfileAvatar from "../../../components/profileAvatar.jsx";
+// import ProfileAvatar from "../../../components/profileAvatar.jsx";
 import {AuthContext} from "../../../context/authContext.jsx";
+import NavBar from "../../../components/OrgAdminNavBar.jsx";
 
 import {MAX_LENGTHS} from "../../../constants/constants.jsx";
 
@@ -56,12 +57,13 @@ const OrgAddMovie = () => {
 
      return (
          <div>
-             <div className = "navigationBar">
-                 {/*<Link to = "/"><h1>Home Page</h1></Link>*/}
+             {/* <div className = "navigationBar">
+                 <Link to = "/"><h1>Home Page</h1></Link>
                  <Link to = "/org-add-movie"><h1>Add Movie</h1></Link>
                  <Link to = "/org-movies-and-analytics"><h1>My Movies and Analytics</h1></Link>
                  <ProfileAvatar menuItems={avatarMenuItems} />
-             </div>
+             </div> */}
+             <NavBar />
              <div className = "signup-container addMovie-container">
                  <form onSubmit={handleSubmit}>
                      <div className = "name">

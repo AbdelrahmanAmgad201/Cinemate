@@ -5,9 +5,10 @@ import { useState, useEffect, useContext } from "react";
 import { Link, useNavigate } from "react-router-dom";
 
 import { AuthContext } from "../../context/authContext.jsx";
-import ProfileAvatar from "../../components/profileAvatar.jsx";
+// import ProfileAvatar from "../../components/profileAvatar.jsx";
 import { getSystemAnalyticsApi } from "../../api/adminApi";
 import { getMovieApi } from "../../api/movieApi";
+import NavBar from "../../components/OrgAdminNavBar.jsx";
 
 
 const icons = {
@@ -20,7 +21,7 @@ const icons = {
 };
 
 export default function SiteAnalytics() {
-    const { signOut } = useContext(AuthContext);
+    // const { signOut } = useContext(AuthContext);
     const navigate = useNavigate();
 
     const [systemData, setSystemData] = useState(null);
@@ -86,11 +87,12 @@ export default function SiteAnalytics() {
 
     return (
         <div className="analytics-page">
-            <div className="navigationBar">
+            {/* <div className="navigationBar">
                 <Link to="/review-movies"><h1>Review Movies</h1></Link>
                 <Link to="/admin-site-analytics"><h1>Site Movies and Analytics</h1></Link>
                 <ProfileAvatar menuItems={avatarMenuItems} />
-            </div>
+            </div> */}
+            <NavBar />  
 
             <div className="content-container">
                 <div className="page-header">
