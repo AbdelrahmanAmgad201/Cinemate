@@ -2,6 +2,7 @@ import { useContext } from "react";
 import { Navigate, Outlet } from "react-router-dom";
 import { AuthContext } from "../context/authContext";
 import LoadingFallback from "../components/loadingFallback.jsx";
+import {PATHS} from "../constants/constants.jsx";
 
 export default function PendingUserRoute() {
     const { loading, pendingUser, pendingRestored } = useContext(AuthContext);
@@ -13,7 +14,7 @@ export default function PendingUserRoute() {
 
     if (!pendingUser) {
         console.log("pendingUser is null, redirecting to sign in");
-        return <Navigate to="" replace />;
+        return <Navigate to={PATHS.ROOT} replace />;
     }
 
     return <Outlet />;

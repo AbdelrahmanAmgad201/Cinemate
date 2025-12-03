@@ -5,6 +5,7 @@ import { useNavigate } from 'react-router-dom';
 
 import {AuthContext} from "../../context/authContext.jsx";
 import {ToastContext} from "../../context/ToastContext.jsx";
+import {PATHS, ROLES} from "../../constants/constants.jsx";
 
 const regexDigit =  /^[0-9]$/
 
@@ -33,8 +34,8 @@ const EmailVerification = () => {
 
         const res = await verifyEmail(email, code);
         if (res.success === true) {
-            if (user.role === "USER") navigate("/home-page")
-            else if (user.role === "ORGANIZATION") navigate("/org-add-movie")
+            if (user.role === ROLES.USER) navigate(PATHS.HOME)
+            else if (user.role === "ORGANIZATION") navigate(PATHS.ORGANIZATION.SUBMIT_REQUEST)
         }
         else {
             showToast("Verification failed.", res.message || "Verification failed. Please try again.", "error")
@@ -134,7 +135,7 @@ const EmailVerification = () => {
             {/*    }*/}
             {/*</button>*/}
 
-            {/*<button type="submit" onClick={() => navigate("/homePage")}>Done</button>*/}
+            {/*<button type="submit" onClick={() => navigate(PATHS.HOME)}>Done</button>*/}
         </div>
     );
 };

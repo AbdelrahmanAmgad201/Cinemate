@@ -6,6 +6,7 @@ import p2 from '../../assets/p2.jpg';
 import NavBar from '../../components/NavBar';
 import Footer from '../../components/footer';
 import MoviesDetailsApi from '../../api/moviesDetailsApi';
+import {PATHS} from "../../constants/constants.jsx";
 
 const Genre = ({ listGenre }) => {
 
@@ -104,7 +105,7 @@ const Genre = ({ listGenre }) => {
                 <main style={{ flex: '1' }}>
                     <div style={{display: "flex", flexDirection: "column", gap: "60px"}}>
                         <NavBar />
-                        <MoviesList list={movies} name={title} page={currPage} setPage={setCurrPage} onClick={(id) => navigate(`/movie/${id}`)}  />
+                        <MoviesList list={movies} name={title} page={currPage} setPage={setCurrPage} onClick={(id) => navigate(PATHS.MOVIE.DETAILS(id))}  />
                     </div>
                 </main>
             <Footer />

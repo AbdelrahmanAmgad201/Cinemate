@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import PropTypes from 'prop-types';
 import "./style/reviewCard.css"
 import {timeAgo} from "./timeAgo.jsx";
+import Swal from "sweetalert2";
 
 export default function ReviewCard({
                                        id,
@@ -61,8 +62,19 @@ export default function ReviewCard({
                 {onDelete && (
                     <button
                         className="review-card-delete"
-                        onClick={() => {
-                            if (window.confirm("Delete this review?")) onDelete(id);
+                        onClick={async () => {
+                            const result = await Swal.fire({
+                                title: "Delete Review?",
+                                text: "Are you sure you want to delete this review?",
+                                icon: "warning",
+                                showCancelButton: true,
+                                confirmButtonColor: '#d33',
+                                cancelButtonColor: '#3085d6',
+                                confirmButtonText: "Yes, delete it!",
+                                cancelButtonText: "Cancel",
+                            });
+
+                            if (result.isConfirmed) onDelete(id);
                         }}
                         aria-label="Delete review"
                     >

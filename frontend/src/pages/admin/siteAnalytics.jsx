@@ -8,6 +8,7 @@ import { AuthContext } from "../../context/authContext.jsx";
 import ProfileAvatar from "../../components/profileAvatar.jsx";
 import { getSystemAnalyticsApi } from "../../api/adminApi";
 import { getMovieApi } from "../../api/movieApi";
+import {PATHS} from "../../constants/constants.jsx";
 
 
 const icons = {
@@ -81,14 +82,14 @@ export default function SiteAnalytics() {
 
     const handlePreviewMovie = (id) => {
         if (!id) return;
-        navigate(`/movie/${id}`);
+        navigate(PATHS.MOVIE.DETAILS(id));
     };
 
     return (
         <div className="analytics-page">
             <div className="navigationBar">
-                <Link to="/review-movies"><h1>Review Movies</h1></Link>
-                <Link to="/admin-site-analytics"><h1>Site Movies and Analytics</h1></Link>
+                <Link to={PATHS.ADMIN.REVIEW_REQUESTS} ><h1>Review Movies</h1></Link>
+                <Link to={PATHS.ADMIN.SITE_ANALYTICS} ><h1>Site Movies and Analytics</h1></Link>
                 <ProfileAvatar menuItems={avatarMenuItems} />
             </div>
 

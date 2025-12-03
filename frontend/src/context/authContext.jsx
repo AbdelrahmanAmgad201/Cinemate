@@ -9,6 +9,7 @@ import signUpUserDetailsApi from '../api/signUpUserDetailsApi.jsx';
 
 import {jwtDecode}  from "jwt-decode";
 import {ToastContext} from "./ToastContext.jsx";
+import {JWT, ROLES} from "../constants/constants.jsx";
 
 // Always handle token expiry: either catch 401 responses in an axios response interceptor and attempt refresh or redirect to login.
 export const AuthContext   = createContext(null);
@@ -33,7 +34,6 @@ export default function AuthProvider({ children }){
             return {success: true, data: res.user}
         }
         catch(err){
-            console.log(err);
             return {success: false, message: err.response?.data?.error};
         }
     }
@@ -62,7 +62,7 @@ export default function AuthProvider({ children }){
         signOutApi();
         setUser(null);
         setPendingUser(null);
-        localStorage.removeItem('token');
+        localStorage.removeItem(JWT.STORAGE_NAME);
     }
 
     const verifyEmail = async ( email, code ) => {
@@ -77,7 +77,7 @@ export default function AuthProvider({ children }){
 
             setUser(res.user)
             //We're logged in, now send the rest of sign up info
-            if (res.user.role === "USER") {
+            if (res.user.role === ROLES.USER) {
                 const details = pendingUser.details;
 
                 const resDetails = await signUpUserDetailsApi(details);
@@ -85,7 +85,7 @@ export default function AuthProvider({ children }){
                     showToast("Success", "User details saved successfully!", "success")
                 }
             }
-            else if (res.user.role === "ORGANIZATION") {
+            else if (res.user.role === ROLES.ORGANIZATION) {
                 const details = pendingUser.details;
                 const resDetails = await signUpOrgDetailsApi(details);
                 if (resDetails.success) {
@@ -117,7 +117,7 @@ export default function AuthProvider({ children }){
 
 
     useEffect(()=>{
-        const token = localStorage.getItem('token');
+        const token = localStorage.getItem(JWT.STORAGE_NAME);
         // console.log(token);
         // const token = null; // uncomment this if you want to sign out
 
@@ -130,7 +130,7 @@ export default function AuthProvider({ children }){
             const userData = jwtDecode(token); // returns { id, email, role, iat }
             if (userData.exp * 1000 < Date.now()) {
                 // token expired
-                localStorage.removeItem("token");
+                localStorage.removeItem(JWT.STORAGE_NAME);
                 setUser(null);
             }
             else {
@@ -144,7 +144,7 @@ export default function AuthProvider({ children }){
         }
         catch(err){
             console.log(err);
-            localStorage.removeItem("token"); // invalid token
+            localStorage.removeItem(JWT.STORAGE_NAME); // invalid token
         }
         finally {
             setLoading(false);

@@ -6,11 +6,13 @@ import { Link, useNavigate } from "react-router-dom";
 
 import ProfileAvatar from "../../components/profileAvatar.jsx";
 import { getPendingRequestsApi, getRequestsHistoryApi, acceptRequestApi, declineRequestApi} from "../../api/adminApi";
-import {mapMovieBackendToFrontend} from "../../api/movieApi.jsx";
+// import {mapMovieBackendToFrontend} from "../../api/movieApi.jsx";
+import {mapMovieBackendToFrontend} from "../../utils/api-mappers.jsx";
 import {ToastContext} from "../../context/ToastContext.jsx";
 import { AuthContext } from "../../context/authContext.jsx";
 
 import Swal from "sweetalert2";
+import {PATHS} from "../../constants/constants.jsx";
 
 export default function ReviewRequestsPage() {
     const { signOut } = useContext(AuthContext);
@@ -100,15 +102,15 @@ export default function ReviewRequestsPage() {
     const handlePreviewMovie = (movie) => {
 
         const mappedMovie = mapMovieBackendToFrontend(movie);
-        navigate(`/movie/${mappedMovie.id}`, { state: { movie: mappedMovie } });
+        navigate(PATHS.MOVIE.DETAILS(mappedMovie.id), { state: { movie: mappedMovie } });
     };
 
     return (
         <div className="review-requests-page">
             {/* Standard Navigation Bar */}
             <div className="navigationBar">
-                <Link to="/review-movies"><h1>Review Movies</h1></Link>
-                <Link to="/admin-site-analytics"><h1>Site Movies and Analytics</h1></Link>
+                <Link to={PATHS.ADMIN.REVIEW_REQUESTS} ><h1>Review Movies</h1></Link>
+                <Link to={PATHS.ADMIN.SITE_ANALYTICS} ><h1>Site Movies and Analytics</h1></Link>
                 <ProfileAvatar menuItems={avatarMenuItems} />
             </div>
 

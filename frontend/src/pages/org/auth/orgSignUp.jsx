@@ -1,13 +1,13 @@
 import React from 'react';
-import { useNavigate } from 'react-router-dom';
 import SignUp from "../../auth/signUp.jsx";
+import {PATHS, ROLES} from "../../../constants/constants.jsx"
 
 const OrgSignUp = () => {
     return (
         <SignUp
             role = "Organization"
             show = {false}
-            link = "/org-sign-in"
+            link = {PATHS.ORGANIZATION.SIGN_IN}
         />
     );
 };

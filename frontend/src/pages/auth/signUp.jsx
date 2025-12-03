@@ -13,9 +13,9 @@ import { LuEyeOff, LuEye } from "react-icons/lu";
 import oauthSignIn from '../../api/oauthSignInApi.jsx';
 import { AuthContext } from "../../context/authContext.jsx";
 import { ToastContext } from "../../context/ToastContext.jsx";
-import {MAX_LENGTHS, MAX_VALUES, MIN_LENGTHS} from "../../constants/constants.jsx";
+import {MAX_LENGTHS, MAX_VALUES, MIN_LENGTHS, PATHS, ROLES} from "../../constants/constants.jsx";
 
-export default function UserSignUp ({role = "User", show = true, link = "/"}) {
+export default function UserSignUp ({role = "User", show = true, link = PATHS.ROOT}) {
 
     const navigate = useNavigate();
 
@@ -36,7 +36,7 @@ export default function UserSignUp ({role = "User", show = true, link = "/"}) {
     const { showToast } = useContext(ToastContext);
 
     function buildRequestBody(role) {
-        if (role === "USER") {
+        if (role === ROLES.USER) {
             return {
                 firstName,
                 lastName,
@@ -46,7 +46,7 @@ export default function UserSignUp ({role = "User", show = true, link = "/"}) {
             };
         }
 
-        if (role === "ORGANIZATION") {
+        if (role === ROLES.ORGANIZATION) {
             return {
                 name: orgName,
                 about,
@@ -70,7 +70,7 @@ export default function UserSignUp ({role = "User", show = true, link = "/"}) {
         const signUpResult = await signUp(email, password, role.toUpperCase(), buildRequestBody(role.toUpperCase()));
 
         if (signUpResult.success === true){
-            navigate("/email-verification");
+            navigate(PATHS.EMAIL_VERIFICATION);
         }
         else{
             console.log(signUpResult.message);

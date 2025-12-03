@@ -8,6 +8,7 @@ import p1 from '../../assets/p1.jpg';
 import p2 from '../../assets/p2.jpg';
 import action from '../../assets/action.jpg';
 import MoviesDetailsApi from '../../api/moviesDetailsApi';
+import {PATHS} from "../../constants/constants.jsx";
 
 export default function Browse() {
 
@@ -143,8 +144,8 @@ export default function Browse() {
                     <Carousel />
                 </div>
                 <div style={{display: "flex", flexDirection: "column", gap: "60px"}}>
-                    <MoviesList list={newReleases} name={"New Releases"} page={newReleasesPage} setPage={setNewReleasesPage} onClick={(id) => navigate(`/movie/${id}`)} />
-                    <MoviesList list={topRated} name={"Top Rated"} page={topRatedPage} setPage={setTopRatedPage} onClick={(id) => navigate(`/movie/${id}`)} />
+                    <MoviesList list={newReleases} name={"New Releases"} page={newReleasesPage} setPage={setNewReleasesPage} onClick={(id) => navigate(PATHS.MOVIE.DETAILS(id))} />
+                    <MoviesList list={topRated} name={"Top Rated"} page={topRatedPage} setPage={setTopRatedPage} onClick={(id) => navigate(PATHS.MOVIE.DETAILS(id))} />
                     <MoviesList list={genres} name={"Genres"} onClick={(genre) => navigate(`/genre/${genre}`)} />
                 </div>
             </main>

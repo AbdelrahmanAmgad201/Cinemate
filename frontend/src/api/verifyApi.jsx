@@ -1,4 +1,5 @@
 import api from './apiClient.jsx';
+import {JWT} from "../constants/constants.jsx";
 
 
 export default async function verifyApi({email, code}) {
@@ -14,7 +15,7 @@ export default async function verifyApi({email, code}) {
             role: data.role.replace("ROLE_", "")
         }
 
-        localStorage.setItem('token', token);
+        localStorage.setItem(JWT.STORAGE_NAME, token);
 
         return { success: true, user: user};
 

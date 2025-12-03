@@ -1,15 +1,14 @@
 import React from 'react';
-import { useNavigate } from 'react-router-dom';
 import SignIn from "../../auth/signIn.jsx";
+import {PATHS, ROLES} from "../../../constants/constants.jsx";
 
 const OrgSignIn = () => {
-    const navigate = useNavigate();
     return (
         <SignIn
             role = "Organization"
             button1 = "User"
-            navigate1 = "/"
-            link = "/org-sign-up"
+            navigate1 = {PATHS.ROOT}
+            link = {PATHS.ORGANIZATION.SIGN_UP}
         />
     );
 };

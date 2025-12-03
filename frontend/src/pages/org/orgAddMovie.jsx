@@ -1,14 +1,14 @@
-import '../../auth/style/signUp.css';
+import '../auth/style/signUp.css';
 import './style/addMovie.css';
 
-import addMovieApi from '../../../api/addMovieApi.jsx';
+import addMovieApi from '../../api/addMovieApi.jsx';
 import {useContext, useState} from 'react';
 import {Link} from 'react-router-dom';
-import ProfileAvatar from "../../../components/profileAvatar.jsx";
+import ProfileAvatar from "../../components/profileAvatar.jsx";
 
-import {AuthContext} from "../../../context/authContext.jsx";
-import {MAX_LENGTHS} from "../../../constants/constants.jsx";
-import {ToastContext} from "../../../context/ToastContext.jsx";
+import {AuthContext} from "../../context/authContext.jsx";
+import {MAX_LENGTHS, PATHS} from "../../constants/constants.jsx";
+import {ToastContext} from "../../context/ToastContext.jsx";
 
 const OrgAddMovie = () => {
 
@@ -59,8 +59,8 @@ const OrgAddMovie = () => {
          <div>
              <div className = "navigationBar">
                  {/*<Link to = "/"><h1>Home Page</h1></Link>*/}
-                 <Link to = "/org-add-movie"><h1>Add Movie</h1></Link>
-                 <Link to = "/org-movies-and-analytics"><h1>My Movies and Analytics</h1></Link>
+                 <Link to = {PATHS.ORGANIZATION.SUBMIT_REQUEST}><h1>Add Movie</h1></Link>
+                 <Link to = {PATHS.ORGANIZATION.MOVIES_ANALYTICS}><h1>My Movies and Analytics</h1></Link>
                  <ProfileAvatar menuItems={avatarMenuItems} />
              </div>
              <div className = "signup-container addMovie-container">

@@ -1,54 +1,14 @@
 import api from './apiClient.jsx';
-
-function mapBackendReviews(data) {
-
-    if (!data?.content) return [];
-
-    return data.content.map(item => ({
-        id: item.movieReviewID?.reviewerId ?? Math.random(), // fallback ID if needed
-        reviewerId: item.movieReviewID?.reviewerId,
-        rating: item.rating,
-        description: item.comment,
-        date: item.createdAt,
-        name: item.reviewer
-            ? `${item.reviewer.firstName ?? ""} ${item.reviewer.lastName ?? ""}`.trim() || "Anonymous"
-            : "Anonymous"
-    }));
-}
-
-function formatRuntime(minutes) {
-    if (!minutes) return "";
-    const h = Math.floor(minutes / 60);
-    const m = minutes % 60;
-    return `${h}h ${m}m`;
-}
-
-
-export function mapMovieBackendToFrontend(m) {
-    return {
-        id: m.movieID,
-        title: m.name,
-        description: m.description,
-        poster: m.thumbnailUrl,       // rename to poster for UI
-        videoUrl: m.movieUrl,
-        trailerUrl: m.trailerUrl,
-        genres: [m.genre],            // backend gives ONE genre — UI expects array
-        rating: m.averageRating,
-        runtime: formatRuntime(m.duration),
-        releaseDate: m.releaseDate
-    };
-}
+import { mapBackendReviews, mapMovieBackendToFrontend } from "../utils/api-mappers.jsx";
 
 export async function getMovieApi({ movieId }) {
     try {
         const response = await api.post(`/movie/v1/get-specific-movie/${movieId}`);
         const data = response.data;
-        console.log(data);
 
         const mappedMovie = mapMovieBackendToFrontend(data);
         return { success: true, data: mappedMovie };
     } catch (err) {
-        console.error(err);
         return { success: false, message: err.message };
     }
 }

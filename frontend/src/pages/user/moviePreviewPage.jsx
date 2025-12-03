@@ -16,7 +16,7 @@ import watchPartyIcon from "../../assets/icons/watch-party-black.png";
 import addIcon from "./../../assets/icons/add-white.png"
 import clockIcon from "../../assets/icons/clock-white.png";
 
-import {MAX_LENGTHS} from "../../constants/constants.jsx";
+import {MAX_LENGTHS, PATHS, ROLES} from "../../constants/constants.jsx";
 
 export default function MoviePreviewPage() {
 
@@ -25,7 +25,7 @@ export default function MoviePreviewPage() {
     const location = useLocation();
     const navigate = useNavigate();
     // In home-page, use as follow
-    // <Link to={`/movie/${movie.id}`} state={{ movie }}>
+    // <Link to={PATHS.MOVIE.DETAILS(movieId)} state={{ movie }}>
     //     <MovieCard/>
     // </Link>
     const [movie, setMovie] = useState(location.state?.movie ?? null);
@@ -90,7 +90,7 @@ export default function MoviePreviewPage() {
     /////////////////////////////////////////////////////////// TODO /////////////////////////////////////////////////////
     const handleDelete = async (id) => {
 
-        if (!window.confirm("Delete this review?")) return;
+        // if (!window.confirm("Delete this review?")) return;
         const prev = reviews;
         setReviews(r => r.filter(x => x.id !== id));
         // const res = await deleteReviewApi({ reviewId: id });
@@ -111,89 +111,73 @@ export default function MoviePreviewPage() {
         }
         fetchingRef.current = true;
 
-        try{
-            // TODO: review the following again. Send to backend
-            // movieId, page, size
+        // movieId, page, size
 
-            const res = await getReviewsApi({movieId, page:pageToFetch, size});
-            if (res.success === false) {
-                // console.error("Failed to fetch reviews:", res.statusText);
-                {user.role === "USER" && showToast("Failed to fetch reviews", res.message || "unknown error", "error")}
-            }
-            const data = res.data
-            console.log(data)
-            const pageContent = data.content ?? data;
-            setTotalPages(data.totalPages ?? Math.max(1, Math.ceil((data.totalElements ?? pageContent.length) / size)));
-            setPage(pageToFetch);
-            // adds new page content to existing reviews OR replaces existing reviews if append is false
-            setReviews(prev => {
-                if (!append) return pageContent;
-                // append while avoiding duplicates by id
-                const ids = new Set(prev.map(r => r.id));
-                const newItems = pageContent.filter(r => !ids.has(r.id));
-                return [...prev, ...newItems];
-            });
-
-        }catch (err){
-            setReviewsError(err.message || "Failed to load reviews");
-            {user.role === "USER" && showToast("Failed to fetch reviews", err.message || "unknown error", "error")}
-
-        }finally {
+        const res = await getReviewsApi({movieId, page:pageToFetch, size});
+        if (res.success === false) {
+            {user.role === ROLES.USER && showToast("Failed to fetch reviews", res.message || "unknown error", "error")}
+            setReviewsError(res.message || "Failed to load reviews");
             setReviewsLoading(false);
             fetchingRef.current = false;
+            return;
         }
+
+        const data = res.data
+        console.log(data)
+        const pageContent = data.content ?? data;
+        setTotalPages(data.totalPages ?? Math.max(1, Math.ceil((data.totalElements ?? pageContent.length) / size)));
+        setPage(pageToFetch);
+        // adds new page content to existing reviews OR replaces existing reviews if append is false
+        setReviews(prev => {
+            if (!append) return pageContent;
+            // append while avoiding duplicates by id
+            const ids = new Set(prev.map(r => r.id));
+            const newItems = pageContent.filter(r => !ids.has(r.id));
+            return [...prev, ...newItems];
+        });
+
+        setReviewsLoading(false);
+        fetchingRef.current = false;
 
     }
 
     const fetchMovie = async () => {
         setMovieError(null);
         setMovieLoading(true);
-        // TODO: send to backend
-        try {
-            const res = await getMovieApi({ movieId });
-            if (res.success === false){
-                // throw new Error(res.message || "Failed to load movie");
-                showToast("Failed to fetch movie", res.message || "unknown error", "error")
-            }
-            setMovie(res.data);
-        } catch (err) {
-            setMovieError(err.message || "Failed to load movie");
-            showToast("Failed to fetch movie", err.message || "unknown error", "error")
-        } finally {
+
+        const res = await getMovieApi({ movieId });
+        if (!res.success){
+            showToast("Failed to fetch movie", res.message || "unknown error", "error")
+            setMovieError(res.message || "Failed to load movie");
             setMovieLoading(false);
+            return;
         }
+
+        setMovie(res.data);
+        setMovieLoading(false);
 
     }
 
     const handleLike = async () => {
-        try {
-            const res = await likeMovieApi({ movieId });
-            if (res.success === false){
-                showToast("Failed to like movie", res.message || "unknown error", "error")
-            }
-            else {
-                showToast("Liked movie", "Added movie to like list", "success")
-            }
 
-        } catch (err) {
-            showToast("Failed to like movie", err.message || "unknown error", "error")
+        const res = await likeMovieApi({ movieId });
+        if (res.success === false){
+            showToast("Failed to like movie", res.message || "unknown error", "error")
+            return
         }
+
+        showToast("Liked movie", "Added movie to like list", "success")
+
     }
 
     const handleWatchLater = async () => {
-        try {
-            const res = await addToWatchLaterApi({ movieId });
-            if (res.success === false){
-
-                showToast("Failed to add movie to watch later", res.message || "unknown error", "error")
-            }
-            else {
-                showToast("Watch later movie", "Added movie to watch later list", "success")
-            }
-
-        } catch (err) {
-            showToast("Failed to add movie to watch later", err.message || "unknown error", "error")
+        const res = await addToWatchLaterApi({ movieId });
+        if (res.success === false){
+            showToast("Failed to add movie to watch later", res.message || "unknown error", "error")
+            return
         }
+
+        showToast("Watch later movie", "Added movie to watch later list", "success")
     }
 
     // Fetches reviews and maybe movie details from backend
@@ -202,7 +186,6 @@ export default function MoviePreviewPage() {
 
         if (location.state?.movie) {
 
-            // const m = mapMovieBackendToFrontend(location.state.movie);
             const m = location.state.movie;
             setMovie(m);
             const id = m.id ?? movieId;
@@ -284,29 +267,29 @@ export default function MoviePreviewPage() {
                     <div className="movie-preview-page-movie-details-middle-buttons">
                         <button title="Play" onClick={() => {
                             addToWatchHistoryApi({movieId});
-                            navigate(`/watch`, { state:  movie.videoUrl  })
+                            navigate(PATHS.MOVIE.WATCH, { state:  movie.videoUrl  })
                         }}>
                             <img src={playIcon} alt="Play" className="button-icon" />
                             Play
                             <span className="tooltip">Play movie</span>
                         </button>
 
-                        <button title="Watch Trailer" onClick={() => navigate(`/watch`, { state: movie.trailerUrl })}>
+                        <button title="Watch Trailer" onClick={() => navigate(PATHS.MOVIE.WATCH, { state: movie.trailerUrl })}>
                             <img src={trailerIcon} alt="Trailer" className="button-icon" />
                             <span className="tooltip">Watch Trailer</span>
                         </button>
 
-                        {user.role === "USER" && <button title="Watchlist">
+                        {user.role === ROLES.USER && <button title="Watchlist">
                             <img src={watchlistIcon} alt="Watchlist" className="button-icon" onClick={handleWatchLater}/>
                             <span className="tooltip">Watchlist</span>
                         </button>}
 
-                        {user.role === "USER" && <button title="Like">
+                        {user.role === ROLES.USER && <button title="Like">
                             <img src={likeIcon} alt="Like" className="button-icon" onClick={handleLike} />
                             <span className="tooltip">Like</span>
                         </button>}
 
-                        {user.role === "USER" && <button title="Watch-Party">
+                        {user.role === ROLES.USER && <button title="Watch-Party">
                             <img src={watchPartyIcon} alt="Watch-Party" className="button-icon" />
                             <span className="tooltip">Start Watch-Party</span>
                         </button>}
@@ -336,7 +319,7 @@ export default function MoviePreviewPage() {
             </div>
 
             {/* Vertical (Columns) elements*/}
-            {user.role === "USER" && <div className="movie-preview-page-reviews">
+            {user.role === ROLES.USER && <div className="movie-preview-page-reviews">
                 <div className="movie-preview-page-reviews-header-row">
                     <h2 className="reviews-title">User Reviews ({reviews.length})</h2>
                     <button className="reviews-add-button" title="Add Review" onClick={() => setShowForm(true)}>

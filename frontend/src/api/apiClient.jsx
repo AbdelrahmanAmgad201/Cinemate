@@ -1,5 +1,6 @@
 import axios from "axios";
 import  signOutApi from "./signOutApi";
+import {JWT} from "../constants/constants.jsx";
 
 // Some defaults and base urls / properties to an axios inctance
 const api = axios.create({
@@ -8,7 +9,7 @@ const api = axios.create({
 
 api.interceptors.request.use(config => {
     // Get token from local storage
-    const token = localStorage.getItem("token");
+    const token = localStorage.getItem(JWT.STORAGE_NAME);
     if (token) {
         // Adds the token header
         config.headers.Authorization = `Bearer ${token}`;

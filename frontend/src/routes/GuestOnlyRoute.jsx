@@ -2,10 +2,11 @@ import { Navigate, Outlet } from 'react-router-dom';
 import { AuthContext } from "../context/authContext";
 import { useContext } from "react";
 import LoadingFallback from "../components/loadingFallback.jsx";
+import {PATHS} from "../constants/constants.jsx";
 
-export default function GuestOnlyRoute({ redirectTo = "/home-page" }) {
+export default function GuestOnlyRoute({ redirectTo = PATHS.HOME }) {
 
-    const { user, loading, signIn, signOut, isAuthenticated, pendingRestored } = useContext(AuthContext);
+    const { loading, isAuthenticated, pendingRestored } = useContext(AuthContext);
 
     if (loading || !pendingRestored) {
 

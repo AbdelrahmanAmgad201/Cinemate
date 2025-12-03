@@ -9,16 +9,16 @@ import { LuEyeOff, LuEye } from "react-icons/lu";
 import oauthSignIn from '../../api/oauthSignInApi.jsx';
 import { AuthContext } from "../../context/authContext.jsx";
 import {ToastContext} from "../../context/ToastContext.jsx";
-import {MAX_LENGTHS} from "../../constants/constants.jsx";
+import {MAX_LENGTHS, PATHS, ROLES} from "../../constants/constants.jsx";
 
 
 export default function SignIn({role = "User",
                                 button1 = "Organization",
-                                navigate1 = "/org-sign-in",
+                                navigate1 = PATHS.ORGANIZATION.SIGN_IN,
                                 button2 = "Admin",
-                                navigate2 = "/admin-sign-in",
+                                navigate2 = PATHS.ADMIN.SIGN_IN,
                                 showParagraph = true,
-                                link = "/user-sign-up"}) {
+                                link = PATHS.USER.SIGN_UP}) {
     const navigate = useNavigate();
 
     const [email, setEmail] = useState("");
@@ -33,9 +33,9 @@ export default function SignIn({role = "User",
         const signInResult = await signIn(email, password, role.toUpperCase())
         console.log(signInResult);
         if (signInResult.success === true){
-            if (signInResult.data.role === "USER") navigate("/home-page")
-            else if (signInResult.data.role === "ORGANIZATION") navigate("/org-add-movie")
-            else if (signInResult.data.role === "ADMIN") navigate("/review-movies")
+            if (signInResult.data.role === ROLES.USER) navigate(PATHS.HOME)
+            else if (signInResult.data.role === ROLES.ORGANIZATION) navigate(PATHS.ORGANIZATION.SUBMIT_REQUEST)
+            else if (signInResult.data.role === ROLES.ADMIN) navigate(PATHS.ADMIN.REVIEW_REQUESTS)
         }
         else{
             showToast("Sign in failed.", signInResult.message || "Sign in failed. Please try again.", "error")

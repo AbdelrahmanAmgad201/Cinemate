@@ -1,4 +1,5 @@
 import api from './apiClient.jsx';
+import {JWT} from "../constants/constants.jsx";
 
 
 export default async function signInApi({email, password, role}) {
@@ -12,7 +13,7 @@ export default async function signInApi({email, password, role}) {
             role: data.role.replace("ROLE_", "")
         }
 
-        localStorage.setItem('token', token);
+        localStorage.setItem(JWT.STORAGE_NAME, token);
 
         return { success: true, user: user};
     }

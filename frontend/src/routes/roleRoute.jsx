@@ -2,11 +2,11 @@ import { Navigate, Outlet } from "react-router-dom";
 import { useContext } from "react";
 import { AuthContext } from "../context/authContext";
 import LoadingFallback from "../components/loadingFallback.jsx";
+import { ROLES, PATHS} from "../constants/constants.jsx";
 
+export default function RoleRoute({ allowedRoles = [], redirectTo = PATHS.ROOT }) {
 
-export default function RoleRoute({ allowedRoles = [], redirectTo = "/" }) {
-
-    const { user, loading, isAuthenticated, pendingUser, pendingRestored } = useContext(AuthContext);
+    const { user, loading, isAuthenticated, pendingRestored } = useContext(AuthContext);
 
     if (loading || !pendingRestored) {
         return <LoadingFallback />;
@@ -22,9 +22,9 @@ export default function RoleRoute({ allowedRoles = [], redirectTo = "/" }) {
         // User is logged in but not in the allowed roles -> send them to a suitable page
         // You may choose to send ADMIN -> /review-movies, USER -> /home-page, ORG -> /org-add-movie
         // Here we redirect to a generic home or "not authorized" page.
-        if (user.role === "ADMIN") return ( <Navigate to="/review-movies" replace />)
-        else if (user.role === "ORGANIZATION") return ( <Navigate to="/org-add-movie" replace />)
-        else return <Navigate to="/home-page" replace />;
+        if (user.role === ROLES.ADMIN) return ( <Navigate to={PATHS.ADMIN.REVIEW_REQUESTS} replace />)
+        else if (user.role === ROLES.ORGANIZATION) return ( <Navigate to={PATHS.ORGANIZATION.SUBMIT_REQUEST} replace />)
+        else return <Navigate to={PATHS.HOME} replace />;
     }
 
     return <Outlet />;

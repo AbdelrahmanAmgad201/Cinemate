@@ -1,12 +1,13 @@
 import React from 'react';
 import SignIn from "../../auth/signIn.jsx";
+import {PATHS} from "../../../constants/constants.jsx";
 
 const AdminSignIn = () => {
     return (
         <SignIn
         role = "Admin"
         button2 = "User"
-        navigate2 = "/"
+        navigate2 = {PATHS.ROOT}
         showParagraph = {false}
         />
     );

@@ -1,6 +1,8 @@
-import {Routes, Route} from 'react-router-dom'
+import {Routes, Route, Navigate} from 'react-router-dom'
+
 import GuestOnlyRoute from './GuestOnlyRoute'
 import PendingUserRoute from "./PendingUserRoute.jsx";
+import RoleRoute from "./roleRoute.jsx";
 
 import UserSignIn from "../pages/auth/signIn.jsx";
 import UserSignUp from "../pages/auth/signUp.jsx";
@@ -12,8 +14,8 @@ import OrgSignUp from "../pages/org/auth/orgSignUp.jsx";
 import OrgSignIn from "../pages/org/auth/orgSignIn.jsx";
 import AdminSignIn from "../pages/admin/auth/adminSignIn.jsx";
 import OAuthRedirect from "../pages/user/auth/OAuthRedirect.jsx";
-import OrgAddMovie from "../pages/org/auth/orgAddMovie.jsx";
-import OrgMoviesAndAnalytics from "../pages/org/auth/orgMoviesAndAnalytics.jsx";
+import OrgAddMovie from "../pages/org/orgAddMovie.jsx";
+import OrgMoviesAndAnalytics from "../pages/org/orgMoviesAndAnalytics.jsx";
 import MoviePreviewPage from "../pages/user/moviePreviewPage.jsx";
 import WatchPage from "../pages/user/watchPage.jsx";
 
@@ -23,7 +25,7 @@ import TestSandBox from "../pages/testSandBox.jsx";
 import ReviewMovies from "../pages/admin/reviewMovies.jsx";
 import SiteAnalytics from "../pages/admin/siteAnalytics.jsx";
 
-import RoleRoute from "./roleRoute.jsx";
+import { ROLES, PATHS } from "../constants/constants.jsx";
 
 export default function AppRoutes() {
 
@@ -34,49 +36,53 @@ export default function AppRoutes() {
 
             {/* public routes, currently the only public pages will be auth pages */}
             <Route element={<GuestOnlyRoute />}>
-                {/*The following is equivalent to path = ""*/}
-                <Route index element={<UserSignIn />} />
-                <Route path={"/user-sign-up"} element={<UserSignUp />} />
-                <Route path={"/oauth2/redirect"} element={<OAuthRedirect />} />
 
-                <Route path="/org-sign-in" element={<OrgSignIn />} />
-                <Route path="/org-sign-up" element={<OrgSignUp />} />
+                <Route path={PATHS.ROOT}
+                       element={ <Navigate to={PATHS.USER.SIGN_IN} replace/> }
+                />
 
-                <Route path="/admin-sign-in" element={<AdminSignIn />} />
+                <Route path={PATHS.USER.SIGN_IN} element={<UserSignIn />} />
+                <Route path={PATHS.USER.SIGN_UP} element={<UserSignUp />} />
+                <Route path={PATHS.GOOGLE_AUTH.REDIRECT} element={<OAuthRedirect />} />
+
+                <Route path={PATHS.ORGANIZATION.SIGN_IN} element={<OrgSignIn />} />
+                <Route path={PATHS.ORGANIZATION.SIGN_UP} element={<OrgSignUp />} />
+
+                <Route path={PATHS.ADMIN.SIGN_IN} element={<AdminSignIn />} />
 
                 <Route element={<PendingUserRoute />}>
-                    <Route path="/email-verification" element={<EmailVerification />} />
+                    <Route path={PATHS.EMAIL_VERIFICATION} element={<EmailVerification />} />
                 </Route>
 
             </Route>
 
-            <Route element={<RoleRoute allowedRoles={["ORGANIZATION"]} redirectTo="/org-sign-in" />}>
-                <Route path="/org-add-movie" element={<OrgAddMovie />} />
-                <Route path="/org-movies-and-analytics" element={<OrgMoviesAndAnalytics />} />
+            <Route element={<RoleRoute allowedRoles={[ROLES.ORGANIZATION]} redirectTo={PATHS.ORGANIZATION.SIGN_IN} />}>
+                <Route path={PATHS.ORGANIZATION.SUBMIT_REQUEST} element={<OrgAddMovie />} />
+                <Route path={PATHS.ORGANIZATION.MOVIES_ANALYTICS} element={<OrgMoviesAndAnalytics />} />
             </Route>
 
-            <Route element={<RoleRoute allowedRoles={["ADMIN"]} redirectTo="/admin-sign-in" />}>
-                <Route path="/review-movies" element={<ReviewMovies />} />
-                <Route path="/admin-site-analytics" element={<SiteAnalytics />} />
-                {/*<Route path="/movie/:movieId" element={<MoviePreviewPage />} />*/}
+            <Route element={<RoleRoute allowedRoles={[ROLES.ADMIN]} redirectTo={PATHS.ADMIN.SIGN_IN} />}>
+                <Route path={PATHS.ADMIN.REVIEW_REQUESTS} element={<ReviewMovies />} />
+                <Route path={PATHS.ADMIN.SITE_ANALYTICS} element={<SiteAnalytics />} />
+                {/*<Route path={PATHS.MOVIE.DETAILS()} element={<MoviePreviewPage />} />*/}
             </Route>
 
-            <Route element={<RoleRoute allowedRoles={["USER","ADMIN"]} />}>
-                {/*<Route path="/home-page" element={<HomePage />} />*/}
-                {/*<Route path="/browse" element={<Browse />} />*/}
-                <Route path="/movie/:movieId" element={<MoviePreviewPage />} />
+            <Route element={<RoleRoute allowedRoles={[ROLES.USER, ROLES.ADMIN]} />}>
+                {/*<Route path={PATHS.HOME} element={<HomePage />} />*/}
+                {/*<Route path={PATHS.MOVIE.BROWSE} element={<Browse />} />*/}
+                <Route path={PATHS.MOVIE.DETAILS()} element={<MoviePreviewPage />} />
             </Route>
 
             {/*Added here for testing*/}
             {/*<Route path="/test-sand-box" element={<TestSandBox />} />*/}
 
             {/* protected routes (requires login + verified) */}
-            <Route element={<RoleRoute allowedRoles={["USER"]} />}>
-                <Route path="/home-page" element={<HomePage />} />
-                <Route path="/browse" element={<Browse />} />
-                <Route path="/genre/:title" element={<Genre />} />
-                {/*<Route path="/movie/:movieId" element={<MoviePreviewPage />} />*/}
-                <Route path="/watch" element={<WatchPage />} />
+            <Route element={<RoleRoute allowedRoles={[ROLES.USER]} />}>
+                <Route path={PATHS.HOME} element={<HomePage />} />
+                <Route path={PATHS.MOVIE.BROWSE} element={<Browse />} />
+                <Route path={PATHS.MOVIE.GENRE()} element={<Genre />} />
+                {/*<Route path={PATHS.MOVIE.DETAILS()} element={<MoviePreviewPage />} />*/}
+                <Route path={PATHS.MOVIE.WATCH} element={<WatchPage />} />
 
             </Route>
 
