@@ -1,4 +1,4 @@
-package org.example.backend.following;
+package org.example.backend.userfollowing;
 
 import jakarta.persistence.*;
 import lombok.*;

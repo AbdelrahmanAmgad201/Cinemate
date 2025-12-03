@@ -2,7 +2,7 @@ package org.example.backend.user;
 
 import jakarta.persistence.*;
 import lombok.*;
-import org.example.backend.following.Follows;
+import org.example.backend.userfollowing.Follows;
 import org.example.backend.likedMovie.LikedMovie;
 import org.example.backend.movieReview.MovieReview;
 import org.example.backend.security.Authenticatable;
