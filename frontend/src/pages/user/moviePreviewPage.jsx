@@ -5,7 +5,7 @@ import ReviewCard from "../../components/reviewCard.jsx";
 import { dummyReviews } from "../../data/dummyReviews";
 import {useParams, useLocation, useNavigate} from "react-router-dom";
 
-import {getMovieApi, getReviewsApi, postReviewApi, deleteReviewApi, likeMovieApi, addToWatchHistoryApi, addToWatchLaterApi} from "../../api/movieApi.jsx";
+import {getMovieApi, getReviewsApi, postReviewApi, deleteReviewApi, likeMovieApi, addToWatchHistoryApi, addToWatchLaterApi} from "../../api/movie-api.jsx";
 import {ToastContext} from "../../context/ToastContext.jsx";
 
 import playIcon from "../../assets/icons/play-black.png";

@@ -1,4 +1,4 @@
-import api from './apiClient.jsx';
+import api from './api-client.jsx';
 import { mapBackendReviews, mapMovieBackendToFrontend } from "../utils/api-mappers.jsx";
 
 export async function getMovieApi({ movieId }) {

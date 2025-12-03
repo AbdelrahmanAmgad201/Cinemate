@@ -1,5 +1,5 @@
 import axios from "axios";
-import  signOutApi from "./signOutApi";
+import  signOutApi from "./sign-out-api.jsx";
 import {JWT} from "../constants/constants.jsx";
 
 // Some defaults and base urls / properties to an axios inctance

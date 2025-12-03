@@ -5,8 +5,8 @@ import { useState, useEffect, useContext } from "react";
 import { Link, useNavigate } from "react-router-dom";
 
 import ProfileAvatar from "../../components/profileAvatar.jsx";
-import { getPendingRequestsApi, getRequestsHistoryApi, acceptRequestApi, declineRequestApi} from "../../api/adminApi";
-// import {mapMovieBackendToFrontend} from "../../api/movieApi.jsx";
+import { getPendingRequestsApi, getRequestsHistoryApi, acceptRequestApi, declineRequestApi} from "../../api/admin-api.jsx";
+// import {mapMovieBackendToFrontend} from "../../api/movie-api.jsx";
 import {mapMovieBackendToFrontend} from "../../utils/api-mappers.jsx";
 import {ToastContext} from "../../context/ToastContext.jsx";
 import { AuthContext } from "../../context/authContext.jsx";

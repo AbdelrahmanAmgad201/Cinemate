@@ -7,7 +7,7 @@ import Footer from '../../components/footer';
 import p1 from '../../assets/p1.jpg';
 import p2 from '../../assets/p2.jpg';
 import action from '../../assets/action.jpg';
-import MoviesDetailsApi from '../../api/moviesDetailsApi';
+import MoviesDetailsApi from '../../api/movies-details-api.jsx';
 import {PATHS} from "../../constants/constants.jsx";
 
 export default function Browse() {

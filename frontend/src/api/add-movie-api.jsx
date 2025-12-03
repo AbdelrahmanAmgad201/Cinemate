@@ -1,4 +1,4 @@
-import api from './apiClient.jsx';
+import api from './api-client.jsx';
 
 export default async function addMovieApi (movieData){
     try{

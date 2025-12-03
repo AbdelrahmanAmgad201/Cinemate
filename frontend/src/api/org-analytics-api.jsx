@@ -1,4 +1,4 @@
-import api from "./apiClient";
+import api from "./api-client.jsx";
 
 export const fetchMoviesOverview = async () => {
     try {

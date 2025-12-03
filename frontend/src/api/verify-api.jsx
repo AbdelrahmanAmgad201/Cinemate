@@ -1,4 +1,4 @@
-import api from './apiClient.jsx';
+import api from './api-client.jsx';
 import {JWT} from "../constants/constants.jsx";
 
 

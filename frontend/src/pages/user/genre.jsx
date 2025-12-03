@@ -5,7 +5,7 @@ import p1 from '../../assets/p1.jpg';
 import p2 from '../../assets/p2.jpg';
 import NavBar from '../../components/NavBar';
 import Footer from '../../components/footer';
-import MoviesDetailsApi from '../../api/moviesDetailsApi';
+import MoviesDetailsApi from '../../api/movies-details-api.jsx';
 import {PATHS} from "../../constants/constants.jsx";
 
 const Genre = ({ listGenre }) => {

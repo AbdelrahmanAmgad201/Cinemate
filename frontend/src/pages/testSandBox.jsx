@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import MoviesDetailsApi from '../api/MoviesDetailsApi.jsx';
+import MoviesDetailsApi from '../api/movies-details-api.jsx';
 
 export default function TestSandBox() {
     const [newReleases, setNewReleases] = useState([]);

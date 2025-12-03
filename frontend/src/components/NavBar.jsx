@@ -3,7 +3,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { IoSearch } from "react-icons/io5";
 import { CgProfile } from "react-icons/cg";
 import { AuthContext } from '../context/authContext.jsx';
-import MoviesDetailsApi from '../api/moviesDetailsApi.jsx';
+import MoviesDetailsApi from '../api/movies-details-api.jsx';
 import './style/navBar.css';
 import {MAX_LENGTHS, PATHS} from "../constants/constants.jsx";
 

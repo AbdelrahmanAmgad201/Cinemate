@@ -6,7 +6,7 @@ import {useState, useContext} from 'react';
 import { FcGoogle } from "react-icons/fc";
 import { LuEyeOff, LuEye } from "react-icons/lu";
 
-import oauthSignIn from '../../api/oauthSignInApi.jsx';
+import oauthSignIn from '../../api/oauth-sign-in-api.jsx';
 import { AuthContext } from "../../context/authContext.jsx";
 import {ToastContext} from "../../context/ToastContext.jsx";
 import {MAX_LENGTHS, PATHS, ROLES} from "../../constants/constants.jsx";

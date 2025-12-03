@@ -1,4 +1,4 @@
-import api from './apiClient.jsx';
+import api from './api-client.jsx';
 
 export async function getRequestsHistoryApi() {
     try{

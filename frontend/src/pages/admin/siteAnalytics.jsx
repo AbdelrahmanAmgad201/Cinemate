@@ -6,8 +6,8 @@ import { Link, useNavigate } from "react-router-dom";
 
 import { AuthContext } from "../../context/authContext.jsx";
 import ProfileAvatar from "../../components/profileAvatar.jsx";
-import { getSystemAnalyticsApi } from "../../api/adminApi";
-import { getMovieApi } from "../../api/movieApi";
+import { getSystemAnalyticsApi } from "../../api/admin-api.jsx";
+import { getMovieApi } from "../../api/movie-api.jsx";
 import {PATHS} from "../../constants/constants.jsx";
 
 

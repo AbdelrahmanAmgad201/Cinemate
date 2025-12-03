@@ -1,7 +1,7 @@
 import '../auth/style/signUp.css';
 import './style/addMovie.css';
 
-import addMovieApi from '../../api/addMovieApi.jsx';
+import addMovieApi from '../../api/add-movie-api.jsx';
 import {useContext, useState} from 'react';
 import {Link} from 'react-router-dom';
 import ProfileAvatar from "../../components/profileAvatar.jsx";
