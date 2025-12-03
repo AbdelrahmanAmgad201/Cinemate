@@ -4,13 +4,18 @@ import "./style/navBar.css";
 import { useState, useEffect, useContext } from "react";
 import { Link, useNavigate } from "react-router-dom";
 
-import { AuthContext } from "../../context/authContext.jsx";
 import ProfileAvatar from "../../components/profileAvatar.jsx";
 import { getPendingRequestsApi, getRequestsHistoryApi, acceptRequestApi, declineRequestApi} from "../../api/adminApi";
 import {mapMovieBackendToFrontend} from "../../api/movieApi.jsx";
+import {ToastContext} from "../../context/ToastContext.jsx";
+import { AuthContext } from "../../context/authContext.jsx";
+
+import Swal from "sweetalert2";
 
 export default function ReviewRequestsPage() {
     const { signOut } = useContext(AuthContext);
+    const { showToast } = useContext(ToastContext);
+
     const navigate = useNavigate();
 
     const [activeTab, setActiveTab] = useState("pending"); // 'pending' or 'history'
@@ -22,7 +27,6 @@ export default function ReviewRequestsPage() {
         { label: "Sign Out", onClick: signOut },
     ];
 
-    // Fetch data whenever the active tab changes
     useEffect(() => {
         fetchData();
     }, [activeTab]);
@@ -34,7 +38,6 @@ export default function ReviewRequestsPage() {
             let res;
             if (activeTab === "pending") {
                 res = await getPendingRequestsApi();
-                // console.log(res);
             } else {
                 res = await getRequestsHistoryApi();
             }
@@ -45,33 +48,51 @@ export default function ReviewRequestsPage() {
                 setError(res.message);
             }
         } catch (err) {
-            setError("Failed to load data.");
+            setError("Failed to load data. " + err);
         } finally {
             setLoading(false);
         }
     };
 
     const handleAccept = async (requestId) => {
-        if (!window.confirm("Are you sure you want to accept this request?")) return;
+        const result = await Swal.fire({
+            title: "Accept Request?",
+            text: "Are you sure you want to accept this request?",
+            icon: "warning",
+            showCancelButton: true,
+            confirmButtonText: "Yes, accept",
+            cancelButtonText: "Cancel",
+        });
+
+        if (!result.isConfirmed) return;
 
         const res = await acceptRequestApi({ requestId });
         if (res.success) {
             // Refresh list
             fetchData();
         } else {
-            alert("Failed to accept: " + res.message);
+            showToast("Failed to accept request", res.message, "error");
         }
     };
 
     const handleDecline = async (requestId) => {
-        if (!window.confirm("Are you sure you want to decline this request?")) return;
+        const result = await Swal.fire({
+            title: "Decline Request?",
+            text: "Are you sure you want to decline this request?",
+            icon: "warning",
+            showCancelButton: true,
+            confirmButtonText: "Yes, decline",
+            cancelButtonText: "Cancel",
+        });
+
+        if (!result.isConfirmed) return;
 
         const res = await declineRequestApi({ requestId });
         if (res.success) {
             // Refresh list
             fetchData();
         } else {
-            alert("Failed to decline: " + res.message);
+            showToast("Failed to decline request", res.message, "error");
         }
     };
 

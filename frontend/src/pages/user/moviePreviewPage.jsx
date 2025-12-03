@@ -6,7 +6,7 @@ import { dummyReviews } from "../../data/dummyReviews";
 import {useParams, useLocation, useNavigate} from "react-router-dom";
 
 import {getMovieApi, getReviewsApi, postReviewApi, deleteReviewApi, likeMovieApi, addToWatchHistoryApi, addToWatchLaterApi} from "../../api/movieApi.jsx";
-import {ErrorToastContext} from "../../context/errorToastContext.jsx";
+import {ToastContext} from "../../context/ToastContext.jsx";
 
 import playIcon from "../../assets/icons/play-black.png";
 import trailerIcon from "../../assets/icons/film-black.png";
@@ -50,14 +50,14 @@ export default function MoviePreviewPage() {
     const [formRating, setFormRating] = useState(5);
     const [formDesc, setFormDesc] = useState("");
 
-    const { user, loading, signIn, signOut, isAuthenticated } = useContext(AuthContext);
-    const { showError } = useContext(ErrorToastContext);
+    const { user } = useContext(AuthContext);
+    const { showToast } = useContext(ToastContext);
 
     // add a new review
     const handleAdd = async (e) => {
         e.preventDefault();
         if (!formDesc.trim()) {
-            alert("Please enter a description.");
+            showToast("Warning", "Please enter a description.", "warning")
             return;
         }
         setSubmitting(true);
@@ -74,7 +74,7 @@ export default function MoviePreviewPage() {
             await fetchReviews(movieId, 0, false); // sync with backend
         }
         else {
-            showError("Failed to submit review", res.message || "unknown error")
+            showToast("Failed to submit review", res.message || "unknown error", "error")
         }
 
 
@@ -97,7 +97,7 @@ export default function MoviePreviewPage() {
         const res = await deleteReviewApi({movieId});
         if (res.success === false) {
             setReviews(prev); // rollback
-            showError("Failed to delete review", res.message || "unknown error")
+            showToast("Failed to delete review", res.message || "unknown error", "error")
         }
     };
 
@@ -118,7 +118,7 @@ export default function MoviePreviewPage() {
             const res = await getReviewsApi({movieId, page:pageToFetch, size});
             if (res.success === false) {
                 // console.error("Failed to fetch reviews:", res.statusText);
-                {user.role === "USER" && showError("Failed to fetch reviews", res.message || "unknown error")}
+                {user.role === "USER" && showToast("Failed to fetch reviews", res.message || "unknown error", "error")}
             }
             const data = res.data
             console.log(data)
@@ -136,7 +136,7 @@ export default function MoviePreviewPage() {
 
         }catch (err){
             setReviewsError(err.message || "Failed to load reviews");
-            {user.role === "USER" && showError("Failed to fetch reviews", err.message || "unknown error")}
+            {user.role === "USER" && showToast("Failed to fetch reviews", err.message || "unknown error", "error")}
 
         }finally {
             setReviewsLoading(false);
@@ -153,12 +153,12 @@ export default function MoviePreviewPage() {
             const res = await getMovieApi({ movieId });
             if (res.success === false){
                 // throw new Error(res.message || "Failed to load movie");
-                showError("Failed to fetch movie", res.message || "unknown error")
+                showToast("Failed to fetch movie", res.message || "unknown error", "error")
             }
             setMovie(res.data);
         } catch (err) {
             setMovieError(err.message || "Failed to load movie");
-            showError("Failed to fetch movie", err.message || "unknown error")
+            showToast("Failed to fetch movie", err.message || "unknown error", "error")
         } finally {
             setMovieLoading(false);
         }
@@ -169,15 +169,14 @@ export default function MoviePreviewPage() {
         try {
             const res = await likeMovieApi({ movieId });
             if (res.success === false){
-
-                showError("Failed to like movie", res.message || "unknown error")
+                showToast("Failed to like movie", res.message || "unknown error", "error")
             }
             else {
-                alert("Liked movie")
+                showToast("Liked movie", "Added movie to like list", "success")
             }
 
         } catch (err) {
-            showError("Failed to like movie", err.message || "unknown error")
+            showToast("Failed to like movie", err.message || "unknown error", "error")
         }
     }
 
@@ -186,14 +185,14 @@ export default function MoviePreviewPage() {
             const res = await addToWatchLaterApi({ movieId });
             if (res.success === false){
 
-                showError("Failed to add movie to watch later", res.message || "unknown error")
+                showToast("Failed to add movie to watch later", res.message || "unknown error", "error")
             }
             else {
-                alert("Movie added to watch later")
+                showToast("Watch later movie", "Added movie to watch later list", "success")
             }
 
         } catch (err) {
-            showError("Failed to add movie to watch later", err.message || "unknown error")
+            showToast("Failed to add movie to watch later", err.message || "unknown error", "error")
         }
     }
 

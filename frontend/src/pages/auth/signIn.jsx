@@ -8,7 +8,7 @@ import { LuEyeOff, LuEye } from "react-icons/lu";
 
 import oauthSignIn from '../../api/oauthSignInApi.jsx';
 import { AuthContext } from "../../context/authContext.jsx";
-import {ErrorToastContext} from "../../context/errorToastContext.jsx";
+import {ToastContext} from "../../context/ToastContext.jsx";
 import {MAX_LENGTHS} from "../../constants/constants.jsx";
 
 
@@ -26,7 +26,7 @@ export default function SignIn({role = "User",
     const [showPassword, setShowPassword] = useState(false);
 
     const { signIn } = useContext(AuthContext);
-    const { showError } = useContext(ErrorToastContext);
+    const { showToast } = useContext(ToastContext);
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -38,7 +38,7 @@ export default function SignIn({role = "User",
             else if (signInResult.data.role === "ADMIN") navigate("/review-movies")
         }
         else{
-            showError("Sign in failed.", signInResult.message || "Sign in failed. Please try again.")
+            showToast("Sign in failed.", signInResult.message || "Sign in failed. Please try again.", "error")
         }
     }
     return (

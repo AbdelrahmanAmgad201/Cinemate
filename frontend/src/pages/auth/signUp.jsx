@@ -12,7 +12,7 @@ import { LuEyeOff, LuEye } from "react-icons/lu";
 
 import oauthSignIn from '../../api/oauthSignInApi.jsx';
 import { AuthContext } from "../../context/authContext.jsx";
-import { ErrorToastContext } from "./../../context/ErrorToastContext";
+import { ToastContext } from "../../context/ToastContext.jsx";
 import {MAX_LENGTHS, MAX_VALUES, MIN_LENGTHS} from "../../constants/constants.jsx";
 
 export default function UserSignUp ({role = "User", show = true, link = "/"}) {
@@ -33,7 +33,7 @@ export default function UserSignUp ({role = "User", show = true, link = "/"}) {
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
     const { signUp } = useContext(AuthContext);
-    const { showError } = useContext(ErrorToastContext);
+    const { showToast } = useContext(ToastContext);
 
     function buildRequestBody(role) {
         if (role === "USER") {
@@ -74,7 +74,7 @@ export default function UserSignUp ({role = "User", show = true, link = "/"}) {
         }
         else{
             console.log(signUpResult.message);
-            showError("Sign up failed.", signUpResult.message || "Sign up failed. Please try again.");
+            showToast("Sign up failed.", signUpResult.message || "Sign up failed. Please try again.", "error");
         }
     }
 
