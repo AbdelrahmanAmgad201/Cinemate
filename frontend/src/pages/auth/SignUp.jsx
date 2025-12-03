@@ -1,4 +1,4 @@
-import './style/signUp.css';
+import './style/SignUp.css';
 import { useState, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Link } from "react-router-dom";
@@ -11,7 +11,7 @@ import { CiCalendar } from "react-icons/ci";
 import { LuEyeOff, LuEye } from "react-icons/lu";
 
 import oauthSignIn from '../../api/oauth-sign-in-api.jsx';
-import { AuthContext } from "../../context/authContext.jsx";
+import { AuthContext } from "../../context/AuthContext.jsx";
 import { ToastContext } from "../../context/ToastContext.jsx";
 import {MAX_LENGTHS, MAX_VALUES, MIN_LENGTHS, PATHS, ROLES} from "../../constants/constants.jsx";
 

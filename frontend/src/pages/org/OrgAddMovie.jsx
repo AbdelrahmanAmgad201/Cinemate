@@ -1,12 +1,12 @@
-import '../auth/style/signUp.css';
+import '../auth/style/SignUp.css';
 import './style/addMovie.css';
 
 import addMovieApi from '../../api/add-movie-api.jsx';
 import {useContext, useState} from 'react';
 import {Link} from 'react-router-dom';
-import ProfileAvatar from "../../components/profileAvatar.jsx";
+import ProfileAvatar from "../../components/ProfileAvatar.jsx";
 
-import {AuthContext} from "../../context/authContext.jsx";
+import {AuthContext} from "../../context/AuthContext.jsx";
 import {MAX_LENGTHS, PATHS} from "../../constants/constants.jsx";
 import {ToastContext} from "../../context/ToastContext.jsx";
 

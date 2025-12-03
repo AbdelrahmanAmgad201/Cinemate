@@ -1,6 +1,6 @@
 import { useParams, useLocation } from "react-router-dom";
-import WistiaEmbed from "../../components/wistiaEmbed.jsx";
-import './style/watchPage.css';
+import WistiaEmbed from "../../components/WistiaEmbed.jsx";
+import './style/WatchPage.css';
 
 export default function WatchPage() {
     // const { movieID } = useParams();

@@ -2,7 +2,7 @@ import React from 'react';
 import { Link } from "react-router-dom";
 import PropTypes from 'prop-types';
 import "./style/reviewCard.css"
-import {timeAgo} from "./timeAgo.jsx";
+import {timeAgo} from "../utils/formate.jsx";
 import Swal from "sweetalert2";
 
 export default function ReviewCard({

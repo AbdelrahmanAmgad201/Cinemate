@@ -1,9 +1,9 @@
 import { React, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import NavBar from '../../components/NavBar';
-import Carousel from '../../components/carousel';
-import MoviesList from '../../components/moviesList';
-import Footer from '../../components/footer';
+import Carousel from '../../components/Carousel.jsx';
+import MoviesList from '../../components/MoviesList.jsx';
+import Footer from '../../components/Footer.jsx';
 import p1 from '../../assets/p1.jpg';
 import p2 from '../../assets/p2.jpg';
 import action from '../../assets/action.jpg';

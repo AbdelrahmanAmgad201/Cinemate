@@ -1,11 +1,11 @@
-import "./style/siteAnalytics.css";
-import "./style/navBar.css";
+import "./style/SiteAnalytics.css";
+import "./style/NavBar.css";
 
 import { useState, useEffect, useContext } from "react";
 import { Link, useNavigate } from "react-router-dom";
 
-import { AuthContext } from "../../context/authContext.jsx";
-import ProfileAvatar from "../../components/profileAvatar.jsx";
+import { AuthContext } from "../../context/AuthContext.jsx";
+import ProfileAvatar from "../../components/ProfileAvatar.jsx";
 import { getSystemAnalyticsApi } from "../../api/admin-api.jsx";
 import { getMovieApi } from "../../api/movie-api.jsx";
 import {PATHS} from "../../constants/constants.jsx";

@@ -1,9 +1,9 @@
-import './style/emailVerification.css';
+import './style/EmailVerification.css';
 
 import {useState, useRef, useEffect, useContext} from 'react';
 import { useNavigate } from 'react-router-dom';
 
-import {AuthContext} from "../../context/authContext.jsx";
+import {AuthContext} from "../../context/AuthContext.jsx";
 import {ToastContext} from "../../context/ToastContext.jsx";
 import {PATHS, ROLES} from "../../constants/constants.jsx";
 

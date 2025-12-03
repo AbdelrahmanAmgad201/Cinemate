@@ -1,5 +1,5 @@
 import React from 'react';
-import SignIn from "../../auth/signIn.jsx";
+import SignIn from "../../auth/SignIn.jsx";
 import {PATHS} from "../../../constants/constants.jsx";
 
 const AdminSignIn = () => {

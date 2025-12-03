@@ -1,8 +1,8 @@
 import {useState, useEffect, useContext, useRef} from 'react'
 import { AuthContext } from "../../context/AuthContext.jsx";
-import './style/moviePreviewPage.css'
-import ReviewCard from "../../components/reviewCard.jsx";
-import { dummyReviews } from "../../data/dummyReviews";
+import './style/MoviePreviewPage.css'
+import ReviewCard from "../../components/ReviewCard.jsx";
+import { dummyReviews } from "../../data/dummy-reviews.jsx";
 import {useParams, useLocation, useNavigate} from "react-router-dom";
 
 import {getMovieApi, getReviewsApi, postReviewApi, deleteReviewApi, likeMovieApi, addToWatchHistoryApi, addToWatchLaterApi} from "../../api/movie-api.jsx";

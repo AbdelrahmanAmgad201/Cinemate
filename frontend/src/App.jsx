@@ -1,10 +1,10 @@
 import { useState } from 'react'
 import { BrowserRouter } from 'react-router-dom';
 import React, { Suspense } from 'react';
-import AppRoutes from './routes/appRoutes';
-import LoadingFallback from './components/LoadingFallback';
+import AppRoutes from './routes/AppRoutes.jsx';
+import LoadingFallback from './components/LoadingFallback.jsx';
 import './App.css'
-import AuthProvider from './context/authContext';
+import AuthProvider from './context/AuthContext.jsx';
 
 import {ToastProvider} from "./context/ToastContext.jsx";
 

@@ -1,7 +1,7 @@
 import { useContext } from "react";
 import { Navigate, Outlet } from "react-router-dom";
-import { AuthContext } from "../context/authContext";
-import LoadingFallback from "../components/loadingFallback.jsx";
+import { AuthContext } from "../context/AuthContext.jsx";
+import LoadingFallback from "../components/LoadingFallback.jsx";
 import {PATHS} from "../constants/constants.jsx";
 
 export default function PendingUserRoute() {

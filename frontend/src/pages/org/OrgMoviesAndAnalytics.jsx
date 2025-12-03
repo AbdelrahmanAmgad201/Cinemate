@@ -1,10 +1,10 @@
-import '../auth/style/signUp.css';
+import '../auth/style/SignUp.css';
 import { Link } from 'react-router-dom';
 import './style/orgAnalytics.css';
 import {useContext, useEffect, useState} from 'react';
 import fetchOrgAnalytics, { fetchOrgRequests } from '../../api/org-analytics-api.jsx';
-import ProfileAvatar from "../../components/profileAvatar.jsx";
-import {AuthContext} from "../../context/authContext.jsx";
+import ProfileAvatar from "../../components/ProfileAvatar.jsx";
+import {AuthContext} from "../../context/AuthContext.jsx";
 import {PATHS} from "../../constants/constants.jsx";
 
 const StatCard = ({ title, value, subtitle, children }) => (

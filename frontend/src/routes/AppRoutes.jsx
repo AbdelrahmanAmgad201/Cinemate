@@ -2,28 +2,28 @@ import {Routes, Route, Navigate} from 'react-router-dom'
 
 import GuestOnlyRoute from './GuestOnlyRoute'
 import PendingUserRoute from "./PendingUserRoute.jsx";
-import RoleRoute from "./roleRoute.jsx";
+import RoleRoute from "./RoleRoute.jsx";
 
-import UserSignIn from "../pages/auth/signIn.jsx";
-import UserSignUp from "../pages/auth/signUp.jsx";
-import EmailVerification from "../pages/auth/emailVerification.jsx";
-import HomePage from "../pages/user/homePage.jsx";
-import Browse from "../pages/user/browse.jsx";
-import Genre from '../pages/user/genre.jsx';
-import OrgSignUp from "../pages/org/auth/orgSignUp.jsx";
-import OrgSignIn from "../pages/org/auth/orgSignIn.jsx";
-import AdminSignIn from "../pages/admin/auth/adminSignIn.jsx";
+import UserSignIn from "../pages/auth/SignIn.jsx";
+import UserSignUp from "../pages/auth/SignUp.jsx";
+import EmailVerification from "../pages/auth/EmailVerification.jsx";
+import HomePage from "../pages/user/HomePage.jsx";
+import Browse from "../pages/user/Browse.jsx";
+import Genre from '../pages/user/Genre.jsx';
+import OrgSignUp from "../pages/org/auth/OrgSignUp.jsx";
+import OrgSignIn from "../pages/org/auth/OrgSignIn.jsx";
+import AdminSignIn from "../pages/admin/auth/AdminSignIn.jsx";
 import OAuthRedirect from "../pages/user/auth/OAuthRedirect.jsx";
-import OrgAddMovie from "../pages/org/orgAddMovie.jsx";
-import OrgMoviesAndAnalytics from "../pages/org/orgMoviesAndAnalytics.jsx";
-import MoviePreviewPage from "../pages/user/moviePreviewPage.jsx";
-import WatchPage from "../pages/user/watchPage.jsx";
+import OrgAddMovie from "../pages/org/OrgAddMovie.jsx";
+import OrgMoviesAndAnalytics from "../pages/org/OrgMoviesAndAnalytics.jsx";
+import MoviePreviewPage from "../pages/user/MoviePreviewPage.jsx";
+import WatchPage from "../pages/user/WatchPage.jsx";
 
-import NotFoundPage from "../components/notFoundPage.jsx";
-import TestSandBox from "../pages/testSandBox.jsx";
+import NotFoundPage from "../components/NotFoundPage.jsx";
+import TestSandBox from "../pages/TestSandBox.jsx";
 
-import ReviewMovies from "../pages/admin/reviewMovies.jsx";
-import SiteAnalytics from "../pages/admin/siteAnalytics.jsx";
+import ReviewMovies from "../pages/admin/ReviewMovies.jsx";
+import SiteAnalytics from "../pages/admin/SiteAnalytics.jsx";
 
 import { ROLES, PATHS } from "../constants/constants.jsx";
 

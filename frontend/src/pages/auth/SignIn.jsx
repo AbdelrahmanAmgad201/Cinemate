@@ -1,5 +1,5 @@
-import './style/signUp.css';
-import './style/signIn.css';
+import './style/SignUp.css';
+import './style/SignIn.css';
 
 import { Link, useNavigate } from "react-router-dom";
 import {useState, useContext} from 'react';
@@ -7,7 +7,7 @@ import { FcGoogle } from "react-icons/fc";
 import { LuEyeOff, LuEye } from "react-icons/lu";
 
 import oauthSignIn from '../../api/oauth-sign-in-api.jsx';
-import { AuthContext } from "../../context/authContext.jsx";
+import { AuthContext } from "../../context/AuthContext.jsx";
 import {ToastContext} from "../../context/ToastContext.jsx";
 import {MAX_LENGTHS, PATHS, ROLES} from "../../constants/constants.jsx";
 
