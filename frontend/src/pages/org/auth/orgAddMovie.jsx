@@ -1,14 +1,14 @@
 import '../../auth/style/signUp.css';
 import './style/addMovie.css';
+
 import addMovieApi from '../../../api/addMovieApi.jsx';
 import {useContext, useState} from 'react';
-import { CiCalendar } from "react-icons/ci";
-import { useNavigate } from 'react-router-dom';
 import {Link} from 'react-router-dom';
 import ProfileAvatar from "../../../components/profileAvatar.jsx";
-import {AuthContext} from "../../../context/authContext.jsx";
 
+import {AuthContext} from "../../../context/authContext.jsx";
 import {MAX_LENGTHS} from "../../../constants/constants.jsx";
+import {ToastContext} from "../../../context/ToastContext.jsx";
 
 const OrgAddMovie = () => {
 
@@ -22,6 +22,8 @@ const OrgAddMovie = () => {
      const [releaseDate, setReleaseDate] = useState("");
      const [genre, setGenre] = useState("");
      const [movieDescription, setMovieDescription] = useState("");
+
+     const {showToast} = useContext(ToastContext);
 
      const handleSubmit = async (e) =>{
              e.preventDefault();
@@ -40,10 +42,9 @@ const OrgAddMovie = () => {
              const result = await addMovieApi(movieData);
 
              if (result.success) {
-                 alert("Movie added successfully!");
-                 // navigate("/org-analytics");
+                 showToast("Success", "Movie added successfully!", "success");
              } else {
-                 alert("Failed to add movie: " + result.message);
+                 showToast("Failed to add movie", result.message, "error");
              }
          };
 

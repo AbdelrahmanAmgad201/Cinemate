@@ -1,4 +1,4 @@
-import {useState, useEffect, createContext} from 'react'
+import {useState, useEffect, createContext, useContext} from 'react'
 import signInApi from '../api/signInApi.jsx';
 import signOutApi from '../api/signOutApi.jsx';
 import signUpApi from '../api/signUpApi.jsx';
@@ -8,6 +8,7 @@ import signUpUserDetailsApi from '../api/signUpUserDetailsApi.jsx';
 
 
 import {jwtDecode}  from "jwt-decode";
+import {ToastContext} from "./ToastContext.jsx";
 
 // Always handle token expiry: either catch 401 responses in an axios response interceptor and attempt refresh or redirect to login.
 export const AuthContext   = createContext(null);
@@ -17,6 +18,8 @@ export default function AuthProvider({ children }){
     const [user, setUser] = useState(null);
     const [pendingUser, setPendingUser] = useState(null);
     const [loading, setLoading] = useState(true);
+
+    const {showToast} = useContext(ToastContext)
 
     const signIn = async (email, password, role) => {
         try {
@@ -79,14 +82,14 @@ export default function AuthProvider({ children }){
 
                 const resDetails = await signUpUserDetailsApi(details);
                 if (resDetails.success) {
-                    alert("User details saved successfully!");
+                    showToast("Success", "User details saved successfully!", "success")
                 }
             }
             else if (res.user.role === "ORGANIZATION") {
                 const details = pendingUser.details;
                 const resDetails = await signUpOrgDetailsApi(details);
                 if (resDetails.success) {
-                    alert("Organization details saved successfully!");
+                    showToast("Success", "Organization details saved successfully!", "success")
                 }
             }
 

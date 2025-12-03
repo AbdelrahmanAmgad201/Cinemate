@@ -4,7 +4,7 @@ import {useState, useRef, useEffect, useContext} from 'react';
 import { useNavigate } from 'react-router-dom';
 
 import {AuthContext} from "../../context/authContext.jsx";
-import {ErrorToastContext} from "../../context/errorToastContext.jsx";
+import {ToastContext} from "../../context/ToastContext.jsx";
 
 const regexDigit =  /^[0-9]$/
 
@@ -16,7 +16,7 @@ const EmailVerification = () => {
     const [buttonTimer, setButtonTimer] = useState(0);
 
     const { pendingUser, verifyEmail, user } = useContext(AuthContext);
-    const { showError } = useContext(ErrorToastContext);
+    const { showToast } = useContext(ToastContext);
 
     if (!pendingUser) return null; // render nothing while redirecting
     const email = pendingUser.email;
@@ -37,7 +37,7 @@ const EmailVerification = () => {
             else if (user.role === "ORGANIZATION") navigate("/org-add-movie")
         }
         else {
-            showError("Verification failed.", res.message || "Verification failed. Please try again.")
+            showToast("Verification failed.", res.message || "Verification failed. Please try again.", "error")
         }
     }
 
@@ -88,7 +88,7 @@ const EmailVerification = () => {
     }, [buttonTimer]);
 
     const handleResendClick = () => {
-        alert("Hello There")
+
         setButtonTimer(60);
 
         // TODO: HANDLE BACK END INTEGRATION

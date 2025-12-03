@@ -1,5 +1,4 @@
-// ErrorToastContext.js
-import React, { createContext, useContext, useState } from "react";
+import React, { createContext, useState } from "react";
 import Alert from "@mui/material/Alert";
 import AlertTitle from "@mui/material/AlertTitle";
 import IconButton from "@mui/material/IconButton";
@@ -8,14 +7,22 @@ import Collapse from "@mui/material/Collapse";
 import { v4 as uuidv4 } from "uuid";
 
 // eslint-disable-next-line react-refresh/only-export-components
-export const ErrorToastContext = createContext();
+export const ToastContext = createContext();
 
-export const ErrorToastProvider = ({ children }) => {
+export const ToastProvider = ({ children }) => {
     const [toasts, setToasts] = useState([]);
 
-    const showError = (title = "Error", message) => {
+    // "success"
+    // "error"
+    // "warning"
+    // "info"
+
+    const showToast = (title = "", message = "", severity = "info", ttl = 5000) => {
         const id = uuidv4();
-        setToasts((prev) => [...prev, { id, title, message }]);
+        setToasts((prev) => [...prev, { id, title, message, severity }]);
+        if (ttl){
+            setTimeout(() => removeToast(id), ttl);
+        }
     };
 
     const removeToast = (id) => {
@@ -23,7 +30,7 @@ export const ErrorToastProvider = ({ children }) => {
     };
 
     return (
-        <ErrorToastContext.Provider value={{ showError }}>
+        <ToastContext.Provider value={{ showToast }}>
             {children}
 
             {/* Toast container */}
@@ -42,7 +49,7 @@ export const ErrorToastProvider = ({ children }) => {
                 {toasts.map((toast) => (
                     <Collapse key={toast.id} in={true}>
                         <Alert
-                            severity="error"
+                            severity={toast.severity}
                             action={
                                 <IconButton
                                     aria-label="close"
@@ -60,11 +67,6 @@ export const ErrorToastProvider = ({ children }) => {
                     </Collapse>
                 ))}
             </div>
-        </ErrorToastContext.Provider>
+        </ToastContext.Provider>
     );
 };
-
-// eslint-disable-next-line react-refresh/only-export-components
-// export const useErrorToast = () => {
-//     return useContext(ErrorToastContext);
-// };
