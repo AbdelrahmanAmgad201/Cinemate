@@ -13,7 +13,7 @@ public class ForumController {
     private ForumService forumService;
 
     @PostMapping("/v1/create")
-    public ResponseEntity<Forum> searchMoviesPost(
+    public ResponseEntity<Forum> createForum(
             HttpServletRequest request,
             @Valid @RequestBody ForumCreationRequest requestDTO) {
 

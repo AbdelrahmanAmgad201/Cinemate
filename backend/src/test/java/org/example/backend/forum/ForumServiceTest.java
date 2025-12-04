@@ -15,7 +15,7 @@ public class ForumServiceTest extends AbstractMongoIntegrationTest {
     @Autowired
     private ForumRepository forumRepository;
 
-    // Helper that matches your service logic
+    // helper for type casting
     private ObjectId longToObjectId(Long value) {
         return new ObjectId(String.format("%024x", value));
     }
