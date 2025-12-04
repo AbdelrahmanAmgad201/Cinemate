@@ -19,7 +19,10 @@ public class Forum {
     @Id
     private ObjectId id;
 
+    @NonNull
     private String name;
+
+    @NonNull
     private String description;
 
     @Indexed
