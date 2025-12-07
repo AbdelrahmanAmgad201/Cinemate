@@ -41,6 +41,7 @@ export const PATHS = {
         SIGN_IN: "/admin/sign-in", // Old was "/admin-sign-in"
         REVIEW_REQUESTS: "/admin/review-requests", // Old was "/review-movies"
         SITE_ANALYTICS: "/admin/site-analytics", // Old was "/admin-site-analytics"
+        ADD_ADMIN: "/admin/add-admin",
     },
 
     ORGANIZATION : {

@@ -90,6 +90,7 @@ export default function SiteAnalytics() {
             <div className="navigationBar">
                 <Link to={PATHS.ADMIN.REVIEW_REQUESTS} ><h1>Review Movies</h1></Link>
                 <Link to={PATHS.ADMIN.SITE_ANALYTICS} ><h1>Site Movies and Analytics</h1></Link>
+                <Link to={PATHS.ADMIN.ADD_ADMIN} ><h1>Add New Admin</h1></Link>
                 <ProfileAvatar menuItems={avatarMenuItems} />
             </div>
 
