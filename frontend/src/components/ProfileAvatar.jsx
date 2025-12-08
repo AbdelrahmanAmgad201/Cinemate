@@ -3,16 +3,18 @@ import { CgProfile } from "react-icons/cg";
 import { AuthContext } from '../context/authContext.jsx';
 import "./style/profileAvatar.css";
 
+import {ROLES} from "../constants/constants.jsx";
+
 export default function ProfileAvatar({ className="" }) {
     const [menuShow, setMenuShow] = useState(false);
     const { signOut, user } = useContext(AuthContext);
     const menuRef = useRef(null);
 
     const menuItems = (() => {
-        if(user?.role === "USER"){
+        if(user?.role === ROLES.USER){
             return [{ label: "Sign Out", onClick: signOut }];
         }
-        else if(user?.role === "ORGANIZATION"){
+        else if(user?.role === ROLES.ORGANIZATION){
             return [{ label: "Sign Out", onClick: signOut }];
         }
         return [{ label: "Sign Out", onClick: signOut }];
