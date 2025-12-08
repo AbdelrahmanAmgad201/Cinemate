@@ -35,7 +35,7 @@ class PostServiceTest extends AbstractMongoIntegrationTest {
     void testAddPost_whenCleanText_shouldSavePost() {
         // Given input DTO
         AddPostDto dto = new AddPostDto(
-                new ObjectId("6755dc881c3dfd780253e420"),
+                new ObjectId("00000000000000000000006f"),
                 "Test Title",
                 "Normal content"
         );
@@ -72,7 +72,7 @@ class PostServiceTest extends AbstractMongoIntegrationTest {
     @Test
     void testAddPost_whenHateSpeech_shouldThrowException() {
         AddPostDto dto = new AddPostDto(
-                new ObjectId("6755dc881c3dfd780253e420"),
+                new ObjectId("00000000000000000000006f"),
                 "Bad Title",
                 "Some hateful text"
         );
