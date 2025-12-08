@@ -1,0 +1,5 @@
+nltk
+fastapi
+uvicorn
+torch
+transformers
