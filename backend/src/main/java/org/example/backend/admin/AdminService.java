@@ -12,6 +12,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import org.springframework.security.crypto.password.PasswordEncoder;
 
 
 @Service
@@ -21,6 +22,7 @@ public class AdminService {
     private final RequestsRepository requestsRepository;
     private final AdminRepository adminRepository;
     private final UserRepository userRepository;
+    private final PasswordEncoder passwordEncoder;
 
     @Transactional
     public Movie getRequestedMovie(Long requestId) {
@@ -59,7 +61,9 @@ public class AdminService {
         movieRepository.deleteById(movieId);
     }
     @Transactional
-    public Admin addAdmin(String email, String password) {
+    public Admin addAdmin(AddAdminDTO addAdminDTO) {
+        String email = addAdminDTO.getEmail();
+        String password = passwordEncoder.encode(addAdminDTO.getPassword());
         Admin admin = Admin.builder()
                 .email(email)
                 .password(password)
@@ -84,5 +88,4 @@ public class AdminService {
 
         return systemOverview;
     }
-
 }
