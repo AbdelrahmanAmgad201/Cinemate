@@ -34,8 +34,9 @@ class PostServiceTest extends AbstractMongoIntegrationTest {
     @Test
     void testAddPost_whenCleanText_shouldSavePost() {
         // Given input DTO
+        ObjectId id = new ObjectId("00000000000000000000006f");
         AddPostDto dto = new AddPostDto(
-                new ObjectId("00000000000000000000006f"),
+                id,
                 "Test Title",
                 "Normal content"
         );
@@ -55,7 +56,7 @@ class PostServiceTest extends AbstractMongoIntegrationTest {
         assertThat(saved).isNotNull();
         assertThat(saved.getTitle()).isEqualTo("Test Title");
         assertThat(saved.getContent()).isEqualTo("Normal content");
-        assertThat(saved.getForumId()).isEqualTo(00000000000000000000006f);
+        assertThat(saved.getForumId()).isEqualTo(id);
 
         ObjectId expectedOwnerId = new ObjectId(String.format("%024x", userId));
         assertThat(saved.getOwnerId()).isEqualTo(expectedOwnerId);
