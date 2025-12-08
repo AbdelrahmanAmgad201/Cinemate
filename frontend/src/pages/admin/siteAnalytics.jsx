@@ -3,9 +3,7 @@ import "./style/navBar.css";
 
 import { useState, useEffect, useContext } from "react";
 import { Link, useNavigate } from "react-router-dom";
-
 import { AuthContext } from "../../context/authContext.jsx";
-// import ProfileAvatar from "../../components/profileAvatar.jsx";
 import { getSystemAnalyticsApi } from "../../api/adminApi";
 import { getMovieApi } from "../../api/movieApi";
 import NavBar from "../../components/OrgAdminNavBar.jsx";
@@ -87,11 +85,6 @@ export default function SiteAnalytics() {
 
     return (
         <div className="analytics-page">
-            {/* <div className="navigationBar">
-                <Link to="/review-movies"><h1>Review Movies</h1></Link>
-                <Link to="/admin-site-analytics"><h1>Site Movies and Analytics</h1></Link>
-                <ProfileAvatar menuItems={avatarMenuItems} />
-            </div> */}
             <NavBar />  
 
             <div className="content-container">

@@ -15,10 +15,6 @@ export default function ReviewRequestsPage() {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
 
-    // const avatarMenuItems = [
-    //     { label: "Sign Out", onClick: signOut },
-    // ];
-
     // Fetch data whenever the active tab changes
     useEffect(() => {
         fetchData();
@@ -81,12 +77,6 @@ export default function ReviewRequestsPage() {
 
     return (
         <div className="review-requests-page">
-            {/* Standard Navigation Bar */}
-            {/* <div className="navigationBar">
-                <Link to="/review-movies"><h1>Review Movies</h1></Link>
-                <Link to="/admin-site-analytics"><h1>Site Movies and Analytics</h1></Link>
-                <ProfileAvatar menuItems={avatarMenuItems} />
-            </div> */}
             <NavBar />
 
             <div className="content-container">
