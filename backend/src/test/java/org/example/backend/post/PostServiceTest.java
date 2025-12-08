@@ -55,7 +55,7 @@ class PostServiceTest extends AbstractMongoIntegrationTest {
         assertThat(saved).isNotNull();
         assertThat(saved.getTitle()).isEqualTo("Test Title");
         assertThat(saved.getContent()).isEqualTo("Normal content");
-        assertThat(saved.getForumId()).isEqualTo("00000000000000000000006f");
+        assertThat(saved.getForumId()).isEqualTo(00000000000000000000006f);
 
         ObjectId expectedOwnerId = new ObjectId(String.format("%024x", userId));
         assertThat(saved.getOwnerId()).isEqualTo(expectedOwnerId);
