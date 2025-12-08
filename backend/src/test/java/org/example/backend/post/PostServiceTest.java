@@ -23,21 +23,25 @@ class PostServiceTest extends AbstractMongoIntegrationTest {
     private PostRepository postRepository;
 
     @MockBean
-    private RestTemplate restTemplate;   // Mock external AI service
+    private RestTemplate restTemplate; // mock external API
 
     private final String url = "http://localhost:8000/api/hate/v1/analyze";
 
-    // -------------------------------------------
-    // SUCCESS CASE: NO HATE SPEECH -> POST SAVED
-    // -------------------------------------------
+    // ==============================================================
+    // SUCCESS CASE: AI returns true → post must be saved to DB
+    // ==============================================================
 
     @Test
     void testAddPost_whenCleanText_shouldSavePost() {
-        // Given
-        AddPostDto dto = new AddPostDto(new ObjectId("6755dc881c3dfd780253e420"), "Test Title", "Normal content");
+        // Given input DTO
+        AddPostDto dto = new AddPostDto(
+                new ObjectId("6755dc881c3dfd780253e420"),
+                "Test Title",
+                "Normal content"
+        );
         Long userId = 5L;
 
-        // Mock the AI service returning "true"
+        // Mock AI response: "text is clean"
         ResponseEntity<Boolean> aiResponse = new ResponseEntity<>(true, HttpStatus.OK);
         when(restTemplate.postForEntity(eq(url), any(HttpEntity.class), eq(Boolean.class)))
                 .thenReturn(aiResponse);
@@ -45,50 +49,58 @@ class PostServiceTest extends AbstractMongoIntegrationTest {
         // When
         postService.addPost(dto, userId);
 
-        // Then
+        // Then DB contains exactly 1 saved post
         Post saved = postRepository.findAll().stream().findFirst().orElse(null);
+
         assertThat(saved).isNotNull();
         assertThat(saved.getTitle()).isEqualTo("Test Title");
-        assertThat(saved.getForumId()).isEqualTo(111L);
         assertThat(saved.getContent()).isEqualTo("Normal content");
-        assertThat(saved.getOwnerId()).isEqualTo(new ObjectId(String.format("%024x", userId)));
+        assertThat(saved.getForumId()).isEqualTo(111L);
 
-        // Also verify REST was called exactly once
+        ObjectId expectedOwnerId = new ObjectId(String.format("%024x", userId));
+        assertThat(saved.getOwnerId()).isEqualTo(expectedOwnerId);
+
+        // AI must be called exactly once
         verify(restTemplate, times(1))
                 .postForEntity(eq(url), any(HttpEntity.class), eq(Boolean.class));
     }
 
-    // -------------------------------------------------------
-    // FAILURE CASE: HATE SPEECH DETECTED -> EXCEPTION THROWN
-    // -------------------------------------------------------
+    // ==============================================================
+    // FAILURE CASE: AI returns false → throw exception, do NOT save
+    // ==============================================================
+
     @Test
     void testAddPost_whenHateSpeech_shouldThrowException() {
-        // Given
-        AddPostDto dto = new AddPostDto(new ObjectId("6755dc881c3dfd780253e420"), "Bad Title", "Some hateful text");
+        AddPostDto dto = new AddPostDto(
+                new ObjectId("6755dc881c3dfd780253e420"),
+                "Bad Title",
+                "Some hateful text"
+        );
         Long userId = 5L;
 
-        // Mock AI service returns false (hate speech detected)
+        // Mock AI saying "this is hate speech"
         ResponseEntity<Boolean> aiResponse = new ResponseEntity<>(false, HttpStatus.OK);
         when(restTemplate.postForEntity(eq(url), any(HttpEntity.class), eq(Boolean.class)))
                 .thenReturn(aiResponse);
 
-        // When / Then
+        // Expect exception
         assertThatThrownBy(() -> postService.addPost(dto, userId))
                 .isInstanceOf(RuntimeException.class)
                 .hasMessageContaining("There is hate speech");
 
-        // Ensure nothing saved to DB
+        // Ensure DB remains empty
         assertThat(postRepository.count()).isZero();
     }
 
-    // -------------------------------------------------------
-    // VALIDATE JSON BODY SENT TO AI SERVICE
-    // -------------------------------------------------------
+    // ==============================================================
+    // Validate the EXACT JSON body sent to FastAPI
+    // ==============================================================
+
     @Test
     void testAnalyzeText_shouldSendCorrectJsonToAi() {
-        // Given
         String text = "hello \"world\"";
 
+        // Mock AI response
         ResponseEntity<Boolean> aiResponse = new ResponseEntity<>(true, HttpStatus.OK);
         ArgumentCaptor<HttpEntity> captor = ArgumentCaptor.forClass(HttpEntity.class);
 
@@ -101,14 +113,16 @@ class PostServiceTest extends AbstractMongoIntegrationTest {
         // Then
         assertThat(result).isTrue();
 
+        // Capture the EXACT body sent to the API
         verify(restTemplate).postForEntity(eq(url), captor.capture(), eq(Boolean.class));
 
         HttpEntity captured = captor.getValue();
-        String json = (String) captured.getBody();
+        String jsonSent = (String) captured.getBody();
 
-        assertThat(json).isEqualTo("{\"text\":\"hello \\\"world\\\"\"}");
+        // The JSON must be EXACT
+        assertThat(jsonSent).isEqualTo("{\"text\":\"hello \\\"world\\\"\"}");
 
-        // Ensure content type header set
+        // Ensure correct Content-Type header
         HttpHeaders headers = captured.getHeaders();
         assertThat(headers.getContentType()).isEqualTo(MediaType.APPLICATION_JSON);
     }

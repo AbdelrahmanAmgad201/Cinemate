@@ -14,11 +14,10 @@ import org.slf4j.LoggerFactory;
 @Service
 @RequiredArgsConstructor
 public class PostService {
-    private final RestTemplate restTemplate = new RestTemplate();
+    private final RestTemplate restTemplate;
 
     private final String url = "http://localhost:8000/api/hate/v1/analyze";
     private final PostRepository postRepository;
-    private static final Logger log = LoggerFactory.getLogger(PostService.class);
 
 
     public void addPost(AddPostDto addPostDto, Long userId) {
