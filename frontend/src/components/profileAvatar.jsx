@@ -3,7 +3,7 @@ import { CgProfile } from "react-icons/cg";
 import { AuthContext } from '../context/authContext.jsx';
 import "./style/profileAvatar.css";
 
-export default function ProfileAvatar({ avatarSize = 32 }) {
+export default function ProfileAvatar({ className="" }) {
     const [menuShow, setMenuShow] = useState(false);
     const { signOut, user } = useContext(AuthContext);
     const menuRef = useRef(null);
@@ -30,8 +30,8 @@ export default function ProfileAvatar({ avatarSize = 32 }) {
     }, []);
 
     return (
-        <div className="profile-avatar" ref={menuRef}>
-            <CgProfile size={avatarSize} onClick={() => setMenuShow(prev => !prev)} />
+        <div className={`profile-avatar ${className}`} ref={menuRef}>
+            <CgProfile size="32" onClick={() => setMenuShow(prev => !prev)} />
 
             {menuShow && (
                 <div className="profile-menu">

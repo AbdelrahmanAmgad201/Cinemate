@@ -1,9 +1,13 @@
 .profile-avatar {
     position: fixed;
     right: 50px;
-    top: 35px;
+    top: 40px;
     z-index: 1000;
     cursor: pointer;
+}
+
+.profile-avatar.org{
+    top: 15px;
 }
 
 .profile-menu {

@@ -5,7 +5,6 @@ import {useContext, useState} from 'react';
 import { CiCalendar } from "react-icons/ci";
 import { useNavigate } from 'react-router-dom';
 import {Link} from 'react-router-dom';
-// import ProfileAvatar from "../../../components/profileAvatar.jsx";
 import {AuthContext} from "../../../context/authContext.jsx";
 import NavBar from "../../../components/OrgAdminNavBar.jsx";
 
@@ -17,7 +16,6 @@ const OrgAddMovie = () => {
      const [movieURL, setMovieURL] = useState("");
      const [thumbnailURL, setThumbnailURL] = useState("");
      const [trailerURL, setTrailerURL] = useState("");
-     // const [movieDuration, setMovieDuration] = useState("");
      const [durationHours, setDurationHours] = useState("");
      const [durationMinutes, setDurationMinutes] = useState("");
      const [releaseDate, setReleaseDate] = useState("");
@@ -49,41 +47,30 @@ const OrgAddMovie = () => {
          };
 
     const {signOut} = useContext(AuthContext);
-    const avatarMenuItems = [
-        // { label: "Profile", onClick: () => console.log("Profile clicked") },
-        // { label: "Settings", onClick: () => console.log("Settings clicked") },
-        { label: "Sign Out", onClick: signOut },
-    ];
 
      return (
          <div>
-             {/* <div className = "navigationBar">
-                 <Link to = "/"><h1>Home Page</h1></Link>
-                 <Link to = "/org-add-movie"><h1>Add Movie</h1></Link>
-                 <Link to = "/org-movies-and-analytics"><h1>My Movies and Analytics</h1></Link>
-                 <ProfileAvatar menuItems={avatarMenuItems} />
-             </div> */}
              <NavBar />
              <div className = "signup-container addMovie-container">
                  <form onSubmit={handleSubmit}>
                      <div className = "name">
                          <div className = "input-elem">
                              <label htmlFor = "movieName">Movie Name</label>
-                             <input type = "text" id = "movieName" name = "movieName" maxLength={MAX_LENGTHS.INPUT} required  placeHolder = "Enter movie name" onChange={(e) => {setMovieName(e.target.value)}}/>
+                             <input type = "text" id = "movieName" name = "movieName" maxLength={MAX_LENGTHS.INPUT} required  placeholder = "Enter movie name" onChange={(e) => {setMovieName(e.target.value)}}/>
                          </div>
                          <div className = "input-elem">
                              <label htmlFor = "movieURL">Movie</label>
-                             <input type = "text" id = "movieURL" name = "movieURL" maxLength={MAX_LENGTHS.INPUT} required placeHolder = "Enter wistia id" onChange={(e) => {setMovieURL(e.target.value)}}/>
+                             <input type = "text" id = "movieURL" name = "movieURL" maxLength={MAX_LENGTHS.INPUT} required placeholder = "Enter wistia id" onChange={(e) => {setMovieURL(e.target.value)}}/>
                          </div>
                          <div className = "input-elem">
                              <label htmlFor = "thumbnailURL">Thumbnail URL</label>
-                             <input type = "text" id = "thumbnailURL" name = "thumbnailURL" maxLength={MAX_LENGTHS.URL} required placeHolder = "Enter movie thumbnail URL" onChange={(e) => {setThumbnailURL(e.target.value)}}/>
+                             <input type = "text" id = "thumbnailURL" name = "thumbnailURL" maxLength={MAX_LENGTHS.URL} required placeholder = "Enter movie thumbnail URL" onChange={(e) => {setThumbnailURL(e.target.value)}}/>
                          </div>
                      </div>
                          <div className = "name">
                              <div className = "input-elem">
                                  <label htmlFor = "trailerURL">Trailer</label>
-                                 <input type = "text" id = "trailerURL" name = "trailerURL" maxLength={MAX_LENGTHS.URL} required placeHolder = "Enter wistia id" onChange={(e) => {setTrailerURL(e.target.value)}}/>
+                                 <input type = "text" id = "trailerURL" name = "trailerURL" maxLength={MAX_LENGTHS.URL} required placeholder = "Enter wistia id" onChange={(e) => {setTrailerURL(e.target.value)}}/>
                              </div>
                              <div className = "input-elem duration-group">
                                  <label>Movie Duration</label>
