@@ -1,10 +1,12 @@
 import { useState, useContext, useEffect, useRef } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { IoSearch } from "react-icons/io5";
-import MoviesDetailsApi from '../api/moviesDetailsApi.jsx';
 import './style/navBar.css';
-import {MAX_LENGTHS} from "../constants/constants.jsx";
 import ProfileAvatar from './profileAvatar.jsx';
+import MoviesDetailsApi from '../api/movies-details-api.jsx';
+
+import {MAX_LENGTHS, PATHS} from "../constants/constants.jsx";
+
 
 function NavBar() {
 
@@ -68,10 +70,16 @@ function NavBar() {
     };
 
     const handleResultClick = (movieId) => {
-        navigate(`/movie/${movieId}`);
+        navigate(PATHS.MOVIE.DETAILS(movieId));
         setResultsShow(false);
         setSearchValue('');
     };
+
+    const handleSignOut = async () => {
+        await signOut();
+        setMenuShow(false);
+        navigate(PATHS.ROOT, { replace: true });
+    }
 
     useEffect(() => {
         const handleClickOutside = (event) => {
@@ -96,10 +104,10 @@ function NavBar() {
         <>
         <div className="navbar-spacer"></div>
         <div className="navbar">
-            <Link to="/home-page" className={`navbar-button ${isActive('/home-page') ? 'active' : ''}`}>
+            <Link to={PATHS.HOME} className={`navbar-button ${isActive(PATHS.HOME) ? 'active' : ''}`}>
                 Home
             </Link>
-            <Link to="/browse" className={`navbar-button ${isActive('/browse') ? 'active' : ''}`}>
+            <Link to={PATHS.MOVIE.BROWSE} className={`navbar-button ${isActive(PATHS.MOVIE.BROWSE) ? 'active' : ''}`}>
                 Browse
             </Link>
             <div className="navbar-search" ref={searchRef}>
