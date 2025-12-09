@@ -172,11 +172,14 @@ const OrgMoviesAndAnalytics = () => {
 
     const data = analytics || {};
 
-    const {signOut} = useContext(AuthContext);
+    const navTabs = [
+        {key: PATHS.ORGANIZATION.SUBMIT_REQUEST, title: "Submit Movie", to: PATHS.ORGANIZATION.SUBMIT_REQUEST},
+        {key: PATHS.ORGANIZATION.MOVIES_ANALYTICS, title: "My Movies Analytics", to: PATHS.ORGANIZATION.MOVIES_ANALYTICS},
+    ]
 
     return (
         <div className="org-analytics-page">
-            <NavBar />
+            <NavBar tabs={navTabs}/>
             <div className={`analytics-grid ${loading ? 'loading' : ''}`}>
                 <StatCard title="Total Movies Added" value={loading ? '—' : data.totalMovies} />
                 <StatCard title="Total Views" value={loading ? '—' : data.totalViews?.toLocaleString?.() ?? data.totalViews} />

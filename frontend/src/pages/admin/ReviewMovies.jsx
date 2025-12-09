@@ -13,7 +13,6 @@ import Swal from "sweetalert2";
 import {PATHS} from "../../constants/constants.jsx";
 
 export default function ReviewRequestsPage() {
-    const { signOut } = useContext(AuthContext);
     const { showToast } = useContext(ToastContext);
     const navigate = useNavigate();
 
@@ -98,9 +97,13 @@ export default function ReviewRequestsPage() {
         navigate(PATHS.MOVIE.DETAILS(mappedMovie.id), { state: { movie: mappedMovie } });
     };
 
+    const navTabs = [
+        {key: PATHS.ADMIN.REVIEW_REQUESTS, title: "Review Movie Requests", to: PATHS.ADMIN.REVIEW_REQUESTS},
+        {key: PATHS.ADMIN.SITE_ANALYTICS, title: "Site Movies and Analytics", to: PATHS.ADMIN.SITE_ANALYTICS},
+    ]
     return (
         <div className="review-requests-page">
-            <NavBar />
+            <NavBar tabs={navTabs}/>
 
             <div className="content-container">
                 <div className="page-header">

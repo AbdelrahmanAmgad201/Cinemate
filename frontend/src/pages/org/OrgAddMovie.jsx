@@ -9,6 +9,7 @@ import {Link} from 'react-router-dom';
 import {AuthContext} from "../../context/AuthContext.jsx";
 import {MAX_LENGTHS, PATHS} from "../../constants/constants.jsx";
 import {ToastContext} from "../../context/ToastContext.jsx";
+import ProfileAvatar from "../../components/ProfileAvatar.jsx";
 
 const OrgAddMovie = () => {
 
@@ -47,11 +48,13 @@ const OrgAddMovie = () => {
              }
          };
 
-    const {signOut} = useContext(AuthContext);
-
+    const navTabs = [
+        {key: PATHS.ORGANIZATION.SUBMIT_REQUEST, title: "Submit Movie", to: PATHS.ORGANIZATION.SUBMIT_REQUEST},
+        {key: PATHS.ORGANIZATION.MOVIES_ANALYTICS, title: "My Movies Analytics", to: PATHS.ORGANIZATION.MOVIES_ANALYTICS},
+    ]
      return (
          <div>
-             <NavBar />
+             <NavBar tabs={navTabs} />
              <div className = "signup-container addMovie-container">
                  <form onSubmit={handleSubmit}>
                      <div className = "name">

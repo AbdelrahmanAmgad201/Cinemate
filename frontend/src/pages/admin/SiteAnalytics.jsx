@@ -32,10 +32,6 @@ export default function SiteAnalytics() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
 
-    const avatarMenuItems = [
-        { label: "Sign Out", onClick: signOut },
-    ];
-
     useEffect(() => {
         const fetchData = async () => {
             setLoading(true);
@@ -85,9 +81,13 @@ export default function SiteAnalytics() {
         navigate(PATHS.MOVIE.DETAILS(id));
     };
 
+    const navTabs = [
+        {key: PATHS.ADMIN.REVIEW_REQUESTS, title: "Review Movie Requests", to: PATHS.ADMIN.REVIEW_REQUESTS},
+        {key: PATHS.ADMIN.SITE_ANALYTICS, title: "Site Movies and Analytics", to: PATHS.ADMIN.SITE_ANALYTICS},
+    ]
     return (
         <div className="analytics-page">
-            <NavBar />  
+            <NavBar tabs={navTabs}/>
 
             <div className="content-container">
                 <div className="page-header">
