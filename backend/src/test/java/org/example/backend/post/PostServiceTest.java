@@ -2,6 +2,8 @@ package org.example.backend.post;
 
 import org.example.backend.AbstractMongoIntegrationTest;
 import org.bson.types.ObjectId;
+import org.example.backend.deletion.AccessService;
+import org.example.backend.deletion.CascadeDeletionService;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -9,10 +11,10 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.*;
 import org.springframework.web.client.RestTemplate;
+import org.springframework.security.access.AccessDeniedException;
 
 import static org.assertj.core.api.Assertions.*;
 import static org.mockito.Mockito.*;
-import org.springframework.http.*;
 
 @SpringBootTest
 class PostServiceTest extends AbstractMongoIntegrationTest {
@@ -24,12 +26,18 @@ class PostServiceTest extends AbstractMongoIntegrationTest {
     private PostRepository postRepository;
 
     @MockBean
-    private RestTemplate restTemplate; // mock external API
+    private RestTemplate restTemplate; // mock external AI API
+
+    @MockBean
+    private AccessService accessService; // for deletePost
+
+    @MockBean
+    private CascadeDeletionService deletionService; // for deletePost
 
     private final String url = "http://localhost:8000/api/hate/v1/analyze";
 
     // ---------------------------
-    // SUCCESS CASE: addPost
+    // addPost tests
     // ---------------------------
     @Test
     void testAddPost_whenCleanText_shouldSavePost() {
@@ -43,7 +51,6 @@ class PostServiceTest extends AbstractMongoIntegrationTest {
 
         Post savedPost = postService.addPost(dto, userId);
 
-        // Verify DB contains the post
         Post fromDb = postRepository.findById(savedPost.getId()).orElse(null);
         assertThat(fromDb).isNotNull();
         assertThat(fromDb.getTitle()).isEqualTo("Test Title");
@@ -55,9 +62,6 @@ class PostServiceTest extends AbstractMongoIntegrationTest {
                 .postForEntity(eq(url), any(HttpEntity.class), eq(Boolean.class));
     }
 
-    // ---------------------------
-    // FAILURE CASE: addPost with hate speech
-    // ---------------------------
     @Test
     void testAddPost_whenHateSpeech_shouldThrowException() {
         AddPostDto dto = new AddPostDto(new ObjectId("00000000000000000000006f"),
@@ -75,9 +79,6 @@ class PostServiceTest extends AbstractMongoIntegrationTest {
         assertThat(postRepository.count()).isZero();
     }
 
-    // ---------------------------
-    // analyzeText sends correct JSON
-    // ---------------------------
     @Test
     void testAnalyzeText_shouldSendCorrectJsonToAi() {
         String text = "hello \"world\"";
@@ -96,17 +97,14 @@ class PostServiceTest extends AbstractMongoIntegrationTest {
         HttpEntity captured = captor.getValue();
         String jsonSent = (String) captured.getBody();
         assertThat(jsonSent).isEqualTo("{\"text\":\"hello \\\"world\\\"\"}");
-
-        HttpHeaders headers = captured.getHeaders();
-        assertThat(headers.getContentType()).isEqualTo(MediaType.APPLICATION_JSON);
+        assertThat(captured.getHeaders().getContentType()).isEqualTo(MediaType.APPLICATION_JSON);
     }
 
     // ---------------------------
-    // SUCCESS CASE: updatePost
+    // updatePost tests
     // ---------------------------
     @Test
     void testUpdatePost_whenCleanText_shouldUpdatePost() {
-        // Prepare existing post
         Long userId = 7L;
         ObjectId postId = new ObjectId();
         Post existingPost = Post.builder()
@@ -129,15 +127,11 @@ class PostServiceTest extends AbstractMongoIntegrationTest {
         assertThat(updated.getTitle()).isEqualTo("New Title");
         assertThat(updated.getContent()).isEqualTo("New Content");
 
-        // Ensure DB also updated
         Post fromDb = postRepository.findById(postId).orElseThrow();
         assertThat(fromDb.getTitle()).isEqualTo("New Title");
         assertThat(fromDb.getContent()).isEqualTo("New Content");
     }
 
-    // ---------------------------
-    // FAILURE CASE: updatePost with hate speech
-    // ---------------------------
     @Test
     void testUpdatePost_whenHateSpeech_shouldThrowException() {
         Long userId = 7L;
@@ -161,9 +155,58 @@ class PostServiceTest extends AbstractMongoIntegrationTest {
                 .isInstanceOf(HateSpeechException.class)
                 .hasMessageContaining("hate speech detected");
 
-        // Ensure post unchanged in DB
         Post fromDb = postRepository.findById(postId).orElseThrow();
         assertThat(fromDb.getTitle()).isEqualTo("Old Title");
         assertThat(fromDb.getContent()).isEqualTo("Old Content");
+    }
+
+    // ---------------------------
+    // deletePost tests
+    // ---------------------------
+    @Test
+    void testDeletePost_success() {
+        Long userId = 9L;
+        ObjectId postId = new ObjectId();
+
+        when(accessService.canDeletePost(new ObjectId(String.format("%024x", userId)), postId))
+                .thenReturn(true);
+
+        doNothing().when(deletionService).deletePost(postId);
+
+        postService.deletePost(postId.toHexString(), userId);
+
+        verify(accessService, times(1))
+                .canDeletePost(new ObjectId(String.format("%024x", userId)), postId);
+        verify(deletionService, times(1)).deletePost(postId);
+    }
+
+    @Test
+    void testDeletePost_accessDenied() {
+        Long userId = 9L;
+        ObjectId postId = new ObjectId();
+
+        when(accessService.canDeletePost(new ObjectId(String.format("%024x", userId)), postId))
+                .thenReturn(false);
+
+        assertThatThrownBy(() -> postService.deletePost(postId.toHexString(), userId))
+                .isInstanceOf(AccessDeniedException.class)
+                .hasMessageContaining("cannot delete this post");
+
+        verify(deletionService, never()).deletePost(any());
+    }
+
+    @Test
+    void testDeletePost_runtimeException() {
+        Long userId = 9L;
+        ObjectId postId = new ObjectId();
+
+        when(accessService.canDeletePost(new ObjectId(String.format("%024x", userId)), postId))
+                .thenReturn(true);
+
+        doThrow(new RuntimeException("failure")).when(deletionService).deletePost(postId);
+
+        assertThatThrownBy(() -> postService.deletePost(postId.toHexString(), userId))
+                .isInstanceOf(RuntimeException.class)
+                .hasMessageContaining("failure");
     }
 }

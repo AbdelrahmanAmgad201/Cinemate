@@ -3,6 +3,8 @@ package org.example.backend.post;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.bson.types.ObjectId;
+import org.example.backend.deletion.AccessService;
+import org.example.backend.deletion.CascadeDeletionService;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.http.*;
@@ -22,6 +24,8 @@ public class PostService {
     private String url;
     private final PostRepository postRepository;
     private final MongoTemplate mongoTemplate;
+    private final CascadeDeletionService deletionService;
+    private final AccessService accessService;
 
     @Transactional
     public Post addPost(AddPostDto addPostDto, Long userId) {
@@ -75,7 +79,15 @@ public class PostService {
                 restTemplate.postForEntity(url, request, Boolean.class);
         return response.getBody();
     }
-    
+
+    public void deletePost(String postId, Long userId) {
+        ObjectId objectPostId = new ObjectId(postId);
+        if (!accessService.canDeletePost(longToObjectId(userId), objectPostId)) {
+            throw new AccessDeniedException("User " + " cannot delete this post");
+        }
+        deletionService.deletePost(objectPostId);
+    }
+
     private ObjectId longToObjectId(Long value) {
         return new ObjectId(String.format("%024x", value));
     }

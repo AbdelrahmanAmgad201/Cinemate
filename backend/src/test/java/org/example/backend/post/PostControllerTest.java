@@ -15,8 +15,7 @@ import org.springframework.http.HttpStatus;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 class PostControllerTest {
@@ -118,9 +117,8 @@ class PostControllerTest {
 
         doNothing().when(postService).updatePost(eq(postId), any(AddPostDto.class), eq(10L));
 
-        mockMvc.perform(put("/api/post/v1/post")
+        mockMvc.perform(put("/api/post/v1/post/{postId}", postId)  // <-- use path variable
                         .requestAttr("userId", 10L)
-                        .param("postId", postId)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(dto)))
                 .andExpect(status().isOk())
@@ -140,9 +138,8 @@ class PostControllerTest {
         doThrow(new HateSpeechException("hate speech detected"))
                 .when(postService).updatePost(eq(postId), any(AddPostDto.class), eq(10L));
 
-        mockMvc.perform(put("/api/post/v1/post")
+        mockMvc.perform(put("/api/post/v1/post/{postId}", postId)  // <-- use path variable
                         .requestAttr("userId", 10L)
-                        .param("postId", postId)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(dto)))
                 .andExpect(status().isForbidden())
@@ -162,11 +159,50 @@ class PostControllerTest {
         doThrow(new RuntimeException("unexpected failure"))
                 .when(postService).updatePost(eq(postId), any(AddPostDto.class), eq(10L));
 
-        mockMvc.perform(put("/api/post/v1/post")
+        mockMvc.perform(put("/api/post/v1/post/{postId}", postId)  // <-- use path variable
                         .requestAttr("userId", 10L)
-                        .param("postId", postId)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(dto)))
+                .andExpect(status().isInternalServerError())
+                .andExpect(content().string("Internal Server Error"));
+    }
+
+    // -------------------
+// deletePost tests
+// -------------------
+    @Test
+    void testDeletePost_success() throws Exception {
+        String postId = new ObjectId().toHexString();
+
+        doNothing().when(postService).deletePost(eq(postId), eq(10L));
+
+        mockMvc.perform(delete("/api/post/v1/post/{postId}", postId)  // <-- path variable
+                        .requestAttr("userId", 10L))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    void testDeletePost_hateSpeech() throws Exception {
+        String postId = new ObjectId().toHexString();
+
+        doThrow(new HateSpeechException("hate speech detected"))
+                .when(postService).deletePost(eq(postId), eq(10L));
+
+        mockMvc.perform(delete("/api/post/v1/post/{postId}", postId)  // <-- path variable
+                        .requestAttr("userId", 10L))
+                .andExpect(status().isForbidden())
+                .andExpect(content().string("hate speech detected"));
+    }
+
+    @Test
+    void testDeletePost_internalServerError() throws Exception {
+        String postId = new ObjectId().toHexString();
+
+        doThrow(new RuntimeException("unexpected failure"))
+                .when(postService).deletePost(eq(postId), eq(10L));
+
+        mockMvc.perform(delete("/api/post/v1/post/{postId}", postId)  // <-- path variable
+                        .requestAttr("userId", 10L))
                 .andExpect(status().isInternalServerError())
                 .andExpect(content().string("Internal Server Error"));
     }
