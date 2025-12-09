@@ -1,14 +1,18 @@
 import "./style/Forum.css"
-import {Link, useLocation, useNavigate, useParams} from "react-router-dom";
-import PostCard from "../../components/PostCard.jsx";
-import React, {useContext, useState} from "react";
+import '../../style/CommonModal.css'
+import {BsClockHistory, BsFire, BsGraphUp, BsStars} from "react-icons/bs";
 import {IoIosArrowDown, IoIosPerson} from "react-icons/io";
 import pic from "../../assets/action.jpg";
 import calendar from "../../assets/icons/calendar.png";
-import {PATHS} from "../../constants/constants.jsx";
+
+import {Link, useLocation, useNavigate, useParams} from "react-router-dom";
+import PostCard from "../../components/PostCard.jsx";
+import React, {useContext, useState} from "react";
+import {MAX_LENGTHS, PATHS} from "../../constants/constants.jsx";
 import {formatCount} from "../../utils/formate.jsx";
+
 import {AuthContext} from "../../context/AuthContext.jsx";
-import {BsClockHistory, BsFire, BsGraphUp, BsStars} from "react-icons/bs";
+import {ToastContext} from "../../context/ToastContext.jsx";
 
 const MockPosts =[
     {
@@ -61,7 +65,11 @@ const SORT_OPTIONS = [
 ];
 
 export default function Forum() {
+
+    const { showToast } = useContext(ToastContext);
+    const { user } = useContext(AuthContext);
     const { forumId } = useParams();
+
     const [posts, setPosts] = useState(MockPosts);
     const [forumName, setForumName] = useState("unique_forum_name");
     const [forumDescription, setForumDescription] = useState("forum_description");
@@ -71,19 +79,104 @@ export default function Forum() {
 
     const [moderators, setModerators] = useState(MOCK_MODS)
 
-    const { user } = useContext(AuthContext);
+
     // determine if current user is a moderator by checking their id in the moderators list
     const isMod = !!(user && moderators.some((m) => m.id === user.id));
     const [isJoined, setIsJoined] = useState(false); // TODO: handle this properly
-    const toggleJoin = () => { // TODO: handle this properly
+
+    const handleJoin = () => { // TODO: handle this properly
         setIsJoined(!isJoined);
     }
 
     const [activeSort, setActiveSort] = useState(SORT_OPTIONS[0]);
     const [isSortOpen, setIsSortOpen] = useState(false);
 
+    const [showForm, setShowForm] = useState(false);
+    const [submitting, setSubmitting] = useState(false);
+    const [postTitle, setPostTitle] = useState("");
+    const [postText, setPostText] = useState("");
+    const [postMedia, setPostMedia] = useState("");
+
+    const handleAddPost = async (e) => {
+        e.preventDefault();
+
+        setSubmitting(true);
+
+        // TODO: send to backend
+        console.log({forumId, postTitle, postText, postMedia})
+        // const res = await
+
+        // if (res.success === true) {
+        //     showToast("Success", "Your post has been submitted.", "success")
+        // }
+        // else {
+        //     showToast("Failed to submit review", res.message || "unknown error", "error")
+        // }
+
+
+        setPostTitle("");
+        setPostText("");
+        setPostMedia("");
+        setShowForm(false);
+        setSubmitting(false);
+    }
+
     return (
         <div className="forum-container">
+
+            {/* Create post form */}
+            {showForm && (
+                <div className="modal-overlay" onMouseDown={() => setShowForm(false)}>
+                    <div className="modal" onMouseDown={(e) => e.stopPropagation()}>
+                        <h3>Create post</h3>
+                        <div className="header-left" style={{alignItems: "center", marginBottom: "10px"}}>
+                            <div className="forum-icon-placeholder" style={{width: "50px", height: "50px"}}></div>
+                            <h1 style={{fontSize: "16px"}}>{forumName}</h1>
+                        </div>
+                        <form onSubmit={handleAddPost}>
+
+                            <label>
+                                Title
+                                <textarea
+                                    rows="3"
+                                    value={postTitle} onChange={e => {
+                                    const inputValue = e.target.value;
+                                    if (inputValue.length <= MAX_LENGTHS.TEXTAREA) {
+                                        setPostTitle(inputValue);
+                                    }
+                                }}
+                                    placeholder={`Title (max ${MAX_LENGTHS.TEXTAREA} characters)`}
+                                    maxLength={MAX_LENGTHS.TEXTAREA}
+                                    required
+                                />
+                                <small>{postTitle.length} / {MAX_LENGTHS.TEXTAREA} characters</small>
+                            </label>
+
+                            <label>
+                                Body
+                                <textarea
+                                    rows="5"
+                                    value={postText} onChange={e => {
+                                    const inputValue = e.target.value;
+                                    if (inputValue.length <= MAX_LENGTHS.TEXTAREA) {
+                                        setPostText(inputValue);
+                                    }
+                                }}
+                                    placeholder={`Body text (max ${MAX_LENGTHS.TEXTAREA} characters)`}
+                                    maxLength={MAX_LENGTHS.TEXTAREA}
+                                />
+                                <small>{postText.length} / {MAX_LENGTHS.TEXTAREA} characters</small>
+                            </label>
+
+                            <div className="modal-actions">
+                                <button type="button" className="modal-btn-cancel" onClick={() => setShowForm(false)}>Cancel</button>
+                                <button type="submit" className="modal-btn-submit" disabled={submitting}>{submitting ? "Adding..." : "Add Post"}</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
+
 
             {/* Header*/}
             <div className="forum-banner"></div>
@@ -94,8 +187,8 @@ export default function Forum() {
                 </div>
 
                 <div className="header-right">
-                    <button className="btn btn-outline">+ Create Post</button>
-                    {!isMod ? <button className="btn btn-fill" onClick={toggleJoin}>{isJoined ? "Leave" : "Join"}</button>
+                    <button className="btn btn-outline" onClick={() => setShowForm(true)}>+  Create Post</button>
+                    {!isMod ? <button className="btn btn-fill" onClick={handleJoin}>{isJoined ? "Leave" : "Join"}</button>
                         : <button className="btn btn-fill">Mod Tools</button>}
                 </div>
             </div>
