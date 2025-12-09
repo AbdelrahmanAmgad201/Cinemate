@@ -69,6 +69,10 @@ export const PATHS = {
         PAGE : (id = ":forumId") => `/forum/${id}`, // May change to name if it's unique
     },
 
+    MOD : {
+        PAGE: (id = ":forumId") => `/mod/${id}`,
+    }
+
 }
 
 export const JWT = {

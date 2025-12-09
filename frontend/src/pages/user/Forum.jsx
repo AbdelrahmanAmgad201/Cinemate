@@ -52,7 +52,7 @@ const MockPosts =[
 // TODO: fetch from backend and handle the format
 const MOCK_MODS = [
     { id: 101, username: "FilmBuff_99", avatar: null }, // Avatar null will use placeholder
-    { id: 102, username: "DirectorX", avatar: "https://i.pravatar.cc/150?img=12" },
+    { id: 1, username: "DirectorX", avatar: "https://i.pravatar.cc/150?img=12" },
     { id: 103, username: "CinemaSins", avatar: "https://i.pravatar.cc/150?img=33" },
 ];
 
@@ -69,6 +69,8 @@ export default function Forum() {
     const { showToast } = useContext(ToastContext);
     const { user } = useContext(AuthContext);
     const { forumId } = useParams();
+    const navigate = useNavigate();
+
 
     const [posts, setPosts] = useState(MockPosts);
     const [forumName, setForumName] = useState("unique_forum_name");
@@ -103,7 +105,7 @@ export default function Forum() {
         setSubmitting(true);
 
         // TODO: send to backend
-        console.log({forumId, postTitle, postText, postMedia})
+        console.log({forumId, postTitle, postText, postMedia, userId: user.id})
         // const res = await
 
         // if (res.success === true) {
@@ -189,7 +191,7 @@ export default function Forum() {
                 <div className="header-right">
                     <button className="btn btn-outline" onClick={() => setShowForm(true)}>+  Create Post</button>
                     {!isMod ? <button className="btn btn-fill" onClick={handleJoin}>{isJoined ? "Leave" : "Join"}</button>
-                        : <button className="btn btn-fill">Mod Tools</button>}
+                        : <button className="btn btn-fill" onClick={() => navigate(PATHS.MOD.PAGE(forumId))}>Mod Tools</button>}
                 </div>
             </div>
 
