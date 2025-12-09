@@ -107,23 +107,30 @@ class PostControllerTest {
     // -------------------
     @Test
     void testUpdatePost_success() throws Exception {
+        // Prepare the DTO for updating the post
         AddPostDto dto = AddPostDto.builder()
-                .title("Updated")
-                .content("Updated content")
-                .forumId(null)
+                .title("Updated Title")
+                .content("Updated content here")
+                .forumId(null) // Optional for update
                 .build();
 
+        // Example post ID to update
         String postId = new ObjectId().toHexString();
 
-        doNothing().when(postService).updatePost(eq(postId), any(AddPostDto.class), eq(10L));
+        // Mock the service to return a Post object (or do nothing if your service returns void)
+        Post updatedPost = Post.builder().id(new ObjectId(postId)).build();
+        when(postService.updatePost(eq(postId), any(AddPostDto.class), eq(10L)))
+                .thenReturn(updatedPost);
 
-        mockMvc.perform(put("/api/post/v1/post/{postId}", postId)  // <-- use path variable
+        // Perform PUT request
+        mockMvc.perform(put("/api/post/v1/post/{postId}", postId)
                         .requestAttr("userId", 10L)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(dto)))
                 .andExpect(status().isOk())
-                .andExpect(content().string(postId));
+                .andExpect(content().string(postId)); // Expect the controller to return postId
     }
+
 
     @Test
     void testUpdatePost_hateSpeech() throws Exception {
