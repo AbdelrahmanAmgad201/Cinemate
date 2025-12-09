@@ -60,6 +60,10 @@ export const PATHS = {
 
     },
 
+    POST: {
+        FULLPAGE: (id = ":postId") => `/post/${id}`,
+    }
+
 }
 
 export const JWT = {

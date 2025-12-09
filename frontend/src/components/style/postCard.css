@@ -82,6 +82,7 @@
 
 .post-content img{
     width: 100%;
+    cursor: pointer;
 
 }
 
@@ -94,6 +95,7 @@
     -webkit-box-orient: vertical;
     overflow: hidden;
     text-overflow: ellipsis;
+    cursor: pointer;
 }
 
 .post-footer{

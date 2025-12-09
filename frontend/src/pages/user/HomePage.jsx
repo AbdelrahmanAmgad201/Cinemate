@@ -16,7 +16,8 @@ const HomePage = () => {
             time: "22-11-2025",
             title: "Wish There Was A Second Season. Wish There Was A Second Season. Wish There Was A Second Season. Wish There Was A Second Season. Wish There Was A Second Season. Wish There Was A Second Season. Wish There Was A Second Season. Wish There Was A Second Season. ",
             media: pic,
-            votes: 1234
+            votes: 1234,
+            postId: 1
         },
         { 
             userId: 2,
@@ -25,7 +26,8 @@ const HomePage = () => {
             time: "08-12-2024",
             title: "I liked This Scene A Lot",
             media: pic,
-            votes: 543
+            votes: 543,
+            postId: 2
         },
         { 
             userId: 3,
@@ -33,7 +35,8 @@ const HomePage = () => {
             lastName: "Smith",
             time: "09-12-2024",
             title: "My Top Movies!",
-            votes: 892
+            votes: 892,
+            postId: 3
         }
     ]);
 
