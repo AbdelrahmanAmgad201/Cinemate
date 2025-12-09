@@ -15,6 +15,10 @@
 }
 
 .stat-card {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    grid-template-rows: auto 1fr;
+    gap: 8px;
     background: rgba(255, 255, 255, 0.06);
     border: 1px solid rgba(255, 255, 255, 0.1);
     border-radius: 14px;
@@ -24,7 +28,7 @@
 }
 .stat-card-header {
     display: flex;
-    align-items: center;
+    align-items: flex-start;
     justify-content: space-between;
     margin-bottom: 12px;
 }
@@ -37,9 +41,9 @@
     opacity: 0.8;
 }
 .stat-value {
-    font-size: 32px;
+    font-size: 42px;
     font-weight: 700;
-    margin: 30px 0 0;
+    margin: 15px 0 0 125px;
 }
 
 .stars {
@@ -94,23 +98,38 @@
 
 .requests-legend {
     display: flex;
-    gap: 16px;
+    gap: 18px;
     margin-top: 12px;
     font-size: 13px;
     align-items: center;
+    flex-wrap: wrap;
 }
 
-.requests-legend > span {
-    display: flex;
+.requests-legend .legend-item {
+    display: inline-flex;
     align-items: center;
-    gap: 6px;
+    gap: 8px;
+    white-space: nowrap;
 }
 
-.requests-legend .dot {
-    width: 8px;
-    height: 8px;
+.requests-legend .dot,
+.requests-legend .legend-item .dot {
+    width: 10px;
+    height: 10px;
     border-radius: 50%;
     flex-shrink: 0;
+    display: inline-block;
+    margin-right: 6px;
+}
+
+.requests-legend .legend-item .legend-value {
+    font-weight: 700;
+    font-size: 14px;
+}
+
+.requests-legend .legend-item .legend-text {
+    opacity: 0.9;
+    font-size: 13px;
 }
 
 .requests-legend .dot.approved {
@@ -128,6 +147,7 @@
 .genre-badge {
     display: inline-block;
     padding: 6px 10px;
+    margin-left: 115px;
     border-radius: 999px;
     background: rgba(255,255,255,0.08);
     border: 1px solid rgba(255,255,255,0.12);
@@ -176,6 +196,7 @@
     gap: 8px;
     max-height: 280px;
     overflow-y: auto;
+    width: 100%;
 }
 
 .movie-request-item {
@@ -257,4 +278,23 @@
 
 .view-all-link:hover {
     opacity: 1;
+}
+
+.stat-card > :not(.stat-card-header):not(.stat-value) {
+    grid-column: 1 / -1;
+}
+
+@media (max-width: 520px) {
+    .stat-card {
+        grid-template-columns: 1fr;
+        grid-template-rows: auto auto;
+    }
+    .stat-value {
+        grid-column: 1 / -1;
+        grid-row: 2 / 3;
+        justify-self: start;
+        text-align: left;
+        padding-right: 0;
+        font-size: 36px;
+    }
 }
