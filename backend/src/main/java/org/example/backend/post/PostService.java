@@ -2,6 +2,7 @@ package org.example.backend.post;
 
 import lombok.RequiredArgsConstructor;
 import org.bson.types.ObjectId;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
@@ -16,7 +17,8 @@ import org.slf4j.LoggerFactory;
 public class PostService {
     private final RestTemplate restTemplate;
 
-    private final String url = "http://localhost:8000/api/hate/v1/analyze";
+    @Value("${hatespeech.model.url}")
+    private String url;
     private final PostRepository postRepository;
 
 

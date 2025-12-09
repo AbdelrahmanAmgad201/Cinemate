@@ -1,12 +1,10 @@
 package org.example.backend.post;
 
 import lombok.Builder;
-import lombok.Getter;
-import lombok.Setter;
+import lombok.Data;
 import org.bson.types.ObjectId;
 
-@Getter
-@Setter
+@Data
 @Builder
 public class AddPostDto {
     private ObjectId forumId;

@@ -14,15 +14,8 @@ public class PostController {
     @PostMapping("/v1/post")
     public ResponseEntity<?> addPost(HttpServletRequest request, @RequestBody AddPostDto addPostDto) {
         Long userId = (Long) request.getAttribute("userId");
-        try {
-            postService.addPost(addPostDto, userId);
-            return ResponseEntity.ok().build();
-        } catch (RuntimeException ex) {
-            if (ex.getMessage().contains("hate speech")) {
-                return ResponseEntity.status(403).body(ex.getMessage());
-            }
-            return ResponseEntity.status(500).body("Internal Server Error");
-        }
+        postService.addPost(addPostDto, userId);
+        return ResponseEntity.ok().build();
     }
 
 }
