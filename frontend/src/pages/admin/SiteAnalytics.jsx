@@ -3,9 +3,9 @@ import "./style/NavBar.css";
 
 import { useState, useEffect, useContext } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import NavBar from "../../components/OrgAdminNavBar.jsx";
 
 import { AuthContext } from "../../context/AuthContext.jsx";
-import ProfileAvatar from "../../components/ProfileAvatar.jsx";
 import { getSystemAnalyticsApi } from "../../api/admin-api.jsx";
 import { getMovieApi } from "../../api/movie-api.jsx";
 import {PATHS} from "../../constants/constants.jsx";
@@ -21,7 +21,7 @@ const icons = {
 };
 
 export default function SiteAnalytics() {
-    const { signOut } = useContext(AuthContext);
+    // const { signOut } = useContext(AuthContext);
     const navigate = useNavigate();
 
     const [systemData, setSystemData] = useState(null);
@@ -31,10 +31,6 @@ export default function SiteAnalytics() {
 
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
-
-    const avatarMenuItems = [
-        { label: "Sign Out", onClick: signOut },
-    ];
 
     useEffect(() => {
         const fetchData = async () => {
@@ -87,12 +83,7 @@ export default function SiteAnalytics() {
 
     return (
         <div className="analytics-page">
-            <div className="navigationBar">
-                <Link to={PATHS.ADMIN.REVIEW_REQUESTS} ><h1>Review Movies</h1></Link>
-                <Link to={PATHS.ADMIN.SITE_ANALYTICS} ><h1>Site Movies and Analytics</h1></Link>
-                <Link to={PATHS.ADMIN.ADD_ADMIN} ><h1>Add New Admin</h1></Link>
-                <ProfileAvatar menuItems={avatarMenuItems} />
-            </div>
+            <NavBar />
 
             <div className="content-container">
                 <div className="page-header">

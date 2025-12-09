@@ -2,8 +2,8 @@ import '../auth/style/SignUp.css';
 import { Link } from 'react-router-dom';
 import './style/orgAnalytics.css';
 import {useContext, useEffect, useState} from 'react';
+import NavBar from "../../components/OrgAdminNavBar.jsx";
 import fetchOrgAnalytics, { fetchOrgRequests } from '../../api/org-analytics-api.jsx';
-import ProfileAvatar from "../../components/ProfileAvatar.jsx";
 import {AuthContext} from "../../context/AuthContext.jsx";
 import {PATHS} from "../../constants/constants.jsx";
 
@@ -13,27 +13,12 @@ const StatCard = ({ title, value, subtitle, children }) => (
             <h3>{title}</h3>
             {subtitle ? <span className="stat-subtitle">{subtitle}</span> : null}
         </div>
-        <div className="stat-value">{value ?? '--'}</div>
+        {typeof value !== 'undefined' && value !== null ? (
+            <div className="stat-value">{value}</div>
+        ) : null}
         {children}
     </div>
 );
-
-const Stars = ({ value = 0, outOf = 5 }) => {
-    const full = Math.floor(value);
-    const half = value - full >= 0.5;
-    return (
-        <div className="stars">
-            {Array.from({ length: outOf }).map((_, i) => {
-                const isFull = i < full;
-                const isHalf = !isFull && i === full && half;
-                return (
-                    <span key={i} className={`star ${isFull ? 'full' : ''} ${isHalf ? 'half' : ''}`}>★</span>
-                );
-            })}
-            <span className="stars-number">{value?.toFixed ? value.toFixed(2) : value}</span>
-        </div>
-    );
-};
 
 const RequestBreakdown = ({ approved = 0, rejected = 0, pending = 0 }) => {
     const total = approved + rejected + pending || 1;
@@ -46,13 +31,13 @@ const RequestBreakdown = ({ approved = 0, rejected = 0, pending = 0 }) => {
         <div className="requests">
             <div className="requests-bar" role="progressbar" aria-valuemin={0} aria-valuemax={100}>
                 <div className="approved" style={{ width: `${percent.approved}%` }} />
-                <div className="rejected" style={{ width: `${percent.rejected}%` }} />
                 <div className="pending" style={{ width: `${percent.pending}%` }} />
+                <div className="rejected" style={{ width: `${percent.rejected}%` }} />
             </div>
             <div className="requests-legend">
-                <span className="dot approved" /> Approved: {approved}
-                <span className="dot rejected" /> Rejected: {rejected}
-                <span className="dot pending" /> Pending: {pending}
+                <span className="legend-item"><span className="dot approved" /> <span className="legend-text">Approved:</span> <span className="legend-value">{approved}</span></span>
+                <span className="legend-item"><span className="dot pending" /> <span className="legend-text">Pending:</span> <span className="legend-value">{pending}</span></span>
+                <span className="legend-item"><span className="dot rejected" /> <span className="legend-text">Rejected:</span> <span className="legend-value">{rejected}</span></span>
             </div>
         </div>
     );
@@ -172,28 +157,17 @@ const OrgMoviesAndAnalytics = () => {
 
     const data = analytics || {};
 
-    const {signOut} = useContext(AuthContext);
-    const avatarMenuItems = [
-        // { label: "Profile", onClick: () => console.log("Profile clicked") },
-        // { label: "Settings", onClick: () => console.log("Settings clicked") },
-        { label: "Sign Out", onClick: signOut },
-    ];
 
     return (
         <div className="org-analytics-page">
-            <div className="navigationBar">
-                {/*<Link to="/"><h1>Home Page</h1></Link>*/}
-                <Link to={PATHS.ORGANIZATION.SUBMIT_REQUEST}><h1>Add Movie</h1></Link>
-                <Link to={PATHS.ORGANIZATION.MOVIES_ANALYTICS}><h1>My Movies and Analytics</h1></Link>
-                <ProfileAvatar menuItems={avatarMenuItems} />
-            </div>
+            <NavBar />
             <div className={`analytics-grid ${loading ? 'loading' : ''}`}>
                 <StatCard title="Total Movies Added" value={loading ? '—' : data.totalMovies} />
                 <StatCard title="Total Views" value={loading ? '—' : data.totalViews?.toLocaleString?.() ?? data.totalViews} />
                 <StatCard title="Most Popular Genre" value={null}>
                     {loading ? <div className="skeleton skeleton-chip" /> : <GenreBadge genre={data.popularGenre} />}
                 </StatCard>
-                <StatCard title="Requests" subtitle="Approved / Rejected / Pending" value={null}>
+                <StatCard title="Requests" value={null}>
                     {loading ? (
                         <div className="skeleton skeleton-block" />
                     ) : (
