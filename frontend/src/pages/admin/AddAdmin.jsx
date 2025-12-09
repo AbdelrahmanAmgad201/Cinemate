@@ -3,13 +3,14 @@ import "./style/NavBar.css";
 
 import {useContext, useState} from "react";
 import {AuthContext} from "../../context/AuthContext.jsx";
+import {ToastContext} from "../../context/ToastContext.jsx";
 import {Link } from "react-router-dom";
 
 
 import ProfileAvatar from "../../components/ProfileAvatar.jsx";
 import {LuEye, LuEyeOff} from "react-icons/lu";
 
-import { } from "../../api/admin-api.jsx";
+import {addAdminApi} from "../../api/admin-api.jsx";
 
 import Swal from "sweetalert2";
 import {MAX_LENGTHS, PATHS, ROLES} from "../../constants/constants.jsx";
@@ -22,6 +23,7 @@ export default function AddAdmin() {
     const [showPassword, setShowPassword] = useState(false);
 
     const { signOut } = useContext(AuthContext);
+    const { showToast } = useContext(ToastContext);
 
     const avatarMenuItems = [
         { label: "Sign Out", onClick: signOut },
@@ -45,15 +47,15 @@ export default function AddAdmin() {
         const userData = {
             email: email,
             password: password,
-            role: ROLES.ADMIN,
         }
-        // const res = await signUp(userData)
-        // if (res.success === true){
-        //
-        // }
-        // else{
-        //     showError("Sign up failed.", res.message || "Sign up failed. Please try again.")
-        // }
+
+        const res = await addAdminApi(userData)
+        if (res.success === true){
+            showToast("Sign up success.", "New admin added successfully.", "success")
+        }
+        else{
+            showToast("Sign up failed.", res.message || "Sign up failed. Please try again.", "error")
+        }
     }
 
     return (
@@ -67,18 +69,18 @@ export default function AddAdmin() {
 
             <form onSubmit={handleSubmit}>
 
-                <div className="input-field name">
-                    <label htmlFor="name">Name</label>
-                    <input type="text"
-                           id="name"
-                           name="name"
-                           value={name}
-                           maxLength={MAX_LENGTHS.INPUT}
-                           placeholder="Enter admin's name"
-                           required
-                           onChange={e => setName(e.target.value)}
-                    />
-                </div>
+                {/*<div className="input-field name">*/}
+                {/*    <label htmlFor="name">Name</label>*/}
+                {/*    <input type="text"*/}
+                {/*           id="name"*/}
+                {/*           name="name"*/}
+                {/*           value={name}*/}
+                {/*           maxLength={MAX_LENGTHS.INPUT}*/}
+                {/*           placeholder="Enter admin's name"*/}
+                {/*           required*/}
+                {/*           onChange={e => setName(e.target.value)}*/}
+                {/*    />*/}
+                {/*</div>*/}
 
                 <div className="input-field email">
                     <label htmlFor="email">Email</label>
