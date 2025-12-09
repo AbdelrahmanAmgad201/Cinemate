@@ -6,6 +6,10 @@ import org.junit.jupiter.api.Test;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
+import org.springframework.web.bind.annotation.ControllerAdvice;
+import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.http.ResponseEntity;
+import org.springframework.http.HttpStatus;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
@@ -26,12 +30,15 @@ class PostControllerTest {
 
         PostController postController = new PostController();
 
-        // manually inject service (same style as UserControllerTest)
+        // manually inject service
         var field = PostController.class.getDeclaredField("postService");
         field.setAccessible(true);
         field.set(postController, postService);
 
-        mockMvc = MockMvcBuilders.standaloneSetup(postController).build();
+        // add a global exception handler for standaloneSetup
+        mockMvc = MockMvcBuilders.standaloneSetup(postController)
+                .setControllerAdvice(new GlobalExceptionHandler())
+                .build();
     }
 
     @Test
@@ -60,7 +67,7 @@ class PostControllerTest {
                 .forumId(null)
                 .build();
 
-        doThrow(new RuntimeException("hate speech detected"))
+        doThrow(new HateSpeechException("hate speech detected"))
                 .when(postService).addPost(any(AddPostDto.class), eq(10L));
 
         mockMvc.perform(post("/api/post/v1/post")
@@ -88,5 +95,23 @@ class PostControllerTest {
                         .content(objectMapper.writeValueAsString(dto)))
                 .andExpect(status().isInternalServerError())
                 .andExpect(content().string("Internal Server Error"));
+    }
+
+    // -------------------
+    // Exception handler for standaloneSetup
+    // -------------------
+    @ControllerAdvice
+    static class GlobalExceptionHandler {
+
+        @ExceptionHandler(HateSpeechException.class)
+        public ResponseEntity<String> handleHateSpeech(HateSpeechException ex) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(ex.getMessage());
+        }
+
+        @ExceptionHandler(Exception.class)
+        public ResponseEntity<String> handleOtherExceptions(Exception ex) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Internal Server Error");
+        }
     }
 }

@@ -22,7 +22,7 @@ public class PostService {
 
     public void addPost(AddPostDto addPostDto, Long userId) {
         if (!analyzeText(addPostDto.getContent())) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "There is hate speech");
+            throw new HateSpeechException("hate speech detected");
         }
         ObjectId ObjectUserId = longToObjectId(userId);
         Post post = Post.builder()
