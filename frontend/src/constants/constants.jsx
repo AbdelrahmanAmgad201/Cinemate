@@ -35,6 +35,7 @@ export const PATHS = {
     USER : {
         SIGN_IN: "/user/sign-in", // Old was "/"
         SIGN_UP: "/user/sign-up", // Old was "/user-sign-up"
+        PROFILE: (id = ":userId") => `/user/${id}`,
     },
 
     ADMIN : {
@@ -74,6 +75,6 @@ export const JWT = {
     STORAGE_NAME : "CINEMATE_JWT_TOKEN",
 }
 
-export const sessionStorage = {
+export const SESSION_STORAGE = {
     USER_SIDE_BAR_NAME : "CINEMATE_USER_SIDE_BAR",
 }

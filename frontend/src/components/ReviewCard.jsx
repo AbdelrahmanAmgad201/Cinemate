@@ -4,6 +4,7 @@ import PropTypes from 'prop-types';
 import "./style/reviewCard.css"
 import {timeAgo} from "../utils/formate.jsx";
 import Swal from "sweetalert2";
+import {PATHS} from "../constants/constants.jsx";
 
 export default function ReviewCard({
                                        id,
@@ -22,7 +23,7 @@ export default function ReviewCard({
                 {/* Profile picture, name and date bundled together on the left of first row*/}
                 <div className="review-card-header-left">
                     <div className="review-card-header-left-avatar-wrapper">
-                        <Link to={`/user/${userId}`}>
+                        <Link to={PATHS.USER.PROFILE(userId)}>
                             <img className="review-card-header-left-avatar"
                                  src={avatar}
                                  alt={`${name}'s avatar`}
@@ -32,7 +33,7 @@ export default function ReviewCard({
                     </div>
                     <div className="review-card-header-left-meta">
                         <div className="review-card-header-left-name">
-                            <Link to={`/user/${userId}`}>{name}</Link>
+                            <Link to={PATHS.USER.PROFILE(userId)}>{name}</Link>
                         </div>
                         <div className="review-card-header-left-date">
                             {timeAgo(date)}
