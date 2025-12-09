@@ -3,14 +3,12 @@ package org.example.backend.post;
 import lombok.RequiredArgsConstructor;
 import org.bson.types.ObjectId;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.HttpEntity;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
+import org.springframework.http.*;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.web.server.ResponseStatusException;
 
 @Service
 @RequiredArgsConstructor
@@ -24,7 +22,7 @@ public class PostService {
 
     public void addPost(AddPostDto addPostDto, Long userId) {
         if (!analyzeText(addPostDto.getContent())) {
-            throw new RuntimeException("There is hate speech");
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "There is hate speech");
         }
         ObjectId ObjectUserId = longToObjectId(userId);
         Post post = Post.builder()
