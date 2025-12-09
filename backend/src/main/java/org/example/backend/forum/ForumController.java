@@ -24,8 +24,12 @@ public class ForumController {
     }
 
     @DeleteMapping("v1/delete/{forumId}")
-    public ResponseEntity<?> deleteForum(@PathVariable ObjectId forumId) {
-        forumService.deleteForum(forumId);
+    public ResponseEntity<?> deleteForum(
+            HttpServletRequest request,
+            @PathVariable ObjectId forumId) {
+
+        Long userId = (Long) request.getAttribute("userId");
+        forumService.deleteForum(forumId,userId);
         return ResponseEntity.ok().build();
     }
 
