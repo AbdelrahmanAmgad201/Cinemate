@@ -129,21 +129,7 @@ class PostControllerTest {
     @Test
     void testUpdatePost_hateSpeech() throws Exception {
 
-        Long userId = 10L;
-        ObjectId ownerObjId = new ObjectId(String.format("%024x", userId));
-
-        Post post = Post.builder()
-                .id(new ObjectId())
-                .ownerId(ownerObjId)
-                .title("Original Title")
-                .content("Original Content")
-                .forumId(new ObjectId())
-                .isDeleted(false)
-                .build();
-
-        postRepository.save(post);
-
-        String postId = post.getId().toHexString();
+        String postId = new ObjectId().toHexString();
 
         AddPostDto dto = AddPostDto.builder()
                 .title("Bad update")
@@ -152,10 +138,10 @@ class PostControllerTest {
                 .build();
 
         doThrow(new HateSpeechException("hate speech detected"))
-                .when(postService).updatePost(eq(postId), any(AddPostDto.class), eq(userId));
+                .when(postService).updatePost(eq(postId), any(AddPostDto.class), eq(10L));
 
         mockMvc.perform(put("/api/post/v1/post/{postId}", postId)
-                        .requestAttr("userId", userId)
+                        .requestAttr("userId", 10L)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(dto)))
                 .andExpect(status().isForbidden())
