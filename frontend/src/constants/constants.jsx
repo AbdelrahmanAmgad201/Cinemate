@@ -62,10 +62,18 @@ export const PATHS = {
 
     POST: {
         FULLPAGE: (id = ":postId") => `/post/${id}`,
-    }
+    },
+
+    FORUM : {
+        PAGE : (id = ":forumId") => `/forum/${id}`, // May change to name if it's unique
+    },
 
 }
 
 export const JWT = {
     STORAGE_NAME : "CINEMATE_JWT_TOKEN",
+}
+
+export const sessionStorage = {
+    USER_SIDE_BAR_NAME : "CINEMATE_USER_SIDE_BAR",
 }

@@ -24,10 +24,7 @@ export default function MoviePreviewPage() {
     const { movieId } = useParams();
     const location = useLocation();
     const navigate = useNavigate();
-    // In home-page, use as follow
-    // <Link to={PATHS.MOVIE.DETAILS(movieId)} state={{ movie }}>
-    //     <MovieCard/>
-    // </Link>
+
     const [movie, setMovie] = useState(location.state?.movie ?? null);
     const [movieLoading, setMovieLoading] = useState(false);
     const [movieError, setMovieError] = useState(null);

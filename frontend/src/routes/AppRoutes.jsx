@@ -30,6 +30,7 @@ import { ROLES, PATHS } from "../constants/constants.jsx";
 import AddAdmin from "../pages/admin/AddAdmin.jsx";
 import UserMainLayout from "../components/UserMainLayout.jsx";
 import SimpleLayout from "../components/SimpleLayout.jsx";
+import Forum from "../pages/user/Forum.jsx";
 
 export default function AppRoutes() {
 
@@ -73,21 +74,24 @@ export default function AppRoutes() {
             </Route>
 
             <Route element={<RoleRoute allowedRoles={[ROLES.USER, ROLES.ADMIN]} />}>
-                {/*<Route path={PATHS.HOME} element={<HomePage />} />*/}
-                {/*<Route path={PATHS.MOVIE.BROWSE} element={<Browse />} />*/}
                 <Route element={<SimpleLayout />}>
+                    {/*<Route path={PATHS.HOME} element={<HomePage />} />*/}
+                    {/*<Route path={PATHS.MOVIE.BROWSE} element={<Browse />} />*/}
                     <Route path={PATHS.MOVIE.DETAILS()} element={<MoviePreviewPage />} />
                 </Route>
             </Route>
 
             {/*Added here for testing*/}
             {/*<Route path="/test-sand-box" element={<TestSandBox />} />*/}
-
+            <Route element={<UserMainLayout />}>
+                <Route path={PATHS.FORUM.PAGE()} element={<Forum/>} />
+            </Route>
             {/* protected routes (requires login + verified) */}
             <Route element={<RoleRoute allowedRoles={[ROLES.USER]} />}>
                 <Route element={<UserMainLayout />}> {/* Navbar + Sidebar*/}
                     <Route path={PATHS.HOME} element={<HomePage />} />
                     <Route path={PATHS.POST.FULLPAGE()} element={<PostFullPage />} />
+                    <Route path={PATHS.FORUM.PAGE()} element={<Forum/>} />
                 </Route>
                 <Route element={<SimpleLayout />}> {/* Navbar only */}
                     <Route path={PATHS.MOVIE.BROWSE} element={<Browse />} />
