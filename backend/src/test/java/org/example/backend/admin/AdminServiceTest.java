@@ -7,6 +7,7 @@ import org.example.backend.user.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.util.Collections;
 import java.util.List;
@@ -20,7 +21,7 @@ class AdminServiceTest {
     private RequestsRepository requestsRepository;
     private AdminRepository adminRepository;
     private UserRepository userRepository;
-
+    private PasswordEncoder passwordEncoder;
     private AdminService adminService;
 
     @BeforeEach
@@ -29,8 +30,9 @@ class AdminServiceTest {
         requestsRepository = mock(RequestsRepository.class);
         adminRepository = mock(AdminRepository.class);
         userRepository = mock(UserRepository.class);
+        passwordEncoder = mock(PasswordEncoder.class);
 
-        adminService = new AdminService(movieRepository, requestsRepository, adminRepository, userRepository);
+        adminService = new AdminService(movieRepository, requestsRepository, adminRepository, userRepository,passwordEncoder);
     }
 
     @Test
