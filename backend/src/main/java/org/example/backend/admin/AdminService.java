@@ -60,16 +60,20 @@ public class AdminService {
         requestsRepository.save(requests);
         movieRepository.deleteById(movieId);
     }
+
     @Transactional
     public Admin addAdmin(AddAdminDTO addAdminDTO) {
+        String name = addAdminDTO.getName();
         String email = addAdminDTO.getEmail();
         String password = passwordEncoder.encode(addAdminDTO.getPassword());
         Admin admin = Admin.builder()
+                .name(name)
                 .email(email)
                 .password(password)
                 .build();
         return adminRepository.save(admin);
     }
+
     @Transactional
     public SystemOverview getSystemOverview() {
         SystemOverview systemOverview = new SystemOverview();

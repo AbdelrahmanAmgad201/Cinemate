@@ -16,6 +16,7 @@ function NavBar(){
             return [
                 {key: PATHS.ADMIN.REVIEW_REQUESTS, title: "Review Movie Requests", to: PATHS.ADMIN.REVIEW_REQUESTS},
                 {key: PATHS.ADMIN.SITE_ANALYTICS, title: "Site Movies and Analytics", to: PATHS.ADMIN.SITE_ANALYTICS},
+                {key: PATHS.ADMIN.ADD_ADMIN, title: "Add New Admin", to: PATHS.ADMIN.ADD_ADMIN},
             ];
         }
         return [

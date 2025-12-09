@@ -45,6 +45,7 @@ export default function AddAdmin() {
         if (!result.isConfirmed) return;
 
         const userData = {
+            name: name,
             email: email,
             password: password,
         }
@@ -69,18 +70,18 @@ export default function AddAdmin() {
 
             <form onSubmit={handleSubmit}>
 
-                {/*<div className="input-field name">*/}
-                {/*    <label htmlFor="name">Name</label>*/}
-                {/*    <input type="text"*/}
-                {/*           id="name"*/}
-                {/*           name="name"*/}
-                {/*           value={name}*/}
-                {/*           maxLength={MAX_LENGTHS.INPUT}*/}
-                {/*           placeholder="Enter admin's name"*/}
-                {/*           required*/}
-                {/*           onChange={e => setName(e.target.value)}*/}
-                {/*    />*/}
-                {/*</div>*/}
+                <div className="input-field name">
+                    <label htmlFor="name">Name</label>
+                    <input type="text"
+                           id="name"
+                           name="name"
+                           value={name}
+                           maxLength={MAX_LENGTHS.INPUT}
+                           placeholder="Enter admin's name"
+                           required
+                           onChange={e => setName(e.target.value)}
+                    />
+                </div>
 
                 <div className="input-field email">
                     <label htmlFor="email">Email</label>

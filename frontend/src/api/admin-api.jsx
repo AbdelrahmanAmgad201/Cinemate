@@ -149,10 +149,10 @@ export async function getMovieAnalyticsApi({ movieId }) {
     }
 }
 
-export async function addAdminApi({ email, password }) {
+export async function addAdminApi({ name, email, password }) {
 
     try {
-        const res = await api.post("/admin/v1/add-admin", { email, password });
+        const res = await api.post("/admin/v1/add-admin", { name, email, password });
         console.log(res);
 
         return { success: true };
