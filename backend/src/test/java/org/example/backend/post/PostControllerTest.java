@@ -23,7 +23,6 @@ class PostControllerTest {
     private MockMvc mockMvc;
     private PostService postService;
     private ObjectMapper objectMapper;
-    private PostRepository postRepository;
 
     @BeforeEach
     void setup() throws Exception {
