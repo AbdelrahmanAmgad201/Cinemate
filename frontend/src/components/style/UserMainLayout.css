@@ -28,6 +28,10 @@
 }
 
 .layout-header {
+    position: sticky;
+    top: 80px;
+    z-index: 50;
+    width: fit-content;
     padding: 10px 8px;
     display: flex;
     align-items: center;
