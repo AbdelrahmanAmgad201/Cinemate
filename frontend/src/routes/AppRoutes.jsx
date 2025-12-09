@@ -18,6 +18,7 @@ import OrgAddMovie from "../pages/org/OrgAddMovie.jsx";
 import OrgMoviesAndAnalytics from "../pages/org/OrgMoviesAndAnalytics.jsx";
 import MoviePreviewPage from "../pages/user/MoviePreviewPage.jsx";
 import WatchPage from "../pages/user/WatchPage.jsx";
+import PostFullPage from '../components/PostFullPage.jsx';
 
 import NotFoundPage from "../components/NotFoundPage.jsx";
 import TestSandBox from "../pages/TestSandBox.jsx";
@@ -86,14 +87,16 @@ export default function AppRoutes() {
             <Route element={<RoleRoute allowedRoles={[ROLES.USER]} />}>
                 <Route element={<UserMainLayout />}> {/* Navbar + Sidebar*/}
                     <Route path={PATHS.HOME} element={<HomePage />} />
-
+                    <Route path={PATHS.POST.FULLPAGE()} element={<PostFullPage />} />
                 </Route>
                 <Route element={<SimpleLayout />}> {/* Navbar only */}
                     <Route path={PATHS.MOVIE.BROWSE} element={<Browse />} />
                     <Route path={PATHS.MOVIE.GENRE()} element={<Genre />} />
                     {/*<Route path={PATHS.MOVIE.DETAILS()} element={<MoviePreviewPage />} />*/}
                     <Route path={PATHS.MOVIE.WATCH} element={<WatchPage />} />
-                </Route>
+                    
+                </Route>                
+
             </Route>
 
             {/* If any unknown path is entered, it will be redirected to the UserSignIn page*/}
