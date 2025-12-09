@@ -1,10 +1,8 @@
-import "./style/ReviewMoviesPage.css";
-import "./style/NavBar.css";
-
 import { useState, useEffect, useContext } from "react";
 import { Link, useNavigate } from "react-router-dom";
 
-import ProfileAvatar from "../../components/ProfileAvatar.jsx";
+import NavBar from "../../components/OrgAdminNavBar.jsx";
+import "./style/ReviewMoviesPage.css";
 import { getPendingRequestsApi, getRequestsHistoryApi, acceptRequestApi, declineRequestApi} from "../../api/admin-api.jsx";
 // import {mapMovieBackendToFrontend} from "../../api/movie-api.jsx";
 import {mapMovieBackendToFrontend} from "../../utils/api-mappers.jsx";
@@ -15,19 +13,13 @@ import Swal from "sweetalert2";
 import {PATHS} from "../../constants/constants.jsx";
 
 export default function ReviewRequestsPage() {
-    const { signOut } = useContext(AuthContext);
     const { showToast } = useContext(ToastContext);
-
     const navigate = useNavigate();
 
     const [activeTab, setActiveTab] = useState("pending"); // 'pending' or 'history'
     const [requests, setRequests] = useState([]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
-
-    const avatarMenuItems = [
-        { label: "Sign Out", onClick: signOut },
-    ];
 
     useEffect(() => {
         fetchData();
@@ -107,12 +99,7 @@ export default function ReviewRequestsPage() {
 
     return (
         <div className="review-requests-page">
-            {/* Standard Navigation Bar */}
-            <div className="navigationBar">
-                <Link to={PATHS.ADMIN.REVIEW_REQUESTS} ><h1>Review Movies</h1></Link>
-                <Link to={PATHS.ADMIN.SITE_ANALYTICS} ><h1>Site Movies and Analytics</h1></Link>
-                <ProfileAvatar menuItems={avatarMenuItems} />
-            </div>
+            <NavBar />
 
             <div className="content-container">
                 <div className="page-header">

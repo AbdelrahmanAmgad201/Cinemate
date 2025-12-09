@@ -2,8 +2,8 @@ import '../auth/style/SignUp.css';
 import { Link } from 'react-router-dom';
 import './style/orgAnalytics.css';
 import {useContext, useEffect, useState} from 'react';
+import NavBar from "../../components/OrgAdminNavBar.jsx";
 import fetchOrgAnalytics, { fetchOrgRequests } from '../../api/org-analytics-api.jsx';
-import ProfileAvatar from "../../components/ProfileAvatar.jsx";
 import {AuthContext} from "../../context/AuthContext.jsx";
 import {PATHS} from "../../constants/constants.jsx";
 
@@ -157,21 +157,10 @@ const OrgMoviesAndAnalytics = () => {
 
     const data = analytics || {};
 
-    const {signOut} = useContext(AuthContext);
-    const avatarMenuItems = [
-        // { label: "Profile", onClick: () => console.log("Profile clicked") },
-        // { label: "Settings", onClick: () => console.log("Settings clicked") },
-        { label: "Sign Out", onClick: signOut },
-    ];
 
     return (
         <div className="org-analytics-page">
-            <div className="navigationBar">
-                {/*<Link to="/"><h1>Home Page</h1></Link>*/}
-                <Link to={PATHS.ORGANIZATION.SUBMIT_REQUEST}><h1>Add Movie</h1></Link>
-                <Link to={PATHS.ORGANIZATION.MOVIES_ANALYTICS}><h1>My Movies and Analytics</h1></Link>
-                <ProfileAvatar menuItems={avatarMenuItems} />
-            </div>
+            <NavBar />
             <div className={`analytics-grid ${loading ? 'loading' : ''}`}>
                 <StatCard title="Total Movies Added" value={loading ? '—' : data.totalMovies} />
                 <StatCard title="Total Views" value={loading ? '—' : data.totalViews?.toLocaleString?.() ?? data.totalViews} />
