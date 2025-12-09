@@ -81,13 +81,9 @@ export default function SiteAnalytics() {
         navigate(PATHS.MOVIE.DETAILS(id));
     };
 
-    const navTabs = [
-        {key: PATHS.ADMIN.REVIEW_REQUESTS, title: "Review Movie Requests", to: PATHS.ADMIN.REVIEW_REQUESTS},
-        {key: PATHS.ADMIN.SITE_ANALYTICS, title: "Site Movies and Analytics", to: PATHS.ADMIN.SITE_ANALYTICS},
-    ]
     return (
         <div className="analytics-page">
-            <NavBar tabs={navTabs}/>
+            <NavBar />
 
             <div className="content-container">
                 <div className="page-header">
