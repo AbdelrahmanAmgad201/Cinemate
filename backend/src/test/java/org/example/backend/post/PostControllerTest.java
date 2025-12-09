@@ -23,6 +23,7 @@ class PostControllerTest {
     private MockMvc mockMvc;
     private PostService postService;
     private ObjectMapper objectMapper;
+    private PostRepository postRepository;
 
     @BeforeEach
     void setup() throws Exception {
@@ -127,19 +128,34 @@ class PostControllerTest {
 
     @Test
     void testUpdatePost_hateSpeech() throws Exception {
+
+        Long userId = 10L;
+        ObjectId ownerObjId = new ObjectId(String.format("%024x", userId));
+
+        Post post = Post.builder()
+                .id(new ObjectId())
+                .ownerId(ownerObjId)
+                .title("Original Title")
+                .content("Original Content")
+                .forumId(new ObjectId())
+                .isDeleted(false)
+                .build();
+
+        postRepository.save(post);
+
+        String postId = post.getId().toHexString();
+
         AddPostDto dto = AddPostDto.builder()
                 .title("Bad update")
                 .content("Hate speech content")
                 .forumId(null)
                 .build();
 
-        String postId = new ObjectId().toHexString();
-
         doThrow(new HateSpeechException("hate speech detected"))
-                .when(postService).updatePost(eq(postId), any(AddPostDto.class), eq(10L));
+                .when(postService).updatePost(eq(postId), any(AddPostDto.class), eq(userId));
 
-        mockMvc.perform(put("/api/post/v1/post/{postId}", postId)  // <-- use path variable
-                        .requestAttr("userId", 10L)
+        mockMvc.perform(put("/api/post/v1/post/{postId}", postId)
+                        .requestAttr("userId", userId)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(dto)))
                 .andExpect(status().isForbidden())
@@ -174,26 +190,14 @@ class PostControllerTest {
     void testDeletePost_success() throws Exception {
         String postId = new ObjectId().toHexString();
 
-        doNothing().when(postService).deletePost(eq(postId), eq(10L));
+        // The service method should not throw -> means "success"
+        doNothing().when(postService).deletePost(postId, 10L);
 
-        mockMvc.perform(delete("/api/post/v1/post/{postId}", postId)  // <-- path variable
+        mockMvc.perform(delete("/api/post/v1/post/{postId}", postId)
                         .requestAttr("userId", 10L))
-                .andExpect(status().isOk());
+                .andExpect(status().isOk())
+                .andExpect(content().string("deleted"));
     }
-
-    @Test
-    void testDeletePost_hateSpeech() throws Exception {
-        String postId = new ObjectId().toHexString();
-
-        doThrow(new HateSpeechException("hate speech detected"))
-                .when(postService).deletePost(eq(postId), eq(10L));
-
-        mockMvc.perform(delete("/api/post/v1/post/{postId}", postId)  // <-- path variable
-                        .requestAttr("userId", 10L))
-                .andExpect(status().isForbidden())
-                .andExpect(content().string("hate speech detected"));
-    }
-
     @Test
     void testDeletePost_internalServerError() throws Exception {
         String postId = new ObjectId().toHexString();

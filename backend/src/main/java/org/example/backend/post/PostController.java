@@ -19,16 +19,16 @@ public class PostController {
         String postId = post.getId().toHexString();
         return ResponseEntity.ok(postId);
     }
-    @PutMapping("/v1/post")
+    @PutMapping("/v1/post/{postId}")
     public ResponseEntity<String> updatePost(HttpServletRequest request, @PathVariable String postId, @RequestBody AddPostDto addPostDto) {
         Long userId = (Long) request.getAttribute("userId");
         postService.updatePost(postId, addPostDto, userId);
         return ResponseEntity.ok(postId);
     }
-    @DeleteMapping("/v1/post")
-    public ResponseEntity<?> deletePost(HttpServletRequest request, @PathVariable String postId) {
+    @DeleteMapping("/v1/post/{postId}")
+    public ResponseEntity<String> deletePost(HttpServletRequest request, @PathVariable String postId) {
         Long userId = (Long) request.getAttribute("userId");
         postService.deletePost(postId, userId);
-        return ResponseEntity.ok().build();
+        return ResponseEntity.ok("deleted");
     }
 }
