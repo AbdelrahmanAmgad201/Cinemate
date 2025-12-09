@@ -24,8 +24,8 @@ public class MovieController {
     @PostMapping("/v1/get-specific-movie/{movieId}")
     public ResponseEntity<Movie> getSpecificMovie(
             HttpServletRequest request,
-            @PathVariable Long movieId
-    ){
+            @PathVariable Long movieId){
+
         Movie movie = movieService.getMovie(movieId);
         System.out.println(movie.getName());
         return ResponseEntity.ok(movie);
