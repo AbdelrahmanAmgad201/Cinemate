@@ -28,6 +28,8 @@ import SiteAnalytics from "../pages/admin/SiteAnalytics.jsx";
 
 import { ROLES, PATHS } from "../constants/constants.jsx";
 import AddAdmin from "../pages/admin/AddAdmin.jsx";
+import UserMainLayout from "../components/UserMainLayout.jsx";
+import SimpleLayout from "../components/SimpleLayout.jsx";
 
 export default function AppRoutes() {
 
@@ -73,7 +75,9 @@ export default function AppRoutes() {
             <Route element={<RoleRoute allowedRoles={[ROLES.USER, ROLES.ADMIN]} />}>
                 {/*<Route path={PATHS.HOME} element={<HomePage />} />*/}
                 {/*<Route path={PATHS.MOVIE.BROWSE} element={<Browse />} />*/}
-                <Route path={PATHS.MOVIE.DETAILS()} element={<MoviePreviewPage />} />
+                <Route element={<SimpleLayout />}>
+                    <Route path={PATHS.MOVIE.DETAILS()} element={<MoviePreviewPage />} />
+                </Route>
             </Route>
 
             {/*Added here for testing*/}
@@ -81,12 +85,17 @@ export default function AppRoutes() {
 
             {/* protected routes (requires login + verified) */}
             <Route element={<RoleRoute allowedRoles={[ROLES.USER]} />}>
-                <Route path={PATHS.HOME} element={<HomePage />} />
-                <Route path={PATHS.MOVIE.BROWSE} element={<Browse />} />
-                <Route path={PATHS.MOVIE.GENRE()} element={<Genre />} />
-                {/*<Route path={PATHS.MOVIE.DETAILS()} element={<MoviePreviewPage />} />*/}
-                <Route path={PATHS.MOVIE.WATCH} element={<WatchPage />} />
-                <Route path={PATHS.POST.FULLPAGE()} element={<PostFullPage />} />
+                <Route element={<UserMainLayout />}> {/* Navbar + Sidebar*/}
+                    <Route path={PATHS.HOME} element={<HomePage />} />
+                    <Route path={PATHS.POST.FULLPAGE()} element={<PostFullPage />} />
+                </Route>
+                <Route element={<SimpleLayout />}> {/* Navbar only */}
+                    <Route path={PATHS.MOVIE.BROWSE} element={<Browse />} />
+                    <Route path={PATHS.MOVIE.GENRE()} element={<Genre />} />
+                    {/*<Route path={PATHS.MOVIE.DETAILS()} element={<MoviePreviewPage />} />*/}
+                    <Route path={PATHS.MOVIE.WATCH} element={<WatchPage />} />
+                    
+                </Route>                
 
             </Route>
 

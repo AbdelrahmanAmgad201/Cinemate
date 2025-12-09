@@ -44,7 +44,7 @@ const HomePage = () => {
 
     return (
         <div>
-            <NavBar />
+            {/* <NavBar /> */}
             <div className="posts-list">
                 {posts.map((post, index) => (
                     <PostCard key={index} postBody={post} />

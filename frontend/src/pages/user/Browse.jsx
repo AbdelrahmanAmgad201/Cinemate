@@ -138,7 +138,7 @@ export default function Browse() {
 
     return (
         <div>
-            <NavBar />
+            {/*<NavBar />*/}
             <main style={{flex: "1"}}>
                 <div>
                     <Carousel />
