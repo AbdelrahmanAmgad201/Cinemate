@@ -2,6 +2,7 @@ package org.example.backend.forum;
 
 import lombok.RequiredArgsConstructor;
 import org.bson.types.ObjectId;
+import org.example.backend.deletion.CascadeDeletionService;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
@@ -11,6 +12,7 @@ import java.time.Instant;
 public class ForumService {
 
     private final ForumRepository forumRepository;
+    private final CascadeDeletionService deletionService;
 
     public Forum createForum(ForumCreationRequest request, Long userId) {
 
@@ -22,6 +24,10 @@ public class ForumService {
                 .build();
 
         return forumRepository.save(forum);
+    }
+
+    public void deleteForum(ObjectId forumId) {
+        deletionService.deleteForum(forumId);
     }
 
 

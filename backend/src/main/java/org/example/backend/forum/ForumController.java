@@ -2,6 +2,7 @@ package org.example.backend.forum;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
+import org.bson.types.ObjectId;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -20,6 +21,12 @@ public class ForumController {
         Long userId = (Long) request.getAttribute("userId");
         Forum forum = forumService.createForum(requestDTO, userId);
         return ResponseEntity.ok(forum);
+    }
+
+    @DeleteMapping("v1/delete/{forumId}")
+    public ResponseEntity<?> deleteForum(@PathVariable ObjectId forumId) {
+        forumService.deleteForum(forumId);
+        return ResponseEntity.ok().build();
     }
 
 }
