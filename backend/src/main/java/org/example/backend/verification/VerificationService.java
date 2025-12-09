@@ -144,7 +144,6 @@ public class VerificationService {
                 Authenticatable account = switch (role) {
                     case "ORGANIZATION" -> organizationService.addOrganization(email, password);
                     case "USER" -> userService.addUser(email, password);
-                    case "ADMIN" -> adminService.addAdmin(email, password);
                     default -> null;
                 };
 

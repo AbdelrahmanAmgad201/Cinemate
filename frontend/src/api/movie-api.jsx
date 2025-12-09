@@ -1,0 +1,122 @@
+import api from './api-client.jsx';
+import { mapBackendReviews, mapMovieBackendToFrontend } from "../utils/api-mappers.jsx";
+
+export async function getMovieApi({ movieId }) {
+    try {
+        const response = await api.post(`/movie/v1/get-specific-movie/${movieId}`);
+        const data = response.data;
+
+        const mappedMovie = mapMovieBackendToFrontend(data);
+        return { success: true, data: mappedMovie };
+    } catch (err) {
+        return { success: false, message: err.message };
+    }
+}
+
+export async function getReviewsApi({movieId, page, size}) {
+    try{
+        // movieId;
+        // pageable
+        const response = await api.get(`/movie-review/v1/get-movie-reviews/${movieId}`, {
+            params: { page, size }})
+
+        const data = response.data;
+        return {
+            success: true,
+            data: {
+                ...data,
+                content: mapBackendReviews(data) // map only the content, keep totalPages etc
+            }
+        };
+
+    }catch(err){
+        return { success: false , message: err.message };
+    }
+};
+
+export async function postReviewApi({movieId, comment, rating}) {
+    // private Long movieId;
+    // private String comment;
+    // private Integer rating;
+    try{
+        const response = await api.post("/movie-review/v1/add-review", {movieId, comment, rating});
+
+        const data = response.data;
+        const userReview = mapBackendReviews({ content: [data] })[0];
+
+        console.log(userReview);
+
+        return { success: true, data: userReview};
+    }
+    catch(err){
+        console.log(err);
+        return { success: false , message: err.message };
+    }
+};
+
+export async function deleteReviewApi({movieId}) {
+    // private Long movieId;
+    try{
+        const response = await api.delete(`/delete-movie-review/${movieId}`);
+
+        const data = response.data;
+
+
+        return { success: true,};
+    }
+    catch(err){
+        console.log(err);
+        return { success: false , message: err.message };
+    }
+};
+
+
+
+// Like and watch later
+export async function likeMovieApi({movieId}) {
+    // private Long movieId;
+    try{
+        const response = await api.post(`/liked-movie/v1/like-movie/${movieId}`);
+        console.log(response);
+        const data = response.data;
+
+
+        return { success: true,};
+    }
+    catch(err){
+        console.log(err);
+        return { success: false , message: err.message };
+    }
+};
+
+export async function addToWatchLaterApi({movieId}) {
+    // private Long movieId;
+    try{
+        const response = await api.post(`/watch-later/v1/watch-later/${movieId}`);
+        console.log(response);
+        const data = response.data;
+
+
+        return { success: true,};
+    }
+    catch(err){
+        console.log(err);
+        return { success: false , message: err.message };
+    }
+};
+
+export async function addToWatchHistoryApi({movieId}) {
+    // private Long movieId;
+    try{
+        const response = await api.post(`/watch-history/v1/add-watch-history/${movieId}`);
+        console.log(response);
+        const data = response.data;
+
+
+        return { success: true,};
+    }
+    catch(err){
+        // console.log(err);
+        return { success: false , message: err.message };
+    }
+};

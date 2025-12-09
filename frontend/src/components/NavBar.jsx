@@ -1,26 +1,24 @@
 import { useState, useContext, useEffect, useRef } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { IoSearch } from "react-icons/io5";
-import { CgProfile } from "react-icons/cg";
-import { AuthContext } from '../context/authContext.jsx';
-import MoviesDetailsApi from '../api/moviesDetailsApi.jsx';
 import './style/navBar.css';
+import ProfileAvatar from './profileAvatar.jsx';
+import MoviesDetailsApi from '../api/movies-details-api.jsx';
+
+import {MAX_LENGTHS, PATHS} from "../constants/constants.jsx";
+
 
 function NavBar() {
 
     const isActive = (path) => location.pathname === path;
     const [searchValue, setSearchValue] = useState('');
     const [movies, setMovies] = useState([]);
-    const [menuShow, setMenuShow] = useState(false);
     const [resultsShow, setResultsShow] = useState(false);
     const menuRef = useRef(null);
     const searchRef = useRef(null);
 
     const location = useLocation();
     const navigate = useNavigate();
-    const { signOut } = useContext(AuthContext);
-
-    const [results, setResults] = useState(["Movie 1", "Movie 2", "Movie 3"]);
 
     useEffect(() => {
         handleSearch();
@@ -72,7 +70,7 @@ function NavBar() {
     };
 
     const handleResultClick = (movieId) => {
-        navigate(`/movie/${movieId}`);
+        navigate(PATHS.MOVIE.DETAILS(movieId));
         setResultsShow(false);
         setSearchValue('');
     };
@@ -80,7 +78,7 @@ function NavBar() {
     const handleSignOut = async () => {
         await signOut();
         setMenuShow(false);
-        navigate('/', { replace: true });
+        navigate(PATHS.ROOT, { replace: true });
     }
 
     useEffect(() => {
@@ -93,27 +91,27 @@ function NavBar() {
             }
         };
 
-        if (menuShow || resultsShow) {
+        if (resultsShow) {
             document.addEventListener('mousedown', handleClickOutside);
         }
 
         return () => {
             document.removeEventListener('mousedown', handleClickOutside);
         };
-    }, [menuShow, resultsShow]);
+    }, [resultsShow]);
 
     return (
         <>
         <div className="navbar-spacer"></div>
         <div className="navbar">
-            <Link to="/home-page" className={`navbar-button ${isActive('/home-page') ? 'active' : ''}`}>
+            <Link to={PATHS.HOME} className={`navbar-button ${isActive(PATHS.HOME) ? 'active' : ''}`}>
                 Home
             </Link>
-            <Link to="/browse" className={`navbar-button ${isActive('/browse') ? 'active' : ''}`}>
+            <Link to={PATHS.MOVIE.BROWSE} className={`navbar-button ${isActive(PATHS.MOVIE.BROWSE) ? 'active' : ''}`}>
                 Browse
             </Link>
             <div className="navbar-search" ref={searchRef}>
-                <input type="text" placeholder="Search movies..." onChange={handleInputChange} /><IoSearch onClick={handleSearch} />
+                <input type="text" placeholder="Search movies..." maxLength={MAX_LENGTHS.INPUT} onChange={handleInputChange} /><IoSearch onClick={handleSearch} />
                 {resultsShow && movies.length > 0 && (
                     <div className="search-results">
                             {movies.map((movie, index) => (
@@ -125,16 +123,7 @@ function NavBar() {
                     )}
             </div>  
         </div>
-        <div className="profile-icon" ref={menuRef} >
-            <CgProfile onClick={() => setMenuShow(prev => !prev)} />
-            {menuShow && (
-                <div className="menu">
-                    <ul>
-                        <li onClick={handleSignOut}>Sign Out</li>
-                    </ul>
-                </div>
-            )}
-        </div>
+        <ProfileAvatar />
         </>
     );
 
