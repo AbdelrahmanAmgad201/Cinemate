@@ -148,3 +148,19 @@ export async function getMovieAnalyticsApi({ movieId }) {
         return { success: false , message: err.message };
     }
 }
+
+export async function addAdminApi({ name, email, password }) {
+
+    try {
+        const res = await api.post("/admin/v1/add-admin", { name, email, password });
+        console.log(res);
+
+        return { success: true };
+
+    }catch(err){
+
+        return { success: false , message: err.message };
+    }
+
+
+}

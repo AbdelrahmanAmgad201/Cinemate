@@ -26,6 +26,7 @@ import ReviewMovies from "../pages/admin/ReviewMovies.jsx";
 import SiteAnalytics from "../pages/admin/SiteAnalytics.jsx";
 
 import { ROLES, PATHS } from "../constants/constants.jsx";
+import AddAdmin from "../pages/admin/AddAdmin.jsx";
 
 export default function AppRoutes() {
 
@@ -64,6 +65,7 @@ export default function AppRoutes() {
             <Route element={<RoleRoute allowedRoles={[ROLES.ADMIN]} redirectTo={PATHS.ADMIN.SIGN_IN} />}>
                 <Route path={PATHS.ADMIN.REVIEW_REQUESTS} element={<ReviewMovies />} />
                 <Route path={PATHS.ADMIN.SITE_ANALYTICS} element={<SiteAnalytics />} />
+                <Route path={PATHS.ADMIN.ADD_ADMIN} element={<AddAdmin />} />
                 {/*<Route path={PATHS.MOVIE.DETAILS()} element={<MoviePreviewPage />} />*/}
             </Route>
 
