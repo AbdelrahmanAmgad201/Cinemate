@@ -84,14 +84,15 @@ class PostServiceTest extends AbstractMongoIntegrationTest {
         when(restTemplate.postForEntity(eq(url), any(HttpEntity.class), eq(Boolean.class)))
                 .thenReturn(aiResponse);
 
-        // Expect exception
+        // Expect HateSpeechException
         assertThatThrownBy(() -> postService.addPost(dto, userId))
-                .isInstanceOf(RuntimeException.class)
-                .hasMessageContaining("There is hate speech");
+                .isInstanceOf(HateSpeechException.class)  // <- updated
+                .hasMessageContaining("hate speech detected"); // <- matches service
 
         // Ensure DB remains empty
         assertThat(postRepository.count()).isZero();
     }
+
 
     // ==============================================================
     // Validate the EXACT JSON body sent to FastAPI
