@@ -34,7 +34,7 @@ public class ForumController {
     }
 
     @PutMapping("v1/update/{forumId}")
-    public ResponseEntity<?> deleteForum(
+    public ResponseEntity<?> updateForum(
             HttpServletRequest request,
             @PathVariable ObjectId forumId,
             @Valid @RequestBody ForumCreationRequest requestDTO) {
