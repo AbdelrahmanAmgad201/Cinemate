@@ -14,8 +14,9 @@ const HomePage = () => {
             firstName: "Sam",
             lastName: "Jonas",
             time: "22-11-2025",
-            title: "Wish There Was A Second Season. Wish There Was A Second Season. Wish There Was A Second Season. Wish There Was A Second Season. Wish There Was A Second Season. Wish There Was A Second Season. Wish There Was A Second Season. Wish There Was A Second Season. ",
+            title: "Wish There Was A Second Season",
             media: pic,
+            text: "Wish There Was A Second Season. Wish There Was A Second Season. Wish There Was A Second Season. Wish There Was A Second Season. Wish There Was A Second Season. Wish There Was A Second Season. Wish There Was A Second Season. Wish There Was A Second Season. ",
             votes: 1234,
             postId: 1
         },
@@ -34,6 +35,7 @@ const HomePage = () => {
             firstName: "John",
             lastName: "Smith",
             time: "09-12-2024",
+            text: "Wish There Was A Second Season. Wish There Was A Second Season. Wish There Was A Second Season. Wish There Was A Second Season. Wish There Was A Second Season. Wish There Was A Second Season. Wish There Was A Second Season. Wish There Was A Second Season. ",
             title: "My Top Movies!",
             votes: 892,
             postId: 3

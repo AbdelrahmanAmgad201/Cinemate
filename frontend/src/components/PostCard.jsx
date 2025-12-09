@@ -6,7 +6,7 @@ import { BiUpvote, BiDownvote, BiSolidUpvote, BiSolidDownvote } from "react-icon
 import { RiShareForwardLine } from "react-icons/ri";
 import { FaRegComment } from "react-icons/fa";
 import "./style/postCard.css";
-import { AuthContext } from '../context/AuthContext';
+import { AuthContext } from '../context/AuthContext.jsx';
 import { PATHS } from '../constants/constants';
 
 const PostCard = ({ postBody = {} }) => {
@@ -37,10 +37,6 @@ const PostCard = ({ postBody = {} }) => {
         setVoteCount(prevCount => prevCount + voteDifference);
     };
 
-    const handleOptions = () => {
-        setPostOptions(!postOptions);
-    };
-
     const navigateToPost = () => {
         navigate(PATHS.POST.FULLPAGE(postBody.postId));
     }
@@ -69,7 +65,7 @@ const PostCard = ({ postBody = {} }) => {
                 </div>
                 <div className="user-info">
                     <h2 className="user-name">{postBody.firstName} {postBody.lastName}</h2>
-                    <time dateTime="2024-12-09 30:00">{postBody.time}</time>
+                    <time dateTime={postBody.time}>{postBody.time}</time>
                 </div>
                 <div className="post-settings" ref={menuRef}>
                     <BsThreeDots onClick={() => setPostOptions(prev => !prev)}/>
@@ -89,12 +85,8 @@ const PostCard = ({ postBody = {} }) => {
                     <p>{postBody.title}</p>
                 </div>
                 <div className="post-media" onClick={navigateToPost}>
-                    {postBody.media ?
-                    (<img src={postBody.media} alt={postBody.title || "Post content"} />)
-                    : 
-                    (null)
-                    }
-                    
+                    {postBody.text && <p className="post-text">{postBody.text}</p>}
+                    {postBody.media && <img src={postBody.media} alt={postBody.title || "Post content"} />}
                 </div>
             </div>
             <footer className="post-footer">
