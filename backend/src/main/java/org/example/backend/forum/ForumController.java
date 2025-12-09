@@ -33,4 +33,15 @@ public class ForumController {
         return ResponseEntity.ok().build();
     }
 
+    @PutMapping("v1/update/{forumId}")
+    public ResponseEntity<?> deleteForum(
+            HttpServletRequest request,
+            @PathVariable ObjectId forumId,
+            @Valid @RequestBody ForumCreationRequest requestDTO) {
+
+        Long userId = (Long) request.getAttribute("userId");
+        forumService.updateForum(forumId, requestDTO, userId);
+        return ResponseEntity.ok().build();
+    }
+
 }
