@@ -1,6 +1,7 @@
 package org.example.backend.post;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.bson.types.ObjectId;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.MediaType;
@@ -15,6 +16,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 class PostControllerTest {
@@ -41,6 +43,9 @@ class PostControllerTest {
                 .build();
     }
 
+    // -------------------
+    // addPost tests
+    // -------------------
     @Test
     void testAddPost_success() throws Exception {
         AddPostDto dto = AddPostDto.builder()
@@ -49,14 +54,15 @@ class PostControllerTest {
                 .forumId(null)
                 .build();
 
-        doNothing().when(postService).addPost(any(AddPostDto.class), eq(10L));
+        Post mockPost = Post.builder().id(new ObjectId()).build();
+        when(postService.addPost(any(AddPostDto.class), eq(10L))).thenReturn(mockPost);
 
         mockMvc.perform(post("/api/post/v1/post")
                         .requestAttr("userId", 10L)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(dto)))
                 .andExpect(status().isOk())
-                .andExpect(content().string("")); // empty body
+                .andExpect(content().string(mockPost.getId().toHexString()));
     }
 
     @Test
@@ -98,7 +104,75 @@ class PostControllerTest {
     }
 
     // -------------------
-    // Exception handler for standaloneSetup
+    // updatePost tests
+    // -------------------
+    @Test
+    void testUpdatePost_success() throws Exception {
+        AddPostDto dto = AddPostDto.builder()
+                .title("Updated")
+                .content("Updated content")
+                .forumId(null)
+                .build();
+
+        String postId = new ObjectId().toHexString();
+
+        doNothing().when(postService).updatePost(eq(postId), any(AddPostDto.class), eq(10L));
+
+        mockMvc.perform(put("/api/post/v1/post")
+                        .requestAttr("userId", 10L)
+                        .param("postId", postId)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(dto)))
+                .andExpect(status().isOk())
+                .andExpect(content().string(postId));
+    }
+
+    @Test
+    void testUpdatePost_hateSpeech() throws Exception {
+        AddPostDto dto = AddPostDto.builder()
+                .title("Bad update")
+                .content("Hate speech content")
+                .forumId(null)
+                .build();
+
+        String postId = new ObjectId().toHexString();
+
+        doThrow(new HateSpeechException("hate speech detected"))
+                .when(postService).updatePost(eq(postId), any(AddPostDto.class), eq(10L));
+
+        mockMvc.perform(put("/api/post/v1/post")
+                        .requestAttr("userId", 10L)
+                        .param("postId", postId)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(dto)))
+                .andExpect(status().isForbidden())
+                .andExpect(content().string("hate speech detected"));
+    }
+
+    @Test
+    void testUpdatePost_internalServerError() throws Exception {
+        AddPostDto dto = AddPostDto.builder()
+                .title("Title")
+                .content("Some content")
+                .forumId(null)
+                .build();
+
+        String postId = new ObjectId().toHexString();
+
+        doThrow(new RuntimeException("unexpected failure"))
+                .when(postService).updatePost(eq(postId), any(AddPostDto.class), eq(10L));
+
+        mockMvc.perform(put("/api/post/v1/post")
+                        .requestAttr("userId", 10L)
+                        .param("postId", postId)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(dto)))
+                .andExpect(status().isInternalServerError())
+                .andExpect(content().string("Internal Server Error"));
+    }
+
+    // -------------------
+    // Exception handler
     // -------------------
     @ControllerAdvice
     static class GlobalExceptionHandler {

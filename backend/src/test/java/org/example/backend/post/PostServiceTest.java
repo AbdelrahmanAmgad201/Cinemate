@@ -12,6 +12,7 @@ import org.springframework.web.client.RestTemplate;
 
 import static org.assertj.core.api.Assertions.*;
 import static org.mockito.Mockito.*;
+import org.springframework.http.*;
 
 @SpringBootTest
 class PostServiceTest extends AbstractMongoIntegrationTest {
@@ -27,106 +28,142 @@ class PostServiceTest extends AbstractMongoIntegrationTest {
 
     private final String url = "http://localhost:8000/api/hate/v1/analyze";
 
-    // ==============================================================
-    // SUCCESS CASE: AI returns true → post must be saved to DB
-    // ==============================================================
-
+    // ---------------------------
+    // SUCCESS CASE: addPost
+    // ---------------------------
     @Test
     void testAddPost_whenCleanText_shouldSavePost() {
-        // Given input DTO
-        ObjectId id = new ObjectId("00000000000000000000006f");
-        AddPostDto dto = new AddPostDto(
-                id,
-                "Test Title",
-                "Normal content"
-        );
+        ObjectId forumId = new ObjectId("00000000000000000000006f");
+        AddPostDto dto = new AddPostDto(forumId, "Test Title", "Normal content");
         Long userId = 5L;
 
-        // Mock AI response: "text is clean"
         ResponseEntity<Boolean> aiResponse = new ResponseEntity<>(true, HttpStatus.OK);
         when(restTemplate.postForEntity(eq(url), any(HttpEntity.class), eq(Boolean.class)))
                 .thenReturn(aiResponse);
 
-        // When
-        postService.addPost(dto, userId);
+        Post savedPost = postService.addPost(dto, userId);
 
-        // Then DB contains exactly 1 saved post
-        Post saved = postRepository.findAll().stream().findFirst().orElse(null);
+        // Verify DB contains the post
+        Post fromDb = postRepository.findById(savedPost.getId()).orElse(null);
+        assertThat(fromDb).isNotNull();
+        assertThat(fromDb.getTitle()).isEqualTo("Test Title");
+        assertThat(fromDb.getContent()).isEqualTo("Normal content");
+        assertThat(fromDb.getForumId()).isEqualTo(forumId);
+        assertThat(fromDb.getOwnerId()).isEqualTo(new ObjectId(String.format("%024x", userId)));
 
-        assertThat(saved).isNotNull();
-        assertThat(saved.getTitle()).isEqualTo("Test Title");
-        assertThat(saved.getContent()).isEqualTo("Normal content");
-        assertThat(saved.getForumId()).isEqualTo(id);
-
-        ObjectId expectedOwnerId = new ObjectId(String.format("%024x", userId));
-        assertThat(saved.getOwnerId()).isEqualTo(expectedOwnerId);
-
-        // AI must be called exactly once
         verify(restTemplate, times(1))
                 .postForEntity(eq(url), any(HttpEntity.class), eq(Boolean.class));
     }
 
-    // ==============================================================
-    // FAILURE CASE: AI returns false → throw exception, do NOT save
-    // ==============================================================
-
+    // ---------------------------
+    // FAILURE CASE: addPost with hate speech
+    // ---------------------------
     @Test
     void testAddPost_whenHateSpeech_shouldThrowException() {
-        AddPostDto dto = new AddPostDto(
-                new ObjectId("00000000000000000000006f"),
-                "Bad Title",
-                "Some hateful text"
-        );
+        AddPostDto dto = new AddPostDto(new ObjectId("00000000000000000000006f"),
+                "Bad Title", "Some hateful text");
         Long userId = 5L;
 
-        // Mock AI saying "this is hate speech"
         ResponseEntity<Boolean> aiResponse = new ResponseEntity<>(false, HttpStatus.OK);
         when(restTemplate.postForEntity(eq(url), any(HttpEntity.class), eq(Boolean.class)))
                 .thenReturn(aiResponse);
 
-        // Expect HateSpeechException
         assertThatThrownBy(() -> postService.addPost(dto, userId))
-                .isInstanceOf(HateSpeechException.class)  // <- updated
-                .hasMessageContaining("hate speech detected"); // <- matches service
+                .isInstanceOf(HateSpeechException.class)
+                .hasMessageContaining("hate speech detected");
 
-        // Ensure DB remains empty
         assertThat(postRepository.count()).isZero();
     }
 
-
-    // ==============================================================
-    // Validate the EXACT JSON body sent to FastAPI
-    // ==============================================================
-
+    // ---------------------------
+    // analyzeText sends correct JSON
+    // ---------------------------
     @Test
     void testAnalyzeText_shouldSendCorrectJsonToAi() {
         String text = "hello \"world\"";
 
-        // Mock AI response
         ResponseEntity<Boolean> aiResponse = new ResponseEntity<>(true, HttpStatus.OK);
         ArgumentCaptor<HttpEntity> captor = ArgumentCaptor.forClass(HttpEntity.class);
 
         when(restTemplate.postForEntity(eq(url), any(HttpEntity.class), eq(Boolean.class)))
                 .thenReturn(aiResponse);
 
-        // When
         boolean result = postService.analyzeText(text);
 
-        // Then
         assertThat(result).isTrue();
 
-        // Capture the EXACT body sent to the API
         verify(restTemplate).postForEntity(eq(url), captor.capture(), eq(Boolean.class));
-
         HttpEntity captured = captor.getValue();
         String jsonSent = (String) captured.getBody();
-
-        // The JSON must be EXACT
         assertThat(jsonSent).isEqualTo("{\"text\":\"hello \\\"world\\\"\"}");
 
-        // Ensure correct Content-Type header
         HttpHeaders headers = captured.getHeaders();
         assertThat(headers.getContentType()).isEqualTo(MediaType.APPLICATION_JSON);
     }
 
+    // ---------------------------
+    // SUCCESS CASE: updatePost
+    // ---------------------------
+    @Test
+    void testUpdatePost_whenCleanText_shouldUpdatePost() {
+        // Prepare existing post
+        Long userId = 7L;
+        ObjectId postId = new ObjectId();
+        Post existingPost = Post.builder()
+                .id(postId)
+                .ownerId(new ObjectId(String.format("%024x", userId)))
+                .title("Old Title")
+                .content("Old Content")
+                .isDeleted(false)
+                .build();
+        postRepository.save(existingPost);
+
+        AddPostDto dto = new AddPostDto(null, "New Title", "New Content");
+
+        ResponseEntity<Boolean> aiResponse = new ResponseEntity<>(true, HttpStatus.OK);
+        when(restTemplate.postForEntity(eq(url), any(HttpEntity.class), eq(Boolean.class)))
+                .thenReturn(aiResponse);
+
+        Post updated = postService.updatePost(postId.toHexString(), dto, userId);
+
+        assertThat(updated.getTitle()).isEqualTo("New Title");
+        assertThat(updated.getContent()).isEqualTo("New Content");
+
+        // Ensure DB also updated
+        Post fromDb = postRepository.findById(postId).orElseThrow();
+        assertThat(fromDb.getTitle()).isEqualTo("New Title");
+        assertThat(fromDb.getContent()).isEqualTo("New Content");
+    }
+
+    // ---------------------------
+    // FAILURE CASE: updatePost with hate speech
+    // ---------------------------
+    @Test
+    void testUpdatePost_whenHateSpeech_shouldThrowException() {
+        Long userId = 7L;
+        ObjectId postId = new ObjectId();
+        Post existingPost = Post.builder()
+                .id(postId)
+                .ownerId(new ObjectId(String.format("%024x", userId)))
+                .title("Old Title")
+                .content("Old Content")
+                .isDeleted(false)
+                .build();
+        postRepository.save(existingPost);
+
+        AddPostDto dto = new AddPostDto(null, "Bad Title", "Hateful Content");
+
+        ResponseEntity<Boolean> aiResponse = new ResponseEntity<>(false, HttpStatus.OK);
+        when(restTemplate.postForEntity(eq(url), any(HttpEntity.class), eq(Boolean.class)))
+                .thenReturn(aiResponse);
+
+        assertThatThrownBy(() -> postService.updatePost(postId.toHexString(), dto, userId))
+                .isInstanceOf(HateSpeechException.class)
+                .hasMessageContaining("hate speech detected");
+
+        // Ensure post unchanged in DB
+        Post fromDb = postRepository.findById(postId).orElseThrow();
+        assertThat(fromDb.getTitle()).isEqualTo("Old Title");
+        assertThat(fromDb.getContent()).isEqualTo("Old Content");
+    }
 }
