@@ -10,11 +10,9 @@
     background: #0A303E;
     padding: 12px;
     border-radius: 0 20px 20px 0;
-}
-
-.user-left-sidebar {
     transition: width 200ms ease, padding 200ms ease, opacity 200ms ease;
 }
+
 
 .user-left-sidebar.collapsed {
     width: 0 !important;
