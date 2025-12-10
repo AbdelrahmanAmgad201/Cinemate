@@ -16,7 +16,7 @@ public class CommentService {
 
     @Transactional
     public Comment addComment(Long ownerId,AddCommentDTO addCommentDTO) {
-        ObjectId postId = new ObjectId(addCommentDTO.getPostId());
+        ObjectId postId = addCommentDTO.getPostId();
         canComment(postId);
         Comment parentComment = getParentComment(addCommentDTO.getParentId());
         ObjectId parentId = (parentComment != null ) ? parentComment.getId() : null;
@@ -50,11 +50,10 @@ public class CommentService {
         return comment;
     }
 
-    private Comment getParentComment(String parentId) {
-        if (parentId == null || parentId.isEmpty())
+    private Comment getParentComment(ObjectId parentId) {
+        if (parentId == null )
             return null;
-        ObjectId parentIdObject = new ObjectId(parentId);
-        return mongoTemplate.findById(parentIdObject, Comment.class);
+        return mongoTemplate.findById(parentId, Comment.class);
     }
 
     private ObjectId longToObjectId(Long value) {

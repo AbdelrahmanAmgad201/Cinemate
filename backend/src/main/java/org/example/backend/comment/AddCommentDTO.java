@@ -7,7 +7,7 @@ import org.bson.types.ObjectId;
 @Data
 @Builder
 public class AddCommentDTO {
-    private String parentId;
-    private String postId;
+    private ObjectId parentId;
+    private ObjectId postId;
     private String content;
 }
