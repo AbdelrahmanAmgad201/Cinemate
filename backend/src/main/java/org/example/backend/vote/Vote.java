@@ -32,4 +32,10 @@ public class Vote {
     private Integer voteType;  // 1 = upvote, -1 = downvote
 
     private Instant createdAt;
+
+
+    @Builder.Default
+    private Boolean isDeleted = false;
+
+    private Instant deletedAt;
 }
