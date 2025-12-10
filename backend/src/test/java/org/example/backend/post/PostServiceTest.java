@@ -191,7 +191,7 @@ class PostServiceTest extends AbstractMongoIntegrationTest {
         Forum forum = Forum.builder()
                 .id(forumId)
                 .name("Test Forum")
-                .postCount(0)
+                .postCount(1)
                 .description("Test Description")
                 .build();
         forumRepository.save(forum);
