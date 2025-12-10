@@ -4,6 +4,8 @@ import org.example.backend.AbstractMongoIntegrationTest;
 import org.bson.types.ObjectId;
 import org.example.backend.deletion.AccessService;
 import org.example.backend.deletion.CascadeDeletionService;
+import org.example.backend.forum.Forum;
+import org.example.backend.forum.ForumRepository;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -25,6 +27,9 @@ class PostServiceTest extends AbstractMongoIntegrationTest {
     @Autowired
     private PostRepository postRepository;
 
+    @Autowired
+    private ForumRepository forumRepository;
+
     @MockBean
     private RestTemplate restTemplate; // mock external AI API
 
@@ -42,6 +47,16 @@ class PostServiceTest extends AbstractMongoIntegrationTest {
     @Test
     void testAddPost_whenCleanText_shouldSavePost() {
         ObjectId forumId = new ObjectId("00000000000000000000006f");
+
+        // --- FIX: Save forum in DB ---
+        Forum forum = Forum.builder()
+                .id(forumId)
+                .name("Test Forum")
+                .postCount(0)
+                .build();
+        forumRepository.save(forum);
+        // -----------------------------
+
         AddPostDto dto = new AddPostDto(forumId, "Test Title", "Normal content");
         Long userId = 5L;
 
@@ -61,6 +76,7 @@ class PostServiceTest extends AbstractMongoIntegrationTest {
         verify(restTemplate, times(1))
                 .postForEntity(eq(url), any(HttpEntity.class), eq(Boolean.class));
     }
+
 
     @Test
     void testAddPost_whenHateSpeech_shouldThrowException() {
