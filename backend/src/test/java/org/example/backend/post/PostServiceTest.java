@@ -2,6 +2,8 @@ package org.example.backend.post;
 
 import org.example.backend.AbstractMongoIntegrationTest;
 import org.bson.types.ObjectId;
+import org.example.backend.deletion.AccessService;
+import org.example.backend.deletion.CascadeDeletionService;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -9,6 +11,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.*;
 import org.springframework.web.client.RestTemplate;
+import org.springframework.security.access.AccessDeniedException;
 
 import static org.assertj.core.api.Assertions.*;
 import static org.mockito.Mockito.*;
@@ -23,110 +26,187 @@ class PostServiceTest extends AbstractMongoIntegrationTest {
     private PostRepository postRepository;
 
     @MockBean
-    private RestTemplate restTemplate; // mock external API
+    private RestTemplate restTemplate; // mock external AI API
+
+    @MockBean
+    private AccessService accessService; // for deletePost
+
+    @MockBean
+    private CascadeDeletionService deletionService; // for deletePost
 
     private final String url = "http://localhost:8000/api/hate/v1/analyze";
 
-    // ==============================================================
-    // SUCCESS CASE: AI returns true → post must be saved to DB
-    // ==============================================================
-
+    // ---------------------------
+    // addPost tests
+    // ---------------------------
     @Test
     void testAddPost_whenCleanText_shouldSavePost() {
-        // Given input DTO
-        ObjectId id = new ObjectId("00000000000000000000006f");
-        AddPostDto dto = new AddPostDto(
-                id,
-                "Test Title",
-                "Normal content"
-        );
+        ObjectId forumId = new ObjectId("00000000000000000000006f");
+        AddPostDto dto = new AddPostDto(forumId, "Test Title", "Normal content");
         Long userId = 5L;
 
-        // Mock AI response: "text is clean"
         ResponseEntity<Boolean> aiResponse = new ResponseEntity<>(true, HttpStatus.OK);
         when(restTemplate.postForEntity(eq(url), any(HttpEntity.class), eq(Boolean.class)))
                 .thenReturn(aiResponse);
 
-        // When
-        postService.addPost(dto, userId);
+        Post savedPost = postService.addPost(dto, userId);
 
-        // Then DB contains exactly 1 saved post
-        Post saved = postRepository.findAll().stream().findFirst().orElse(null);
+        Post fromDb = postRepository.findById(savedPost.getId()).orElse(null);
+        assertThat(fromDb).isNotNull();
+        assertThat(fromDb.getTitle()).isEqualTo("Test Title");
+        assertThat(fromDb.getContent()).isEqualTo("Normal content");
+        assertThat(fromDb.getForumId()).isEqualTo(forumId);
+        assertThat(fromDb.getOwnerId()).isEqualTo(new ObjectId(String.format("%024x", userId)));
 
-        assertThat(saved).isNotNull();
-        assertThat(saved.getTitle()).isEqualTo("Test Title");
-        assertThat(saved.getContent()).isEqualTo("Normal content");
-        assertThat(saved.getForumId()).isEqualTo(id);
-
-        ObjectId expectedOwnerId = new ObjectId(String.format("%024x", userId));
-        assertThat(saved.getOwnerId()).isEqualTo(expectedOwnerId);
-
-        // AI must be called exactly once
         verify(restTemplate, times(1))
                 .postForEntity(eq(url), any(HttpEntity.class), eq(Boolean.class));
     }
 
-    // ==============================================================
-    // FAILURE CASE: AI returns false → throw exception, do NOT save
-    // ==============================================================
-
     @Test
     void testAddPost_whenHateSpeech_shouldThrowException() {
-        AddPostDto dto = new AddPostDto(
-                new ObjectId("00000000000000000000006f"),
-                "Bad Title",
-                "Some hateful text"
-        );
+        AddPostDto dto = new AddPostDto(new ObjectId("00000000000000000000006f"),
+                "Bad Title", "Some hateful text");
         Long userId = 5L;
 
-        // Mock AI saying "this is hate speech"
         ResponseEntity<Boolean> aiResponse = new ResponseEntity<>(false, HttpStatus.OK);
         when(restTemplate.postForEntity(eq(url), any(HttpEntity.class), eq(Boolean.class)))
                 .thenReturn(aiResponse);
 
-        // Expect HateSpeechException
         assertThatThrownBy(() -> postService.addPost(dto, userId))
-                .isInstanceOf(HateSpeechException.class)  // <- updated
-                .hasMessageContaining("hate speech detected"); // <- matches service
+                .isInstanceOf(HateSpeechException.class)
+                .hasMessageContaining("hate speech detected");
 
-        // Ensure DB remains empty
         assertThat(postRepository.count()).isZero();
     }
-
-
-    // ==============================================================
-    // Validate the EXACT JSON body sent to FastAPI
-    // ==============================================================
 
     @Test
     void testAnalyzeText_shouldSendCorrectJsonToAi() {
         String text = "hello \"world\"";
 
-        // Mock AI response
         ResponseEntity<Boolean> aiResponse = new ResponseEntity<>(true, HttpStatus.OK);
         ArgumentCaptor<HttpEntity> captor = ArgumentCaptor.forClass(HttpEntity.class);
 
         when(restTemplate.postForEntity(eq(url), any(HttpEntity.class), eq(Boolean.class)))
                 .thenReturn(aiResponse);
 
-        // When
         boolean result = postService.analyzeText(text);
 
-        // Then
         assertThat(result).isTrue();
 
-        // Capture the EXACT body sent to the API
         verify(restTemplate).postForEntity(eq(url), captor.capture(), eq(Boolean.class));
-
         HttpEntity captured = captor.getValue();
         String jsonSent = (String) captured.getBody();
-
-        // The JSON must be EXACT
         assertThat(jsonSent).isEqualTo("{\"text\":\"hello \\\"world\\\"\"}");
-
-        // Ensure correct Content-Type header
-        HttpHeaders headers = captured.getHeaders();
-        assertThat(headers.getContentType()).isEqualTo(MediaType.APPLICATION_JSON);
+        assertThat(captured.getHeaders().getContentType()).isEqualTo(MediaType.APPLICATION_JSON);
     }
 
+    // ---------------------------
+    // updatePost tests
+    // ---------------------------
+    @Test
+    void testUpdatePost_whenCleanText_shouldUpdatePost() {
+        Long userId = 7L;
+        ObjectId postId = new ObjectId();
+        Post existingPost = Post.builder()
+                .id(postId)
+                .ownerId(new ObjectId(String.format("%024x", userId)))
+                .title("Old Title")
+                .content("Old Content")
+                .isDeleted(false)
+                .build();
+        postRepository.save(existingPost);
+
+        AddPostDto dto = new AddPostDto(null, "New Title", "New Content");
+
+        ResponseEntity<Boolean> aiResponse = new ResponseEntity<>(true, HttpStatus.OK);
+        when(restTemplate.postForEntity(eq(url), any(HttpEntity.class), eq(Boolean.class)))
+                .thenReturn(aiResponse);
+
+        Post updated = postService.updatePost(postId, dto, userId);
+
+        assertThat(updated.getTitle()).isEqualTo("New Title");
+        assertThat(updated.getContent()).isEqualTo("New Content");
+
+        Post fromDb = postRepository.findById(postId).orElseThrow();
+        assertThat(fromDb.getTitle()).isEqualTo("New Title");
+        assertThat(fromDb.getContent()).isEqualTo("New Content");
+    }
+
+    @Test
+    void testUpdatePost_whenHateSpeech_shouldThrowException() {
+        Long userId = 7L;
+        ObjectId postId = new ObjectId();
+        Post existingPost = Post.builder()
+                .id(postId)
+                .ownerId(new ObjectId(String.format("%024x", userId)))
+                .title("Old Title")
+                .content("Old Content")
+                .isDeleted(false)
+                .build();
+        postRepository.save(existingPost);
+
+        AddPostDto dto = new AddPostDto(null, "Bad Title", "Hateful Content");
+
+        ResponseEntity<Boolean> aiResponse = new ResponseEntity<>(false, HttpStatus.OK);
+        when(restTemplate.postForEntity(eq(url), any(HttpEntity.class), eq(Boolean.class)))
+                .thenReturn(aiResponse);
+
+        assertThatThrownBy(() -> postService.updatePost(postId, dto, userId))
+                .isInstanceOf(HateSpeechException.class)
+                .hasMessageContaining("hate speech detected");
+
+        Post fromDb = postRepository.findById(postId).orElseThrow();
+        assertThat(fromDb.getTitle()).isEqualTo("Old Title");
+        assertThat(fromDb.getContent()).isEqualTo("Old Content");
+    }
+
+    // ---------------------------
+    // deletePost tests
+    // ---------------------------
+    @Test
+    void testDeletePost_success() {
+        Long userId = 9L;
+        ObjectId postId = new ObjectId();
+
+        when(accessService.canDeletePost(new ObjectId(String.format("%024x", userId)), postId))
+                .thenReturn(true);
+
+        doNothing().when(deletionService).deletePost(postId);
+
+        postService.deletePost(postId, userId);
+
+        verify(accessService, times(1))
+                .canDeletePost(new ObjectId(String.format("%024x", userId)), postId);
+        verify(deletionService, times(1)).deletePost(postId);
+    }
+
+    @Test
+    void testDeletePost_accessDenied() {
+        Long userId = 9L;
+        ObjectId postId = new ObjectId();
+
+        when(accessService.canDeletePost(new ObjectId(String.format("%024x", userId)), postId))
+                .thenReturn(false);
+
+        assertThatThrownBy(() -> postService.deletePost(postId, userId))
+                .isInstanceOf(AccessDeniedException.class)
+                .hasMessageContaining("cannot delete this post");
+
+        verify(deletionService, never()).deletePost(any());
+    }
+
+    @Test
+    void testDeletePost_runtimeException() {
+        Long userId = 9L;
+        ObjectId postId = new ObjectId();
+
+        when(accessService.canDeletePost(new ObjectId(String.format("%024x", userId)), postId))
+                .thenReturn(true);
+
+        doThrow(new RuntimeException("failure")).when(deletionService).deletePost(postId);
+
+        assertThatThrownBy(() -> postService.deletePost(postId, userId))
+                .isInstanceOf(RuntimeException.class)
+                .hasMessageContaining("failure");
+    }
 }

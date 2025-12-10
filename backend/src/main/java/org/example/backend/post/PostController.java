@@ -1,6 +1,7 @@
 package org.example.backend.post;
 
 import jakarta.servlet.http.HttpServletRequest;
+import org.bson.types.ObjectId;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -12,10 +13,22 @@ public class PostController {
     private PostService postService;
 
     @PostMapping("/v1/post")
-    public ResponseEntity<?> addPost(HttpServletRequest request, @RequestBody AddPostDto addPostDto) {
+    public ResponseEntity<String> addPost(HttpServletRequest request, @RequestBody AddPostDto addPostDto) {
         Long userId = (Long) request.getAttribute("userId");
-        postService.addPost(addPostDto, userId);
-        return ResponseEntity.ok().build();
+        Post post = postService.addPost(addPostDto, userId);
+        ObjectId postId = post.getId();
+        return ResponseEntity.ok(postId.toHexString());
     }
-
+    @PutMapping("/v1/post/{postId}")
+    public ResponseEntity<String> updatePost(HttpServletRequest request, @PathVariable ObjectId postId, @RequestBody AddPostDto addPostDto) {
+        Long userId = (Long) request.getAttribute("userId");
+        postService.updatePost(postId, addPostDto, userId);
+        return ResponseEntity.ok(postId.toHexString());
+    }
+    @DeleteMapping("/v1/post/{postId}")
+    public ResponseEntity<String> deletePost(HttpServletRequest request, @PathVariable ObjectId postId) {
+        Long userId = (Long) request.getAttribute("userId");
+        postService.deletePost(postId, userId);
+        return ResponseEntity.ok("deleted");
+    }
 }

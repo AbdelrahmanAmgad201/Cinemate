@@ -10,4 +10,6 @@ import java.util.List;
 @Repository
 public interface FollowingRepository extends MongoRepository<Following, ObjectId> {
     List<Following> findByUserId(ObjectId userId);
+    boolean existsByUserIdAndForumId(ObjectId userId, ObjectId forumId);
+    void deleteByUserIdAndForumId(ObjectId userId, ObjectId forumId);
 }

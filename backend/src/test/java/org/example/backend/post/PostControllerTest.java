@@ -1,6 +1,7 @@
 package org.example.backend.post;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.bson.types.ObjectId;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.MediaType;
@@ -14,7 +15,7 @@ import org.springframework.http.HttpStatus;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 class PostControllerTest {
@@ -41,6 +42,9 @@ class PostControllerTest {
                 .build();
     }
 
+    // -------------------
+    // addPost tests
+    // -------------------
     @Test
     void testAddPost_success() throws Exception {
         AddPostDto dto = AddPostDto.builder()
@@ -49,14 +53,15 @@ class PostControllerTest {
                 .forumId(null)
                 .build();
 
-        doNothing().when(postService).addPost(any(AddPostDto.class), eq(10L));
+        Post mockPost = Post.builder().id(new ObjectId()).build();
+        when(postService.addPost(any(AddPostDto.class), eq(10L))).thenReturn(mockPost);
 
         mockMvc.perform(post("/api/post/v1/post")
                         .requestAttr("userId", 10L)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(dto)))
                 .andExpect(status().isOk())
-                .andExpect(content().string("")); // empty body
+                .andExpect(content().string(mockPost.getId().toHexString()));
     }
 
     @Test
@@ -98,7 +103,108 @@ class PostControllerTest {
     }
 
     // -------------------
-    // Exception handler for standaloneSetup
+    // updatePost tests
+    // -------------------
+    @Test
+    void testUpdatePost_success() throws Exception {
+        // Prepare the DTO for updating the post
+        AddPostDto dto = AddPostDto.builder()
+                .title("Updated Title")
+                .content("Updated content here")
+                .forumId(null) // Optional for update
+                .build();
+
+        // Example post ID to update
+        ObjectId postId = new ObjectId();
+
+        // Mock the service to return a Post object (or do nothing if your service returns void)
+        Post updatedPost = Post.builder().id(postId).build();
+        when(postService.updatePost(eq(postId), any(AddPostDto.class), eq(10L)))
+                .thenReturn(updatedPost);
+
+        // Perform PUT request
+        mockMvc.perform(put("/api/post/v1/post/{postId}", postId)
+                        .requestAttr("userId", 10L)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(dto)))
+                .andExpect(status().isOk())
+                .andExpect(content().string(postId.toHexString())); // Expect the controller to return postId
+    }
+
+
+    @Test
+    void testUpdatePost_hateSpeech() throws Exception {
+
+        ObjectId postId = new ObjectId();
+
+        AddPostDto dto = AddPostDto.builder()
+                .title("Bad update")
+                .content("Hate speech content")
+                .forumId(null)
+                .build();
+
+        doThrow(new HateSpeechException("hate speech detected"))
+                .when(postService).updatePost(eq(postId), any(AddPostDto.class), eq(10L));
+
+        mockMvc.perform(put("/api/post/v1/post/{postId}", postId)
+                        .requestAttr("userId", 10L)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(dto)))
+                .andExpect(status().isForbidden())
+                .andExpect(content().string("hate speech detected"));
+    }
+
+    @Test
+    void testUpdatePost_internalServerError() throws Exception {
+        AddPostDto dto = AddPostDto.builder()
+                .title("Title")
+                .content("Some content")
+                .forumId(null)
+                .build();
+
+        ObjectId postId = new ObjectId();
+
+        doThrow(new RuntimeException("unexpected failure"))
+                .when(postService).updatePost(eq(postId), any(AddPostDto.class), eq(10L));
+
+        mockMvc.perform(put("/api/post/v1/post/{postId}", postId)  // <-- use path variable
+                        .requestAttr("userId", 10L)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(dto)))
+                .andExpect(status().isInternalServerError())
+                .andExpect(content().string("Internal Server Error"));
+    }
+
+    // -------------------
+// deletePost tests
+// -------------------
+    @Test
+    void testDeletePost_success() throws Exception {
+        ObjectId postId = new ObjectId();
+
+        // The service method should not throw -> means "success"
+        doNothing().when(postService).deletePost(postId, 10L);
+
+        mockMvc.perform(delete("/api/post/v1/post/{postId}", postId)
+                        .requestAttr("userId", 10L))
+                .andExpect(status().isOk())
+                .andExpect(content().string("deleted"));
+    }
+    @Test
+    void testDeletePost_internalServerError() throws Exception {
+        ObjectId postId = new ObjectId();
+
+        doThrow(new RuntimeException("unexpected failure"))
+                .when(postService).deletePost(eq(postId), eq(10L));
+
+        mockMvc.perform(delete("/api/post/v1/post/{postId}", postId)  // <-- path variable
+                        .requestAttr("userId", 10L))
+                .andExpect(status().isInternalServerError())
+                .andExpect(content().string("Internal Server Error"));
+    }
+
+    // -------------------
+    // Exception handler
     // -------------------
     @ControllerAdvice
     static class GlobalExceptionHandler {

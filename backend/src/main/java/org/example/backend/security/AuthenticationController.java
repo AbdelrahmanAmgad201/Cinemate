@@ -20,7 +20,7 @@ public class AuthenticationController {
     private final JWTProvider jwtTokenProvider;
     private final UserService userService;
 
-    @PostMapping("/login")
+    @PostMapping("/v1/login")
     public ResponseEntity<?> login(@RequestBody CredentialsRequest request) {
         return authenticationService.authenticate(
                 request.getEmail(),

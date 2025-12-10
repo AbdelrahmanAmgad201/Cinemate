@@ -75,4 +75,9 @@ public class AdminController {
     public ResponseEntity<SystemOverview> getSystemOverview(HttpServletRequest request) {
         return ResponseEntity.ok().body(adminService.getSystemOverview());
     }
+    @PostMapping("/v1/add-admin")
+    public ResponseEntity<?> addAdmin(HttpServletRequest request,@RequestBody AddAdminDTO addAdminDTO) {
+        adminService.addAdmin(addAdminDTO);
+        return ResponseEntity.ok().build();
+    }
 }

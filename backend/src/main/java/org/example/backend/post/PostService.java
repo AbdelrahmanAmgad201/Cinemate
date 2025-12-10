@@ -1,9 +1,14 @@
 package org.example.backend.post;
 
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.bson.types.ObjectId;
+import org.example.backend.deletion.AccessService;
+import org.example.backend.deletion.CascadeDeletionService;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.http.*;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 import org.slf4j.Logger;
@@ -18,9 +23,12 @@ public class PostService {
     @Value("${hatespeech.model.url}")
     private String url;
     private final PostRepository postRepository;
+    private final MongoTemplate mongoTemplate;
+    private final CascadeDeletionService deletionService;
+    private final AccessService accessService;
 
-
-    public void addPost(AddPostDto addPostDto, Long userId) {
+    @Transactional
+    public Post addPost(AddPostDto addPostDto, Long userId) {
         if (!analyzeText(addPostDto.getContent())) {
             throw new HateSpeechException("hate speech detected");
         }
@@ -31,7 +39,31 @@ public class PostService {
                 .title(addPostDto.getTitle())
                 .content(addPostDto.getContent())
                 .build();
-        postRepository.save(post);
+        return (postRepository.save(post));
+    }
+
+    @Transactional
+    public Post updatePost(ObjectId postId,AddPostDto addPostDto, Long userId){
+        if (!analyzeText(addPostDto.getContent())) {
+            throw new HateSpeechException("hate speech detected");
+        }
+        Post post = mongoTemplate.findById(postId, Post.class);
+        canUpdatePost(post,postId,userId);
+        post.setTitle(addPostDto.getTitle());
+        post.setContent(addPostDto.getContent());
+        return (postRepository.save(post));
+    }
+
+    private void canUpdatePost(Post post,ObjectId postId, Long userId){
+        if (post == null) {
+            throw new IllegalArgumentException("Post not found with id: " + postId);
+        }
+        if (post.getIsDeleted()) {
+            throw new IllegalStateException("Cannot update a deleted post");
+        }
+        if (!post.getOwnerId().equals(longToObjectId(userId))) {
+            throw new AccessDeniedException("User does not have permission to update this forum");
+        }
     }
 
     public boolean analyzeText(String text) {
@@ -46,7 +78,14 @@ public class PostService {
                 restTemplate.postForEntity(url, request, Boolean.class);
         return response.getBody();
     }
-    
+
+    public void deletePost(ObjectId postId, Long userId) {
+        if (!accessService.canDeletePost(longToObjectId(userId), postId)) {
+            throw new AccessDeniedException("User " + " cannot delete this post");
+        }
+        deletionService.deletePost(postId);
+    }
+
     private ObjectId longToObjectId(Long value) {
         return new ObjectId(String.format("%024x", value));
     }

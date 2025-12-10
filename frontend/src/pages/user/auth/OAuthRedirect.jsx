@@ -2,6 +2,7 @@ import { useEffect, useContext } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { AuthContext } from '../../../context/AuthContext.jsx';
 import { jwtDecode } from 'jwt-decode';
+import {JWT, PATHS} from "../../../constants/constants.jsx";
 
 const OAuthRedirect = () => {
   const navigate = useNavigate();
@@ -14,12 +15,12 @@ const OAuthRedirect = () => {
 
     if(token){
         try{
-            localStorage.setItem('token', token);
+            localStorage.setItem(JWT.STORAGE_NAME, token);
 
             const userData = jwtDecode(token); // returns { id, email, role, iat }
             // if (userData.exp * 1000 < Date.now()) {
             //     // token expired
-            //     localStorage.removeItem("token");
+            //     localStorage.removeItem(JWT.STORAGE_NAME);
             //     setUser(null);
             // }
 
@@ -32,20 +33,20 @@ const OAuthRedirect = () => {
 
             console.log("OAuth sign-in successful");
 
-            navigate('/home-page');
+            navigate(PATHS.HOME);
         }
         catch(err){
             console.log("Error decoding token:", err);
-            navigate('/');
+            navigate(PATHS.ROOT);
         }
     }
     else if(error){
         console.log("OAuth sign-in error:", error);
-        navigate('/');
+        navigate(PATHS.ROOT);
     }
     else{
         console.log("No token or error found in URL");
-        navigate('/');
+        navigate(PATHS.ROOT);
     }
   }, [searchParams, setUser, navigate]);
   
