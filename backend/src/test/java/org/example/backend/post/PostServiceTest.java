@@ -183,17 +183,20 @@ class PostServiceTest extends AbstractMongoIntegrationTest {
     @Test
     void testDeletePost_success() {
         Long userId = 9L;
+        ObjectId postId = new ObjectId("6939b98be4433966bc84987d"); // manually generate an ObjectId
 
-        // Save a post so deletion can find it
-        Post post = new Post();
-        post.setOwnerId(new ObjectId(String.format("%024x", userId)));
-        post.setTitle("Title");
-        post.setContent("Content");
+        // Create Post using builder and set the id explicitly
+        Post post = Post.builder()
+                .id(postId)  // assign id yourself
+                .ownerId(new ObjectId(String.format("%024x", userId)))
+                .title("Title")
+                .content("Content")
+                .build();
 
-        post = postRepository.save(post); // MongoDB generates id
-        ObjectId postId = post.getId();
+        // Save post — MongoDB will accept the manually set id
+        postRepository.save(post);
 
-        // Mock services
+        // Mock dependent services
         when(accessService.canDeletePost(new ObjectId(String.format("%024x", userId)), postId))
                 .thenReturn(true);
         doNothing().when(deletionService).deletePost(postId);
@@ -206,6 +209,7 @@ class PostServiceTest extends AbstractMongoIntegrationTest {
                 .canDeletePost(new ObjectId(String.format("%024x", userId)), postId);
         verify(deletionService, times(1)).deletePost(postId);
     }
+
 
 
     @Test
