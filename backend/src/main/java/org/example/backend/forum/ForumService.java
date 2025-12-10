@@ -4,12 +4,13 @@ import lombok.RequiredArgsConstructor;
 import org.bson.types.ObjectId;
 import org.example.backend.deletion.AccessService;
 import org.example.backend.deletion.CascadeDeletionService;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 
-import java.awt.print.Pageable;
 import java.time.Instant;
 import java.util.Optional;
 
@@ -62,6 +63,26 @@ public class ForumService {
 
         return forumRepository.save(forum);
     }
+
+    public SearchResultDto searchForums(String searchTerm, Pageable pageable) {
+        Page<Forum> forumsPage = forumRepository.findByNameContainingIgnoreCaseAndIsDeletedFalse(
+                searchTerm,
+                pageable
+        );
+        return buildSearchResult(forumsPage);
+    }
+    private SearchResultDto buildSearchResult(Page<Forum> page) {
+        return SearchResultDto.builder()
+                .forums(page.getContent())
+                .currentPage(page.getNumber())
+                .totalPages(page.getTotalPages())
+                .totalElements(page.getTotalElements())
+                .pageSize(page.getSize())
+                .hasNext(page.hasNext())
+                .hasPrevious(page.hasPrevious())
+                .build();
+    }
+
 
     private ObjectId longToObjectId(Long value) {
         return new ObjectId(String.format("%024x", value));
