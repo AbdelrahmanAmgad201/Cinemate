@@ -43,13 +43,12 @@ public class PostService {
     }
 
     @Transactional
-    public Post updatePost(String postId,AddPostDto addPostDto, Long userId){
+    public Post updatePost(ObjectId postId,AddPostDto addPostDto, Long userId){
         if (!analyzeText(addPostDto.getContent())) {
             throw new HateSpeechException("hate speech detected");
         }
-        ObjectId objectPostId = new ObjectId(postId);
         Post post = mongoTemplate.findById(postId, Post.class);
-        canUpdatePost(post,objectPostId,userId);
+        canUpdatePost(post,postId,userId);
         post.setTitle(addPostDto.getTitle());
         post.setContent(addPostDto.getContent());
         return (postRepository.save(post));
@@ -80,12 +79,11 @@ public class PostService {
         return response.getBody();
     }
 
-    public void deletePost(String postId, Long userId) {
-        ObjectId objectPostId = new ObjectId(postId);
-        if (!accessService.canDeletePost(longToObjectId(userId), objectPostId)) {
+    public void deletePost(ObjectId postId, Long userId) {
+        if (!accessService.canDeletePost(longToObjectId(userId), postId)) {
             throw new AccessDeniedException("User " + " cannot delete this post");
         }
-        deletionService.deletePost(objectPostId);
+        deletionService.deletePost(postId);
     }
 
     private ObjectId longToObjectId(Long value) {

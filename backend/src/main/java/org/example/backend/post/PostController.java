@@ -16,17 +16,17 @@ public class PostController {
     public ResponseEntity<String> addPost(HttpServletRequest request, @RequestBody AddPostDto addPostDto) {
         Long userId = (Long) request.getAttribute("userId");
         Post post = postService.addPost(addPostDto, userId);
-        String postId = post.getId().toHexString();
-        return ResponseEntity.ok(postId);
+        ObjectId postId = post.getId();
+        return ResponseEntity.ok(postId.toHexString());
     }
     @PutMapping("/v1/post/{postId}")
-    public ResponseEntity<String> updatePost(HttpServletRequest request, @PathVariable String postId, @RequestBody AddPostDto addPostDto) {
+    public ResponseEntity<String> updatePost(HttpServletRequest request, @PathVariable ObjectId postId, @RequestBody AddPostDto addPostDto) {
         Long userId = (Long) request.getAttribute("userId");
         postService.updatePost(postId, addPostDto, userId);
-        return ResponseEntity.ok(postId);
+        return ResponseEntity.ok(postId.toHexString());
     }
     @DeleteMapping("/v1/post/{postId}")
-    public ResponseEntity<String> deletePost(HttpServletRequest request, @PathVariable String postId) {
+    public ResponseEntity<String> deletePost(HttpServletRequest request, @PathVariable ObjectId postId) {
         Long userId = (Long) request.getAttribute("userId");
         postService.deletePost(postId, userId);
         return ResponseEntity.ok("deleted");

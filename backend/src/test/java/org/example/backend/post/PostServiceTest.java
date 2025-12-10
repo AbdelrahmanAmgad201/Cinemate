@@ -122,7 +122,7 @@ class PostServiceTest extends AbstractMongoIntegrationTest {
         when(restTemplate.postForEntity(eq(url), any(HttpEntity.class), eq(Boolean.class)))
                 .thenReturn(aiResponse);
 
-        Post updated = postService.updatePost(postId.toHexString(), dto, userId);
+        Post updated = postService.updatePost(postId, dto, userId);
 
         assertThat(updated.getTitle()).isEqualTo("New Title");
         assertThat(updated.getContent()).isEqualTo("New Content");
@@ -151,7 +151,7 @@ class PostServiceTest extends AbstractMongoIntegrationTest {
         when(restTemplate.postForEntity(eq(url), any(HttpEntity.class), eq(Boolean.class)))
                 .thenReturn(aiResponse);
 
-        assertThatThrownBy(() -> postService.updatePost(postId.toHexString(), dto, userId))
+        assertThatThrownBy(() -> postService.updatePost(postId, dto, userId))
                 .isInstanceOf(HateSpeechException.class)
                 .hasMessageContaining("hate speech detected");
 
@@ -173,7 +173,7 @@ class PostServiceTest extends AbstractMongoIntegrationTest {
 
         doNothing().when(deletionService).deletePost(postId);
 
-        postService.deletePost(postId.toHexString(), userId);
+        postService.deletePost(postId, userId);
 
         verify(accessService, times(1))
                 .canDeletePost(new ObjectId(String.format("%024x", userId)), postId);
@@ -188,7 +188,7 @@ class PostServiceTest extends AbstractMongoIntegrationTest {
         when(accessService.canDeletePost(new ObjectId(String.format("%024x", userId)), postId))
                 .thenReturn(false);
 
-        assertThatThrownBy(() -> postService.deletePost(postId.toHexString(), userId))
+        assertThatThrownBy(() -> postService.deletePost(postId, userId))
                 .isInstanceOf(AccessDeniedException.class)
                 .hasMessageContaining("cannot delete this post");
 
@@ -205,7 +205,7 @@ class PostServiceTest extends AbstractMongoIntegrationTest {
 
         doThrow(new RuntimeException("failure")).when(deletionService).deletePost(postId);
 
-        assertThatThrownBy(() -> postService.deletePost(postId.toHexString(), userId))
+        assertThatThrownBy(() -> postService.deletePost(postId, userId))
                 .isInstanceOf(RuntimeException.class)
                 .hasMessageContaining("failure");
     }

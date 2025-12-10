@@ -115,10 +115,10 @@ class PostControllerTest {
                 .build();
 
         // Example post ID to update
-        String postId = new ObjectId().toHexString();
+        ObjectId postId = new ObjectId();
 
         // Mock the service to return a Post object (or do nothing if your service returns void)
-        Post updatedPost = Post.builder().id(new ObjectId(postId)).build();
+        Post updatedPost = Post.builder().id(postId).build();
         when(postService.updatePost(eq(postId), any(AddPostDto.class), eq(10L)))
                 .thenReturn(updatedPost);
 
@@ -128,14 +128,14 @@ class PostControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(dto)))
                 .andExpect(status().isOk())
-                .andExpect(content().string(postId)); // Expect the controller to return postId
+                .andExpect(content().string(postId.toHexString())); // Expect the controller to return postId
     }
 
 
     @Test
     void testUpdatePost_hateSpeech() throws Exception {
 
-        String postId = new ObjectId().toHexString();
+        ObjectId postId = new ObjectId();
 
         AddPostDto dto = AddPostDto.builder()
                 .title("Bad update")
@@ -162,7 +162,7 @@ class PostControllerTest {
                 .forumId(null)
                 .build();
 
-        String postId = new ObjectId().toHexString();
+        ObjectId postId = new ObjectId();
 
         doThrow(new RuntimeException("unexpected failure"))
                 .when(postService).updatePost(eq(postId), any(AddPostDto.class), eq(10L));
@@ -180,7 +180,7 @@ class PostControllerTest {
 // -------------------
     @Test
     void testDeletePost_success() throws Exception {
-        String postId = new ObjectId().toHexString();
+        ObjectId postId = new ObjectId();
 
         // The service method should not throw -> means "success"
         doNothing().when(postService).deletePost(postId, 10L);
@@ -192,7 +192,7 @@ class PostControllerTest {
     }
     @Test
     void testDeletePost_internalServerError() throws Exception {
-        String postId = new ObjectId().toHexString();
+        ObjectId postId = new ObjectId();
 
         doThrow(new RuntimeException("unexpected failure"))
                 .when(postService).deletePost(eq(postId), eq(10L));
