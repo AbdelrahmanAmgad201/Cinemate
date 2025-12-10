@@ -187,12 +187,11 @@ class PostServiceTest extends AbstractMongoIntegrationTest {
 
         // Save a post so deletion can find it
         Post post = Post.builder()
-                .id(postId)
                 .ownerId(new ObjectId(String.format("%024x", userId)))
                 .title("Title")
                 .content("Content")
                 .build();
-        postRepository.save(post);
+        postId=postRepository.save(post).getId();
 
         when(accessService.canDeletePost(new ObjectId(String.format("%024x", userId)), postId))
                 .thenReturn(true);
