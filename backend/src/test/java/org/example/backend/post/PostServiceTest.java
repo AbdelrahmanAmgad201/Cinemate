@@ -53,6 +53,7 @@ class PostServiceTest extends AbstractMongoIntegrationTest {
                 .id(forumId)
                 .name("Test Forum")
                 .postCount(0)
+                .description("Test Description")
                 .build();
         forumRepository.save(forum);
         // -----------------------------
@@ -184,9 +185,17 @@ class PostServiceTest extends AbstractMongoIntegrationTest {
         Long userId = 9L;
         ObjectId postId = new ObjectId();
 
+        // Save a post so deletion can find it
+        Post post = Post.builder()
+                .id(postId)
+                .ownerId(new ObjectId(String.format("%024x", userId)))
+                .title("Title")
+                .content("Content")
+                .build();
+        postRepository.save(post);
+
         when(accessService.canDeletePost(new ObjectId(String.format("%024x", userId)), postId))
                 .thenReturn(true);
-
         doNothing().when(deletionService).deletePost(postId);
 
         postService.deletePost(postId, userId);
@@ -195,6 +204,7 @@ class PostServiceTest extends AbstractMongoIntegrationTest {
                 .canDeletePost(new ObjectId(String.format("%024x", userId)), postId);
         verify(deletionService, times(1)).deletePost(postId);
     }
+
 
     @Test
     void testDeletePost_accessDenied() {
