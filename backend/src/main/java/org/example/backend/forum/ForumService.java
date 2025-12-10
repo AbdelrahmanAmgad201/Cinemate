@@ -5,10 +5,13 @@ import org.bson.types.ObjectId;
 import org.example.backend.deletion.AccessService;
 import org.example.backend.deletion.CascadeDeletionService;
 import org.springframework.data.mongodb.core.MongoTemplate;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 
+import java.awt.print.Pageable;
 import java.time.Instant;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -59,8 +62,6 @@ public class ForumService {
 
         return forumRepository.save(forum);
     }
-
-
 
     private ObjectId longToObjectId(Long value) {
         return new ObjectId(String.format("%024x", value));

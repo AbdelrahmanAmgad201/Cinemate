@@ -7,6 +7,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.awt.print.Pageable;
+import java.util.Optional;
+
 @RestController
 @RequestMapping("/api/forum")
 public class ForumController {
@@ -23,7 +26,7 @@ public class ForumController {
         return ResponseEntity.ok(forum);
     }
 
-    @DeleteMapping("v1/delete/{forumId}")
+    @DeleteMapping("/v1/delete/{forumId}")
     public ResponseEntity<?> deleteForum(
             HttpServletRequest request,
             @PathVariable ObjectId forumId) {
@@ -33,7 +36,7 @@ public class ForumController {
         return ResponseEntity.ok().build();
     }
 
-    @PutMapping("v1/update/{forumId}")
+    @PutMapping("/v1/update/{forumId}")
     public ResponseEntity<?> updateForum(
             HttpServletRequest request,
             @PathVariable ObjectId forumId,
