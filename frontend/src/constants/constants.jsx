@@ -17,6 +17,10 @@ export const MAX_VALUES = {
     BIRTHYEARS: 110,
 };
 
+export const PAGE_SIZE = {
+    FORUM : 2,
+}
+
 export const ROLES = {
     USER: "USER",
     ORGANIZATION: "ORGANIZATION",

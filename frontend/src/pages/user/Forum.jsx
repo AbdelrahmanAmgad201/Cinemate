@@ -7,10 +7,11 @@ import calendar from "../../assets/icons/calendar.png";
 
 import {Link, useLocation, useNavigate, useParams} from "react-router-dom";
 import PostCard from "../../components/PostCard.jsx";
-import React, {useContext, useEffect, useState} from "react";
-import {MAX_LENGTHS, PATHS} from "../../constants/constants.jsx";
+import React, {useCallback, useContext, useEffect, useState} from "react";
+import {MAX_LENGTHS, PATHS, PAGE_SIZE} from "../../constants/constants.jsx";
 import {formatCount} from "../../utils/formate.jsx";
-import {checkFollowApi, followForumApi, unfollowForumApi, createForumApi} from "../../api/forum-api.jsx";
+import {checkFollowApi, followForumApi, unfollowForumApi, getForumPostsApi} from "../../api/forum-api.jsx";
+import PostsFeed from "../../components/PostsFeed.jsx";
 
 import {AuthContext} from "../../context/AuthContext.jsx";
 import {ToastContext} from "../../context/ToastContext.jsx";
@@ -74,6 +75,10 @@ export default function Forum() {
 
 
     const [posts, setPosts] = useState(MockPosts);
+    const [page, setPage] = useState(0);
+    const [loading, setLoading] = useState(false);
+    const [hasMore, setHasMore] = useState(true); // if there are no more posts
+
     const [forumName, setForumName] = useState("unique_forum_name");
     const [forumDescription, setForumDescription] = useState("forum_description");
     const [forumCreationDate, setForumCreationDate] = useState("Mar 17, 2010");
@@ -171,6 +176,43 @@ export default function Forum() {
         setShowForm(false);
         setSubmitting(false);
     }
+
+    // we use useCallback to memoize the fetchPosts function so that it doesn't re-render on every render cycle.
+    const fetchPosts = useCallback(async (pageNum) => {
+        setLoading(true);
+
+        const res = await getForumPostsApi({forumId, page:pageNum, size: PAGE_SIZE.FORUM});
+
+        if (!res.success){
+            setHasMore(false);
+            return;
+        }
+
+        setPosts(prevPosts => {
+            if (pageNum === 0) return res.data;
+            return [...prevPosts, ...res.data];
+        });
+
+        if (res.data.length < PAGE_SIZE.FORUM) setHasMore(false);
+
+        setLoading(false);
+
+
+    }, [forumId])
+
+    // Initial page load
+    useEffect(() => {
+        setPosts([])
+        setPage(0);
+        setHasMore(true);
+        fetchPosts(0);
+    }, [forumId, fetchPosts])
+
+    const handleLoadMore = () => {
+        const nextPage = page + 1;
+        setPage(nextPage);
+        fetchPosts(nextPage);
+    };
 
     return (
         <div className="forum-container">
@@ -281,11 +323,14 @@ export default function Forum() {
                         </div>
                     </div>
 
-                    <div className="posts-list">
-                        {posts.map((post, index) => (
-                            <PostCard key={index} postBody={post} />
-                        ))}
-                    </div>
+
+                    <PostsFeed
+                        posts={posts}
+                        loading={loading}
+                        hasMore={hasMore}
+                        onLoadMore={handleLoadMore}
+                        emptyMessage="No posts here yet."
+                    />
 
                 </main>
 
