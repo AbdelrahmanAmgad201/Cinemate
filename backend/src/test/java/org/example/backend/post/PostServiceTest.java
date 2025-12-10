@@ -185,11 +185,10 @@ class PostServiceTest extends AbstractMongoIntegrationTest {
         Long userId = 9L;
 
         // Save a post so deletion can find it
-        Post post = Post.builder()
-                .ownerId(new ObjectId(String.format("%024x", userId)))
-                .title("Title")
-                .content("Content")
-                .build();
+        Post post = new Post();
+        post.setOwnerId(new ObjectId(String.format("%024x", userId)));
+        post.setTitle("Title");
+        post.setContent("Content");
 
         post = postRepository.save(post); // MongoDB generates id
         ObjectId postId = post.getId();
