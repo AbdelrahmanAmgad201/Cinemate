@@ -243,14 +243,38 @@ class PostServiceTest extends AbstractMongoIntegrationTest {
     void testDeletePost_runtimeException() {
         Long userId = 9L;
         ObjectId postId = new ObjectId();
+        ObjectId forumId = new ObjectId("00000000000000000000006f");
 
+        // Save a forum
+        Forum forum = Forum.builder()
+                .id(forumId)
+                .name("Test Forum")
+                .postCount(0)
+                .description("Test Description")
+                .build();
+        forumRepository.save(forum);
+
+        // Save a post so deletePost finds it
+        Post post = Post.builder()
+                .id(postId)
+                .forumId(forumId)
+                .ownerId(new ObjectId(String.format("%024x", userId)))
+                .title("Title")
+                .content("Content")
+                .build();
+        postRepository.save(post);
+
+        // Mock accessService to allow deletion
         when(accessService.canDeletePost(new ObjectId(String.format("%024x", userId)), postId))
                 .thenReturn(true);
 
+        // Force deletionService to throw RuntimeException
         doThrow(new RuntimeException("failure")).when(deletionService).deletePost(postId);
 
+        // Test that deletePost throws RuntimeException with message "failure"
         assertThatThrownBy(() -> postService.deletePost(postId, userId))
                 .isInstanceOf(RuntimeException.class)
                 .hasMessageContaining("failure");
     }
+
 }
