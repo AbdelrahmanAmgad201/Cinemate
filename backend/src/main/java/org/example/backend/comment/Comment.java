@@ -1,5 +1,7 @@
 package org.example.backend.comment;
 
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import com.fasterxml.jackson.databind.ser.std.ToStringSerializer;
 import lombok.*;
 import org.bson.types.ObjectId;
 import org.springframework.data.annotation.Id;
@@ -24,15 +26,19 @@ import java.time.Instant;
 public class Comment {
 
     @Id
+    @JsonSerialize(using = ToStringSerializer.class)
     private ObjectId id;
 
     @Indexed
+    @JsonSerialize(using = ToStringSerializer.class)
     private ObjectId postId;
 
     @Indexed
+    @JsonSerialize(using = ToStringSerializer.class)
     private ObjectId parentId;  // null for top-level comments
 
     @Indexed
+    @JsonSerialize(using = ToStringSerializer.class)
     private ObjectId ownerId;
 
     private String content;
