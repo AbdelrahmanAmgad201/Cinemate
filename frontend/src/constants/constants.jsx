@@ -63,6 +63,10 @@ export const PATHS = {
     POST: {
         FULLPAGE: (id = ":postId") => `/post/${id}`,
     }
+    ,
+    FORUM: {
+        EXPLORE: '/forums-explore'
+    }
 
 }
 
