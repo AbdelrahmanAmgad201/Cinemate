@@ -185,9 +185,21 @@ class PostServiceTest extends AbstractMongoIntegrationTest {
         Long userId = 9L;
         ObjectId postId = new ObjectId("6939b98be4433966bc84987d"); // manually generate an ObjectId
 
+        ObjectId forumId = new ObjectId("00000000000000000000006f");
+
+        // --- FIX: Save forum in DB ---
+        Forum forum = Forum.builder()
+                .id(forumId)
+                .name("Test Forum")
+                .postCount(0)
+                .description("Test Description")
+                .build();
+        forumRepository.save(forum);
+
         // Create Post using builder and set the id explicitly
         Post post = Post.builder()
                 .id(postId)  // assign id yourself
+                .forumId(forumId)
                 .ownerId(new ObjectId(String.format("%024x", userId)))
                 .title("Title")
                 .content("Content")

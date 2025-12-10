@@ -85,6 +85,7 @@ public class PostService {
         return response.getBody();
     }
 
+    @Transactional
     public void deletePost(ObjectId postId, Long userId) {
         if (!accessService.canDeletePost(longToObjectId(userId), postId)) {
             throw new AccessDeniedException("User " + " cannot delete this post");
