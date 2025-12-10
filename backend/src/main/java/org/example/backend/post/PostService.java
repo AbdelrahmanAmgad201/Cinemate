@@ -6,14 +6,14 @@ import org.bson.types.ObjectId;
 import org.example.backend.deletion.AccessService;
 import org.example.backend.deletion.CascadeDeletionService;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.http.*;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.web.server.ResponseStatusException;
 
 @Service
 @RequiredArgsConstructor
@@ -52,6 +52,15 @@ public class PostService {
         post.setTitle(addPostDto.getTitle());
         post.setContent(addPostDto.getContent());
         return (postRepository.save(post));
+    }
+
+    @Transactional
+    public Page<Post> getForumPosts(ForumPostsRequestDTO forumPostsRequestDTO) {
+        Pageable pageable = PageRequest.of(
+                forumPostsRequestDTO.getPage(),
+                forumPostsRequestDTO.getPageSize()
+        );
+        return  postRepository.findByForumId(forumPostsRequestDTO.getForumId(), pageable);
     }
 
     private void canUpdatePost(Post post,ObjectId postId, Long userId){
