@@ -90,10 +90,10 @@ export async function checkFollowApi({ forumId }) {
     }
 }
 
-// TODO: Get a forum's posts
+// TODO: Get a forum's posts -> 
 export async function getForumPostsApi({ forumId, page, size }) {
     try {
-        const response = await api.get(`/forum-follow/v1/get-followed-forums/${forumId}`, { params: { page, size } });
+        const response = await api.get(`/forum-follow/v1/followed/${forumId}`, { params: { page, size } });
         console.log(response.data);
 
         return { success: true, data: response.data };

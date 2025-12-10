@@ -5,13 +5,13 @@ import {IoIosArrowDown, IoIosPerson} from "react-icons/io";
 import pic from "../../assets/action.jpg";
 import calendar from "../../assets/icons/calendar.png";
 
-import {Link, useLocation, useNavigate, useParams} from "react-router-dom";
-import PostCard from "../../components/PostCard.jsx";
+import {Link, useNavigate, useParams} from "react-router-dom";
 import React, {useCallback, useContext, useEffect, useState} from "react";
 import {MAX_LENGTHS, PATHS, PAGE_SIZE} from "../../constants/constants.jsx";
 import {formatCount} from "../../utils/formate.jsx";
 import {checkFollowApi, followForumApi, unfollowForumApi, getForumPostsApi} from "../../api/forum-api.jsx";
 import PostsFeed from "../../components/PostsFeed.jsx";
+import  {addPostApi} from "../../api/post-api.jsx";
 
 import {AuthContext} from "../../context/AuthContext.jsx";
 import {ToastContext} from "../../context/ToastContext.jsx";
@@ -153,21 +153,20 @@ export default function Forum() {
     const [postText, setPostText] = useState("");
     const [postMedia, setPostMedia] = useState("");
 
+    // TODO: Test
     const handleAddPost = async (e) => {
         e.preventDefault();
 
         setSubmitting(true);
 
-        // TODO: send to backend
-        console.log({forumId, postTitle, postText, postMedia, userId: user.id})
-        // const res = await
+        const res = await addPostApi({forumId, title: postTitle, content: postText})
 
-        // if (res.success === true) {
-        //     showToast("Success", "Your post has been submitted.", "success")
-        // }
-        // else {
-        //     showToast("Failed to submit review", res.message || "unknown error", "error")
-        // }
+        if (res.success === true) {
+            showToast("Success", "Your post has been submitted.", "success")
+        }
+        else {
+            showToast("Failed to submit review", res.message || "unknown error", "error")
+        }
 
 
         setPostTitle("");
