@@ -26,6 +26,20 @@
     margin-top: 0;
 }
 
+.user-left-sidebar ul { list-style: none; padding: 0; margin: 0; }
+.user-left-sidebar li { margin-bottom: 10px; }
+.sidebar-button {
+    display: block;
+    color: var(--ghost-white);
+    text-decoration: none;
+    padding: 10px 12px;
+    border-radius: 10px;
+}
+.sidebar-button:hover, .sidebar-button.active {
+    background-color: #24414D;
+    cursor: pointer;
+}
+
 @media (max-width: 800px) {
     .user-left-sidebar {
         display: none;
