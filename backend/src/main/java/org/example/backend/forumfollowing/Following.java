@@ -17,7 +17,8 @@ import java.time.Instant;
 @Builder
 @Document(collection = "following")
 @CompoundIndexes({
-        @CompoundIndex(name = "user_forum_unique", def = "{'userId': 1, 'forumId': 1}", unique = true)
+        @CompoundIndex(name = "user_forum_unique", def = "{'userId': 1, 'forumId': 1}", unique = true),
+        @CompoundIndex(name = "user_created", def = "{'userId': 1, 'createdAt': -1}")
 })
 public class Following {
 
