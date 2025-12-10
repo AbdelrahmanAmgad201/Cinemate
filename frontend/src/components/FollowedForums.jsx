@@ -3,6 +3,7 @@ import followedForumsMock from '../data/followed-forums.jsx';
 import { getFollowedForumsApi } from '../api/forums-api.jsx';
 import './style/FollowedForums.css';
 import { Link } from 'react-router-dom';
+import { PATHS } from '../constants/constants.jsx';
 
 const DEFAULT_VISIBLE = 5;
 
@@ -33,7 +34,7 @@ const FollowedForums = ({ maxVisible = DEFAULT_VISIBLE }) => {
       <div className="followed-forums-header">Followed forums</div>
       <div className="followed-forums-list">
         {forums.slice(0, visible).map(f => (
-          <Link to={`#`} key={f.id} className="followed-forum-item" title={f.name}>
+          <Link to={PATHS.FORUM.DETAILS(f.id)} key={f.id} className="followed-forum-item" title={f.name}>
             <div className="forum-avatar">
               {f.avatar ? <img src={f.avatar} alt={f.name} /> : <div className="forum-initials">{f.name.split(' ').map(n => n[0]).slice(0,2).join('')}</div>}
             </div>

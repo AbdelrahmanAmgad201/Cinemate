@@ -32,3 +32,40 @@ export async function getForumByIdApi({ forumId }) {
         return { success: false, message: err.message };
     }
 }
+
+export async function followForumApi({ forumId }) {
+    try {
+        await api.post('/forum/v1/follow', null, { params: { forumId } });
+        return { success: true };
+    } catch (err) {
+        try {
+            const key = 'mock_followed_forums';
+            const raw = localStorage.getItem(key);
+            const arr = raw ? JSON.parse(raw) : [];
+            if (!arr.includes(forumId)) arr.push(forumId);
+            localStorage.setItem(key, JSON.stringify(arr));
+        } catch (e) {
+            // ignore localStorage errors
+        }
+        return { success: true, mock: true };
+    }
+}
+
+export async function unfollowForumApi({ forumId }) {
+    try {
+        await api.post('/forum/v1/unfollow', null, { params: { forumId } });
+        return { success: true };
+    } catch (err) {
+        try {
+            const key = 'mock_followed_forums';
+            const raw = localStorage.getItem(key);
+            const arr = raw ? JSON.parse(raw) : [];
+            const idx = arr.indexOf(forumId);
+            if (idx !== -1) arr.splice(idx, 1);
+            localStorage.setItem(key, JSON.stringify(arr));
+        } catch (e) {
+            // ignore localStorage errors
+        }
+        return { success: true, mock: true };
+    }
+}
