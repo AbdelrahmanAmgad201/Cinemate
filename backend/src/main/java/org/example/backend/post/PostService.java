@@ -5,6 +5,8 @@ import lombok.RequiredArgsConstructor;
 import org.bson.types.ObjectId;
 import org.example.backend.deletion.AccessService;
 import org.example.backend.deletion.CascadeDeletionService;
+import org.example.backend.forum.Forum;
+import org.example.backend.forum.ForumRepository;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.http.*;
@@ -19,6 +21,7 @@ import org.springframework.web.server.ResponseStatusException;
 @RequiredArgsConstructor
 public class PostService {
     private final RestTemplate restTemplate;
+    private final ForumRepository forumRepository;
 
     @Value("${hatespeech.model.url}")
     private String url;
@@ -33,6 +36,9 @@ public class PostService {
             throw new HateSpeechException("hate speech detected");
         }
         ObjectId ObjectUserId = longToObjectId(userId);
+        Forum forum = mongoTemplate.findById(addPostDto.getForumId(), Forum.class);
+        forum.setPostCount(forum.getPostCount() + 1);
+        forumRepository.save(forum);
         Post post = Post.builder()
                 .ownerId(ObjectUserId)
                 .forumId(addPostDto.getForumId())
@@ -83,6 +89,13 @@ public class PostService {
         if (!accessService.canDeletePost(longToObjectId(userId), postId)) {
             throw new AccessDeniedException("User " + " cannot delete this post");
         }
+        Post post = mongoTemplate.findById(postId, Post.class);
+        if (post == null) {
+            throw new IllegalArgumentException("Post not found with id: " + postId);
+        }
+        Forum forum = mongoTemplate.findById(post.getForumId(), Forum.class);
+        forum.setPostCount(forum.getPostCount() + 1);
+        forumRepository.save(forum);
         deletionService.deletePost(postId);
     }
 

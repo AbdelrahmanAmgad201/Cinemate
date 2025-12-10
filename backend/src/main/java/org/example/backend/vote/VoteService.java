@@ -2,6 +2,7 @@ package org.example.backend.vote;
 
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import org.apache.el.parser.BooleanNode;
 import org.bson.types.ObjectId;
 import org.example.backend.comment.Comment;
 import org.example.backend.comment.CommentRepository;
@@ -33,7 +34,8 @@ public class VoteService {
         ObjectId targetId = voteDTO.getTargetId();
         ObjectId ownerId = longToObjectId(userId);
         Boolean upVote = voteDTO.getValue().equals(1);
-        canVote(targetId,isPost,upVote);
+        Votable target = canVote(targetId,isPost);
+        incrementVote(target,upVote);
         Vote vote = Vote.builder()
                 .targetId(targetId)
                 .userId(ownerId)
@@ -53,8 +55,12 @@ public class VoteService {
         if (!vote.getUserId().equals(longToObjectId(userId))) {
             throw new AccessDeniedException("User does not have permission to update this forum");
         }
+        Boolean upVote = updateVoteDTO.getValue().equals(1);
+        Votable target = canVote(vote.getTargetId(),vote.getIsPost());
+        updateIncrement(target,upVote);
         vote.setVoteType(updateVoteDTO.getValue());
         voteRepository.save(vote);
+
     }
 
     @Transactional
@@ -62,16 +68,19 @@ public class VoteService {
         if (!accessService.canDeleteVote(longToObjectId(userId), voteId)) {
             throw new AccessDeniedException("User " + " cannot delete this vote");
         }
-
+        Vote vote = mongoTemplate.findById(voteId, Vote.class);
+        Votable target = canVote(vote.getTargetId(),vote.getIsPost());
+        Boolean upVote = vote.getVoteType().equals(1);
+        decrementVote(target,upVote);
         deletionService.deleteVote(voteId);
     }
 
-    private void canVote(ObjectId targetId,Boolean isPost,Boolean upVote){
-        if(isPost)  canVotePost(targetId,upVote);
-        else canVoteComment(targetId,upVote);
+    private Votable canVote(ObjectId targetId,Boolean isPost){
+        if(isPost)  return canVotePost(targetId);
+        else return canVoteComment(targetId);
     }
 
-    private void canVotePost(ObjectId postId,Boolean upVote){
+    private Post canVotePost(ObjectId postId){
 
         Post post = mongoTemplate.findById(postId, Post.class);
 
@@ -82,16 +91,10 @@ public class VoteService {
         if (post.getIsDeleted()) {
             throw new IllegalStateException("Cannot vote a deleted post");
         }
-        if (upVote) {
-            post.setUpvoteCount(post.getUpvoteCount() + 1);
-        }
-        else  {
-            post.setUpvoteCount(post.getDownvoteCount() + 1);
-        }
-        postRepository.save(post);
+        return post;
     }
 
-    private void canVoteComment(ObjectId commentId,Boolean upVote){
+    private Comment canVoteComment(ObjectId commentId){
         Comment comment = mongoTemplate.findById(commentId, Comment.class);
 
         if (comment == null) {
@@ -101,14 +104,56 @@ public class VoteService {
         if (comment.getIsDeleted()) {
             throw new IllegalStateException("Cannot vote a deleted comment");
         }
-        if (upVote) {
-            comment.setUpvoteCount(comment.getUpvoteCount() + 1);
-        }
-        else  {
-            comment.setUpvoteCount(comment.getDownvoteCount() + 1);
-        }
-        commentRepository.save(comment);
+        return comment;
     }
+
+    private void incrementVote(Votable target,Boolean upVote) {
+        if(upVote) {
+            target.incrementUpvote();
+        }
+        else {
+            target.incrementDownvote();
+        }
+        if(target instanceof Post post) {
+            postRepository.save(post);
+        }
+        if(target instanceof Comment comment) {
+            commentRepository.save(comment);
+        }
+    }
+
+    private void decrementVote(Votable target,Boolean upVote) {
+        if(upVote) {
+            target.decrementUpvote();
+        }
+        else {
+            target.decrementDownvote();
+        }
+        if(target instanceof Post post) {
+            postRepository.save(post);
+        }
+        if(target instanceof Comment comment) {
+            commentRepository.save(comment);
+        }
+    }
+
+    private void updateIncrement(Votable target,Boolean upVote){
+        if(upVote) {
+            target.incrementUpvote();
+            target.decrementDownvote();
+        }
+        else {
+            target.incrementDownvote();
+            target.decrementUpvote();
+        }
+        if(target instanceof Post post) {
+            postRepository.save(post);
+        }
+        if(target instanceof Comment comment) {
+            commentRepository.save(comment);
+        }
+    }
+
     private ObjectId longToObjectId(Long value) {
         return new ObjectId(String.format("%024x", value));
     }
