@@ -5,8 +5,7 @@
     flex-direction: column;
     background-color: var(--ink-black);
     color: var(--ghost-white);
-    padding-left: 29px;
-    padding-right: 29px;
+    padding: 0 29px;
     border-radius: 10px;
 }
 
@@ -94,6 +93,7 @@
     -webkit-box-orient: vertical;
     overflow: hidden;
     text-overflow: ellipsis;
+    white-space: pre-line;
     cursor: pointer;
 }
 

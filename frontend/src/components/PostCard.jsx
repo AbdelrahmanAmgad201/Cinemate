@@ -13,14 +13,15 @@ const PostCard = ({ postBody = {} }) => {
     const [userVote, setUserVote] = useState(0);
     const [voteCount, setVoteCount] = useState(postBody.votes || 0);
     const [postOptions, setPostOptions] = useState(false);
-    const [viewerMenu, setViewerMenu] = useState([
+    
+    const viewerMenu = [
         { label: "Follow", onClick: () => console.log("Follow clicked") }
-    ]);
-
-    const [authorMenu, setAuthorMenu] = useState([
+    ];
+    
+    const authorMenu = [
         { label: "Edit", onClick: () => console.log("Edit clicked") },
         { label: "Delete", onClick: () => console.log("Delete clicked") }
-    ]);
+    ];
 
     
     const { user } = useContext(AuthContext);
