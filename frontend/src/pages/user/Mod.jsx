@@ -8,8 +8,9 @@ import PostCard from "../../components/PostCard.jsx";
 import {PATHS} from "../../constants/constants.jsx";
 import {IoIosPerson} from "react-icons/io";
 import pic from "../../assets/action.jpg";
+import {updateForumApi, deleteForumApi, getForumApi} from "../../api/forum-api.jsx";
 
-// Fetch forum data from backend
+//TODO: Fetch forum data from backend
 // Maybe fetch posts? i dont see a need for this to be in mod page
 
 
@@ -60,6 +61,7 @@ export default function Mod() {
     const [saving, setSaving] = useState(false);
     const [deleted, setDeleted] = useState(false);
 
+    // Tested connection to backend
     const handleSave = async (e) => {
         e.preventDefault();
         const result = await Swal.fire({
@@ -76,12 +78,17 @@ export default function Mod() {
 
         setSaving(true);
 
+        const res = await updateForumApi({forumId, name: forumName, description: forumDescription});
+        console.log({res, forumId: forumId, user: user.id, isMod: isMod})
 
         setSaving(false);
-        // showToast('Saved', 'Forum data updated successfully', 'success');
 
+        if (res.success === false) return showToast('Failed to update forum', res.message || 'unknown error', 'error')
+
+        showToast('Saved', 'Forum data updated successfully', 'success');
     };
 
+    // Tested connection to backend
     const handleDeleteForum = async () => {
         const result = await Swal.fire({
             title: 'Delete forum?',
@@ -95,7 +102,14 @@ export default function Mod() {
         });
 
         if (!result.isConfirmed) return;
+
+        const res = await deleteForumApi({forumId});
+        console.log({res, forumId: forumId, user: user.id, isMod: isMod})
+
         setDeleted(true);
+
+        if (res.success === false) return showToast('Failed to delete forum', res.message || 'unknown error', 'error')
+
         showToast('Deleted', 'Forum marked deleted', 'info');
     };
 

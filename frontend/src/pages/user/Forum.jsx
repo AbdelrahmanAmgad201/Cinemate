@@ -7,9 +7,10 @@ import calendar from "../../assets/icons/calendar.png";
 
 import {Link, useLocation, useNavigate, useParams} from "react-router-dom";
 import PostCard from "../../components/PostCard.jsx";
-import React, {useContext, useState} from "react";
+import React, {useContext, useEffect, useState} from "react";
 import {MAX_LENGTHS, PATHS} from "../../constants/constants.jsx";
 import {formatCount} from "../../utils/formate.jsx";
+import {checkFollowApi, followForumApi, unfollowForumApi, createForumApi} from "../../api/forum-api.jsx";
 
 import {AuthContext} from "../../context/AuthContext.jsx";
 import {ToastContext} from "../../context/ToastContext.jsx";
@@ -52,7 +53,7 @@ const MockPosts =[
 // TODO: fetch from backend and handle the format
 const MOCK_MODS = [
     { id: 101, username: "FilmBuff_99", avatar: null }, // Avatar null will use placeholder
-    { id: 1, username: "DirectorX", avatar: "https://i.pravatar.cc/150?img=12" },
+    { id: 10, username: "DirectorX", avatar: "https://i.pravatar.cc/150?img=12" },
     { id: 103, username: "CinemaSins", avatar: "https://i.pravatar.cc/150?img=33" },
 ];
 
@@ -84,10 +85,58 @@ export default function Forum() {
 
     // determine if current user is a moderator by checking their id in the moderators list
     const isMod = !!(user && moderators.some((m) => m.id === user.id));
-    const [isJoined, setIsJoined] = useState(false); // TODO: handle this properly
 
-    const handleJoin = () => { // TODO: handle this properly
-        setIsJoined(!isJoined);
+    // TODO: handle this properly
+    const [isJoined, setIsJoined] = useState( false);
+
+    useEffect(() => {
+        const checkStatus = async () => {
+            try {
+                const res = await checkFollowApi({ forumId });
+                console.log(res)
+
+                if (res && res.success) {
+                    setIsJoined(true);
+                }
+            } catch (error) {
+                console.error("Failed to check join status", error);
+            }
+        };
+        if (forumId) {
+            checkStatus();
+        }
+    }, [forumId]);
+
+    const handleJoin = async () => { // TODO: handle this properly
+        // Tested the connection
+        // const res2 = await createForumApi({name:"HelloWorld", description:"Description"});
+        // return;
+
+        if (isJoined) {
+            // Tested the connection
+            const res = await unfollowForumApi({forumId:'6939a6a548ef866c970381de'});
+            console.log(res)
+            if (res.success === true) {
+                showToast("Success", "You have left the forum.", "success")
+                setIsJoined(!isJoined)
+                return;
+            }
+
+            showToast("Failed to leave forum", res.message || "unknown error", "error")
+            return
+        }
+
+        // Tested the connection
+
+        const res = await followForumApi({forumId: '6939a6a548ef866c970381de'});
+        console.log(res)
+        if (res.success === true) {
+            showToast("Success", "You have joined the forum.", "success")
+            setIsJoined(!isJoined)
+            return;
+        }
+
+        showToast("Failed to join forum", res.message || "unknown error", "error")
     }
 
     const [activeSort, setActiveSort] = useState(SORT_OPTIONS[0]);
