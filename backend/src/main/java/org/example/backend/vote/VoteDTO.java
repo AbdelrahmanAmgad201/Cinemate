@@ -5,6 +5,6 @@ import org.bson.types.ObjectId;
 
 @Data
 public class VoteDTO {
-    private String targetId;
+    private ObjectId targetId;
     private Integer value;
 }

@@ -1,6 +1,7 @@
 package org.example.backend.vote;
 
 import jakarta.servlet.http.HttpServletRequest;
+import org.bson.types.ObjectId;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -44,7 +45,7 @@ public class VoteController {
     @DeleteMapping("/v1/delete-vote/{voteId}")
     public ResponseEntity<?> deleteVote(
             HttpServletRequest request,
-            @PathVariable String voteId
+            @PathVariable ObjectId voteId
     ){
         Long userId = (Long) request.getAttribute("userId");
         voteService.deleteVote(voteId,userId);
