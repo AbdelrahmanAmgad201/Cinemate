@@ -10,46 +10,76 @@ import { BiUpvote, BiDownvote, BiSolidUpvote, BiSolidDownvote } from "react-icon
 import { RiShareForwardLine } from "react-icons/ri";
 import { FaRegComment } from "react-icons/fa";
 import { MdKeyboardArrowDown } from "react-icons/md";
+import { IoClose } from "react-icons/io5";
 
 const PostFullPage = () => {
     const { postId } = useParams();
 
     const mockPost = [
-        { 
-            userId: 1,
-            avatar: <IoIosPerson />,
-            firstName: "Sam",
-            lastName: "Jonas",
-            time: "22-11-2025",
-            title: "Wish There Was A Second Season",
-            media: pic,
-            text: "Wish There Was A Second Season. Wish There Was A Second Season. Wish There Was A Second Season. Wish There Was A Second Season. Wish There Was A Second Season. Wish There Was A Second Season. Wish There Was A Second Season. Wish There Was A Second Season. ",
-            votes: 1234,
-            postId: 1
-        },
-        { 
-            userId: 2,
-            firstName: "Jane",
-            lastName: "Doe",
-            time: "08-12-2024",
-            title: "I liked This Scene A Lot",
-            media: pic,
-            votes: 543,
-            postId: 2
-        },
-        { 
-            userId: 3,
-            firstName: "John",
-            lastName: "Smith",
-            time: "09-12-2024",
-            text: "Wish There Was A Second Season. Wish There Was A Second Season. Wish There Was A Second Season. Wish There Was A Second Season. Wish There Was A Second Season. Wish There Was A Second Season. Wish There Was A Second Season. Wish There Was A Second Season. ",
-            title: "My Top Movies!",
-            votes: 892,
-            postId: 3
-        }
+    { 
+        userId: 1,
+        avatar: <IoIosPerson />,
+        firstName: "Sam",
+        lastName: "Jonas",
+        time: "22-11-2025",
+        title: "This show deserves more recognition",
+        media: pic,
+        text: `Just finished binge-watching the entire season and I'm blown away. The character development, the cinematography, the soundtrack - everything was perfect.
+
+I can't believe they haven't announced a second season yet. The cliffhanger ending left so many questions unanswered. Anyone else feel the same way?`,
+        votes: 1234,
+        postId: 1
+    },
+    { 
+        userId: 2,
+        firstName: "Jane",
+        lastName: "Doe",
+        time: "08-12-2024",
+        title: "The cinematography in this scene is absolutely stunning",
+        media: pic,
+        text: `The way they used lighting and color grading here is masterful. You can feel the emotion without a single word being spoken. This is what visual storytelling is all about.`,
+        votes: 543,
+        postId: 2
+    },
+    { 
+        userId: 3,
+        firstName: "John",
+        lastName: "Smith",
+        time: "09-12-2024",
+        text: `After watching countless films this year, I've finally compiled my top 10 list. These movies really stood out for their storytelling, performances, and overall impact.
+
+Would love to hear what made your list this year! Any hidden gems I should check out?`,
+        title: "My Top 10 Movies of 2024",
+        votes: 892,
+        postId: 3
+    },
+    { 
+        userId: 4,
+        firstName: "Emily",
+        lastName: "Chen",
+        time: "10-12-2024",
+        title: "Unpopular opinion: The ending was perfect",
+        text: `I know a lot of people were disappointed, but I think the ambiguous ending was exactly what the story needed. Not everything needs to be wrapped up in a neat bow.
+
+It leaves room for interpretation and gives us something to think about long after the credits roll. That's the mark of great storytelling.`,
+        votes: 267,
+        postId: 4
+    },
+    { 
+        userId: 5,
+        firstName: "Marcus",
+        lastName: "Williams",
+        time: "11-12-2024",
+        title: "Found this gem at a thrift store today",
+        media: pic,
+        text: `Can't believe I found the original poster in mint condition! This movie has been my comfort watch for years. Sometimes the best finds are completely unexpected.`,
+        votes: 1567,
+        postId: 5
+    }
     ];
 
     const [post, setPost] = useState(null);
+    const [openImage, setOpenImage] = useState(false);
     const [userVote, setUserVote] = useState(0);
     const [voteCount, setVoteCount] = useState(0);
     const [sort, setSort] = useState("best");
@@ -140,7 +170,7 @@ const PostFullPage = () => {
                         <p>{post.title}</p>
                     </div>
                     <div className="post-media" >
-                        {post.media && <img src={post.media} alt={post.title || "Post content"} />}
+                        {post.media && <img src={post.media} alt={post.title || "Post content"} onClick={() => setOpenImage(true)}/>}
                         {post.text && <p className="post-text">{post.text}</p>}
                     </div>
                 </div>
@@ -167,6 +197,14 @@ const PostFullPage = () => {
                     </div>
                 </footer>
             </article>
+            {openImage && (
+                <div className="view-image-container" onClick={() => setOpenImage(false)}>
+                    <div className="view-image">
+                        <IoClose className="close-button" onClick={() => setOpenImage(false)} />
+                        <img src={post.media} alt={post.title || "Post content"} onClick={(e) => e.stopPropagation()} />
+                    </div>
+                </div>
+            )}
             <div className="comment-input">
             <textarea value={commentText} onChange={(e) => setCommentText(e.target.value)} placeholder="Share your thoughts"/>
             </div>
