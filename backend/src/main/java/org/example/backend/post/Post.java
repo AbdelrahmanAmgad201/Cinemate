@@ -1,5 +1,7 @@
 package org.example.backend.post;
 
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import com.fasterxml.jackson.databind.ser.std.ToStringSerializer;
 import lombok.*;
 import org.bson.types.ObjectId;
 import org.springframework.data.annotation.Id;
@@ -24,9 +26,11 @@ import java.time.Instant;
 public class Post {
 
     @Id
+    @JsonSerialize(using = ToStringSerializer.class)
     private ObjectId id;
 
     @Indexed
+    @JsonSerialize(using = ToStringSerializer.class)
     private ObjectId forumId;
 
     @Indexed

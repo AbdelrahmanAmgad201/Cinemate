@@ -4,8 +4,12 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import org.bson.types.ObjectId;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/forum")
@@ -23,7 +27,7 @@ public class ForumController {
         return ResponseEntity.ok(forum);
     }
 
-    @DeleteMapping("v1/delete/{forumId}")
+    @DeleteMapping("/v1/delete/{forumId}")
     public ResponseEntity<?> deleteForum(
             HttpServletRequest request,
             @PathVariable ObjectId forumId) {
@@ -33,7 +37,7 @@ public class ForumController {
         return ResponseEntity.ok().build();
     }
 
-    @PutMapping("v1/update/{forumId}")
+    @PutMapping("/v1/update/{forumId}")
     public ResponseEntity<?> updateForum(
             HttpServletRequest request,
             @PathVariable ObjectId forumId,
@@ -42,6 +46,30 @@ public class ForumController {
         Long userId = (Long) request.getAttribute("userId");
         forumService.updateForum(forumId, requestDTO, userId);
         return ResponseEntity.ok().build();
+    }
+
+    /**
+     * Search forums by name
+     *
+     * Query parameters:
+     * - q: search query (required)
+     * - page: page number (default: 0)
+     * - size: page size (default: 20)
+     *
+     * Example: GET /api/forum/v1/search?q=javascript&page=0&size=10
+     */
+
+    @GetMapping("/v1/search")
+    public ResponseEntity<SearchResultDto> searchForums(
+            @RequestParam("q") String searchQuery,
+            @PageableDefault(size = 20) Pageable pageable) {
+
+        if (searchQuery == null || searchQuery.trim().isEmpty()) {
+            return ResponseEntity.badRequest().build();
+        }
+
+        SearchResultDto results = forumService.searchForums(searchQuery.trim(), pageable);
+        return ResponseEntity.ok(results);
     }
 
 }
