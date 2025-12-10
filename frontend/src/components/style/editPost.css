@@ -1,0 +1,153 @@
+.edit-post-container{
+    margin: 20px auto;
+    width: 100%;
+    max-width: 850px;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    background-color: var(--ink-black);
+    color: var(--ghost-white);
+    padding: 30px 29px;
+    border-radius: 10px;
+}
+
+.edit-post-header{
+    padding-right: 30px;
+    display: flex;
+    flex-direction: row;
+    margin-bottom: 20px;
+}
+
+.edit-post-header .close-icon{
+    font-size: 20px;
+    padding: 5px;
+    position: absolute;
+    right: 30px;
+    top: 30px;
+    transform: background-color 0.2s ease-in;
+    cursor: pointer;
+}
+
+.edit-post-header .close-icon:hover{
+    background-color: #182B33;
+    border-radius: 50%;
+}
+
+.edit-post-form{
+    display: flex;
+    flex-direction: column;
+    gap: 25px;
+}
+
+.edit-input{
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    position: relative;
+}
+
+.added-media-container,
+.upload-media-container{
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: flex-start;
+    cursor: default;
+}
+
+.added-media-container img{
+    width: 100%;
+    min-width: 850px;
+    height: auto;
+    max-height: 600px;
+    object-fit: cover;
+    margin: 0 0 15px 0;
+}
+
+.added-media-container .remove-media,
+.upload-media-container .upload-button{
+    font-size: 20px;
+    padding: 10px;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 8px;
+    transform: background-color 0.2s ease-in;
+    cursor: pointer;
+}
+
+.added-media-container .remove-media:hover,
+.upload-media-container .upload-button:hover{
+    background-color: #182B33;
+    border-radius: 30px;
+}
+
+.edit-input textarea{
+    max-width: 835px;
+    min-width: 835px;
+    height: 250px;
+    background-color: #a8a8a831;
+    font-size: 16px;
+    color: var(--ghost-white);
+    border-radius: 30px;
+    border: /* 1px solid #A8A8A8*/ none; 
+    padding: 10px 0 0 15px;
+    transition: outline 0.2s ease-in;
+}
+
+.edit-input textarea:hover,
+.edit-input textarea:focus{
+    outline: 1px solid #A8A8A8; 
+}
+
+
+.edit-input .char-count{
+    font-size: 15px;
+    color: #A8A8A8;
+    margin-left: 25px;
+}
+
+.edit-actions{
+    display: flex;
+    flex-direction: row;
+    gap: 25px;
+    justify-content: flex-end;
+}
+
+.edit-actions .cancel-button{
+    background-color: transparent;
+    color: var(--ghost-white);
+    border: none;
+    border-radius: 20px;
+    padding: 10px;
+    transition: background-color 0.2s ease-in;
+    cursor: pointer;
+}
+
+.edit-actions .cancel-button:hover{
+    background-color: rgba(168, 168, 168, 0.2);
+}
+
+
+.edit-actions .save-button{
+    background-color: rgba(168, 168, 168, 0.3);
+    color: var(--ghost-white);
+    border: none;
+    border-radius: 20px;
+    padding: 10px;
+    cursor: pointer;
+}
+
+.edit-actions .save-button:hover{
+    background-color: rgba(168, 168, 168, 0.4);
+    border-color: rgba(168, 168, 168, 0.7);
+}
+
+
+
+
+
+
+

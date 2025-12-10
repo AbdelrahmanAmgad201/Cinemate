@@ -1,9 +1,10 @@
 import { useState, useEffect, useRef, useContext } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import pic from "../assets/action.jpg";
-import { AuthContext } from '../context/AuthContext.jsx';
-import "./style/postCard.css";
-import "./style/postFullPage.css";
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
+import pic from "../../assets/action.jpg";
+import { AuthContext } from '../../context/AuthContext';
+import EditPost from '../../components/EditPost';
+import "../../components/style/postCard.css";
+import "../../components/style/postFullPage.css";
 import { IoIosPerson } from "react-icons/io";
 import { BsThreeDots } from "react-icons/bs";
 import { BiUpvote, BiDownvote, BiSolidUpvote, BiSolidDownvote } from "react-icons/bi";
@@ -14,6 +15,10 @@ import { IoClose } from "react-icons/io5";
 
 const PostFullPage = () => {
     const { postId } = useParams();
+    const location = useLocation();
+    const { user } = useContext(AuthContext);
+    const navigate = useNavigate();
+    const menuRef = useRef(null);
 
     const mockPost = [
     { 
@@ -82,23 +87,10 @@ It leaves room for interpretation and gives us something to think about long aft
     const [openImage, setOpenImage] = useState(false);
     const [userVote, setUserVote] = useState(0);
     const [voteCount, setVoteCount] = useState(0);
+    const [editMode, setEditMode] = useState(false);
     const [sort, setSort] = useState("best");
     const [commentText, setCommentText] = useState("");
     const [postOptions, setPostOptions] = useState(false);
-
-    const viewerMenu = [
-        { label: "Follow", onClick: () => console.log("Follow clicked") }
-    ];
-    
-    const authorMenu = [
-        { label: "Edit", onClick: () => console.log("Edit clicked") },
-        { label: "Delete", onClick: () => console.log("Delete clicked") }
-    ];
-
-    
-    const { user } = useContext(AuthContext);
-    const navigate = useNavigate();
-    const menuRef = useRef(null);
 
     const handleVote = (voteType) => {
         const previousVote = userVote;
@@ -108,6 +100,21 @@ It leaves room for interpretation and gives us something to think about long aft
         
         setUserVote(newVote);
         setVoteCount(prevCount => prevCount + voteDifference);
+    };
+
+    const handleEdit = () => {
+        setEditMode(true);
+        setPostOptions(false);
+    };
+
+    const canselEdit = () => {
+        setEditMode(false);
+    };
+
+    const saveEdit = (updatedPost, mediaFile) => {
+        setPost(updatedPost);
+        setEditMode(false);
+        console.log('Post updated:', updatedPost, mediaFile);
     };
 
     useEffect(() => {
@@ -120,6 +127,13 @@ It leaves room for interpretation and gives us something to think about long aft
             console.error("Post not found");
         }
     }, [postId]);
+
+    useEffect(() => {
+        if (location.state?.editMode) {
+            setEditMode(true);
+            navigate(location.pathname, { replace: true, state: {} });
+        }
+    }, [postId, location.state, location.pathname, navigate]);
 
     useEffect(() => {
         const handleClickOutside = (event) => {
@@ -137,8 +151,26 @@ It leaves room for interpretation and gives us something to think about long aft
         };
     }, [postOptions]);
 
+
+    const viewerMenu = [
+        { label: "Follow", onClick: () => console.log("Follow clicked") }
+    ];
+    
+    const authorMenu = [
+        { label: "Edit", onClick: handleEdit },
+        { label: "Delete", onClick: () => console.log("Delete clicked") }
+    ];
+
     if (!post) {
         return <div>Loading...</div>;
+    }
+
+    if(editMode){
+        return (
+            <div className="post-page">
+                <EditPost post={post} onSave={saveEdit} onCancel={canselEdit} />
+            </div>
+        );
     }
 
     return (

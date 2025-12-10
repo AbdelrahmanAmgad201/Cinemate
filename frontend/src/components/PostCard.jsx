@@ -14,16 +14,6 @@ const PostCard = ({ postBody = {} }) => {
     const [voteCount, setVoteCount] = useState(postBody.votes || 0);
     const [postOptions, setPostOptions] = useState(false);
     
-    const viewerMenu = [
-        { label: "Follow", onClick: () => console.log("Follow clicked") }
-    ];
-    
-    const authorMenu = [
-        { label: "Edit", onClick: () => console.log("Edit clicked") },
-        { label: "Delete", onClick: () => console.log("Delete clicked") }
-    ];
-
-    
     const { user } = useContext(AuthContext);
     const navigate = useNavigate();
     const menuRef = useRef(null);
@@ -41,6 +31,20 @@ const PostCard = ({ postBody = {} }) => {
     const navigateToPost = () => {
         navigate(PATHS.POST.FULLPAGE(postBody.postId));
     }
+
+    const handleEdit = () => {
+        setPostOptions(false);
+        navigate(PATHS.POST.FULLPAGE(postBody.postId), { state: { editMode: true } });
+    };
+
+    const viewerMenu = [
+        { label: "Follow", onClick: () => console.log("Follow clicked") }
+    ];
+    
+    const authorMenu = [
+        { label: "Edit", onClick: handleEdit },
+        { label: "Delete", onClick: () => console.log("Delete clicked") }
+    ];
 
     useEffect(() => {
         const handleClickOutside = (event) => {
