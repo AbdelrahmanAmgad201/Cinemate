@@ -3,7 +3,7 @@ import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import pic from "../../assets/action.jpg";
 import { AuthContext } from '../../context/AuthContext';
 import EditPost from '../../components/EditPost';
-import { updatePostApi, deletePostApi, votePostApi, updateVotePostApi, deleteVotePostApi } from '../../api/post-api';
+import { updatePostApi, isVotedPostApi, deletePostApi, votePostApi, updateVotePostApi, deleteVotePostApi } from '../../api/post-api';
 import "../../components/style/postCard.css";
 import "../../components/style/postFullPage.css";
 import { IoIosPerson } from "react-icons/io";
@@ -21,26 +21,15 @@ const PostFullPage = () => {
     const navigate = useNavigate();
     const menuRef = useRef(null);
 
-    const mockPost = [
-        { 
-            id: "693a406767a0a5d7e5a91f8f",
-            forumId: "693a404167a0a5d7e5a91f8e",
-            ownerId: "000000000000000000000001", 
-            title: "sdfgh",
-            content: "asdfgn",
-            votes: 0
-        }
-        ];
-
     const [post, setPost] = useState(location.state?.post || null);
     const [openImage, setOpenImage] = useState(false);
     const [userVote, setUserVote] = useState(0);
     const [voteCount, setVoteCount] = useState(0);
-    const [voteId, setVoteId] = useState(post?.voteId || null);
     const [editMode, setEditMode] = useState(false);
     const [sort, setSort] = useState("best");
     const [commentText, setCommentText] = useState("");
     const [postOptions, setPostOptions] = useState(false);
+    const ownerIdConverted = post.ownerId ? parseInt(post.ownerId, 10) : null;
 
     const handleVote = async (voteType) => {
         const previousVote = userVote;
@@ -56,31 +45,24 @@ const PostFullPage = () => {
             console.log("postId: ", postId, "value: ", newVote);
             if(previousVote === 0 && newVote !== 0){
                 console.log("Creating vote - postId:", postId, "value:", newVote);
-                result = await votePostApi({
-                    targetId: postId,
-                    value: newVote
-                });
-                if (result.success){
-                    console.log(result);
-                    setVoteId(result.data);
+                result = await votePostApi({ postId: postId, value: newVote });
+                if (result.success) {
+                    console.log("Vote created");
                 }
             }
-            else if (newVote === 0 && voteId){
-                console.log("Deleting vote - voteId:", voteId);
-                result = await deleteVote({ voteId });
+            else if (newVote === 0 && previousVote !== 0){
+                console.log("Deleting vote - voteId:", postId);
+                result = await deleteVotePostApi({ targetId: postId });
+                
                 
                 if (result.success) {
-                    console.log(result);
-                    setVoteId(null);
+                    console.log("Vote deleted");
                 }
             }
 
-            else if (previousVote !== 0 && newVote !== 0 && voteId) {
-                console.log("Updating vote - voteId:", voteId, "value:", newVote);
-                result = await updateVote({
-                    voteId: voteId,
-                    value: newVote
-                });
+            else if (previousVote !== 0 && newVote !== 0) {
+                console.log("Updating vote - voteId:", "value:", newVote);
+                result = await updateVotePostApi({ postId: postId, value: newVote });
             }
             if (!result?.success) {
                 setUserVote(previousVote);
@@ -109,7 +91,7 @@ const PostFullPage = () => {
 
             if(result.success){
                 console.log('Post deleted successfully');
-                navigate('/');
+                navigate(`/forum/${post.forumId}`);
             }
 
             else{
@@ -136,17 +118,16 @@ const PostFullPage = () => {
             const result = await updatePostApi({
                 postId: post.id, 
                 forumId: post.forumId,
-                title: editedTitle.trim(),
-                content: editedText.trim()
+                title: updatedPostData.title,
+                content: updatedPostData.content
             });
 
             if (result.success) {
                 const updatedPost = {
                     ...post,
-                    title: editedTitle.trim(),
-                    content: editedText.trim(),
-                    text: editedText.trim(),
-                    media: addedMedia
+                    title: updatedPostData.title,
+                    content: updatedPostData.content,
+                    media: updatedPostData.media
                 };
                 onSave(updatedPost, mediaFile);
             } else {
@@ -159,6 +140,43 @@ const PostFullPage = () => {
         setEditMode(false);
         console.log('Post updated:', updatedPost, mediaFile);
     };
+
+    useEffect(() => {
+        const checkVote = async () => {
+            if (!postId || !user?.id) {
+                return;
+            }
+
+            try {
+                // console.log("Checking vote for postId:", postId);
+                const result = await isVotedPostApi({ targetId: postId });
+                
+                if (result.success) {
+                    console.log("Vote check result:", result.data);
+                    const voteValue = typeof result.data === 'number' ? result.data : 0;
+                    setUserVote(voteValue);
+                    console.log("User vote set to:", voteValue);
+                } else {
+                    console.error("Vote check failed:", result.message);
+                    setUserVote(0);
+                }
+            } catch(e) {
+                console.error('Error checking vote:', e);
+                setUserVote(0);
+            }
+        }
+
+        checkVote();
+    }, [postId, user?.id]);
+
+    useEffect(() => {
+        if (post) {
+            console.log("upvotecount: ", post.upvoteCount, "downvoteCount: ",post.downvoteCount )
+            const totalVotes = (post.upvoteCount || 0) - (post.downvoteCount || 0);
+            console.log("Setting initial vote count:", totalVotes);
+            setVoteCount(totalVotes);
+        }
+    }, [post]);
 
     useEffect(() => {
         if (location.state?.post) {
@@ -188,6 +206,8 @@ const PostFullPage = () => {
             document.removeEventListener('mousedown', handleClickOutside);
         };
     }, [postOptions]);
+
+
 
 
     const viewerMenu = [
@@ -223,13 +243,13 @@ const PostFullPage = () => {
                         <time dateTime={post.time}>{post.time}</time>
                     </div>
                     <div className="post-settings" ref={menuRef}>
-                        {post.ownerId === user.id && ( 
+                        {ownerIdConverted === user.id && ( 
                             <>
                             <BsThreeDots onClick={() => setPostOptions(prev => !prev)}/>
                             {postOptions && (
                                 <div className="options-menu">
                                 <ul>
-                                {(post.ownerId === user?.id ? authorMenu : viewerMenu).map((item, index) => (
+                                {(ownerIdConverted === user?.id ? authorMenu : viewerMenu).map((item, index) => (
                                     <li key={index} onClick={item.onClick}>{item.label}</li>
                                 ))}
                                 </ul>

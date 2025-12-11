@@ -42,7 +42,7 @@ public class VoteController {
         return ResponseEntity.ok().build();
     }
 
-    @DeleteMapping("/v1/delete-vote/{voteId}")
+    @DeleteMapping("/v1/delete-vote/{targetId}")
     public ResponseEntity<?> deleteVote(
             HttpServletRequest request,
             @PathVariable ObjectId targetId
@@ -52,7 +52,7 @@ public class VoteController {
         return ResponseEntity.ok().build();
     }
 
-    @GetMapping("/v1/is-voted")
+    @GetMapping("/v1/is-voted/{targetId}")
     public ResponseEntity<Integer> getIsVoted(
             HttpServletRequest request,
             @PathVariable ObjectId targetId

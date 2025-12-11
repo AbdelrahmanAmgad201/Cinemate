@@ -31,7 +31,10 @@ export async function deletePostApi({postId}) {
 
 export async function votePostApi({postId, value}) {
     try{
-        const response = await api.post("/vote/v1/post-vote", {postId, value});
+        const response = await api.post("/vote/v1/post-vote", {
+            targetId: postId,
+            value: value
+        });
         const data = response.data;
 
         console.log(data);
@@ -43,9 +46,11 @@ export async function votePostApi({postId, value}) {
     }
 }
 
-export async function updateVotePostApi({postId, value}) {
+export async function updateVotePostApi({ postId, value }) {
     try{
-        const response = await api.put("/vote/v1/update-vote", {postId, value});
+        const response = await api.put("/vote/v1/update-vote", {
+            targetId: postId, 
+            value: value});
         const data = response.data;
 
         console.log(data);
@@ -57,9 +62,23 @@ export async function updateVotePostApi({postId, value}) {
     }
 }
 
-export async function deleteVotePostApi({postId}) {
+export async function deleteVotePostApi({ targetId }) {
     try{
-        const response = await api.delete(`/vote/v1/delete-vote/${postId}`);
+        const response = await api.delete(`/vote/v1/delete-vote/${targetId}`);
+        const data = response.data;
+
+        console.log(data);
+        return { success: true, data: data};
+    }
+    catch(err){
+    //     console.log(err);
+        return { success: false , message: err.message };
+    }
+}
+
+export async function isVotedPostApi({ targetId }) {
+    try{
+        const response = await api.get(`/vote/v1/is-voted/${targetId}`);
         const data = response.data;
 
         console.log(data);

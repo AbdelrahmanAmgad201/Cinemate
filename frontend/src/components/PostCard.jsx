@@ -6,7 +6,7 @@ import { BiUpvote, BiDownvote, BiSolidUpvote, BiSolidDownvote } from "react-icon
 import { RiShareForwardLine } from "react-icons/ri";
 import { FaRegComment } from "react-icons/fa";
 import "./style/postCard.css";
-import { deletePostApi, votePostApi } from '../api/post-api.jsx';
+import { deletePostApi,isVotedPostApi, deleteVotePostApi, votePostApi, updateVotePostApi } from '../api/post-api.jsx';
 import { AuthContext } from '../context/AuthContext.jsx';
 import { PATHS } from '../constants/constants';
 
@@ -15,6 +15,7 @@ const PostCard = ({ postBody }) => {
     const [voteCount, setVoteCount] = useState(postBody?.votes || 0);
     const [postOptions, setPostOptions] = useState(false);
     const [voteId, setVoteId] = useState(postBody?.voteId || null);
+    const isVotingRef = useRef(false);
     
     const { user } = useContext(AuthContext);
     const navigate = useNavigate();
@@ -30,38 +31,38 @@ const PostCard = ({ postBody }) => {
         setVoteCount(prevCount => prevCount + voteDifference);
 
         try{
+            let result;
+            console.log("postId: ", postBody.id, "value: ", newVote);
             if(previousVote === 0 && newVote !== 0){
-                const result = await votePostApi({
-                    post: postId,
-                    value: newVote
-                });
-                if (result.success){
-                    console.log(result);
-                    setVoteId(result.data);
+                console.log("Creating vote - postId:", postBody.id, "value:", newVote);
+                result = await votePostApi({ postId: postBody.id, value: newVote });
+                if (result.success) {
+                    console.log("Vote created");
                 }
             }
-            else if (newVote === 0 && voteId){
-                result = await deleteVote({ voteId });
+            else if (newVote === 0 && previousVote !== 0){
+                console.log("Deleting vote - voteId:", postBody.id);
+                result = await deleteVotePostApi({ targetId: postBody.id });
+                
                 
                 if (result.success) {
-                    console.log(result);
-                    setVoteId(null);
+                    console.log("Vote deleted");
                 }
             }
 
-            else if (previousVote !== 0 && newVote !== 0 && voteId) {
-                result = await updateVote({
-                    voteId,
-                    value: newVote
-                });
+            else if (previousVote !== 0 && newVote !== 0) {
+                console.log("Updating vote - voteId:", "value:", newVote);
+                result = await updateVotePostApi({ postId: postBody.id, value: newVote });
             }
             if (!result?.success) {
                 setUserVote(previousVote);
+                setVoteCount(prevCount => prevCount - voteDifference);
                 console.error('Vote failed:', result?.message);
             }
         }
         catch(e){
             setUserVote(previousVote);
+            setVoteCount(prevCount => prevCount - voteDifference);
             console.error('Vote error:', e);
         }
     };
@@ -79,7 +80,7 @@ const PostCard = ({ postBody }) => {
 
         try{
             const result = await deletePostApi({
-                postId: postBody.postId
+                postId: postBody.id
             });
 
             if(result.success){
@@ -99,7 +100,7 @@ const PostCard = ({ postBody }) => {
 
     const handleEdit = () => {
         setPostOptions(false);
-        navigate(PATHS.POST.FULLPAGE(postBody.postId), { state: { editMode: true } });
+        navigate(PATHS.POST.FULLPAGE(postBody.id), { state: { post: postBody, editMode: true } });s
     };
 
     const viewerMenu = [
@@ -109,7 +110,53 @@ const PostCard = ({ postBody }) => {
     const authorMenu = [
         { label: "Edit", onClick: handleEdit },
         { label: "Delete", onClick: handleDelete }
-    ];
+    ]
+
+    useEffect(() => {
+        const checkVote = async () => {
+            if (!postBody?.id || !user?.id || isVotingRef.current) {
+                return;
+            }
+
+            try {
+                console.log("Checking vote for postId:", postBody.id);
+                const result = await isVotedPostApi({ targetId: postBody.id });
+                
+                if (result.success) {
+                    console.log("Vote check result:", result.data);
+                    // Handle different response formats
+                    let voteValue = 0;
+                    if (typeof result.data === 'number') {
+                        voteValue = result.data;
+                    } else if (typeof result.data === 'boolean') {
+                        voteValue = 0; // If it returns false, user hasn't voted
+                    } else if (result.data && typeof result.data.value === 'number') {
+                        voteValue = result.data.value;
+                    }
+                    
+                    setUserVote(voteValue);
+                    console.log("User vote set to:", voteValue);
+                } else {
+                    console.log("No existing vote found");
+                    setUserVote(0);
+                }
+            } catch (e) {
+                console.error('Error checking vote:', e);
+                setUserVote(0);
+            }
+        }
+
+        checkVote();
+    }, [postBody?.id, user?.id]);
+
+    // Set initial vote count from post data
+    useEffect(() => {
+        if (postBody) {
+            const totalVotes = (postBody.upvoteCount || 0) - (postBody.downvoteCount || 0);
+            console.log("Setting initial vote count:", totalVotes, "upvotes:", postBody.upvoteCount, "downvotes:", postBody.downvoteCount);
+            setVoteCount(totalVotes);
+        }
+    }, [postBody?.id, postBody?.upvoteCount, postBody?.downvoteCount]);
 
     useEffect(() => {
         const handleClickOutside = (event) => {
@@ -127,6 +174,10 @@ const PostCard = ({ postBody }) => {
         };
     }, [postOptions]);
 
+
+    const ownerIdConverted = postBody.ownerId ? parseInt(postBody.ownerId, 10) : null;
+
+
     return(
         <article className="post-card">
             <div className="post-header">
@@ -138,13 +189,13 @@ const PostCard = ({ postBody }) => {
                     <time dateTime={postBody.time}>{postBody.time}</time>
                 </div>
                 <div className="post-settings" ref={menuRef}>
-                    {postBody.ownerId === user.id && (
+                    {ownerIdConverted === user.id && (
                         <>
                             <BsThreeDots onClick={() => setPostOptions(prev => !prev)}/>
                             {postOptions && (
                                 <div className="options-menu">
                                 <ul>
-                                {(postBody.ownerId === user.id ? authorMenu : viewerMenu).map((item, index) => (
+                                {(ownerIdConverted === user.id ? authorMenu : viewerMenu).map((item, index) => (
                                     <li key={index} onClick={item.onClick}>{item.label}</li>
                                 ))}
                                 </ul>
