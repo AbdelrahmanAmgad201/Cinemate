@@ -8,6 +8,8 @@ import UserSignIn from "../pages/auth/SignIn.jsx";
 import UserSignUp from "../pages/auth/SignUp.jsx";
 import EmailVerification from "../pages/auth/EmailVerification.jsx";
 import HomePage from "../pages/user/HomePage.jsx";
+import ExploreForums from "../pages/user/ExploreForums.jsx";
+import ForumPage from "../pages/user/ForumPage.jsx";
 import Browse from "../pages/user/Browse.jsx";
 import Genre from '../pages/user/Genre.jsx';
 import OrgSignUp from "../pages/org/auth/OrgSignUp.jsx";
@@ -91,6 +93,7 @@ export default function AppRoutes() {
             <Route element={<RoleRoute allowedRoles={[ROLES.USER]} />}>
                 <Route element={<UserMainLayout />}> {/* Navbar + Sidebar*/}
                     <Route path={PATHS.HOME} element={<HomePage />} />
+                    <Route path={PATHS.FORUM.EXPLORE} element={<ExploreForums />} />
                     <Route path={PATHS.POST.FULLPAGE()} element={<PostFullPage />} />
                     <Route path={PATHS.FORUM.PAGE()} element={<Forum/>} />
                 </Route>
