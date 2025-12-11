@@ -70,7 +70,7 @@ public class VoteService {
     public Integer isVote(ObjectId targetId,Long userId) {
         ObjectId objectUserId = longToObjectId(userId);
         List<Vote> votes = voteRepository.findByUserIdAndTargetId(objectUserId,targetId);
-        if (votes.isEmpty()) return 0;
+        if (votes.isEmpty() || votes.get(0).getIsDeleted()) return 0;
         Vote vote = votes.get(0);
         return vote.getVoteType();
     }
