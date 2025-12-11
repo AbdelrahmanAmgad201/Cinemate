@@ -20,7 +20,7 @@ import OrgAddMovie from "../pages/org/OrgAddMovie.jsx";
 import OrgMoviesAndAnalytics from "../pages/org/OrgMoviesAndAnalytics.jsx";
 import MoviePreviewPage from "../pages/user/MoviePreviewPage.jsx";
 import WatchPage from "../pages/user/WatchPage.jsx";
-import PostFullPage from '../components/PostFullPage.jsx';
+import PostFullPage from '../pages/user/PostFullPage.jsx';
 
 import NotFoundPage from "../components/NotFoundPage.jsx";
 import TestSandBox from "../pages/TestSandBox.jsx";

@@ -166,12 +166,13 @@ export default function Forum() {
         setLoading(true);
 
         const res = await getForumPostsApi({forumId, page:pageNum, size: PAGE_SIZE.FORUM});
-        // console.log(res)
+        console.log("posts", res.data.posts);
         const newPosts = res.data.posts;
         if (!res.success){
             setHasMore(false);
             return;
         }
+        const activePosts = newPosts.filter(post => !post.isDeleted);
 
         setPosts(prevPosts => {
             if (pageNum === 0) return newPosts;
