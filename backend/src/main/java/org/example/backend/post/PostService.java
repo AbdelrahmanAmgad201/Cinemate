@@ -82,7 +82,7 @@ public class PostService {
         Pageable pageable = PageRequest.of(
                 forumPostsRequestDTO.getPage(),
                 forumPostsRequestDTO.getPageSize());
-        return postRepository.findByForumId(forumPostsRequestDTO.getForumId(), pageable);
+        return postRepository.findByIsDeletedFalseAndForumId(forumPostsRequestDTO.getForumId(), pageable);
     }
 
     private void canUpdatePost(Post post, ObjectId postId, Long userId) {
