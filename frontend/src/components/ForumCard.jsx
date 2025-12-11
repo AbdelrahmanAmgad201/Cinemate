@@ -30,11 +30,11 @@ export default function ForumCard({forum, onFollowChange}){
                 </div>
             </div>
 
-            <div className="forum-card-right">
-                <button className={`follow-btn ${followed ? 'followed' : ''}`} onClick={toggleFollow} aria-pressed={followed}>
-                    {followed ? 'Following' : 'Follow'}
-                </button>
-            </div>
+            {/*<div className="forum-card-right">*/}
+            {/*    <button className={`follow-btn ${followed ? 'followed' : ''}`} onClick={toggleFollow} aria-pressed={followed}>*/}
+            {/*        {followed ? 'Following' : 'Follow'}*/}
+            {/*    </button>*/}
+            {/*</div>*/}
         </div>
     )
 }

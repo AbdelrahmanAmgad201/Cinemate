@@ -1,34 +1,16 @@
 import api from './api-client.jsx';
-import { mapBackendForumToFrontend } from '../utils/api-mappers.jsx';
-import exploreMock from '../data/explore-forums-mock.jsx';
 
-export async function getExploreForumsApi() {
+export async function getExploreForumsApi({ page, size, sort: sort = "new"}) {
     try {
-        const res = await api.get('/forum/v1/explore');
+        // new
+        // "followers" -
+        // "posts"
+        const res = await api.get('/feed/v1/explore-forum', { params: { page, size , sort}});
         const data = res.data;
+        console.log(data);
 
-        if (Array.isArray(data)) {
-            const mapped = data.map(section => ({
-                category: section.category,
-                forums: (section.forums || []).map(mapBackendForumToFrontend)
-            }));
-
-            return { success: true, data: mapped };
-        }
-
-        const content = data?.content || [];
-        const mapped = content.map(section => ({
-            category: section.category,
-            forums: (section.forums || []).map(mapBackendForumToFrontend)
-        }));
-
-        return {
-            success: true,
-            data: mapped,
-            page: data?.page,
-            totalPages: data?.totalPages
-        };
+        return { success: true, data: data.forums };
     } catch (err) {
-        return { success: true, data: exploreMock };
+        return { success: false, message: err.message };
     }
 }
