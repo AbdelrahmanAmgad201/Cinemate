@@ -1,5 +1,7 @@
 package org.example.backend.vote;
 
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import com.fasterxml.jackson.databind.ser.std.ToStringSerializer;
 import lombok.*;
 import org.bson.types.ObjectId;
 import org.springframework.data.annotation.Id;
@@ -22,8 +24,10 @@ import java.time.Instant;
 public class Vote {
 
     @Id
+    @JsonSerialize(using = ToStringSerializer.class)
     private ObjectId id;
 
+    @JsonSerialize(using = ToStringSerializer.class)
     private ObjectId userId;
 
     private Boolean isPost;  // post or comment

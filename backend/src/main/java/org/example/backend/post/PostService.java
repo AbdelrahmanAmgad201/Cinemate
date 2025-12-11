@@ -5,20 +5,23 @@ import lombok.RequiredArgsConstructor;
 import org.bson.types.ObjectId;
 import org.example.backend.deletion.AccessService;
 import org.example.backend.deletion.CascadeDeletionService;
+import org.example.backend.forum.Forum;
+import org.example.backend.forum.ForumRepository;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.http.*;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.web.server.ResponseStatusException;
 
 @Service
 @RequiredArgsConstructor
 public class PostService {
     private final RestTemplate restTemplate;
+    private final ForumRepository forumRepository;
 
     @Value("${hatespeech.model.url}")
     private String url;
@@ -33,6 +36,9 @@ public class PostService {
             throw new HateSpeechException("hate speech detected");
         }
         ObjectId ObjectUserId = longToObjectId(userId);
+        Forum forum = mongoTemplate.findById(addPostDto.getForumId(), Forum.class);
+        forum.setPostCount(forum.getPostCount() + 1);
+        forumRepository.save(forum);
         Post post = Post.builder()
                 .ownerId(ObjectUserId)
                 .forumId(addPostDto.getForumId())
@@ -52,6 +58,15 @@ public class PostService {
         post.setTitle(addPostDto.getTitle());
         post.setContent(addPostDto.getContent());
         return (postRepository.save(post));
+    }
+
+    @Transactional
+    public Page<Post> getForumPosts(ForumPostsRequestDTO forumPostsRequestDTO) {
+        Pageable pageable = PageRequest.of(
+                forumPostsRequestDTO.getPage(),
+                forumPostsRequestDTO.getPageSize()
+        );
+        return  postRepository.findByForumId(forumPostsRequestDTO.getForumId(), pageable);
     }
 
     private void canUpdatePost(Post post,ObjectId postId, Long userId){
@@ -79,10 +94,18 @@ public class PostService {
         return response.getBody();
     }
 
+    @Transactional
     public void deletePost(ObjectId postId, Long userId) {
         if (!accessService.canDeletePost(longToObjectId(userId), postId)) {
             throw new AccessDeniedException("User " + " cannot delete this post");
         }
+        Post post = mongoTemplate.findById(postId, Post.class);
+        if (post == null) {
+            throw new IllegalArgumentException("Post not found with id: " + postId);
+        }
+        Forum forum = mongoTemplate.findById(post.getForumId(), Forum.class);
+        forum.setPostCount(forum.getPostCount() + 1);
+        forumRepository.save(forum);
         deletionService.deletePost(postId);
     }
 
