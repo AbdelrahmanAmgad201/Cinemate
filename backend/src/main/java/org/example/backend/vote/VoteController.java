@@ -45,11 +45,20 @@ public class VoteController {
     @DeleteMapping("/v1/delete-vote/{voteId}")
     public ResponseEntity<?> deleteVote(
             HttpServletRequest request,
-            @PathVariable ObjectId voteId
+            @PathVariable ObjectId targetId
     ){
         Long userId = (Long) request.getAttribute("userId");
-        voteService.deleteVote(voteId,userId);
+        voteService.deleteVote(targetId,userId);
         return ResponseEntity.ok().build();
+    }
+
+    @GetMapping("/v1/is-voted")
+    public ResponseEntity<Boolean> getIsVoted(
+            HttpServletRequest request,
+            @PathVariable ObjectId targetId
+    ){
+        Long userId = (Long) request.getAttribute("userId");
+        return ResponseEntity.ok(voteService.isVote(targetId,userId));
     }
 
 }

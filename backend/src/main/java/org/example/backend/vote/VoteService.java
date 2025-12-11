@@ -15,6 +15,8 @@ import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
+
 @Service
 @RequiredArgsConstructor
 public class VoteService {
@@ -47,11 +49,13 @@ public class VoteService {
 
     @Transactional
     public void updateVote(UpdateVoteDTO updateVoteDTO,Long userId) {
-        ObjectId voteId = updateVoteDTO.getId();
-        Vote vote = mongoTemplate.findById(voteId, Vote.class);
-        if(vote == null){
-            throw new IllegalArgumentException("Vote not found with id: " + voteId);
+        ObjectId objectUserId = longToObjectId(userId);
+        ObjectId targetId = updateVoteDTO.getTargetId();
+        List<Vote> votes = voteRepository.findByUserIdAndTargetId(objectUserId,targetId);
+        if(votes.isEmpty()){
+            throw new IllegalArgumentException("Vote not found");
         }
+        Vote vote = votes.get(0);
         if (!vote.getUserId().equals(longToObjectId(userId))) {
             throw new AccessDeniedException("User does not have permission to update this forum");
         }
@@ -60,15 +64,27 @@ public class VoteService {
         updateIncrement(target,upVote);
         vote.setVoteType(updateVoteDTO.getValue());
         voteRepository.save(vote);
-
     }
 
     @Transactional
-    public void deleteVote(ObjectId voteId,Long userId){
+    public Boolean isVote(ObjectId targetId,Long userId) {
+        ObjectId objectUserId = longToObjectId(userId);
+        List<Vote> votes = voteRepository.findByUserIdAndTargetId(objectUserId,targetId);
+        return !(votes.isEmpty());
+    }
+
+    @Transactional
+    public void deleteVote(ObjectId targetId,Long userId){
+        ObjectId objectUserId = longToObjectId(userId);
+        List<Vote> votes = voteRepository.findByUserIdAndTargetId(objectUserId,targetId);
+        if(votes.isEmpty()){
+            throw new IllegalArgumentException("Vote not found");
+        }
+        Vote vote = votes.get(0);
+        ObjectId voteId = vote.getId();
         if (!accessService.canDeleteVote(longToObjectId(userId), voteId)) {
             throw new AccessDeniedException("User " + " cannot delete this vote");
         }
-        Vote vote = mongoTemplate.findById(voteId, Vote.class);
         Votable target = canVote(vote.getTargetId(),vote.getIsPost());
         Boolean upVote = vote.getVoteType().equals(1);
         decrementVote(target,upVote);
