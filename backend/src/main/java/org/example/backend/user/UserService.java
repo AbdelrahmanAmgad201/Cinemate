@@ -1,6 +1,8 @@
 package org.example.backend.user;
 
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.transaction.Transactional;
+import org.bson.types.ObjectId;
 import org.example.backend.verification.Verfication;
 import org.example.backend.verification.VerificationService;
 import lombok.RequiredArgsConstructor;
@@ -8,6 +10,7 @@ import org.example.backend.security.CredentialsRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.beans.factory.annotation.Autowired;
 
+import java.math.BigInteger;
 import java.util.Optional;
 import java.util.Random;
 
@@ -65,5 +68,21 @@ public class UserService {
         else{
             return new Verfication();
         }
+    }
+
+    public String getUserNameFromObjectUserId(ObjectId objectUserId) {
+        Long userId = objectIdToLong(objectUserId);
+        Optional<User> user = userRepository.findById(userId);
+        if (user.isPresent()) {
+            return user.get().getFirstName()+" "+user.get().getLastName();
+        }
+        else  {
+            return "Unknown user";
+        }
+    }
+
+    private Long objectIdToLong(ObjectId objectId) {
+        String hex = objectId.toHexString();
+        return new BigInteger(hex, 16).longValue();
     }
 }
