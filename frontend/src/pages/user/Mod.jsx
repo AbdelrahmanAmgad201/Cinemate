@@ -1,4 +1,4 @@
-import React, { useContext, useState } from "react";
+import React, {useContext, useEffect, useState} from "react";
 import { AuthContext } from "../../context/AuthContext.jsx";
 import {useNavigate, useParams} from "react-router-dom";
 import { ToastContext } from "../../context/ToastContext.jsx";
@@ -8,44 +8,9 @@ import PostCard from "../../components/PostCard.jsx";
 import {PATHS} from "../../constants/constants.jsx";
 import {IoIosPerson} from "react-icons/io";
 import pic from "../../assets/action.jpg";
-import {updateForumApi, deleteForumApi, getForumApi} from "../../api/forum-api.jsx";
+import {updateForumApi, deleteForumApi, getForumApi, getModApi, checkFollowApi} from "../../api/forum-api.jsx";
 
 //TODO: Fetch forum data from backend
-// Maybe fetch posts? i dont see a need for this to be in mod page
-
-
-const MOCK_POSTS = [
-    {
-        postId: 1,
-        userId: 10,
-        title: "Wish There Was A Second Season",
-        firstName: "Sam",
-        lastName: "Jonas",
-        time: "22-11-2025",
-        avatar: <IoIosPerson />, // Add avatar
-        media: pic, // Add media
-        votes: 1234,
-        text: "This is the post content..."
-    },
-    {
-        postId: 2,
-        userId: 11,
-        title: "I liked This Scene A Lot",
-        firstName: "Jane",
-        lastName: "Doe",
-        time: "08-12-2024",
-        avatar: <IoIosPerson />,
-        media: null,
-        votes: 543,
-        text: "Another post text..."
-    },
-];
-
-const MOCK_MODS = [
-    { id: 101, username: "FilmBuff_99", avatar: null },
-    { id: 1, username: "DirectorX", avatar: "https://i.pravatar.cc/150?img=12" },
-    { id: 103, username: "CinemaSins", avatar: "https://i.pravatar.cc/150?img=33" },
-];
 
 export default function Mod() {
     const { user } = useContext(AuthContext);
@@ -53,11 +18,12 @@ export default function Mod() {
     const navigate = useNavigate();
     const { forumId } = useParams();
 
-    const isMod = !!(user && MOCK_MODS.some((m) => m.id === user.id));
+    const [modId, setModId] = useState();
+    const isMod = (modId === user.id)
 
-    const [forumName, setForumName] = useState("unique_forum_name");
-    const [forumDescription, setForumDescription] = useState("forum_description");
-    const [posts, setPosts] = useState(MOCK_POSTS);
+    const [forumName, setForumName] = useState();
+    const [forumDescription, setForumDescription] = useState();
+    // const [posts, setPosts] = useState();
     const [saving, setSaving] = useState(false);
     const [deleted, setDeleted] = useState(false);
 
@@ -112,6 +78,30 @@ export default function Mod() {
 
         showToast('Deleted', 'Forum marked deleted', 'info');
     };
+
+    useEffect(() => {
+
+        const fetchForumDetails = async () => {
+            const res = await getForumApi({forumId})
+            const data = res.data;
+            // console.log(data)
+
+            if (!res.success) {
+                showToast("Failed to fetch forum details", res.message || "unknown error", "error")
+                // setError(res.message)
+                return;
+            }
+
+            // setError(null)
+            setForumName(data.name)
+            setForumDescription(data.description)
+            setModId(data.ownerId)
+        }
+
+        if (forumId) {
+            fetchForumDetails();
+        }
+    }, [forumId, showToast]);
 
     const handleDeletePost = async (e, postId) => {
         e.stopPropagation();

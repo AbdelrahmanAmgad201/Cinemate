@@ -35,7 +35,7 @@ public class FollowingController {
         return ResponseEntity.noContent().build();
     }
 
-    @GetMapping("/v1/is-followed")
+    @GetMapping("/v1/is-followed/{forumId}")
     public ResponseEntity<Boolean> isFollowed(
             HttpServletRequest request,
             @PathVariable ObjectId forumId) {

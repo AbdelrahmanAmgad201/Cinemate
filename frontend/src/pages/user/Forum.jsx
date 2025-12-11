@@ -9,54 +9,13 @@ import {Link, useNavigate, useParams} from "react-router-dom";
 import React, {useCallback, useContext, useEffect, useState} from "react";
 import {MAX_LENGTHS, PATHS, PAGE_SIZE} from "../../constants/constants.jsx";
 import {formatCount} from "../../utils/formate.jsx";
-import {checkFollowApi, followForumApi, unfollowForumApi, getForumPostsApi} from "../../api/forum-api.jsx";
+import {checkFollowApi, followForumApi, unfollowForumApi, getForumPostsApi, getForumApi, getModApi} from "../../api/forum-api.jsx";
 import PostsFeed from "../../components/PostsFeed.jsx";
 import  {addPostApi} from "../../api/post-api.jsx";
 
 import {AuthContext} from "../../context/AuthContext.jsx";
 import {ToastContext} from "../../context/ToastContext.jsx";
 
-const MockPosts =[
-    {
-        userId: 1,
-        avatar: <IoIosPerson />,
-        firstName: "Sam",
-        lastName: "Jonas",
-        time: "22-11-2025",
-        title: "Wish There Was A Second Season",
-        media: pic,
-        text: "Wish There Was A Second Season. Wish There Was A Second Season. Wish There Was A Second Season. Wish There Was A Second Season. Wish There Was A Second Season. Wish There Was A Second Season. Wish There Was A Second Season. Wish There Was A Second Season. ",
-        votes: 1234,
-        postId: 1
-    },
-    {
-        userId: 2,
-        firstName: "Jane",
-        lastName: "Doe",
-        time: "08-12-2024",
-        title: "I liked This Scene A Lot",
-        media: pic,
-        votes: 543,
-        postId: 2
-    },
-    {
-        userId: 3,
-        firstName: "John",
-        lastName: "Smith",
-        time: "09-12-2024",
-        text: "Wish There Was A Second Season. Wish There Was A Second Season. Wish There Was A Second Season. Wish There Was A Second Season. Wish There Was A Second Season. Wish There Was A Second Season. Wish There Was A Second Season. Wish There Was A Second Season. ",
-        title: "My Top Movies!",
-        votes: 892,
-        postId: 3
-    }
-]
-
-// TODO: fetch from backend and handle the format
-const MOCK_MODS = [
-    { id: 101, username: "FilmBuff_99", avatar: null }, // Avatar null will use placeholder
-    { id: 10, username: "DirectorX", avatar: "https://i.pravatar.cc/150?img=12" },
-    { id: 103, username: "CinemaSins", avatar: "https://i.pravatar.cc/150?img=33" },
-];
 
 // TODO: fetch from backend and handle the format
 const SORT_OPTIONS = [
@@ -74,18 +33,19 @@ export default function Forum() {
     const navigate = useNavigate();
 
 
-    const [posts, setPosts] = useState(MockPosts);
+    const [posts, setPosts] = useState([]);
     const [page, setPage] = useState(0);
     const [loading, setLoading] = useState(false);
     const [hasMore, setHasMore] = useState(true); // if there are no more posts
+    const [error, setError] = useState();
 
-    const [forumName, setForumName] = useState("unique_forum_name");
-    const [forumDescription, setForumDescription] = useState("forum_description");
+    const [forumName, setForumName] = useState();
+    const [forumDescription, setForumDescription] = useState();
     const [forumCreationDate, setForumCreationDate] = useState("Mar 17, 2010");
-    const [followersCount, setFollowersCount] = useState(11145289);
-    const [postsCount, setPostsCount] = useState(123456);
+    const [followersCount, setFollowersCount] = useState();
+    const [postsCount, setPostsCount] = useState();
 
-    const [moderators, setModerators] = useState(MOCK_MODS)
+    const [moderators, setModerators] = useState([])
 
 
     // determine if current user is a moderator by checking their id in the moderators list
@@ -94,13 +54,39 @@ export default function Forum() {
     // TODO: handle this properly
     const [isJoined, setIsJoined] = useState( false);
 
+    // TODO: handle MOD
+
+
     useEffect(() => {
+
+        const fetchForumDetails = async () => {
+            const res = await getForumApi({forumId})
+            const data = res.data;
+            // console.log(data)
+
+            if (!res.success) {
+                showToast("Failed to fetch forum details", res.message || "unknown error", "error")
+                setError(res.message)
+                return;
+            }
+
+            setError(null)
+            setForumName(data.name)
+            setForumDescription(data.description)
+            setForumCreationDate(new Date(data.createdAt).toDateString())
+            setFollowersCount(data.followerCount)
+            setPostsCount(data.postCount)
+            const res2 = await getModApi({userId: data.ownerId24Bit})
+            setModerators([{id: data.ownerId, username: res2.data, avatar:null}])
+        }
+
         const checkStatus = async () => {
             try {
                 const res = await checkFollowApi({ forumId });
+                const joined = res.data;
                 console.log(res)
 
-                if (res && res.success) {
+                if (res && joined) {
                     setIsJoined(true);
                 }
             } catch (error) {
@@ -108,18 +94,17 @@ export default function Forum() {
             }
         };
         if (forumId) {
+            fetchForumDetails();
             checkStatus();
         }
-    }, [forumId]);
+    }, [forumId, showToast]);
 
     const handleJoin = async () => { // TODO: handle this properly
         // Tested the connection
-        // const res2 = await createForumApi({name:"HelloWorld", description:"Description"});
-        // return;
 
         if (isJoined) {
             // Tested the connection
-            const res = await unfollowForumApi({forumId:'6939a6a548ef866c970381de'});
+            const res = await unfollowForumApi({forumId});
             console.log(res)
             if (res.success === true) {
                 showToast("Success", "You have left the forum.", "success")
@@ -133,7 +118,7 @@ export default function Forum() {
 
         // Tested the connection
 
-        const res = await followForumApi({forumId: '6939a6a548ef866c970381de'});
+        const res = await followForumApi({forumId});
         console.log(res)
         if (res.success === true) {
             showToast("Success", "You have joined the forum.", "success")
@@ -163,16 +148,15 @@ export default function Forum() {
 
         if (res.success === true) {
             showToast("Success", "Your post has been submitted.", "success")
+            setPostTitle("");
+            setPostText("");
+            setPostMedia("");
+            setShowForm(false);
         }
         else {
             showToast("Failed to submit review", res.message || "unknown error", "error")
         }
 
-
-        setPostTitle("");
-        setPostText("");
-        setPostMedia("");
-        setShowForm(false);
         setSubmitting(false);
     }
 
@@ -181,18 +165,19 @@ export default function Forum() {
         setLoading(true);
 
         const res = await getForumPostsApi({forumId, page:pageNum, size: PAGE_SIZE.FORUM});
-
+        // console.log(res)
+        const newPosts = res.data.posts;
         if (!res.success){
             setHasMore(false);
             return;
         }
 
         setPosts(prevPosts => {
-            if (pageNum === 0) return res.data;
-            return [...prevPosts, ...res.data];
+            if (pageNum === 0) return newPosts;
+            return [...prevPosts, ...newPosts];
         });
 
-        if (res.data.length < PAGE_SIZE.FORUM) setHasMore(false);
+        if (newPosts.length < PAGE_SIZE.FORUM) setHasMore(false);
 
         setLoading(false);
 
@@ -212,6 +197,12 @@ export default function Forum() {
         setPage(nextPage);
         fetchPosts(nextPage);
     };
+
+    if (error != null) return (
+        <div className="forum-container" style={{display: "flex", justifyContent: "center"}}>
+            <div className="error-message">No forum exists</div>
+        </div>
+    )
 
     return (
         <div className="forum-container">
@@ -288,39 +279,39 @@ export default function Forum() {
             {/* Main Grid -> 2 Cols*/}
             <div className="forum-main-grid">
                 <main className="feed-col">
-                    <div className="feed-sort-bar">
-                        <span className="sort-label">Sort By:</span>
+                    {/*<div className="feed-sort-bar">*/}
+                    {/*    <span className="sort-label">Sort By:</span>*/}
 
-                        <div className="sort-dropdown-container">
-                            <button
-                                className="sort-trigger"
-                                onClick={() => setIsSortOpen(!isSortOpen)}
-                                onBlur={() => setTimeout(() => setIsSortOpen(false), 200)} // Close when clicking away
-                            >
-                                <span className="sort-icon">{activeSort.icon}</span>
-                                <span className="sort-text">{activeSort.label}</span>
-                                <IoIosArrowDown className={`sort-arrow ${isSortOpen ? 'open' : ''}`} />
-                            </button>
+                    {/*    <div className="sort-dropdown-container">*/}
+                    {/*        <button*/}
+                    {/*            className="sort-trigger"*/}
+                    {/*            onClick={() => setIsSortOpen(!isSortOpen)}*/}
+                    {/*            onBlur={() => setTimeout(() => setIsSortOpen(false), 200)} // Close when clicking away*/}
+                    {/*        >*/}
+                    {/*            <span className="sort-icon">{activeSort.icon}</span>*/}
+                    {/*            <span className="sort-text">{activeSort.label}</span>*/}
+                    {/*            <IoIosArrowDown className={`sort-arrow ${isSortOpen ? 'open' : ''}`} />*/}
+                    {/*        </button>*/}
 
-                            {isSortOpen && (
-                                <div className="sort-dropdown-menu">
-                                    {SORT_OPTIONS.map((option) => (
-                                        <div
-                                            key={option.value}
-                                            className={`sort-option ${activeSort.value === option.value ? 'selected' : ''}`}
-                                            onClick={() => {
-                                                setActiveSort(option);
-                                                setIsSortOpen(false);
-                                            }}
-                                        >
-                                            <span className="sort-option-icon">{option.icon}</span>
-                                            {option.label}
-                                        </div>
-                                    ))}
-                                </div>
-                            )}
-                        </div>
-                    </div>
+                    {/*        {isSortOpen && (*/}
+                    {/*            <div className="sort-dropdown-menu">*/}
+                    {/*                {SORT_OPTIONS.map((option) => (*/}
+                    {/*                    <div*/}
+                    {/*                        key={option.value}*/}
+                    {/*                        className={`sort-option ${activeSort.value === option.value ? 'selected' : ''}`}*/}
+                    {/*                        onClick={() => {*/}
+                    {/*                            setActiveSort(option);*/}
+                    {/*                            setIsSortOpen(false);*/}
+                    {/*                        }}*/}
+                    {/*                    >*/}
+                    {/*                        <span className="sort-option-icon">{option.icon}</span>*/}
+                    {/*                        {option.label}*/}
+                    {/*                    </div>*/}
+                    {/*                ))}*/}
+                    {/*            </div>*/}
+                    {/*        )}*/}
+                    {/*    </div>*/}
+                    {/*</div>*/}
 
 
                     <PostsFeed
