@@ -3,9 +3,13 @@ package org.example.backend.comment;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.bson.types.ObjectId;
+import org.example.backend.deletion.AccessService;
+import org.example.backend.deletion.CascadeDeletionService;
 import org.example.backend.forum.Forum;
 import org.example.backend.post.Post;
+import org.example.backend.post.PostRepository;
 import org.springframework.data.mongodb.core.MongoTemplate;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -13,6 +17,9 @@ import org.springframework.stereotype.Service;
 public class CommentService {
     private final CommentRepository commentRepository;
     private final MongoTemplate mongoTemplate;
+    private final PostRepository postRepository;
+    private final CascadeDeletionService deletionService;
+    private final AccessService accessService;
 
     @Transactional
     public Comment addComment(Long ownerId,AddCommentDTO addCommentDTO) {
@@ -27,7 +34,24 @@ public class CommentService {
             int depth = parentComment.getDepth() + 1;
             comment.setDepth(depth);
         }
+        Post post = mongoTemplate.findById(postId, Post.class);
+        post.setCommentCount(post.getCommentCount() + 1);
+        postRepository.save(post);
         return commentRepository.save(comment);
+    }
+
+    public void deleteComment(ObjectId commentId, Long userId) {
+        if (!accessService.canDeleteComment(longToObjectId(userId), commentId)) {
+            throw new AccessDeniedException("User " + " cannot delete this post");
+        }
+        Comment comment = mongoTemplate.findById(commentId, Comment.class);
+        if (comment == null) {
+            throw new IllegalArgumentException("Comment not found with id: " + commentId);
+        }
+        Post post = mongoTemplate.findById(comment.getPostId(), Post.class);
+        post.setCommentCount(post.getCommentCount() + 1);
+        postRepository.save(post);
+        deletionService.deleteComment(commentId);
     }
 
     private void canComment(ObjectId postId) {
