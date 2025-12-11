@@ -1,4 +1,5 @@
 import React, { useState, useRef } from 'react';
+import { updatePostApi } from '../api/post-api';
 import { IoClose } from "react-icons/io5";
 import { MdDelete } from "react-icons/md";
 import { FaFileImage } from "react-icons/fa";
@@ -6,9 +7,12 @@ import "./style/editPost.css";
 
 const EditPost = ({ post, onSave, onCancel }) => {
 
+    const [editedTitle, setEditedTitle] = useState(post.title);
     const [editedText, setEditedText] = useState(post.text);
     const [addedMedia, setAddedMedia] = useState(post.media);
     const [mediaFile, setMediaFile] = useState(null);
+    const [loading, setLoading] = useState(false);
+    const [errors, setErrors] = useState({});
 
     
     const fileInputRef = useRef(null);
@@ -50,25 +54,57 @@ const EditPost = ({ post, onSave, onCancel }) => {
         }
     };
 
-    const handleSave = () => {
-        const updatedPost = {
-            ...post,
-            text: editedText.trim(),
-            media: addedMedia
-        };
+    const handleSave = async () => {
         
-        onSave(updatedPost, mediaFile);
+        setLoading(true);
+        try{
+            const result = await updatePostApi({
+                postId: post.postId,
+                forumId: post.forumId,
+                title: editedTitle.trim(),
+                content: editedText.trim()
+            });
+
+            if(result.success){
+                const updatedPost = {
+                    ...post,
+                    title: editedTitle.trim(),
+                    content: editedText.trim(),
+                    text: editedText.trim(),
+                    media: mediaPreview
+                };
+                onSave(updatedPost, mediaFile);
+            }
+
+            else{
+                setErrors({ general: result.message || 'Failed to update post' });
+                console.log(errors.general);
+            }
+        }
+        catch(error){
+            console.error('Error updating post:', error);
+            setErrors({ general: 'An error occurred while updating the post' });
+            console.log(errors.general);
+        } 
+
+        finally {
+            setLoading(false);
+        }
+
     };
 
 
     return(
         <div className="edit-post-container">
             <div className="edit-post-header">
-                <h2>{post.title}</h2>
                 <IoClose className="close-icon" onClick={handleCancel} />
             </div>
 
             <div className="edit-post-form">
+                <div className="edit-input">
+                    <input type="text" id="edit-title" value={editedTitle} onChange={(e) => setEditedTitle(e.target.value)} maxLength={100} disabled={loading} />
+                    <span className="char-count">{editedTitle.length}/100</span>
+                </div>
                 <div className="edit-input">
                     {addedMedia ? (
                         <div className="added-media-container">

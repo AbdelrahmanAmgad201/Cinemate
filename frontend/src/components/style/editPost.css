@@ -84,7 +84,8 @@
     border-radius: 30px;
 }
 
-.edit-input textarea{
+.edit-input textarea,
+.edit-input input{
     max-width: 835px;
     min-width: 835px;
     height: 250px;
@@ -98,8 +99,17 @@
 }
 
 .edit-input textarea:hover,
-.edit-input textarea:focus{
+.edit-input textarea:focus,
+.edit-input input:hover,
+.edit-input input:focus{
     outline: 1px solid #A8A8A8; 
+}
+
+.edit-input input{
+    height: 35px;
+    padding: 5px 10px;
+    margin-top: 20px;
+    font-size: 20px;
 }
 
 

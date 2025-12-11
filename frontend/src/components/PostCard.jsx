@@ -6,6 +6,7 @@ import { BiUpvote, BiDownvote, BiSolidUpvote, BiSolidDownvote } from "react-icon
 import { RiShareForwardLine } from "react-icons/ri";
 import { FaRegComment } from "react-icons/fa";
 import "./style/postCard.css";
+import { deletePostApi } from '../api/post-api.jsx';
 import { AuthContext } from '../context/AuthContext.jsx';
 import { PATHS } from '../constants/constants';
 
@@ -32,6 +33,33 @@ const PostCard = ({ postBody = {} }) => {
         navigate(PATHS.POST.FULLPAGE(postBody.postId));
     }
 
+    const handleDelete = async () => {
+        if (!window.confirm('Are you sure you want to delete this post?')) {
+            return;
+        }
+
+        setPostOptions(false);
+
+        try{
+            const result = await deletePostApi({
+                postId: postBody.postId
+            });
+
+            if(result.success){
+                console.log('Post deleted successfully');
+                navigate('/');
+            }
+
+            else{
+                console.log(result.message || 'Failed to delete post');
+            }
+        }
+        catch(error){
+            console.error('Error delete post:', error);
+        } 
+
+    }
+
     const handleEdit = () => {
         setPostOptions(false);
         navigate(PATHS.POST.FULLPAGE(postBody.postId), { state: { editMode: true } });
@@ -43,7 +71,7 @@ const PostCard = ({ postBody = {} }) => {
     
     const authorMenu = [
         { label: "Edit", onClick: handleEdit },
-        { label: "Delete", onClick: () => console.log("Delete clicked") }
+        { label: "Delete", onClick: handleDelete }
     ];
 
     useEffect(() => {
@@ -73,16 +101,21 @@ const PostCard = ({ postBody = {} }) => {
                     <time dateTime={postBody.time}>{postBody.time}</time>
                 </div>
                 <div className="post-settings" ref={menuRef}>
-                    <BsThreeDots onClick={() => setPostOptions(prev => !prev)}/>
-                        {postOptions && (
-                            <div className="options-menu">
-                            <ul>
-                            {(postBody.userId === user.id ? authorMenu : viewerMenu).map((item, index) => (
-                                <li key={index} onClick={item.onClick}>{item.label}</li>
-                            ))}
-                            </ul>
-                        </div>
-                        )}
+                    {postBody.userId === user.id && (
+                        <>
+                            <BsThreeDots onClick={() => setPostOptions(prev => !prev)}/>
+                            {postOptions && (
+                                <div className="options-menu">
+                                <ul>
+                                {(postBody.userId === user.id ? authorMenu : viewerMenu).map((item, index) => (
+                                    <li key={index} onClick={item.onClick}>{item.label}</li>
+                                ))}
+                                </ul>
+                            </div>
+                            )}
+                        </>
+                    )}
+                    
                 </div>
             </div>
             <div className="post-content">
@@ -112,9 +145,9 @@ const PostCard = ({ postBody = {} }) => {
                 <div className="post-comment" onClick={navigateToPost}>
                     <FaRegComment />
                 </div>
-                <div className="post-share">
+                {/* <div className="post-share">
                     <RiShareForwardLine />
-                </div>
+                </div> */}
             </footer>
         </article>
     );
