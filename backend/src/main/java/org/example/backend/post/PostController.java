@@ -3,8 +3,10 @@ package org.example.backend.post;
 import jakarta.servlet.http.HttpServletRequest;
 import org.bson.types.ObjectId;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.data.domain.Page;
 
 @RestController
 @RequestMapping("/api/post")
@@ -30,5 +32,12 @@ public class PostController {
         Long userId = (Long) request.getAttribute("userId");
         postService.deletePost(postId, userId);
         return ResponseEntity.ok("deleted");
+    }
+    @PostMapping("/v1/user-main-feed")
+    public ResponseEntity<Page<Post>> getUserFeed(
+            HttpServletRequest request,
+            @RequestBody MainFeedRequestDTO mainFeedRequestDTO) {
+        Long userId = (Long) request.getAttribute("userId");
+        return ResponseEntity.ok(postService.getUserPosts(userId, mainFeedRequestDTO));
     }
 }
