@@ -166,19 +166,20 @@ export default function Forum() {
         setLoading(true);
 
         const res = await getForumPostsApi({forumId, page:pageNum, size: PAGE_SIZE.FORUM});
-        // console.log(res)
+        console.log(res);
         const newPosts = res.data.posts;
         if (!res.success){
             setHasMore(false);
             return;
         }
+        const activePosts = newPosts.filter(post => !post.isDeleted);
 
         setPosts(prevPosts => {
-            if (pageNum === 0) return newPosts;
-            return [...prevPosts, ...newPosts];
+            if (pageNum === 0) return activePosts;
+            return [...prevPosts, ...activePosts];
         });
 
-        if (newPosts.length < PAGE_SIZE.FORUM) setHasMore(false);
+        if (activePosts.length < PAGE_SIZE.FORUM) setHasMore(false);
 
         setLoading(false);
 
