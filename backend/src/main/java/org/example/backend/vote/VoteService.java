@@ -69,9 +69,8 @@ public class VoteService {
     @Transactional
     public Integer isVote(ObjectId targetId,Long userId) {
         ObjectId objectUserId = longToObjectId(userId);
-        List<Vote> votes = voteRepository.findByUserIdAndTargetId(objectUserId,targetId);
-        if (votes.isEmpty() || votes.get(0).getIsDeleted()) return 0;
-        Vote vote = votes.get(0);
+        Vote vote = voteRepository.findByIsDeletedIsFalseAndUserIdAndTargetId(objectUserId,targetId);
+        if (vote==null) return 0;
         return vote.getVoteType();
     }
 

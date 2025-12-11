@@ -13,6 +13,6 @@ public interface VoteRepository extends MongoRepository<Vote, ObjectId> {
     List<Vote> findByUserId(ObjectId userId);
     List<Vote> findByTargetId(ObjectId targetId);
     List<Vote> findByUserIdAndTargetId(ObjectId userId, ObjectId targetId);
-
+    Vote findByIsDeletedIsFalseAndUserIdAndTargetId(ObjectId userId, ObjectId targetId);
 }
 
