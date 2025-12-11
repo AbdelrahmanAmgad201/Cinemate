@@ -6,20 +6,21 @@ import { BiUpvote, BiDownvote, BiSolidUpvote, BiSolidDownvote } from "react-icon
 import { RiShareForwardLine } from "react-icons/ri";
 import { FaRegComment } from "react-icons/fa";
 import "./style/postCard.css";
-import { deletePostApi } from '../api/post-api.jsx';
+import { deletePostApi, votePostApi } from '../api/post-api.jsx';
 import { AuthContext } from '../context/AuthContext.jsx';
 import { PATHS } from '../constants/constants';
 
-const PostCard = ({ postBody = {} }) => {
+const PostCard = ({ postBody }) => {
     const [userVote, setUserVote] = useState(0);
-    const [voteCount, setVoteCount] = useState(postBody.votes || 0);
+    const [voteCount, setVoteCount] = useState(postBody?.votes || 0);
     const [postOptions, setPostOptions] = useState(false);
+    const [voteId, setVoteId] = useState(postBody?.voteId || null);
     
     const { user } = useContext(AuthContext);
     const navigate = useNavigate();
     const menuRef = useRef(null);
 
-    const handleVote = (voteType) => {
+    const handleVote = async (voteType) => {
         const previousVote = userVote;
         const newVote = userVote === voteType ? 0 : voteType;
         
@@ -27,11 +28,47 @@ const PostCard = ({ postBody = {} }) => {
         
         setUserVote(newVote);
         setVoteCount(prevCount => prevCount + voteDifference);
+
+        try{
+            if(previousVote === 0 && newVote !== 0){
+                const result = await votePostApi({
+                    post: postId,
+                    value: newVote
+                });
+                if (result.success){
+                    console.log(result);
+                    setVoteId(result.data);
+                }
+            }
+            else if (newVote === 0 && voteId){
+                result = await deleteVote({ voteId });
+                
+                if (result.success) {
+                    console.log(result);
+                    setVoteId(null);
+                }
+            }
+
+            else if (previousVote !== 0 && newVote !== 0 && voteId) {
+                result = await updateVote({
+                    voteId,
+                    value: newVote
+                });
+            }
+            if (!result?.success) {
+                setUserVote(previousVote);
+                console.error('Vote failed:', result?.message);
+            }
+        }
+        catch(e){
+            setUserVote(previousVote);
+            console.error('Vote error:', e);
+        }
     };
 
     const navigateToPost = () => {
-        navigate(PATHS.POST.FULLPAGE(postBody.postId));
-    }
+        navigate(PATHS.POST.FULLPAGE(postBody.id), {state: {post: postBody}});
+    };
 
     const handleDelete = async () => {
         if (!window.confirm('Are you sure you want to delete this post?')) {
@@ -101,13 +138,13 @@ const PostCard = ({ postBody = {} }) => {
                     <time dateTime={postBody.time}>{postBody.time}</time>
                 </div>
                 <div className="post-settings" ref={menuRef}>
-                    {postBody.userId === user.id && (
+                    {postBody.ownerId === user.id && (
                         <>
                             <BsThreeDots onClick={() => setPostOptions(prev => !prev)}/>
                             {postOptions && (
                                 <div className="options-menu">
                                 <ul>
-                                {(postBody.userId === user.id ? authorMenu : viewerMenu).map((item, index) => (
+                                {(postBody.ownerId === user.id ? authorMenu : viewerMenu).map((item, index) => (
                                     <li key={index} onClick={item.onClick}>{item.label}</li>
                                 ))}
                                 </ul>
@@ -123,7 +160,7 @@ const PostCard = ({ postBody = {} }) => {
                     <p>{postBody.title}</p>
                 </div>
                 <div className="post-media" onClick={navigateToPost}>
-                    {postBody.text && <p className="post-text">{postBody.text}</p>}
+                    {postBody.content && <p className="post-text">{postBody.content}</p>}
                     {postBody.media && <img src={postBody.media} alt={postBody.title || "Post content"} />}
                 </div>
             </div>

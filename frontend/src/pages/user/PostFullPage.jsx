@@ -3,7 +3,7 @@ import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import pic from "../../assets/action.jpg";
 import { AuthContext } from '../../context/AuthContext';
 import EditPost from '../../components/EditPost';
-import { deletePostApi } from '../../api/post-api';
+import { updatePostApi, deletePostApi, votePostApi, updateVotePostApi, deleteVotePostApi } from '../../api/post-api';
 import "../../components/style/postCard.css";
 import "../../components/style/postFullPage.css";
 import { IoIosPerson } from "react-icons/io";
@@ -23,82 +23,26 @@ const PostFullPage = () => {
 
     const mockPost = [
         { 
-            userId: 1,
-            avatar: <IoIosPerson />,
-            firstName: "Sam",
-            lastName: "Jonas",
-            time: "22-11-2025",
-            title: "This show deserves more recognition",
-            media: pic,
-            text: `Just finished binge-watching the entire season and I'm blown away. The character development, the cinematography, the soundtrack - everything was perfect.
-    
-    I can't believe they haven't announced a second season yet. The cliffhanger ending left so many questions unanswered. Anyone else feel the same way?`,
-            votes: 1234,
-            postId: "507f1f77bcf86cd799439011", // Changed to ObjectId format
-            forumId: "507f1f77bcf86cd799439001"
-        },
-        { 
-            userId: 2,
-            firstName: "Jane",
-            lastName: "Doe",
-            time: "08-12-2024",
-            title: "The cinematography in this scene is absolutely stunning",
-            media: pic,
-            text: `The way they used lighting and color grading here is masterful. You can feel the emotion without a single word being spoken. This is what visual storytelling is all about.`,
-            votes: 543,
-            postId: "507f1f77bcf86cd799439012", // Changed to ObjectId format
-            forumId: "507f1f77bcf86cd799439001"
-        },
-        { 
-            userId: 3,
-            firstName: "John",
-            lastName: "Smith",
-            time: "09-12-2024",
-            text: `After watching countless films this year, I've finally compiled my top 10 list. These movies really stood out for their storytelling, performances, and overall impact.
-    
-    Would love to hear what made your list this year! Any hidden gems I should check out?`,
-            title: "My Top 10 Movies of 2024",
-            votes: 892,
-            postId: "507f1f77bcf86cd799439013", // Changed to ObjectId format
-            forumId: "507f1f77bcf86cd799439001"
-        },
-        { 
-            userId: 4,
-            firstName: "Emily",
-            lastName: "Chen",
-            time: "10-12-2024",
-            title: "Unpopular opinion: The ending was perfect",
-            text: `I know a lot of people were disappointed, but I think the ambiguous ending was exactly what the story needed. Not everything needs to be wrapped up in a neat bow.
-    
-    It leaves room for interpretation and gives us something to think about long after the credits roll. That's the mark of great storytelling.`,
-            votes: 267,
-            postId: "507f1f77bcf86cd799439014", // Changed to ObjectId format
-            forumId: "507f1f77bcf86cd799439001"
-        },
-        { 
-            userId: 5,
-            firstName: "Marcus",
-            lastName: "Williams",
-            time: "11-12-2024",
-            title: "Found this gem at a thrift store today",
-            media: pic,
-            text: `Can't believe I found the original poster in mint condition! This movie has been my comfort watch for years. Sometimes the best finds are completely unexpected.`,
-            votes: 1567,
-            postId: "507f1f77bcf86cd799439015", // Changed to ObjectId format
-            forumId: "507f1f77bcf86cd799439001"
+            id: "693a406767a0a5d7e5a91f8f",
+            forumId: "693a404167a0a5d7e5a91f8e",
+            ownerId: "000000000000000000000001", 
+            title: "sdfgh",
+            content: "asdfgn",
+            votes: 0
         }
         ];
 
-    const [post, setPost] = useState(null);
+    const [post, setPost] = useState(location.state?.post || null);
     const [openImage, setOpenImage] = useState(false);
     const [userVote, setUserVote] = useState(0);
     const [voteCount, setVoteCount] = useState(0);
+    const [voteId, setVoteId] = useState(post?.voteId || null);
     const [editMode, setEditMode] = useState(false);
     const [sort, setSort] = useState("best");
     const [commentText, setCommentText] = useState("");
     const [postOptions, setPostOptions] = useState(false);
 
-    const handleVote = (voteType) => {
+    const handleVote = async (voteType) => {
         const previousVote = userVote;
         const newVote = userVote === voteType ? 0 : voteType;
         
@@ -106,6 +50,49 @@ const PostFullPage = () => {
         
         setUserVote(newVote);
         setVoteCount(prevCount => prevCount + voteDifference);
+
+        try{
+            let result;
+            console.log("postId: ", postId, "value: ", newVote);
+            if(previousVote === 0 && newVote !== 0){
+                console.log("Creating vote - postId:", postId, "value:", newVote);
+                result = await votePostApi({
+                    targetId: postId,
+                    value: newVote
+                });
+                if (result.success){
+                    console.log(result);
+                    setVoteId(result.data);
+                }
+            }
+            else if (newVote === 0 && voteId){
+                console.log("Deleting vote - voteId:", voteId);
+                result = await deleteVote({ voteId });
+                
+                if (result.success) {
+                    console.log(result);
+                    setVoteId(null);
+                }
+            }
+
+            else if (previousVote !== 0 && newVote !== 0 && voteId) {
+                console.log("Updating vote - voteId:", voteId, "value:", newVote);
+                result = await updateVote({
+                    voteId: voteId,
+                    value: newVote
+                });
+            }
+            if (!result?.success) {
+                setUserVote(previousVote);
+                setVoteCount(prevCount => prevCount - voteDifference);
+                console.error('Vote failed:', result?.message);
+            }
+        }
+        catch(e){
+            setUserVote(previousVote);
+            setVoteCount(prevCount => prevCount - voteDifference);
+            console.error('Vote error:', e);
+        }
     };
 
     const handleDelete = async () => {
@@ -144,22 +131,40 @@ const PostFullPage = () => {
         setEditMode(false);
     };
 
-    const saveEdit = (updatedPost, mediaFile) => {
+    const saveEdit = async (updatedPost, mediaFile) => {
+        try {
+            const result = await updatePostApi({
+                postId: post.id, 
+                forumId: post.forumId,
+                title: editedTitle.trim(),
+                content: editedText.trim()
+            });
+
+            if (result.success) {
+                const updatedPost = {
+                    ...post,
+                    title: editedTitle.trim(),
+                    content: editedText.trim(),
+                    text: editedText.trim(),
+                    media: addedMedia
+                };
+                onSave(updatedPost, mediaFile);
+            } else {
+                console.error('Update failed:', result.message);
+            }
+        } catch (error) {
+            console.error('Error updating post:', error);
+        }
         setPost(updatedPost);
         setEditMode(false);
         console.log('Post updated:', updatedPost, mediaFile);
     };
 
     useEffect(() => {
-        const foundPost = mockPost.find(p => p.postId === postId);
-        
-        if (foundPost) {
-            setPost(foundPost);
-            setVoteCount(foundPost.votes || 0);
-        } else {
-            console.error("Post not found");
+        if (location.state?.post) {
+            return;
         }
-    }, [postId]);
+    }, [postId, location.state]);
 
     useEffect(() => {
         if (location.state?.editMode) {
@@ -214,17 +219,17 @@ const PostFullPage = () => {
                         {post.avatar ? post.avatar : <IoIosPerson />}
                     </div>
                     <div className="user-info">
-                        <h2 className="user-name">{post.firstName} {post.lastName}</h2>
+                        <h2 className="user-name">{user.id}</h2>
                         <time dateTime={post.time}>{post.time}</time>
                     </div>
                     <div className="post-settings" ref={menuRef}>
-                        {postBody.userId === user.id && (
+                        {post.ownerId === user.id && ( 
                             <>
                             <BsThreeDots onClick={() => setPostOptions(prev => !prev)}/>
                             {postOptions && (
                                 <div className="options-menu">
                                 <ul>
-                                {(post.userId === user?.id ? authorMenu : viewerMenu).map((item, index) => (
+                                {(post.ownerId === user?.id ? authorMenu : viewerMenu).map((item, index) => (
                                     <li key={index} onClick={item.onClick}>{item.label}</li>
                                 ))}
                                 </ul>
@@ -241,7 +246,7 @@ const PostFullPage = () => {
                     </div>
                     <div className="post-media" >
                         {post.media && <img src={post.media} alt={post.title || "Post content"} onClick={() => setOpenImage(true)}/>}
-                        {post.text && <p className="post-text">{post.text}</p>}
+                        {post.content && <p className="post-text">{post.content}</p>}
                     </div>
                 </div>
                 <footer className="post-footer">

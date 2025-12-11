@@ -8,7 +8,7 @@ import "./style/editPost.css";
 const EditPost = ({ post, onSave, onCancel }) => {
 
     const [editedTitle, setEditedTitle] = useState(post.title);
-    const [editedText, setEditedText] = useState(post.text);
+    const [editedText, setEditedText] = useState(post.content);
     const [addedMedia, setAddedMedia] = useState(post.media);
     const [mediaFile, setMediaFile] = useState(null);
     const [loading, setLoading] = useState(false);
@@ -56,41 +56,15 @@ const EditPost = ({ post, onSave, onCancel }) => {
 
     const handleSave = async () => {
         
-        setLoading(true);
-        try{
-            const result = await updatePostApi({
-                postId: post.postId,
-                forumId: post.forumId,
-                title: editedTitle.trim(),
-                content: editedText.trim()
-            });
-
-            if(result.success){
-                const updatedPost = {
-                    ...post,
-                    title: editedTitle.trim(),
-                    content: editedText.trim(),
-                    text: editedText.trim(),
-                    media: mediaPreview
-                };
-                onSave(updatedPost, mediaFile);
-            }
-
-            else{
-                setErrors({ general: result.message || 'Failed to update post' });
-                console.log(errors.general);
-            }
-        }
-        catch(error){
-            console.error('Error updating post:', error);
-            setErrors({ general: 'An error occurred while updating the post' });
-            console.log(errors.general);
-        } 
-
-        finally {
-            setLoading(false);
-        }
-
+        const updatedPost = {
+            ...post,
+            title: editedTitle.trim(),
+            content: editedText.trim(),
+            text: editedText.trim(),
+            media: addedMedia
+        };
+       onSave(updatedPost, mediaFile);
+            
     };
 
 
