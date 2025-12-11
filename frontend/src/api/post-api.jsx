@@ -28,3 +28,45 @@ export async function deletePostApi({postId}) {
         return { success: false , message: err.message };
     }
 }
+
+export async function votePostApi({postId, value}) {
+    try{
+        const response = await api.post("/vote/v1/post-vote", {postId, value});
+        const data = response.data;
+
+        console.log(data);
+        return { success: true, data: data};
+    }
+    catch(err){
+    //     console.log(err);
+        return { success: false , message: err.message };
+    }
+}
+
+export async function updateVotePostApi({postId, value}) {
+    try{
+        const response = await api.put("/vote/v1/update-vote", {postId, value});
+        const data = response.data;
+
+        console.log(data);
+        return { success: true, data: data};
+    }
+    catch(err){
+    //     console.log(err);
+        return { success: false , message: err.message };
+    }
+}
+
+export async function deleteVotePostApi({postId}) {
+    try{
+        const response = await api.delete(`/vote/v1/delete-vote/${postId}`);
+        const data = response.data;
+
+        console.log(data);
+        return { success: true, data: data};
+    }
+    catch(err){
+    //     console.log(err);
+        return { success: false , message: err.message };
+    }
+}
