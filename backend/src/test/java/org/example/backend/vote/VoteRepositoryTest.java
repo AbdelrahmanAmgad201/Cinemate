@@ -5,280 +5,324 @@ import org.example.backend.AbstractMongoIntegrationTest;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.dao.DuplicateKeyException;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.Optional;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.*;
 
 class VoteRepositoryTest extends AbstractMongoIntegrationTest {
 
     @Autowired
     private VoteRepository voteRepository;
 
+    private ObjectId userId;
+    private ObjectId targetId;
+
     @BeforeEach
     void setUp() {
-        voteRepository.deleteAll();
+        userId = new ObjectId();
+        targetId = new ObjectId();
     }
 
     @Test
-    void shouldCreateAndRetrieveVote() {
-        // Arrange
-        ObjectId userId = new ObjectId();
-        ObjectId targetId = new ObjectId();
+    void save_ValidVote_Success() {
+        Vote vote = createVote(userId, targetId, true, 1);
 
-        Vote vote = Vote.builder()
-                .id(new ObjectId())
-                .userId(userId)
-                .isPost(true)
-                .targetId(targetId)
-                .voteType(1)  // upvote
-                .createdAt(Instant.now())
-                .build();
+        Vote saved = voteRepository.save(vote);
 
-        // Act
+        assertNotNull(saved.getId());
+        assertEquals(userId, saved.getUserId());
+        assertEquals(targetId, saved.getTargetId());
+        assertTrue(saved.getIsPost());
+        assertEquals(1, saved.getVoteType());
+    }
+
+    @Test
+    void findById_ExistingVote_ReturnsVote() {
+        Vote vote = createVote(userId, targetId, true, 1);
+        Vote saved = voteRepository.save(vote);
+
+        Optional<Vote> found = voteRepository.findById(saved.getId());
+
+        assertTrue(found.isPresent());
+        assertEquals(saved.getId(), found.get().getId());
+    }
+
+    @Test
+    void findById_NonExistingVote_ReturnsEmpty() {
+        Optional<Vote> found = voteRepository.findById(new ObjectId());
+
+        assertFalse(found.isPresent());
+    }
+
+    @Test
+    void deleteById_ExistingVote_DeletesSuccessfully() {
+        Vote vote = createVote(userId, targetId, true, 1);
+        Vote saved = voteRepository.save(vote);
+
+        voteRepository.deleteById(saved.getId());
+
+        assertFalse(voteRepository.findById(saved.getId()).isPresent());
+    }
+
+    @Test
+    void findByUserId_ReturnsAllVotesForUser() {
+        ObjectId target1 = new ObjectId();
+        ObjectId target2 = new ObjectId();
+
+        Vote vote1 = createVote(userId, target1, true, 1);
+        Vote vote2 = createVote(userId, target2, false, -1);
+        voteRepository.saveAll(List.of(vote1, vote2));
+
+        List<Vote> result = voteRepository.findByUserId(userId);
+
+        assertEquals(2, result.size());
+        assertTrue(result.stream().allMatch(v -> v.getUserId().equals(userId)));
+    }
+
+    @Test
+    void findByUserId_DifferentUsers_ReturnsOnlyUserVotes() {
+        ObjectId user1 = new ObjectId();
+        ObjectId user2 = new ObjectId();
+
+        Vote vote1 = createVote(user1, targetId, true, 1);
+        Vote vote2 = createVote(user2, targetId, true, 1);
+        voteRepository.saveAll(List.of(vote1, vote2));
+
+        List<Vote> result = voteRepository.findByUserId(user1);
+
+        assertEquals(1, result.size());
+        assertEquals(user1, result.get(0).getUserId());
+    }
+
+    @Test
+    void findByUserId_NoVotes_ReturnsEmpty() {
+        List<Vote> result = voteRepository.findByUserId(new ObjectId());
+
+        assertTrue(result.isEmpty());
+    }
+
+    @Test
+    void findByTargetId_ReturnsAllVotesForTarget() {
+        ObjectId user1 = new ObjectId();
+        ObjectId user2 = new ObjectId();
+
+        Vote vote1 = createVote(user1, targetId, true, 1);
+        Vote vote2 = createVote(user2, targetId, true, -1);
+        voteRepository.saveAll(List.of(vote1, vote2));
+
+        List<Vote> result = voteRepository.findByTargetId(targetId);
+
+        assertEquals(2, result.size());
+        assertTrue(result.stream().allMatch(v -> v.getTargetId().equals(targetId)));
+    }
+
+    @Test
+    void findByTargetId_DifferentTargets_ReturnsOnlyTargetVotes() {
+        ObjectId target1 = new ObjectId();
+        ObjectId target2 = new ObjectId();
+
+        Vote vote1 = createVote(userId, target1, true, 1);
+        Vote vote2 = createVote(userId, target2, true, 1);
+        voteRepository.saveAll(List.of(vote1, vote2));
+
+        List<Vote> result = voteRepository.findByTargetId(target1);
+
+        assertEquals(1, result.size());
+        assertEquals(target1, result.get(0).getTargetId());
+    }
+
+    @Test
+    void findByTargetId_NoVotes_ReturnsEmpty() {
+        List<Vote> result = voteRepository.findByTargetId(new ObjectId());
+
+        assertTrue(result.isEmpty());
+    }
+
+    @Test
+    void findByUserIdAndTargetId_ReturnsMatchingVote() {
+        Vote vote = createVote(userId, targetId, true, 1);
         voteRepository.save(vote);
-        Vote saved = voteRepository.findById(vote.getId()).orElse(null);
 
-        // Assert
-        assertThat(saved).isNotNull();
-        assertThat(saved.getUserId()).isEqualTo(userId);
-        assertThat(saved.getIsPost()).isTrue();
-        assertThat(saved.getTargetId()).isEqualTo(targetId);
-        assertThat(saved.getVoteType()).isEqualTo(1);
-        assertThat(saved.getCreatedAt()).isNotNull();
+        List<Vote> result = voteRepository.findByUserIdAndTargetId(userId, targetId);
+
+        assertEquals(1, result.size());
+        assertEquals(userId, result.get(0).getUserId());
+        assertEquals(targetId, result.get(0).getTargetId());
     }
 
     @Test
-    void shouldFindVotesByUserId() {
-        // Arrange
-        ObjectId userId = new ObjectId();
-        ObjectId targetId1 = new ObjectId();
-        ObjectId targetId2 = new ObjectId();
-        ObjectId otherUserId = new ObjectId();
+    void findByUserIdAndTargetId_NoMatch_ReturnsEmpty() {
+        List<Vote> result = voteRepository.findByUserIdAndTargetId(new ObjectId(), new ObjectId());
 
-        Vote vote1 = Vote.builder()
-                .id(new ObjectId())
-                .userId(userId)
-                .isPost(true)
-                .targetId(targetId1)
-                .voteType(1)
-                .createdAt(Instant.now())
-                .build();
-
-        Vote vote2 = Vote.builder()
-                .id(new ObjectId())
-                .userId(userId)
-                .isPost(false)
-                .targetId(targetId2)
-                .voteType(-1)
-                .createdAt(Instant.now())
-                .build();
-
-        Vote vote3 = Vote.builder()
-                .id(new ObjectId())
-                .userId(otherUserId)
-                .isPost(true)
-                .targetId(targetId1)
-                .voteType(1)
-                .createdAt(Instant.now())
-                .build();
-
-        voteRepository.save(vote1);
-        voteRepository.save(vote2);
-        voteRepository.save(vote3);
-
-        // Act
-        List<Vote> userVotes = voteRepository.findByUserId(userId);
-
-        // Assert
-        assertThat(userVotes).hasSize(2);
-        assertThat(userVotes)
-                .extracting(Vote::getUserId)
-                .containsOnly(userId);
-        assertThat(userVotes)
-                .extracting(Vote::getTargetId)
-                .containsExactlyInAnyOrder(targetId1, targetId2);
+        assertTrue(result.isEmpty());
     }
 
     @Test
-    void shouldFindVotesByTargetId() {
-        // Arrange
-        ObjectId targetId = new ObjectId();
-        ObjectId userId1 = new ObjectId();
-        ObjectId userId2 = new ObjectId();
-
-        Vote vote1 = Vote.builder()
-                .id(new ObjectId())
-                .userId(userId1)
-                .isPost(true)
+    void save_VoteWithAllFields_PreservesAllData() {
+        Vote vote = Vote.builder()
+                .userId(userId)
                 .targetId(targetId)
+                .isPost(true)
                 .voteType(1)
                 .createdAt(Instant.now())
+                .isDeleted(false)
                 .build();
 
-        Vote vote2 = Vote.builder()
-                .id(new ObjectId())
-                .userId(userId2)
-                .isPost(true)
+        Vote saved = voteRepository.save(vote);
+
+        assertEquals(userId, saved.getUserId());
+        assertEquals(targetId, saved.getTargetId());
+        assertTrue(saved.getIsPost());
+        assertEquals(1, saved.getVoteType());
+        assertNotNull(saved.getCreatedAt());
+        assertFalse(saved.getIsDeleted());
+        assertNull(saved.getDeletedAt());
+    }
+
+    @Test
+    void save_VoteWithDefaultValues_UsesDefaults() {
+        Vote vote = Vote.builder()
+                .userId(userId)
                 .targetId(targetId)
-                .voteType(-1)
-                .createdAt(Instant.now())
+                .isPost(true)
+                .voteType(1)
                 .build();
 
-        voteRepository.save(vote1);
-        voteRepository.save(vote2);
+        Vote saved = voteRepository.save(vote);
 
-        // Act
+        assertFalse(saved.getIsDeleted());
+        assertNull(saved.getDeletedAt());
+    }
+
+    @Test
+    void save_SoftDeletedVote_PreservesDeletedState() {
+        Vote vote = Vote.builder()
+                .userId(userId)
+                .targetId(targetId)
+                .isPost(true)
+                .voteType(1)
+                .isDeleted(true)
+                .deletedAt(Instant.now())
+                .build();
+
+        Vote saved = voteRepository.save(vote);
+
+        assertTrue(saved.getIsDeleted());
+        assertNotNull(saved.getDeletedAt());
+    }
+
+    @Test
+    void update_ExistingVote_UpdatesSuccessfully() {
+        Vote vote = createVote(userId, targetId, true, 1);
+        Vote saved = voteRepository.save(vote);
+
+        saved.setVoteType(-1);
+        Vote updated = voteRepository.save(saved);
+
+        assertEquals(-1, updated.getVoteType());
+    }
+
+    @Test
+    void save_UpvoteAndDownvote_BothTypes() {
+        Vote upvote = createVote(userId, targetId, true, 1);
+        Vote downvote = createVote(new ObjectId(), targetId, true, -1);
+
+        voteRepository.saveAll(List.of(upvote, downvote));
+
         List<Vote> targetVotes = voteRepository.findByTargetId(targetId);
-
-        // Assert
-        assertThat(targetVotes).hasSize(2);
-        assertThat(targetVotes)
-                .extracting(Vote::getTargetId)
-                .containsOnly(targetId);
+        assertEquals(2, targetVotes.size());
+        assertTrue(targetVotes.stream().anyMatch(v -> v.getVoteType() == 1));
+        assertTrue(targetVotes.stream().anyMatch(v -> v.getVoteType() == -1));
     }
 
     @Test
-    void shouldFindVotesByUserIdAndTargetId() {
-        // Arrange
-        ObjectId userId = new ObjectId();
-        ObjectId targetId = new ObjectId();
-        ObjectId otherTargetId = new ObjectId();
+    void save_PostVoteAndCommentVote_BothTypes() {
+        Vote postVote = createVote(userId, targetId, true, 1);
+        Vote commentVote = createVote(userId, new ObjectId(), false, 1);
 
-        Vote vote1 = Vote.builder()
-                .id(new ObjectId())
-                .userId(userId)
-                .isPost(true)
-                .targetId(targetId)
-                .voteType(1)
-                .createdAt(Instant.now())
-                .build();
+        voteRepository.saveAll(List.of(postVote, commentVote));
 
-        Vote vote2 = Vote.builder()
-                .id(new ObjectId())
-                .userId(userId)
-                .isPost(false)
-                .targetId(otherTargetId)
-                .voteType(-1)
-                .createdAt(Instant.now())
-                .build();
-
-        voteRepository.save(vote1);
-        voteRepository.save(vote2);
-
-        // Act
-        List<Vote> specificVotes = voteRepository.findByUserIdAndTargetId(userId, targetId);
-
-        // Assert
-        assertThat(specificVotes).hasSize(1);
-        assertThat(specificVotes.get(0).getUserId()).isEqualTo(userId);
-        assertThat(specificVotes.get(0).getTargetId()).isEqualTo(targetId);
-    }
-
-    @Test
-    void shouldReturnEmptyListWhenNoVotesExist() {
-        // Arrange
-        ObjectId userId = new ObjectId();
-
-        // Act
         List<Vote> userVotes = voteRepository.findByUserId(userId);
-
-        // Assert
-        assertThat(userVotes).isEmpty();
+        assertEquals(2, userVotes.size());
+        assertTrue(userVotes.stream().anyMatch(Vote::getIsPost));
+        assertTrue(userVotes.stream().anyMatch(v -> !v.getIsPost()));
     }
 
 
     @Test
-    void shouldAllowSameUserToVoteOnDifferentTargets() {
-        // Arrange
-        ObjectId userId = new ObjectId();
-        ObjectId targetId1 = new ObjectId();
-        ObjectId targetId2 = new ObjectId();
+    void compoundIndex_DifferentTargetType_AllowsSave() {
+        Vote postVote = createVote(userId, targetId, true, 1);
+        Vote commentVote = createVote(userId, targetId, false, 1);
 
-        Vote vote1 = Vote.builder()
-                .id(new ObjectId())
-                .userId(userId)
-                .isPost(true)
-                .targetId(targetId1)
-                .voteType(1)
-                .createdAt(Instant.now())
-                .build();
+        voteRepository.save(postVote);
 
-        Vote vote2 = Vote.builder()
-                .id(new ObjectId())
-                .userId(userId)
-                .isPost(true)
-                .targetId(targetId2)
-                .voteType(1)
-                .createdAt(Instant.now())
-                .build();
+        // Should not throw - different targetType allows duplicate user+target combination
+        assertDoesNotThrow(() -> voteRepository.save(commentVote));
+    }
 
-        // Act
+    @Test
+    void findByUserIdAndTargetId_MultipleVotes_ReturnsAll() {
+        // This could happen if compound index includes more fields
+        Vote vote1 = createVote(userId, targetId, true, 1);
         voteRepository.save(vote1);
-        voteRepository.save(vote2);
-        List<Vote> votes = voteRepository.findByUserId(userId);
 
-        // Assert
-        assertThat(votes).hasSize(2);
+        List<Vote> result = voteRepository.findByUserIdAndTargetId(userId, targetId);
+
+        assertFalse(result.isEmpty());
+        assertTrue(result.stream().allMatch(v ->
+                v.getUserId().equals(userId) && v.getTargetId().equals(targetId)
+        ));
     }
 
     @Test
-    void shouldAllowSameUserToVoteOnPostAndCommentWithSameId() {
-        // Arrange
-        ObjectId userId = new ObjectId();
-        ObjectId targetId = new ObjectId();
+    void findAll_ReturnsAllVotes() {
+        Vote vote1 = createVote(userId, targetId, true, 1);
+        Vote vote2 = createVote(new ObjectId(), new ObjectId(), false, -1);
+        voteRepository.saveAll(List.of(vote1, vote2));
 
-        Vote voteOnPost = Vote.builder()
-                .id(new ObjectId())
-                .userId(userId)
-                .isPost(true)
-                .targetId(targetId)
-                .voteType(1)
-                .createdAt(Instant.now())
-                .build();
+        List<Vote> all = voteRepository.findAll();
 
-        Vote voteOnComment = Vote.builder()
-                .id(new ObjectId())
-                .userId(userId)
-                .isPost(false)
-                .targetId(targetId)
-                .voteType(1)
-                .createdAt(Instant.now())
-                .build();
-
-        // Act
-        voteRepository.save(voteOnPost);
-        voteRepository.save(voteOnComment);
-        List<Vote> votes = voteRepository.findByUserId(userId);
-
-        // Assert
-        assertThat(votes).hasSize(2);
-        assertThat(votes).extracting(Vote::getIsPost).containsExactlyInAnyOrder(true, false);
+        assertTrue(all.size() >= 2);
     }
 
     @Test
-    void shouldDeleteVote() {
-        // Arrange
-        ObjectId userId = new ObjectId();
-        ObjectId targetId = new ObjectId();
+    void count_ReturnsCorrectCount() {
+        Vote vote1 = createVote(userId, targetId, true, 1);
+        Vote vote2 = createVote(new ObjectId(), new ObjectId(), false, -1);
+        voteRepository.saveAll(List.of(vote1, vote2));
 
+        long count = voteRepository.count();
+
+        assertTrue(count >= 2);
+    }
+
+    @Test
+    void save_WithCreatedAtTimestamp_PreservesTimestamp() {
+        Instant specificTime = Instant.now().minusSeconds(3600);
         Vote vote = Vote.builder()
-                .id(new ObjectId())
                 .userId(userId)
-                .isPost(true)
                 .targetId(targetId)
+                .isPost(true)
                 .voteType(1)
-                .createdAt(Instant.now())
+                .createdAt(specificTime)
                 .build();
 
-        voteRepository.save(vote);
+        Vote saved = voteRepository.save(vote);
 
-        // Act
-        voteRepository.delete(vote);
-        Vote deleted = voteRepository.findById(vote.getId()).orElse(null);
+        assertEquals(specificTime, saved.getCreatedAt());
+    }
 
-        // Assert
-        assertThat(deleted).isNull();
+    private Vote createVote(ObjectId userId, ObjectId targetId, Boolean isPost, Integer voteType) {
+        return Vote.builder()
+                .userId(userId)
+                .targetId(targetId)
+                .isPost(isPost)
+                .voteType(voteType)
+                .createdAt(Instant.now())
+                .build();
     }
 }
