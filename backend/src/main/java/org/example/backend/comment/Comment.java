@@ -1,7 +1,10 @@
 package org.example.backend.comment;
 
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import com.fasterxml.jackson.databind.ser.std.ToStringSerializer;
 import lombok.*;
 import org.bson.types.ObjectId;
+import org.example.backend.vote.Votable;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.index.CompoundIndex;
 import org.springframework.data.mongodb.core.index.CompoundIndexes;
@@ -21,18 +24,22 @@ import java.time.Instant;
         @CompoundIndex(name = "post_score", def = "{'postId': 1, 'isDeleted': 1, 'score': -1}"),
         @CompoundIndex(name = "parent_created", def = "{'parentId': 1, 'isDeleted': 1, 'createdAt': 1}")
 })
-public class Comment {
+public class Comment implements Votable {
 
     @Id
+    @JsonSerialize(using = ToStringSerializer.class)
     private ObjectId id;
 
     @Indexed
+    @JsonSerialize(using = ToStringSerializer.class)
     private ObjectId postId;
 
     @Indexed
+    @JsonSerialize(using = ToStringSerializer.class)
     private ObjectId parentId;  // null for top-level comments
 
     @Indexed
+    @JsonSerialize(using = ToStringSerializer.class)
     private ObjectId ownerId;
 
     private String content;
@@ -56,4 +63,21 @@ public class Comment {
     private Boolean isDeleted = false;
 
     private Instant deletedAt;
+
+    @Override
+    public void incrementUpvote() {
+        this.upvoteCount++;
+    }
+    @Override
+    public void incrementDownvote() {
+        this.downvoteCount++;
+    }
+    @Override
+    public void decrementUpvote() {
+        this.upvoteCount--;
+    }
+    @Override
+    public void decrementDownvote() {
+        this.downvoteCount--;
+    }
 }
