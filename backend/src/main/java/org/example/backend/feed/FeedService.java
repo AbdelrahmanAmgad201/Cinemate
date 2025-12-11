@@ -92,6 +92,10 @@ public class FeedService {
         };
     }
 
+    public ForumPageResponse getExploreForums(int page) {
+        return getExploreForums(page, DEFAULT_PAGE_SIZE, "followers");
+    }
+
     @Cacheable(
             value = "exploreForum",
             key = "#page + '::' + #size + '::' + #sortBy",
