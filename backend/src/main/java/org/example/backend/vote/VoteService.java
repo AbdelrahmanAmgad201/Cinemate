@@ -51,11 +51,10 @@ public class VoteService {
     public void updateVote(UpdateVoteDTO updateVoteDTO,Long userId) {
         ObjectId objectUserId = longToObjectId(userId);
         ObjectId targetId = updateVoteDTO.getTargetId();
-        List<Vote> votes = voteRepository.findByUserIdAndTargetId(objectUserId,targetId);
-        if(votes.isEmpty()){
+        Vote vote = voteRepository.findByIsDeletedIsFalseAndUserIdAndTargetId(objectUserId,targetId);
+        if(vote == null){
             throw new IllegalArgumentException("Vote not found");
         }
-        Vote vote = votes.get(0);
         if (!vote.getUserId().equals(longToObjectId(userId))) {
             throw new AccessDeniedException("User does not have permission to update this forum");
         }
