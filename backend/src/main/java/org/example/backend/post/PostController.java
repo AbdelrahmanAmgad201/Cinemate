@@ -35,7 +35,7 @@ public class PostController {
         return ResponseEntity.ok("deleted");
     }
 
-    @GetMapping("/v1/forum-posts")
+    @PostMapping("/v1/forum-posts")
     public ResponseEntity<Page<Post>> getForumPosts(HttpServletRequest request,@RequestBody ForumPostsRequestDTO forumPostsRequestDTO) {
         return ResponseEntity.ok(postService.getForumPosts(forumPostsRequestDTO));
     }
