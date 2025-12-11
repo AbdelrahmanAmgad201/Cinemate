@@ -71,6 +71,11 @@ public class ForumService {
         );
         return buildSearchResult(forumsPage);
     }
+
+    public Forum getForumById(ObjectId forumId) {
+        return mongoTemplate.findById(forumId, Forum.class);
+    }
+
     private SearchResultDto buildSearchResult(Page<Forum> page) {
         return SearchResultDto.builder()
                 .forums(page.getContent())
