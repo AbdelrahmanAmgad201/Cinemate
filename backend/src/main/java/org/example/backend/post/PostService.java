@@ -111,7 +111,9 @@ public class PostService {
                 mainFeedRequestDTO.getPage(),
                 mainFeedRequestDTO.getPageSize()
         );
-        List<ObjectId> forumIds = followingRepository.findForumIdsByUserId(longToObjectId(userId));
+        List<ObjectId> forumIds = followingRepository.findForumIdsByUserId(longToObjectId(userId)).stream()
+                .map(d -> d.getObjectId("forumId"))
+                .toList();;
         return postRepository.findByForumIdIn(forumIds, pageable);
     }
 

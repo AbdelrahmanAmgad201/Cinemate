@@ -1,4 +1,5 @@
 package org.example.backend.forumfollowing;
+import org.bson.Document;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
@@ -18,5 +19,5 @@ public interface FollowingRepository extends MongoRepository<Following, ObjectId
     Page<Following> findByUserId(ObjectId userId, Pageable pageable);
 
     @Query(value = "{ 'userId': ?0 }", fields = "{ 'forumId': 1, '_id': 0 }")
-    List<ObjectId> findForumIdsByUserId(ObjectId userId);
+    List<Document> findForumIdsByUserId(ObjectId userId);
 }
