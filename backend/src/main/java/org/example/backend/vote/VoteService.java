@@ -67,10 +67,12 @@ public class VoteService {
     }
 
     @Transactional
-    public Boolean isVote(ObjectId targetId,Long userId) {
+    public Integer isVote(ObjectId targetId,Long userId) {
         ObjectId objectUserId = longToObjectId(userId);
         List<Vote> votes = voteRepository.findByUserIdAndTargetId(objectUserId,targetId);
-        return !(votes.isEmpty());
+        if (votes.isEmpty()) return 0;
+        Vote vote = votes.get(0);
+        return vote.getVoteType();
     }
 
     @Transactional

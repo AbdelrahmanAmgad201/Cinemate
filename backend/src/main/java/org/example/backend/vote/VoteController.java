@@ -53,7 +53,7 @@ public class VoteController {
     }
 
     @GetMapping("/v1/is-voted")
-    public ResponseEntity<Boolean> getIsVoted(
+    public ResponseEntity<Integer> getIsVoted(
             HttpServletRequest request,
             @PathVariable ObjectId targetId
     ){
