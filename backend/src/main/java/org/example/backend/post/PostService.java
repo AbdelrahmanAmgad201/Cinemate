@@ -7,21 +7,27 @@ import org.example.backend.deletion.AccessService;
 import org.example.backend.deletion.CascadeDeletionService;
 import org.example.backend.forum.Forum;
 import org.example.backend.forum.ForumRepository;
+import org.example.backend.forumfollowing.Following;
+import org.example.backend.forumfollowing.FollowingRepository;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.http.*;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.web.server.ResponseStatusException;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+
+import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
 public class PostService {
     private final RestTemplate restTemplate;
     private final ForumRepository forumRepository;
+    private final FollowingRepository followingRepository;
 
     @Value("${hatespeech.model.url}")
     private String url;
@@ -98,6 +104,15 @@ public class PostService {
         forum.setPostCount(forum.getPostCount() + 1);
         forumRepository.save(forum);
         deletionService.deletePost(postId);
+    }
+
+    public Page<Post> getUserPosts(Long userId, MainFeedRequestDTO mainFeedRequestDTO) {
+        Pageable pageable = PageRequest.of(
+                mainFeedRequestDTO.getPage(),
+                mainFeedRequestDTO.getPageSize()
+        );
+        List<ObjectId> forumIds = followingRepository.findForumIdsByUserId(longToObjectId(userId));
+        return postRepository.findByForumIdIn(forumIds, pageable);
     }
 
     private ObjectId longToObjectId(Long value) {

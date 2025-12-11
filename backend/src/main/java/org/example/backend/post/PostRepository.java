@@ -17,4 +17,6 @@ public interface PostRepository extends MongoRepository<Post, ObjectId> {
             Instant since,
             Pageable pageable
     );
+
+    Page<Post> findByForumIdIn(List<ObjectId> forumIds, Pageable pageable);
 }
