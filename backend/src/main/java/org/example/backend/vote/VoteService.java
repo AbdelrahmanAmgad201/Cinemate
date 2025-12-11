@@ -18,16 +18,12 @@ import org.springframework.stereotype.Service;
 @Service
 @RequiredArgsConstructor
 public class VoteService {
-    @Autowired
-    private VoteRepository voteRepository;
-
+    private final VoteRepository voteRepository;
     private final MongoTemplate mongoTemplate;
     private final CascadeDeletionService deletionService;
     private final AccessService accessService;
-    @Autowired
-    private PostRepository postRepository;
-    @Autowired
-    private CommentRepository commentRepository;
+    private final PostRepository postRepository;
+    private final CommentRepository commentRepository;
 
     @Transactional
     public void vote(VoteDTO voteDTO,Boolean isPost,Long userId) {
