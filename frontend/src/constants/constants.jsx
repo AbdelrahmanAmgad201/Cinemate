@@ -76,6 +76,11 @@ export const PATHS = {
     MOD : {
         PAGE: (id = ":forumId") => `/mod/${id}`,
     }
+    ,
+    FORUM: {
+        EXPLORE: '/forums-explore',
+        DETAILS: (id = ":forumId") => `/forum/${id}`,
+    }
 
 }
 
