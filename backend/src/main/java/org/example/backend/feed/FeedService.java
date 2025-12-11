@@ -37,7 +37,7 @@ public class FeedService {
             key = "#page + '::' + #size + '::' + #sortBy",
             unless = "#result == null || #result.posts.isEmpty()"
     )
-    public Page<Post> getExploreFeed(int page, int size, String sortBy) {
+    public PostPageResponse getExploreFeed(int page, int size, String sortBy) {
         log.info("Cache MISS - Fetching explore feed from DB: page={}, size={}, sortBy={}",
                 page, size, sortBy);
 
@@ -46,11 +46,11 @@ public class FeedService {
         Sort sort = buildSort(sortBy);
         Pageable pageable = PageRequest.of(page, size, sort);
 
-        return postRepository.findByIsDeletedFalseAndCreatedAtGreaterThanEqual(
+        Page<Post> postsPage = postRepository.findByIsDeletedFalseAndCreatedAtGreaterThanEqual(
                 cutoffDate,
                 pageable
         );
-        /*
+
         return PostPageResponse.builder()
                 .posts(postsPage.getContent())
                 .currentPage(postsPage.getNumber())
@@ -59,13 +59,13 @@ public class FeedService {
                 .pageSize(postsPage.getSize())
                 .hasNext(postsPage.hasNext())
                 .hasPrevious(postsPage.hasPrevious())
-                .build();*/
+                .build();
     }
 
     /**
      * Get explore feed with defaults
      */
-    public Page<Post> getExploreFeed(int page) {
+    public PostPageResponse getExploreFeed(int page) {
         return getExploreFeed(page, DEFAULT_PAGE_SIZE, "score");
     }
 

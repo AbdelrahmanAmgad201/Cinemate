@@ -2,8 +2,6 @@ package org.example.backend.feed;
 
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
-import org.example.backend.post.Post;
-import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -29,7 +27,7 @@ public class FeedController {
      * GET /api/feed/explore?sort=hot
      */
     @GetMapping("/explore")
-    public ResponseEntity<Page<Post>> explore(
+    public ResponseEntity<PostPageResponse> explore(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size,
             @RequestParam(defaultValue = "score") String sort) {
@@ -42,7 +40,7 @@ public class FeedController {
             size = 20; // Default to 20 if invalid
         }
 
-        Page<Post> response = feedService.getExploreFeed(page, size, sort);
+        PostPageResponse response = feedService.getExploreFeed(page, size, sort);
         return ResponseEntity.ok(response);
     }
 }
