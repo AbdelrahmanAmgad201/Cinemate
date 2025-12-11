@@ -48,7 +48,7 @@ class VoteControllerTest {
         voteDTO.setValue(1);
 
         updateVoteDTO = new UpdateVoteDTO();
-        updateVoteDTO.setId(voteId);
+        updateVoteDTO.setTargetId(voteId);
         updateVoteDTO.setValue(-1);
     }
 
