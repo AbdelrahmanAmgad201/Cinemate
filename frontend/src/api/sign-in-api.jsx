@@ -4,7 +4,7 @@ import {JWT} from "../constants/constants.jsx";
 
 export default async function signInApi({email, password, role}) {
     try{
-        const response = await api.post("/auth/login", {email, password, role});
+        const response = await api.post("/auth/v1/login", {email, password, role});
         const data = response.data;
         const token = data.token;
         const user = {
