@@ -27,6 +27,15 @@ public class ForumController {
         return ResponseEntity.ok(forum);
     }
 
+    @GetMapping("/v1/get-forum-by-id/{forumId}")
+    public ResponseEntity<Forum> getForumById(
+            HttpServletRequest request,
+            @PathVariable ObjectId forumId){
+
+        return ResponseEntity.ok(forumService.getForumById(forumId));
+    }
+
+
     @DeleteMapping("/v1/delete/{forumId}")
     public ResponseEntity<?> deleteForum(
             HttpServletRequest request,

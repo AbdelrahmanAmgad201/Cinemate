@@ -87,6 +87,11 @@ public class FollowingService {
                 .build();
     }
 
+    public Boolean isFollowed(ObjectId forumId, Long userId) {
+        ObjectId userObjectId = longToObjectId(userId);
+        return followingRepository.existsByUserIdAndForumId(userObjectId, forumId);
+    }
+
     private List<Forum> fetchNonDeletedForums(List<ObjectId> forumIds) {
         if (forumIds.isEmpty()) {
             return List.of();

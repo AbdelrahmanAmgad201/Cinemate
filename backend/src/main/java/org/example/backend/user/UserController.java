@@ -1,6 +1,7 @@
 package org.example.backend.user;
 
 import jakarta.servlet.http.HttpServletRequest;
+import org.bson.types.ObjectId;
 import org.example.backend.security.CredentialsRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -35,6 +36,15 @@ public class UserController {
 
         return ResponseEntity.ok(message);
     }
+
+    @GetMapping("/v1/user-name-from-object-user-id/{userId}")
+    public ResponseEntity<String> getUserNameFromObjectUserId(
+            HttpServletRequest request,
+            @PathVariable ObjectId userId) {
+        return  ResponseEntity.ok(userService.getUserNameFromObjectUserId(userId));
+    }
+
+
     @GetMapping("/test")
     public ResponseEntity<String> testUser() {
         return ResponseEntity.ok("USER OK");
