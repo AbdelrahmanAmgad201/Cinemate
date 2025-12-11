@@ -35,6 +35,7 @@ public class Post implements Votable {
     private ObjectId forumId;
 
     @Indexed
+    @JsonSerialize(using = ToStringSerializer.class)
     private ObjectId ownerId;
 
     private String title;
