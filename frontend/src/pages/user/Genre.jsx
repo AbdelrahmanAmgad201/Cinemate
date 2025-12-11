@@ -104,7 +104,7 @@ const Genre = ({ listGenre }) => {
             minHeight: '100vh'}}>
                 <main style={{ flex: '1' }}>
                     <div style={{display: "flex", flexDirection: "column", gap: "60px"}}>
-                        <NavBar />
+                        {/*<NavBar />*/}
                         <MoviesList list={movies} name={title} page={currPage} setPage={setCurrPage} onClick={(id) => navigate(PATHS.MOVIE.DETAILS(id))}  />
                     </div>
                 </main>

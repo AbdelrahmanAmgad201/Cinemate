@@ -8,6 +8,8 @@ import UserSignIn from "../pages/auth/SignIn.jsx";
 import UserSignUp from "../pages/auth/SignUp.jsx";
 import EmailVerification from "../pages/auth/EmailVerification.jsx";
 import HomePage from "../pages/user/HomePage.jsx";
+import ExploreForums from "../pages/user/ExploreForums.jsx";
+import ForumPage from "../pages/user/ForumPage.jsx";
 import Browse from "../pages/user/Browse.jsx";
 import Genre from '../pages/user/Genre.jsx';
 import OrgSignUp from "../pages/org/auth/OrgSignUp.jsx";
@@ -18,6 +20,7 @@ import OrgAddMovie from "../pages/org/OrgAddMovie.jsx";
 import OrgMoviesAndAnalytics from "../pages/org/OrgMoviesAndAnalytics.jsx";
 import MoviePreviewPage from "../pages/user/MoviePreviewPage.jsx";
 import WatchPage from "../pages/user/WatchPage.jsx";
+import PostFullPage from '../components/PostFullPage.jsx';
 
 import NotFoundPage from "../components/NotFoundPage.jsx";
 import TestSandBox from "../pages/TestSandBox.jsx";
@@ -27,6 +30,8 @@ import SiteAnalytics from "../pages/admin/SiteAnalytics.jsx";
 
 import { ROLES, PATHS } from "../constants/constants.jsx";
 import AddAdmin from "../pages/admin/AddAdmin.jsx";
+import UserMainLayout from "../components/UserMainLayout.jsx";
+import SimpleLayout from "../components/SimpleLayout.jsx";
 
 export default function AppRoutes() {
 
@@ -72,7 +77,9 @@ export default function AppRoutes() {
             <Route element={<RoleRoute allowedRoles={[ROLES.USER, ROLES.ADMIN]} />}>
                 {/*<Route path={PATHS.HOME} element={<HomePage />} />*/}
                 {/*<Route path={PATHS.MOVIE.BROWSE} element={<Browse />} />*/}
-                <Route path={PATHS.MOVIE.DETAILS()} element={<MoviePreviewPage />} />
+                <Route element={<SimpleLayout />}>
+                    <Route path={PATHS.MOVIE.DETAILS()} element={<MoviePreviewPage />} />
+                </Route>
             </Route>
 
             {/*Added here for testing*/}
@@ -80,11 +87,19 @@ export default function AppRoutes() {
 
             {/* protected routes (requires login + verified) */}
             <Route element={<RoleRoute allowedRoles={[ROLES.USER]} />}>
-                <Route path={PATHS.HOME} element={<HomePage />} />
-                <Route path={PATHS.MOVIE.BROWSE} element={<Browse />} />
-                <Route path={PATHS.MOVIE.GENRE()} element={<Genre />} />
-                {/*<Route path={PATHS.MOVIE.DETAILS()} element={<MoviePreviewPage />} />*/}
-                <Route path={PATHS.MOVIE.WATCH} element={<WatchPage />} />
+                <Route element={<UserMainLayout />}> {/* Navbar + Sidebar*/}
+                    <Route path={PATHS.HOME} element={<HomePage />} />
+                    <Route path={PATHS.FORUM.EXPLORE} element={<ExploreForums />} />
+                    <Route path={PATHS.FORUM.DETAILS()} element={<ForumPage />} />
+                    <Route path={PATHS.POST.FULLPAGE()} element={<PostFullPage />} />
+                </Route>
+                <Route element={<SimpleLayout />}> {/* Navbar only */}
+                    <Route path={PATHS.MOVIE.BROWSE} element={<Browse />} />
+                    <Route path={PATHS.MOVIE.GENRE()} element={<Genre />} />
+                    {/*<Route path={PATHS.MOVIE.DETAILS()} element={<MoviePreviewPage />} />*/}
+                    <Route path={PATHS.MOVIE.WATCH} element={<WatchPage />} />
+                    
+                </Route>                
 
             </Route>
 
