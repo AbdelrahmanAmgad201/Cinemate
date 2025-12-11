@@ -22,6 +22,8 @@ import org.springframework.data.domain.Pageable;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import java.time.Instant;
+
 @Service
 @RequiredArgsConstructor
 public class PostService {
@@ -45,11 +47,13 @@ public class PostService {
         Forum forum = mongoTemplate.findById(addPostDto.getForumId(), Forum.class);
         forum.setPostCount(forum.getPostCount() + 1);
         forumRepository.save(forum);
+        Instant now = Instant.now();
         Post post = Post.builder()
                 .ownerId(ObjectUserId)
                 .forumId(addPostDto.getForumId())
                 .title(addPostDto.getTitle())
                 .content(addPostDto.getContent())
+                .createdAt(now)
                 .build();
         return (postRepository.save(post));
     }
