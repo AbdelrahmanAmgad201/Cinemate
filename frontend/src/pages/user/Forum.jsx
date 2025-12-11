@@ -67,6 +67,7 @@ export default function Forum() {
             if (!res.success) {
                 showToast("Failed to fetch forum details", res.message || "unknown error", "error")
                 setError(res.message)
+                navigate(PATHS.HOME);
                 return;
             }
 
