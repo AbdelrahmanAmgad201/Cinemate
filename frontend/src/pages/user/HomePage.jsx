@@ -42,7 +42,7 @@ const HomePage = () => {
                 setPosts(prev => {
                     const combined = [...prev, ...items];
                     const map = new Map();
-                    for (const p of combined) map.set(p.postId, p);
+                    for (const p of combined) map.set(p.id, p);
                     return Array.from(map.values());
                 });
 
@@ -98,7 +98,7 @@ const HomePage = () => {
             <div className="posts-list">
                 {loading && <LoadingFallback />}
                 {posts.map((post, index) => (
-                    <PostCard key={post.postId || index} postBody={post} />
+                    <PostCard key={post.id || index} postBody={post} />
                 ))}
 
                 {loadingMore && (
