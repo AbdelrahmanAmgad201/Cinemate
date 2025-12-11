@@ -32,16 +32,13 @@ const PostCard = ({ postBody }) => {
 
         try{
             let result;
-            console.log("postId: ", postBody.id, "value: ", newVote);
             if(previousVote === 0 && newVote !== 0){
-                console.log("Creating vote - postId:", postBody.id, "value:", newVote);
                 result = await votePostApi({ postId: postBody.id, value: newVote });
                 if (result.success) {
                     console.log("Vote created");
                 }
             }
             else if (newVote === 0 && previousVote !== 0){
-                console.log("Deleting vote - voteId:", postBody.id);
                 result = await deleteVotePostApi({ targetId: postBody.id });
                 
                 
@@ -51,7 +48,6 @@ const PostCard = ({ postBody }) => {
             }
 
             else if (previousVote !== 0 && newVote !== 0) {
-                console.log("Updating vote - voteId:", "value:", newVote);
                 result = await updateVotePostApi({ postId: postBody.id, value: newVote });
             }
             if (!result?.success) {
@@ -85,7 +81,7 @@ const PostCard = ({ postBody }) => {
 
             if(result.success){
                 console.log('Post deleted successfully');
-                navigate('/');
+                navigate(`/forum/${post.forumId}`);
             }
 
             else{
@@ -119,23 +115,19 @@ const PostCard = ({ postBody }) => {
             }
 
             try {
-                console.log("Checking vote for postId:", postBody.id);
                 const result = await isVotedPostApi({ targetId: postBody.id });
                 
                 if (result.success) {
-                    console.log("Vote check result:", result.data);
-                    // Handle different response formats
                     let voteValue = 0;
                     if (typeof result.data === 'number') {
                         voteValue = result.data;
                     } else if (typeof result.data === 'boolean') {
-                        voteValue = 0; // If it returns false, user hasn't voted
+                        voteValue = 0;
                     } else if (result.data && typeof result.data.value === 'number') {
                         voteValue = result.data.value;
                     }
                     
                     setUserVote(voteValue);
-                    console.log("User vote set to:", voteValue);
                 } else {
                     console.log("No existing vote found");
                     setUserVote(0);
@@ -149,11 +141,9 @@ const PostCard = ({ postBody }) => {
         checkVote();
     }, [postBody?.id, user?.id]);
 
-    // Set initial vote count from post data
     useEffect(() => {
         if (postBody) {
             const totalVotes = (postBody.upvoteCount || 0) - (postBody.downvoteCount || 0);
-            console.log("Setting initial vote count:", totalVotes, "upvotes:", postBody.upvoteCount, "downvotes:", postBody.downvoteCount);
             setVoteCount(totalVotes);
         }
     }, [postBody?.id, postBody?.upvoteCount, postBody?.downvoteCount]);

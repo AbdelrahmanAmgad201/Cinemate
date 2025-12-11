@@ -42,16 +42,13 @@ const PostFullPage = () => {
 
         try{
             let result;
-            console.log("postId: ", postId, "value: ", newVote);
             if(previousVote === 0 && newVote !== 0){
-                console.log("Creating vote - postId:", postId, "value:", newVote);
                 result = await votePostApi({ postId: postId, value: newVote });
                 if (result.success) {
                     console.log("Vote created");
                 }
             }
             else if (newVote === 0 && previousVote !== 0){
-                console.log("Deleting vote - voteId:", postId);
                 result = await deleteVotePostApi({ targetId: postId });
                 
                 
@@ -61,7 +58,6 @@ const PostFullPage = () => {
             }
 
             else if (previousVote !== 0 && newVote !== 0) {
-                console.log("Updating vote - voteId:", "value:", newVote);
                 result = await updateVotePostApi({ postId: postId, value: newVote });
             }
             if (!result?.success) {
@@ -118,27 +114,26 @@ const PostFullPage = () => {
             const result = await updatePostApi({
                 postId: post.id, 
                 forumId: post.forumId,
-                title: updatedPostData.title,
-                content: updatedPostData.content
+                title: updatedPost.title,
+                content: updatedPost.content
             });
-
+    
             if (result.success) {
-                const updatedPost = {
+                // Update the local post state with new data
+                setPost({
                     ...post,
-                    title: updatedPostData.title,
-                    content: updatedPostData.content,
-                    media: updatedPostData.media
-                };
-                onSave(updatedPost, mediaFile);
+                    title: updatedPost.title,
+                    content: updatedPost.content,
+                    media: updatedPost.media
+                });
+                setEditMode(false);
+                console.log('Post updated successfully');
             } else {
                 console.error('Update failed:', result.message);
             }
         } catch (error) {
             console.error('Error updating post:', error);
         }
-        setPost(updatedPost);
-        setEditMode(false);
-        console.log('Post updated:', updatedPost, mediaFile);
     };
 
     useEffect(() => {
@@ -148,14 +143,11 @@ const PostFullPage = () => {
             }
 
             try {
-                // console.log("Checking vote for postId:", postId);
                 const result = await isVotedPostApi({ targetId: postId });
                 
                 if (result.success) {
-                    console.log("Vote check result:", result.data);
                     const voteValue = typeof result.data === 'number' ? result.data : 0;
                     setUserVote(voteValue);
-                    console.log("User vote set to:", voteValue);
                 } else {
                     console.error("Vote check failed:", result.message);
                     setUserVote(0);
@@ -171,9 +163,7 @@ const PostFullPage = () => {
 
     useEffect(() => {
         if (post) {
-            console.log("upvotecount: ", post.upvoteCount, "downvoteCount: ",post.downvoteCount )
             const totalVotes = (post.upvoteCount || 0) - (post.downvoteCount || 0);
-            console.log("Setting initial vote count:", totalVotes);
             setVoteCount(totalVotes);
         }
     }, [post]);
