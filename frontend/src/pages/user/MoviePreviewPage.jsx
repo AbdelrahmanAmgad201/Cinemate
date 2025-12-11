@@ -1,6 +1,7 @@
 import {useState, useEffect, useContext, useRef} from 'react'
 import { AuthContext } from "../../context/AuthContext.jsx";
 import './style/MoviePreviewPage.css'
+import '../../style/CommonModal.css'
 import ReviewCard from "../../components/ReviewCard.jsx";
 import { dummyReviews } from "../../data/dummy-reviews.jsx";
 import {useParams, useLocation, useNavigate} from "react-router-dom";
@@ -24,10 +25,7 @@ export default function MoviePreviewPage() {
     const { movieId } = useParams();
     const location = useLocation();
     const navigate = useNavigate();
-    // In home-page, use as follow
-    // <Link to={PATHS.MOVIE.DETAILS(movieId)} state={{ movie }}>
-    //     <MovieCard/>
-    // </Link>
+
     const [movie, setMovie] = useState(location.state?.movie ?? null);
     const [movieLoading, setMovieLoading] = useState(false);
     const [movieError, setMovieError] = useState(null);
@@ -378,11 +376,11 @@ export default function MoviePreviewPage() {
                                                 setFormDesc(inputValue);
                                             }
                                         }}
-                                        placeholder={`Write your review (max ${MAX_LENGTHS.TEXTAREA} words)`}
+                                        placeholder={`Write your review (max ${MAX_LENGTHS.TEXTAREA} characters)`}
                                         maxLength={MAX_LENGTHS.TEXTAREA}
                                         required
                                     />
-                                    <small>{formDesc.trim().split(/\s+/).length} / 500 words</small>
+                                    <small>{formDesc.length} / {MAX_LENGTHS.TEXTAREA} characters</small>
                                 </label>
 
                                 <div className="modal-actions">

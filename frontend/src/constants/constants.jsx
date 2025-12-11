@@ -17,6 +17,10 @@ export const MAX_VALUES = {
     BIRTHYEARS: 110,
 };
 
+export const PAGE_SIZE = {
+    FORUM : 2,
+}
+
 export const ROLES = {
     USER: "USER",
     ORGANIZATION: "ORGANIZATION",
@@ -35,6 +39,7 @@ export const PATHS = {
     USER : {
         SIGN_IN: "/user/sign-in", // Old was "/"
         SIGN_UP: "/user/sign-up", // Old was "/user-sign-up"
+        PROFILE: (id = ":userId") => `/user/${id}`,
     },
 
     ADMIN : {
@@ -62,15 +67,24 @@ export const PATHS = {
 
     POST: {
         FULLPAGE: (id = ":postId") => `/post/${id}`,
+    },
+
+    FORUM : {
+        EXPLORE: '/forums-explore',
+        PAGE : (id = ":forumId") => `/forum/${id}`, // May change to name if it's unique
+    },
+
+    MOD : {
+        PAGE: (id = ":forumId") => `/mod/${id}`,
     }
     ,
-    FORUM: {
-        EXPLORE: '/forums-explore',
-        DETAILS: (id = ":forumId") => `/forum/${id}`,
-    }
-
+    
 }
 
 export const JWT = {
     STORAGE_NAME : "CINEMATE_JWT_TOKEN",
+}
+
+export const SESSION_STORAGE = {
+    USER_SIDE_BAR_NAME : "CINEMATE_USER_SIDE_BAR",
 }

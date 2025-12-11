@@ -10,6 +10,9 @@ import org.example.backend.forum.ForumRepository;
 import org.example.backend.forumfollowing.Following;
 import org.example.backend.forumfollowing.FollowingRepository;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.http.*;
 import org.springframework.security.access.AccessDeniedException;
@@ -23,6 +26,10 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 import java.time.Instant;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.web.server.ResponseStatusException;
 
 @Service
 @RequiredArgsConstructor
@@ -59,18 +66,26 @@ public class PostService {
     }
 
     @Transactional
-    public Post updatePost(ObjectId postId,AddPostDto addPostDto, Long userId){
+    public Post updatePost(ObjectId postId, AddPostDto addPostDto, Long userId) {
         if (!analyzeText(addPostDto.getContent())) {
             throw new HateSpeechException("hate speech detected");
         }
         Post post = mongoTemplate.findById(postId, Post.class);
-        canUpdatePost(post,postId,userId);
+        canUpdatePost(post, postId, userId);
         post.setTitle(addPostDto.getTitle());
         post.setContent(addPostDto.getContent());
         return (postRepository.save(post));
     }
 
-    private void canUpdatePost(Post post,ObjectId postId, Long userId){
+    @Transactional
+    public Page<Post> getForumPosts(ForumPostsRequestDTO forumPostsRequestDTO) {
+        Pageable pageable = PageRequest.of(
+                forumPostsRequestDTO.getPage(),
+                forumPostsRequestDTO.getPageSize());
+        return postRepository.findByIsDeletedFalseAndForumId(forumPostsRequestDTO.getForumId(), pageable);
+    }
+
+    private void canUpdatePost(Post post, ObjectId postId, Long userId) {
         if (post == null) {
             throw new IllegalArgumentException("Post not found with id: " + postId);
         }
@@ -90,8 +105,7 @@ public class PostService {
         String body = "{\"text\":\"" + text.replace("\"", "\\\"") + "\"}";
 
         HttpEntity<String> request = new HttpEntity<>(body, headers);
-        ResponseEntity<Boolean> response =
-                restTemplate.postForEntity(url, request, Boolean.class);
+        ResponseEntity<Boolean> response = restTemplate.postForEntity(url, request, Boolean.class);
         return response.getBody();
     }
 
@@ -113,11 +127,11 @@ public class PostService {
     public Page<Post> getUserPosts(Long userId, MainFeedRequestDTO mainFeedRequestDTO) {
         Pageable pageable = PageRequest.of(
                 mainFeedRequestDTO.getPage(),
-                mainFeedRequestDTO.getPageSize()
-        );
+                mainFeedRequestDTO.getPageSize());
         List<ObjectId> forumIds = followingRepository.findForumIdsByUserId(longToObjectId(userId)).stream()
                 .map(d -> d.getObjectId("forumId"))
-                .toList();;
+                .toList();
+        ;
         return postRepository.findByIsDeletedFalseAndForumIdIn(forumIds, pageable);
     }
 
