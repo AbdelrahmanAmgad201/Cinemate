@@ -279,40 +279,6 @@ export default function Forum() {
             {/* Main Grid -> 2 Cols*/}
             <div className="forum-main-grid">
                 <main className="feed-col">
-                    {/*<div className="feed-sort-bar">*/}
-                    {/*    <span className="sort-label">Sort By:</span>*/}
-
-                    {/*    <div className="sort-dropdown-container">*/}
-                    {/*        <button*/}
-                    {/*            className="sort-trigger"*/}
-                    {/*            onClick={() => setIsSortOpen(!isSortOpen)}*/}
-                    {/*            onBlur={() => setTimeout(() => setIsSortOpen(false), 200)} // Close when clicking away*/}
-                    {/*        >*/}
-                    {/*            <span className="sort-icon">{activeSort.icon}</span>*/}
-                    {/*            <span className="sort-text">{activeSort.label}</span>*/}
-                    {/*            <IoIosArrowDown className={`sort-arrow ${isSortOpen ? 'open' : ''}`} />*/}
-                    {/*        </button>*/}
-
-                    {/*        {isSortOpen && (*/}
-                    {/*            <div className="sort-dropdown-menu">*/}
-                    {/*                {SORT_OPTIONS.map((option) => (*/}
-                    {/*                    <div*/}
-                    {/*                        key={option.value}*/}
-                    {/*                        className={`sort-option ${activeSort.value === option.value ? 'selected' : ''}`}*/}
-                    {/*                        onClick={() => {*/}
-                    {/*                            setActiveSort(option);*/}
-                    {/*                            setIsSortOpen(false);*/}
-                    {/*                        }}*/}
-                    {/*                    >*/}
-                    {/*                        <span className="sort-option-icon">{option.icon}</span>*/}
-                    {/*                        {option.label}*/}
-                    {/*                    </div>*/}
-                    {/*                ))}*/}
-                    {/*            </div>*/}
-                    {/*        )}*/}
-                    {/*    </div>*/}
-                    {/*</div>*/}
-
 
                     <PostsFeed
                         posts={posts}
