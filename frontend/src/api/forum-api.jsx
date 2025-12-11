@@ -128,7 +128,17 @@ export async function getModApi({userId}) {
     }
 }
 
+export async function searchForumsApi({query, page, size}) {
+    try {
+        const response = await api.get(`/forum/v1/search`, { params: { q:query, page, size }});
+        console.log(response);
 
+        return { success: true, data: response.data };
+    } catch (err) {
+        return { success: false, message: err.message };
+    }
+
+}
 
 
 

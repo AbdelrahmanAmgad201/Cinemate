@@ -94,7 +94,6 @@ export default function AppRoutes() {
                 <Route element={<UserMainLayout />}> {/* Navbar + Sidebar*/}
                     <Route path={PATHS.HOME} element={<HomePage />} />
                     <Route path={PATHS.FORUM.EXPLORE} element={<ExploreForums />} />
-                    <Route path={PATHS.FORUM.DETAILS()} element={<ForumPage />} />
                     <Route path={PATHS.POST.FULLPAGE()} element={<PostFullPage />} />
                     <Route path={PATHS.FORUM.PAGE()} element={<Forum/>} />
                 </Route>

@@ -70,6 +70,7 @@ export const PATHS = {
     },
 
     FORUM : {
+        EXPLORE: '/forums-explore',
         PAGE : (id = ":forumId") => `/forum/${id}`, // May change to name if it's unique
     },
 
@@ -77,11 +78,7 @@ export const PATHS = {
         PAGE: (id = ":forumId") => `/mod/${id}`,
     }
     ,
-    FORUM: {
-        EXPLORE: '/forums-explore',
-        DETAILS: (id = ":forumId") => `/forum/${id}`,
-    }
-
+    
 }
 
 export const JWT = {

@@ -16,7 +16,7 @@ export default function ForumCard({forum, onFollowChange}){
     }
 
     function handleCardClick() {
-        navigate(PATHS.FORUM.DETAILS(forum.id));
+        navigate(PATHS.FORUM.PAGE(forum.id));
     }
 
     return (
