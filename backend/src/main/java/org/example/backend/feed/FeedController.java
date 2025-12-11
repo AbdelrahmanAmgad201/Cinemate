@@ -2,6 +2,7 @@ package org.example.backend.feed;
 
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -43,4 +44,23 @@ public class FeedController {
         PostPageResponse response = feedService.getExploreFeed(page, size, sort);
         return ResponseEntity.ok(response);
     }
+
+    @GetMapping("/v1/explore-forum")
+    public ResponseEntity<ForumPageResponse> exploreForum(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size,
+            @RequestParam(defaultValue = "followers") String sort) {
+
+        // Validate page and size
+        if (page < 0) {
+            return ResponseEntity.badRequest().build();
+        }
+        if (size < 1 || size > 100) {
+            size = 20; // Default to 20 if invalid
+        }
+
+        ForumPageResponse response = feedService.getExploreForums(page, size, sort);
+        return ResponseEntity.ok(response);
+    }
+
 }

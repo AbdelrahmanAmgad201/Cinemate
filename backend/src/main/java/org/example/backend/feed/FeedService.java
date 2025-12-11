@@ -2,6 +2,8 @@ package org.example.backend.feed;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.example.backend.forum.Forum;
+import org.example.backend.forum.ForumRepository;
 import org.example.backend.post.Post;
 import org.example.backend.post.PostRepository;
 import org.springframework.cache.annotation.Cacheable;
@@ -24,6 +26,7 @@ public class FeedService {
     // configuration
     private static final int EXPLORE_DAYS_LIMIT = 7;
     private static final int DEFAULT_PAGE_SIZE = 20;
+    private final ForumRepository forumRepository;
 
     /**
      * Get explore feed - popular posts from last 7 days
@@ -61,7 +64,6 @@ public class FeedService {
                 .hasPrevious(postsPage.hasPrevious())
                 .build();
     }
-
     /**
      * Get explore feed with defaults
      */
@@ -72,6 +74,15 @@ public class FeedService {
     /**
      * Build sort based on sortBy parameter
      */
+    private Sort buildSortForum(String sortBy) {
+        return switch (sortBy.toLowerCase()) {
+            case "new" -> Sort.by(Sort.Direction.DESC, "createdAt");
+            case "followers" -> Sort.by(Sort.Direction.DESC, "followerCount");
+            case "posts" -> Sort.by(Sort.Direction.DESC, "postCount");
+            default -> Sort.by(Sort.Direction.DESC, "followerCount");  // Default to score
+        };
+    }
+
     private Sort buildSort(String sortBy) {
         return switch (sortBy.toLowerCase()) {
             case "new" -> Sort.by(Sort.Direction.DESC, "createdAt");
@@ -79,5 +90,34 @@ public class FeedService {
             case "top", "score" -> Sort.by(Sort.Direction.DESC, "score");
             default -> Sort.by(Sort.Direction.DESC, "score");  // Default to score
         };
+    }
+
+    public ForumPageResponse getExploreForums(int page) {
+        return getExploreForums(page, DEFAULT_PAGE_SIZE, "followers");
+    }
+
+    @Cacheable(
+            value = "exploreForum",
+            key = "#page + '::' + #size + '::' + #sortBy",
+            unless = "#result == null || #result.forums.isEmpty()"
+    )
+    public ForumPageResponse getExploreForums(int page, int size, String sortBy) {
+        log.info("Cache MISS - Fetching explore feed from DB: page={}, size={}, sortBy={}",
+                page, size, sortBy);
+
+        Sort sort = buildSortForum(sortBy);
+        Pageable pageable = PageRequest.of(page, size, sort);
+
+        Page<Forum> forumsPage = forumRepository.findAll(pageable);
+
+        return ForumPageResponse.builder()
+                .forums(forumsPage.getContent())
+                .currentPage(forumsPage.getNumber())
+                .totalPages(forumsPage.getTotalPages())
+                .totalElements(forumsPage.getTotalElements())
+                .pageSize(forumsPage.getSize())
+                .hasNext(forumsPage.hasNext())
+                .hasPrevious(forumsPage.hasPrevious())
+                .build();
     }
 }

@@ -1,3 +1,103 @@
-/* Explore forums page placeholder */
-.explore-forums-page { padding: 20px; }
-.explore-forums-page h1 { color: var(--ghost-white); }
+.explore-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 24px;
+    flex-wrap: wrap;
+    gap: 16px;
+}
+
+.explore-title {
+    margin: 0;
+}
+
+.explore-sort-buttons {
+    display: flex;
+    gap: 8px;
+    background-color: rgba(255, 255, 255, 0.05);
+    padding: 4px;
+    border-radius: 8px;
+}
+
+.sort-btn {
+    background: transparent;
+    border: none;
+    color: #8ba2b1;
+    padding: 6px 16px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    border-radius: 6px;
+    transition: all 0.2s ease;
+}
+
+.sort-btn:hover {
+    color: #ffffff;
+    background-color: rgba(255, 255, 255, 0.1);
+}
+
+.sort-btn.active {
+    background-color: var(--blue-bell, #7c83fd);
+    color: #ffffff;
+}
+
+.loading-text {
+    text-align: center;
+    color: #8ba2b1;
+    margin-top: 40px;
+}
+
+@media (max-width: 600px) {
+    .explore-header {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .explore-sort-buttons {
+        width: 100%;
+        justify-content: space-between;
+    }
+
+    .sort-btn {
+        flex: 1;
+        text-align: center;
+        padding: 8px 4px;
+        font-size: 13px;
+    }
+}
+
+.forums-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+
+    gap: 24px;
+
+    width: 100%;
+    margin-top: 20px;
+}
+
+.load-more-container {
+    display: flex;
+    justify-content: center;
+    margin: 40px 0;
+}
+
+.load-more-btn {
+    background-color: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    color: white;
+    padding: 10px 24px;
+    border-radius: 20px;
+    cursor: pointer;
+    font-weight: 600;
+    transition: all 0.2s;
+}
+
+.load-more-btn:hover {
+    background-color: rgba(255, 255, 255, 0.2);
+}
+
+.load-more-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
