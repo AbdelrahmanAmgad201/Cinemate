@@ -3,6 +3,7 @@ package org.example.backend.post;
 import jakarta.servlet.http.HttpServletRequest;
 import org.bson.types.ObjectId;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -19,16 +20,23 @@ public class PostController {
         ObjectId postId = post.getId();
         return ResponseEntity.ok(postId.toHexString());
     }
+
     @PutMapping("/v1/post/{postId}")
     public ResponseEntity<String> updatePost(HttpServletRequest request, @PathVariable ObjectId postId, @RequestBody AddPostDto addPostDto) {
         Long userId = (Long) request.getAttribute("userId");
         postService.updatePost(postId, addPostDto, userId);
         return ResponseEntity.ok(postId.toHexString());
     }
+
     @DeleteMapping("/v1/post/{postId}")
     public ResponseEntity<String> deletePost(HttpServletRequest request, @PathVariable ObjectId postId) {
         Long userId = (Long) request.getAttribute("userId");
         postService.deletePost(postId, userId);
         return ResponseEntity.ok("deleted");
+    }
+
+    @GetMapping("/v1/forum-posts")
+    public ResponseEntity<Page<Post>> getForumPosts(HttpServletRequest request,@RequestBody ForumPostsRequestDTO forumPostsRequestDTO) {
+        return ResponseEntity.ok(postService.getForumPosts(forumPostsRequestDTO));
     }
 }
