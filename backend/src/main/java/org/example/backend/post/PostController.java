@@ -33,7 +33,7 @@ public class PostController {
         postService.deletePost(postId, userId);
         return ResponseEntity.ok("deleted");
     }
-    @GetMapping("/v1/user-main-feed")
+    @PostMapping("/v1/user-main-feed")
     public ResponseEntity<Page<Post>> getUserFeed(
             HttpServletRequest request,
             @RequestBody MainFeedRequestDTO mainFeedRequestDTO) {
