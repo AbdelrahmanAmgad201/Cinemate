@@ -26,6 +26,7 @@ export default function Mod() {
     // const [posts, setPosts] = useState();
     const [saving, setSaving] = useState(false);
     const [deleted, setDeleted] = useState(false);
+    const [loading, setLoading] = useState(true);
 
     // Tested connection to backend
     const handleSave = async (e) => {
@@ -72,11 +73,15 @@ export default function Mod() {
         const res = await deleteForumApi({forumId});
         console.log({res, forumId: forumId, user: user.id, isMod: isMod})
 
-        setDeleted(true);
 
         if (res.success === false) return showToast('Failed to delete forum', res.message || 'unknown error', 'error')
 
+        setDeleted(true);
         showToast('Deleted', 'Forum marked deleted', 'info');
+
+        setTimeout(() => {
+            navigate(PATHS.HOME);
+        }, 2000);
     };
 
     useEffect(() => {
@@ -89,6 +94,7 @@ export default function Mod() {
             if (!res.success) {
                 showToast("Failed to fetch forum details", res.message || "unknown error", "error")
                 // setError(res.message)
+                navigate(PATHS.HOME);
                 return;
             }
 
