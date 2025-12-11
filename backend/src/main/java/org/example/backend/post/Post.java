@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.fasterxml.jackson.databind.ser.std.ToStringSerializer;
 import lombok.*;
 import org.bson.types.ObjectId;
+import org.example.backend.vote.Votable;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.index.CompoundIndex;
 import org.springframework.data.mongodb.core.index.CompoundIndexes;
@@ -23,7 +24,7 @@ import java.time.Instant;
         @CompoundIndex(name = "forum_score", def = "{'forumId': 1, 'isDeleted': 1, 'score': -1}"),
         @CompoundIndex(name = "forum_hot", def = "{'forumId': 1, 'isDeleted': 1, 'lastActivityAt': -1}")
 })
-public class Post {
+public class Post implements Votable {
 
     @Id
     @JsonSerialize(using = ToStringSerializer.class)
@@ -59,4 +60,21 @@ public class Post {
     private Boolean isDeleted = false;
 
     private Instant deletedAt;
+
+    @Override
+    public void incrementUpvote() {
+        this.upvoteCount++;
+    }
+    @Override
+    public void incrementDownvote() {
+        this.downvoteCount++;
+    }
+    @Override
+    public void decrementUpvote() {
+        this.upvoteCount--;
+    }
+    @Override
+    public void decrementDownvote() {
+        this.downvoteCount--;
+    }
 }

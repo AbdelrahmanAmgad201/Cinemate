@@ -4,6 +4,8 @@ import org.example.backend.AbstractMongoIntegrationTest;
 import org.bson.types.ObjectId;
 import org.example.backend.deletion.AccessService;
 import org.example.backend.deletion.CascadeDeletionService;
+import org.example.backend.forum.Forum;
+import org.example.backend.forum.ForumRepository;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -25,6 +27,9 @@ class PostServiceTest extends AbstractMongoIntegrationTest {
     @Autowired
     private PostRepository postRepository;
 
+    @Autowired
+    private ForumRepository forumRepository;
+
     @MockBean
     private RestTemplate restTemplate; // mock external AI API
 
@@ -42,6 +47,17 @@ class PostServiceTest extends AbstractMongoIntegrationTest {
     @Test
     void testAddPost_whenCleanText_shouldSavePost() {
         ObjectId forumId = new ObjectId("00000000000000000000006f");
+
+        // --- FIX: Save forum in DB ---
+        Forum forum = Forum.builder()
+                .id(forumId)
+                .name("Test Forum")
+                .postCount(0)
+                .description("Test Description")
+                .build();
+        forumRepository.save(forum);
+        // -----------------------------
+
         AddPostDto dto = new AddPostDto(forumId, "Test Title", "Normal content");
         Long userId = 5L;
 
@@ -61,6 +77,7 @@ class PostServiceTest extends AbstractMongoIntegrationTest {
         verify(restTemplate, times(1))
                 .postForEntity(eq(url), any(HttpEntity.class), eq(Boolean.class));
     }
+
 
     @Test
     void testAddPost_whenHateSpeech_shouldThrowException() {
@@ -166,19 +183,46 @@ class PostServiceTest extends AbstractMongoIntegrationTest {
     @Test
     void testDeletePost_success() {
         Long userId = 9L;
-        ObjectId postId = new ObjectId();
+        ObjectId postId = new ObjectId("6939b98be4433966bc84987d"); // manually generate an ObjectId
 
+        ObjectId forumId = new ObjectId("00000000000000000000006f");
+
+        // --- FIX: Save forum in DB ---
+        Forum forum = Forum.builder()
+                .id(forumId)
+                .name("Test Forum")
+                .postCount(1)
+                .description("Test Description")
+                .build();
+        forumRepository.save(forum);
+
+        // Create Post using builder and set the id explicitly
+        Post post = Post.builder()
+                .id(postId)  // assign id yourself
+                .forumId(forumId)
+                .ownerId(new ObjectId(String.format("%024x", userId)))
+                .title("Title")
+                .content("Content")
+                .build();
+
+        // Save post — MongoDB will accept the manually set id
+        postRepository.save(post);
+
+        // Mock dependent services
         when(accessService.canDeletePost(new ObjectId(String.format("%024x", userId)), postId))
                 .thenReturn(true);
-
         doNothing().when(deletionService).deletePost(postId);
 
+        // Call service
         postService.deletePost(postId, userId);
 
+        // Verify
         verify(accessService, times(1))
                 .canDeletePost(new ObjectId(String.format("%024x", userId)), postId);
         verify(deletionService, times(1)).deletePost(postId);
     }
+
+
 
     @Test
     void testDeletePost_accessDenied() {
@@ -199,14 +243,38 @@ class PostServiceTest extends AbstractMongoIntegrationTest {
     void testDeletePost_runtimeException() {
         Long userId = 9L;
         ObjectId postId = new ObjectId();
+        ObjectId forumId = new ObjectId("00000000000000000000006f");
 
+        // Save a forum
+        Forum forum = Forum.builder()
+                .id(forumId)
+                .name("Test Forum")
+                .postCount(0)
+                .description("Test Description")
+                .build();
+        forumRepository.save(forum);
+
+        // Save a post so deletePost finds it
+        Post post = Post.builder()
+                .id(postId)
+                .forumId(forumId)
+                .ownerId(new ObjectId(String.format("%024x", userId)))
+                .title("Title")
+                .content("Content")
+                .build();
+        postRepository.save(post);
+
+        // Mock accessService to allow deletion
         when(accessService.canDeletePost(new ObjectId(String.format("%024x", userId)), postId))
                 .thenReturn(true);
 
+        // Force deletionService to throw RuntimeException
         doThrow(new RuntimeException("failure")).when(deletionService).deletePost(postId);
 
+        // Test that deletePost throws RuntimeException with message "failure"
         assertThatThrownBy(() -> postService.deletePost(postId, userId))
                 .isInstanceOf(RuntimeException.class)
                 .hasMessageContaining("failure");
     }
+
 }
