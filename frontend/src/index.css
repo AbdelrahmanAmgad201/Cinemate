@@ -31,7 +31,11 @@
 body {
     min-height: 100vh;
     font-family: 'Roboto', sans-serif;
-    background: var(--background-gradient-dark-blue);
+    background-color: #01161E;
+    background-image: var(--background-gradient-dark-blue);
+    background-repeat: no-repeat;
+    background-attachment: fixed;
+    background-size: cover;
     color: var(--ghost-white);
 }
 

@@ -4,3 +4,13 @@
     justify-content: center;
     align-items: center;
 }
+
+.load-more-btn{
+    background-color: #111827;
+    color: #FFF;
+    padding: 10px 20px;
+    border-radius: 6px;
+    border: none;
+    cursor: pointer;
+}
+.load-more-btn:hover{ opacity: 0.95 }

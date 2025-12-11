@@ -29,3 +29,41 @@ export function mapMovieBackendToFrontend(m) {
         releaseDate: m.releaseDate
     };
 }
+
+export function mapBackendPostToFrontend(p) {
+    if (!p) return {};
+
+    return {
+        postId: p.id,
+        forumId: p.forumId,
+        title: p.title,
+        text: p.content,
+        media: p.mediaUrl,
+        votes: p.score,
+        upvotes: p.upvoteCount,
+        downvotes: p.downvoteCount,
+        commentCount: p.commentCount,
+        createdAt: p.createdAt,
+        time: p.createdAt ? new Date(p.createdAt).toLocaleString() : null,
+        userId: p.ownerId,
+        firstName: p.ownerName?.firstName || 'Anonymous',
+        lastName: p.ownerName?.lastName || '',
+        avatar: p.ownerAvatar
+    }
+}
+
+export function mapBackendForumToFrontend(f) {
+    if (!f) return {};
+
+    return {
+        id: f.id,
+        name: f.name,
+        description: f.description,
+        ownerId: f.ownerId,
+        memberCount: f.followerCount,
+        postCount: f.postCount,
+        createdAt: f.createdAt,
+        time: f.createdAt ? new Date(f.createdAt).toLocaleString() : null,
+        avatar: f.avatar
+    };
+}
