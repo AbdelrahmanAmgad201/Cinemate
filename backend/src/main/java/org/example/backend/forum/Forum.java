@@ -31,6 +31,7 @@ public class Forum {
     private String description;
 
     @Indexed
+    @JsonSerialize(using = ToStringSerializer.class)
     private ObjectId ownerId;
 
     @Builder.Default

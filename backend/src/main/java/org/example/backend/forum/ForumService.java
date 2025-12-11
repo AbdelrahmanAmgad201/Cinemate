@@ -71,6 +71,15 @@ public class ForumService {
         );
         return buildSearchResult(forumsPage);
     }
+
+    public Forum getForumById(ObjectId forumId) {
+        Forum forum =mongoTemplate.findById(forumId, Forum.class);
+        if (forum.getIsDeleted()) {
+            throw new IllegalStateException("Cannot update a deleted forum");
+        }
+        return forum;
+    }
+
     private SearchResultDto buildSearchResult(Page<Forum> page) {
         return SearchResultDto.builder()
                 .forums(page.getContent())

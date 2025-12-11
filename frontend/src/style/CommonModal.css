@@ -1,0 +1,84 @@
+/* modal */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+    width: 100vw;
+    height: 100vh;
+    overflow: hidden;
+}
+
+.modal {
+    background: #0b1b20;
+    padding: 20px;
+    border-radius: 12px;
+    width: 90%;
+    max-width: 560px;
+    color: var(--ghost-white);
+    position: relative;
+    z-index: 10000;
+}
+
+.modal label {
+    display: block;
+    margin-bottom: 12px;
+}
+
+.modal input, .modal textarea {
+    width: 100%;
+    padding: 8px 10px;
+    border-radius: 8px;
+    border: 1px solid rgba(255,255,255,0.06);
+    background: rgba(255,255,255,0.02);
+    color: var(--ghost-white);
+    box-sizing: border-box;
+    resize: vertical;
+}
+
+.modal-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+    margin-top: 12px;
+}
+
+.modal button {
+    padding: 8px 16px;
+    border-radius: 8px;
+    border: none;
+    cursor: pointer;
+    font-weight: 600;
+    transition: all 0.2s ease;
+}
+
+.modal-btn-cancel {
+    background: transparent;
+    color: var(--ghost-white);
+}
+
+.modal-btn-cancel:hover {
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.modal-btn-submit {
+    background-color: var(--blue-bell);
+    color: white;
+}
+
+.modal-btn-submit:hover {
+    filter: brightness(110%);
+
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.modal-btn-submit:active {
+    transform: translateY(0);
+}

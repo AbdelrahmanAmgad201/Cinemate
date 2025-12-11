@@ -1,12 +1,14 @@
 .post-card{
     margin: 20px 0;
-    width: 600px;
+    width: 100%;
+    max-width: 600px;
     display: flex;
     flex-direction: column;
     background-color: var(--ink-black);
     color: var(--ghost-white);
     padding: 0 29px;
     border-radius: 10px;
+    box-sizing: border-box;
 }
 
 .post-header{
