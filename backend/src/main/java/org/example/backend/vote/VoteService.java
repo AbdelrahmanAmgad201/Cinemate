@@ -77,11 +77,10 @@ public class VoteService {
     @Transactional
     public void deleteVote(ObjectId targetId,Long userId){
         ObjectId objectUserId = longToObjectId(userId);
-        List<Vote> votes = voteRepository.findByUserIdAndTargetId(objectUserId,targetId);
-        if(votes.isEmpty()){
+        Vote vote = voteRepository.findByIsDeletedIsFalseAndUserIdAndTargetId(objectUserId,targetId);
+        if(vote==null){
             throw new IllegalArgumentException("Vote not found");
         }
-        Vote vote = votes.get(0);
         ObjectId voteId = vote.getId();
         if (!accessService.canDeleteVote(longToObjectId(userId), voteId)) {
             throw new AccessDeniedException("User " + " cannot delete this vote");
