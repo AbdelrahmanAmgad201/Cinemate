@@ -1,10 +1,11 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, {useState, useEffect, useRef, useContext} from 'react';
 import { useSearchParams } from 'react-router-dom';
 import PostCard from '../../components/PostCard.jsx';
 import LoadingFallback from '../../components/LoadingFallback.jsx';
-import { getPostsApi } from '../../api/posts-api.jsx';
+import {getExploreFeedPostsApi, getMainFeedPostsApi} from '../../api/posts-api.jsx';
 import mockPosts from '../../data/mock-posts.jsx';
 import "./style/HomePage.css";
+import {ToastContext} from "../../context/ToastContext.jsx";
 
 const HomePage = () => {
 
@@ -16,6 +17,8 @@ const HomePage = () => {
     const [loadingMore, setLoadingMore] = useState(false);
     const sentinelRef = useRef(null);
 
+    const { showToast } = useContext(ToastContext);
+
     const [searchParams] = useSearchParams();
     const feed = searchParams.get('feed') || 'following';
 
@@ -25,8 +28,13 @@ const HomePage = () => {
             if (pageToFetch === 0) setLoading(true);
             else setLoadingMore(true);
 
-            const res = await getPostsApi({ page: pageToFetch, size, feed });
-
+            let res
+            if (feed === 'following') {
+                res = await getMainFeedPostsApi({ page: pageToFetch, size });
+            }
+            else {
+                res = await getExploreFeedPostsApi({ page: pageToFetch, size });
+            }
             if (!mounted) return;
 
             if (res.success) {
@@ -34,7 +42,7 @@ const HomePage = () => {
                 setPosts(prev => {
                     const combined = [...prev, ...items];
                     const map = new Map();
-                    for (const p of combined) map.set(p.postId, p);
+                    for (const p of combined) map.set(p.id, p);
                     return Array.from(map.values());
                 });
 
@@ -44,7 +52,8 @@ const HomePage = () => {
                     setHasMore(items.length === size);
                 }
             } else {
-                if (pageToFetch === 0) setPosts(mockPosts);
+                // if (pageToFetch === 0) setPosts(mockPosts);
+                showToast("Failed to load posts", res.message, "error");
                 setHasMore(false);
             }
 
@@ -89,7 +98,7 @@ const HomePage = () => {
             <div className="posts-list">
                 {loading && <LoadingFallback />}
                 {posts.map((post, index) => (
-                    <PostCard key={post.postId || index} postBody={post} />
+                    <PostCard key={post.id || index} postBody={post} />
                 ))}
 
                 {loadingMore && (
