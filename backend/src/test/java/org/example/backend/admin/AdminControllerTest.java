@@ -13,6 +13,7 @@ import org.mockito.Mock;
 import jakarta.servlet.http.HttpServletRequest;
 import org.mockito.MockitoAnnotations;
 import org.springframework.http.ResponseEntity;
+import org.springframework.test.context.ActiveProfiles;
 
 import java.util.List;
 import java.util.Collections;
@@ -20,6 +21,7 @@ import java.util.Collections;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
+@ActiveProfiles("test")
 class AdminControllerTest {
 
     @Mock

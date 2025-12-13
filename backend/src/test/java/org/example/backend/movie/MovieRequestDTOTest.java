@@ -1,9 +1,11 @@
 package org.example.backend.movie;
 
 import org.junit.jupiter.api.Test;
+import org.springframework.test.context.ActiveProfiles;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+@ActiveProfiles("test")
 class MovieRequestDTOTest {
 
     @Test
