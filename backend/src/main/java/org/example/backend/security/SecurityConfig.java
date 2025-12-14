@@ -59,6 +59,13 @@ public class SecurityConfig {
                 .requestMatchers("/api/watch-later/**").hasAuthority("ROLE_USER")
                 .requestMatchers("api/post/**").hasAuthority("ROLE_USER")
                 .requestMatchers("/api/forum/**").hasAuthority("ROLE_USER")
+                .requestMatchers("/api/comment/**").hasAuthority("ROLE_USER")
+                .requestMatchers("/api/vote/**").hasAuthority("ROLE_USER")
+                .requestMatchers("/api/forum-follow/**").hasAuthority("ROLE_USER")
+                .requestMatchers("/api/feed/**").hasAuthority("ROLE_USER")
+                .requestMatchers("/api/post/**").hasAuthority("ROLE_USER")
+
+
 
                 .anyRequest().authenticated()
         )
