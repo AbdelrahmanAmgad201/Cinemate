@@ -12,6 +12,8 @@ import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 
+import java.time.Instant;
+
 @Service
 @RequiredArgsConstructor
 public class CommentService {
@@ -36,6 +38,7 @@ public class CommentService {
         }
         Post post = mongoTemplate.findById(postId, Post.class);
         post.setCommentCount(post.getCommentCount() + 1);
+        post.updateLastActivityAt(Instant.now());
         postRepository.save(post);
         return commentRepository.save(comment);
     }
@@ -50,6 +53,7 @@ public class CommentService {
         }
         Post post = mongoTemplate.findById(comment.getPostId(), Post.class);
         post.setCommentCount(post.getCommentCount() + 1);
+        post.updateLastActivityAt(Instant.now());
         postRepository.save(post);
         deletionService.deleteComment(commentId);
     }
