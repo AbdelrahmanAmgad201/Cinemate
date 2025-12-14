@@ -13,7 +13,7 @@ export default async function signInApi({email, password, role}) {
             role: data.role.replace("ROLE_", "")
         }
 
-        localStorage.setItem(JWT.STORAGE_NAME, token);
+        sessionStorage.setItem(JWT.STORAGE_NAME, token);
 
         return { success: true, user: user};
     }
