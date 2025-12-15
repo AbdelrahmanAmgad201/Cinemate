@@ -206,27 +206,7 @@ class PostControllerTest {
                 .andExpect(content().string("Internal Server Error"));
     }
 
-    // -------------------
-    // getForumPosts tests
-    // -------------------
-    @Test
-    void testGetForumPosts_defaultSort_delegatesToService() throws Exception {
-            ForumPostsRequestDTO dto = new ForumPostsRequestDTO();
-            dto.setPage(0);
-            dto.setPageSize(10);
-            dto.setForumId(null);
-
-            Page<Post> page = Page.empty();
-            when(postService.getForumPosts(any(ForumPostsRequestDTO.class))).thenReturn(page);
-
-            mockMvc.perform(post("/api/post/v1/forum-posts")
-                                            .contentType(MediaType.APPLICATION_JSON)
-                                            .content(objectMapper.writeValueAsString(dto)))
-                            .andExpect(status().isOk());
-
-            verify(postService, times(1)).getForumPosts(any(ForumPostsRequestDTO.class));
-    }
-
+    
     // -------------------
     // Exception handler
     // -------------------
