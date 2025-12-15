@@ -7,11 +7,11 @@
     color: var(--ghost-white);
     min-height: 100vh;
     /* background-color: var(--ink-black); */
-    padding: 0 29px;
 }
 
 .post-page .post-card {
     width: 100%;
+    max-width: 1200px;
     background-color: transparent;
 }
 
@@ -79,9 +79,10 @@
 }
 
 .post-page .comments-section {
-    width: 100%;
+    width: 1150px;
     padding: 30px 0;
     align-self: flex-start;
+    margin: 0 auto;
     border-top: 2px solid rgba(168, 168, 168, 0.2);
 }
 
@@ -91,8 +92,8 @@
 }
 
 .post-page .comment-input textarea{
-    max-width: 850px;
-    min-width: 850px;
+    max-width: 1150px;
+    min-width: 1150px;
     height: 29px;
     background-color: #a8a8a831;
     font-size: 16px;

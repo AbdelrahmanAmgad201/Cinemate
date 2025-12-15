@@ -13,6 +13,7 @@ import { RiShareForwardLine } from "react-icons/ri";
 import { FaRegComment } from "react-icons/fa";
 import { MdKeyboardArrowDown } from "react-icons/md";
 import { IoClose } from "react-icons/io5";
+import PostCard from '../../components/PostCard';
 
 const PostFullPage = () => {
     const { postId } = useParams();
@@ -223,65 +224,7 @@ const PostFullPage = () => {
 
     return (
         <div className="post-page">
-            <article className="post-card">
-                <div className="post-header">
-                    <div className="user-profile-pic">
-                        {post.avatar ? post.avatar : <IoIosPerson />}
-                    </div>
-                    <div className="user-info">
-                        <h2 className="user-name">{user.id}</h2>
-                        <time dateTime={post.time}>{post.time}</time>
-                    </div>
-                    <div className="post-settings" ref={menuRef}>
-                        {ownerIdConverted === user.id && ( 
-                            <>
-                            <BsThreeDots onClick={() => setPostOptions(prev => !prev)}/>
-                            {postOptions && (
-                                <div className="options-menu">
-                                <ul>
-                                {(ownerIdConverted === user?.id ? authorMenu : viewerMenu).map((item, index) => (
-                                    <li key={index} onClick={item.onClick}>{item.label}</li>
-                                ))}
-                                </ul>
-                            </div>
-                            )}
-                            </>
-                        )}
-                        
-                    </div>
-                </div>
-                <div className="post-content">
-                    <div className="post-title" >
-                        <p>{post.title}</p>
-                    </div>
-                    <div className="post-media" >
-                        {post.media && <img src={post.media} alt={post.title || "Post content"} onClick={() => setOpenImage(true)}/>}
-                        {post.content && <p className="post-text">{post.content}</p>}
-                    </div>
-                </div>
-                <footer className="post-footer">
-                    <div className="up-down-vote">
-                        {userVote === 1 ? (
-                            <BiSolidUpvote className="selected" onClick={() => handleVote(1)} />
-                        ) : (
-                            <BiUpvote onClick={() => handleVote(1)} />
-                        )}
-                        <span className="vote-count">{voteCount}</span>
-                        <span className="vote-separator">|</span>
-                        {userVote === -1 ? (
-                            <BiSolidDownvote className="selected" onClick={() => handleVote(-1)} />
-                        ) : (
-                            <BiDownvote onClick={() => handleVote(-1)} />
-                        )}
-                    </div>
-                    <div className="post-comment">
-                        <FaRegComment />
-                    </div>
-                    {/* <div className="post-share">
-                        <RiShareForwardLine />
-                    </div> */}
-                </footer>
-            </article>
+            <PostCard postBody={post} fullMode={true} />
             {openImage && (
                 <div className="view-image-container" onClick={() => setOpenImage(false)}>
                     <div className="view-image">

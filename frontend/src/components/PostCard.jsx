@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useContext } from 'react';
+import { useState, useEffect, useRef, useContext, use } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { IoIosPerson } from "react-icons/io";
 import { BsThreeDots } from "react-icons/bs";
@@ -10,7 +10,7 @@ import { deletePostApi,isVotedPostApi, deleteVotePostApi, votePostApi, updateVot
 import { AuthContext } from '../context/AuthContext.jsx';
 import { PATHS } from '../constants/constants';
 
-const PostCard = ({ postBody }) => {
+const PostCard = ({ postBody, fullMode = false }) => {
     const [userVote, setUserVote] = useState(0);
     const [voteCount, setVoteCount] = useState(postBody?.votes || 0);
     const [postOptions, setPostOptions] = useState(false);
@@ -96,7 +96,7 @@ const PostCard = ({ postBody }) => {
 
     const handleEdit = () => {
         setPostOptions(false);
-        navigate(PATHS.POST.FULLPAGE(postBody.id), { state: { post: postBody, editMode: true } });s
+        navigate(PATHS.POST.FULLPAGE(postBody.id), { state: { post: postBody, editMode: true } });
     };
 
     const viewerMenu = [
@@ -196,7 +196,7 @@ const PostCard = ({ postBody }) => {
                     
                 </div>
             </div>
-            <div className="post-content">
+            <div className="post-content" onClick={navigateToPost}>
                 <div className="post-title" onClick={navigateToPost}>
                     <p>{postBody.title}</p>
                 </div>
