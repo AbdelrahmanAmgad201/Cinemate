@@ -335,10 +335,35 @@
     color: var(--ghost-white);
 }
 
+.post-page .comment-avatar img {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    object-fit: cover;
+    display: block;
+}
+
+.post-page .comment-avatar-link {
+    display: inline-flex;
+    align-items: center;
+    text-decoration: none;
+    color: inherit;
+}
+
 .post-page .comment-author {
     font-weight: 700;
     font-size: 14px;
     color: var(--ghost-white);
+}
+
+.post-page .comment-author-link {
+    color: var(--ghost-white);
+    text-decoration: none;
+}
+
+.post-page .comment-author-link:hover {
+    color: var(--blue-bell);
+    text-decoration: underline;
 }
 
 .post-page .comment-time {
@@ -368,7 +393,11 @@
 }
 .post-page .reply-box textarea{
     width: 100%;
-    min-width: 520px;
+    /* Prevent horizontal resize and constrain vertical size */
+    resize: vertical;
+    box-sizing: border-box;
+    min-height: 50px;
+    max-height: 300px;
     height: 50px;
     background-color: #a8a8a831;
     font-size: 14px;
@@ -376,6 +405,7 @@
     border-radius: 8px;
     border: none;
     padding: 8px 12px;
+    overflow: auto;
 }
 .post-page .reply-box {
     margin-top: 8px;

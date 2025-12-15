@@ -14,12 +14,21 @@ import { PATHS } from '../constants/constants';
 const PostCard = ({ postBody }) => {
     const [postOptions, setPostOptions] = useState(false);
     const isVotingRef = useRef(false);
-    
+    const [commentCount, setCommentCount] = useState(postBody.commentCount || 0);
     const { user } = useContext(AuthContext);
     const navigate = useNavigate();
     const menuRef = useRef(null);
 
-
+    // Listen for comment count update events
+    useEffect(() => {
+        function handleCommentCountUpdate(e) {
+            if (e.detail && (e.detail.postId === postBody.id || e.detail.postId === postBody.postId)) {
+                setCommentCount(e.detail.commentCount);
+            }
+        }
+        window.addEventListener('postCommentCountUpdated', handleCommentCountUpdate);
+        return () => window.removeEventListener('postCommentCountUpdated', handleCommentCountUpdate);
+    }, [postBody.id, postBody.postId]);
 
     const navigateToPost = () => {
         navigate(PATHS.POST.FULLPAGE(postBody.id), {state: {post: postBody}});
@@ -136,7 +145,7 @@ const PostCard = ({ postBody }) => {
                 />
                 <div className="post-comment" onClick={navigateToPost}>
                     <FaRegComment />
-                    <span className="comment-count">{postBody.commentCount || 0}</span>
+                    <span className="comment-count">{commentCount}</span>
                 </div>
                 {/* <div className="post-share">
                     <RiShareForwardLine />
