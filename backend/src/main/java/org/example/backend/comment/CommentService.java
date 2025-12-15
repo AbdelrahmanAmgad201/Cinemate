@@ -8,11 +8,16 @@ import org.example.backend.deletion.CascadeDeletionService;
 import org.example.backend.forum.Forum;
 import org.example.backend.post.Post;
 import org.example.backend.post.PostRepository;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -35,6 +40,8 @@ public class CommentService {
         else {
             int depth = parentComment.getDepth() + 1;
             comment.setDepth(depth);
+            parentComment.setNumberOfReplies(parentComment.getNumberOfReplies() + 1);
+            commentRepository.save(comment);
         }
         Post post = mongoTemplate.findById(postId, Post.class);
         post.setCommentCount(post.getCommentCount() + 1);
@@ -43,6 +50,7 @@ public class CommentService {
         return commentRepository.save(comment);
     }
 
+    @Transactional
     public void deleteComment(ObjectId commentId, Long userId) {
         if (!accessService.canDeleteComment(longToObjectId(userId), commentId)) {
             throw new AccessDeniedException("User " + " cannot delete this post");
@@ -52,12 +60,34 @@ public class CommentService {
             throw new IllegalArgumentException("Comment not found with id: " + commentId);
         }
         Post post = mongoTemplate.findById(comment.getPostId(), Post.class);
-        post.setCommentCount(post.getCommentCount() + 1);
         post.updateLastActivityAt(Instant.now());
         postRepository.save(post);
         deletionService.deleteComment(commentId);
     }
 
+    @Transactional
+    public Page<Comment> getPostComments(ObjectId postId, int  page,int size,String sortBy) {
+        Sort sort = getSort(sortBy);
+        Pageable pageable = PageRequest.of(
+                page,
+                size,
+                sort);
+        return commentRepository.findByPostIdAndIsDeletedAndDepth(postId,false,0,pageable);
+    }
+
+    @Transactional
+    public List<Comment> getReplies(ObjectId commentId,String sortBy) {
+        Sort sort = getSort(sortBy);
+        return commentRepository.findByParentIdAndIsDeleted(commentId,false,sort);
+    }
+
+    private Sort  getSort(String  sortBy) {
+        return switch (sortBy) {
+            case "new" -> Sort.by(Sort.Direction.DESC, "createdAt");
+            case "top", "score" -> Sort.by(Sort.Direction.DESC, "score");
+            default -> Sort.by(Sort.Direction.DESC, "score");
+        };
+    }
     private void canComment(ObjectId postId) {
         Post post = mongoTemplate.findById(postId, Post.class);
         if (post == null) {
