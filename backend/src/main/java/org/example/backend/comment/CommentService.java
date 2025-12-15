@@ -74,6 +74,7 @@ public class CommentService {
                 .postId(postId)
                 .parentId(parentId)
                 .content(addCommentDTO.getContent())
+                .createdAt(Instant.now())
                 .build();
         return comment;
     }
