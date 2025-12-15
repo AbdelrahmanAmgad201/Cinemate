@@ -11,9 +11,12 @@ import org.mockito.ArgumentCaptor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.data.domain.Page;
 import org.springframework.http.*;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.security.access.AccessDeniedException;
+
+import java.time.Instant;
 
 import static org.assertj.core.api.Assertions.*;
 import static org.mockito.Mockito.*;
@@ -276,5 +279,103 @@ class PostServiceTest extends AbstractMongoIntegrationTest {
                 .isInstanceOf(RuntimeException.class)
                 .hasMessageContaining("failure");
     }
+
+
+    // ---------------------------
+    // get sorted posts (forum's)
+    // ---------------------------
+
+    @Test
+    void testGetForumPosts_defaultSort_newestFirst() {
+            ObjectId forumId = new ObjectId();
+
+            // save forum
+            Forum forum = Forum.builder().id(forumId).name("F").postCount(0).description("d").build();
+            forumRepository.save(forum);
+
+            // create posts with different createdAt
+            Instant now = Instant.now();
+            Post pOld = Post.builder().id(new ObjectId()).forumId(forumId).title("old").createdAt(now.minusSeconds(200)).score(1).build();
+            Post pMid = Post.builder().id(new ObjectId()).forumId(forumId).title("mid").createdAt(now.minusSeconds(100)).score(2).build();
+            Post pNew = Post.builder().id(new ObjectId()).forumId(forumId).title("new").createdAt(now).score(3).build();
+
+            postRepository.save(pOld);
+            postRepository.save(pMid);
+            postRepository.save(pNew);
+
+            ForumPostsRequestDTO dto = new ForumPostsRequestDTO();
+            dto.setPage(0);
+            dto.setPageSize(10);
+            dto.setForumId(forumId);
+
+            Page<Post> page = postService.getForumPosts(dto);
+
+            assertThat(page.getContent()).hasSize(3);
+            assertThat(page.getContent().get(0).getTitle()).isEqualTo("new");
+            assertThat(page.getContent().get(1).getTitle()).isEqualTo("mid");
+            assertThat(page.getContent().get(2).getTitle()).isEqualTo("old");
+    }
+
+    @Test
+    void testGetForumPosts_oldSort_oldestFirst() {
+            ObjectId forumId = new ObjectId();
+
+            Forum forum = Forum.builder().id(forumId).name("F").postCount(0).description("d").build();
+            forumRepository.save(forum);
+
+            Instant now = Instant.now();
+            Post pOld = Post.builder().id(new ObjectId()).forumId(forumId).title("old").createdAt(now.minusSeconds(200)).score(1).build();
+            Post pMid = Post.builder().id(new ObjectId()).forumId(forumId).title("mid").createdAt(now.minusSeconds(100)).score(2).build();
+            Post pNew = Post.builder().id(new ObjectId()).forumId(forumId).title("new").createdAt(now).score(3).build();
+
+            postRepository.save(pOld);
+            postRepository.save(pMid);
+            postRepository.save(pNew);
+
+            ForumPostsRequestDTO dto = new ForumPostsRequestDTO();
+            dto.setPage(0);
+            dto.setPageSize(10);
+            dto.setForumId(forumId);
+            dto.setSortBy("old");
+
+            Page<Post> page = postService.getForumPosts(dto);
+
+            assertThat(page.getContent()).hasSize(3);
+            assertThat(page.getContent().get(0).getTitle()).isEqualTo("old");
+            assertThat(page.getContent().get(1).getTitle()).isEqualTo("mid");
+            assertThat(page.getContent().get(2).getTitle()).isEqualTo("new");
+    }
+
+    @Test
+    void testGetForumPosts_topSort_scoreDesc_and_idDescTieBreak() {
+            ObjectId forumId = new ObjectId();
+
+            Forum forum = Forum.builder().id(forumId).name("F").postCount(0).description("d").build();
+            forumRepository.save(forum);
+
+            // p1 and p2 have same score; p2 should come before p1 because id is larger (id desc tie-break)
+            Post p1 = Post.builder().id(new ObjectId("000000000000000000000001")).forumId(forumId).title("p1").score(10).createdAt(Instant.now()).build();
+            Post p2 = Post.builder().id(new ObjectId("000000000000000000000002")).forumId(forumId).title("p2").score(10).createdAt(Instant.now()).build();
+            Post p3 = Post.builder().id(new ObjectId("000000000000000000000003")).forumId(forumId).title("p3").score(5).createdAt(Instant.now()).build();
+
+            postRepository.save(p1);
+            postRepository.save(p2);
+            postRepository.save(p3);
+
+            ForumPostsRequestDTO dto = new ForumPostsRequestDTO();
+            dto.setPage(0);
+            dto.setPageSize(10);
+            dto.setForumId(forumId);
+            dto.setSortBy("top");
+
+            Page<Post> page = postService.getForumPosts(dto);
+
+            assertThat(page.getContent()).hasSize(3);
+            // Expect p2 (id 2) first, then p1 (id 1), then p3
+            assertThat(page.getContent().get(0).getTitle()).isEqualTo("p2");
+            assertThat(page.getContent().get(1).getTitle()).isEqualTo("p1");
+            assertThat(page.getContent().get(2).getTitle()).isEqualTo("p3");
+    }
+
 
 }

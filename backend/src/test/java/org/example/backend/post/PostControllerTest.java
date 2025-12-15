@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.bson.types.ObjectId;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.data.domain.Page;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
@@ -203,6 +204,27 @@ class PostControllerTest {
                         .requestAttr("userId", 10L))
                 .andExpect(status().isInternalServerError())
                 .andExpect(content().string("Internal Server Error"));
+    }
+
+    // -------------------
+    // getForumPosts tests
+    // -------------------
+    @Test
+    void testGetForumPosts_defaultSort_delegatesToService() throws Exception {
+            ForumPostsRequestDTO dto = new ForumPostsRequestDTO();
+            dto.setPage(0);
+            dto.setPageSize(10);
+            dto.setForumId(new ObjectId());
+
+            Page<Post> page = Page.empty();
+            when(postService.getForumPosts(any(ForumPostsRequestDTO.class))).thenReturn(page);
+
+            mockMvc.perform(post("/api/post/v1/forum-posts")
+                                            .contentType(MediaType.APPLICATION_JSON)
+                                            .content(objectMapper.writeValueAsString(dto)))
+                            .andExpect(status().isOk());
+
+            verify(postService, times(1)).getForumPosts(any(ForumPostsRequestDTO.class));
     }
 
     // -------------------
