@@ -214,7 +214,7 @@ class PostControllerTest {
             ForumPostsRequestDTO dto = new ForumPostsRequestDTO();
             dto.setPage(0);
             dto.setPageSize(10);
-            dto.setForumId(new ObjectId());
+            dto.setForumId(null);
 
             Page<Post> page = Page.empty();
             when(postService.getForumPosts(any(ForumPostsRequestDTO.class))).thenReturn(page);
