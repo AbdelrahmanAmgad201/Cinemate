@@ -265,6 +265,22 @@ public class CascadeDeletionService {
     }
 
     /**
+     * Batch soft delete comments by comment IDs (not post IDs)
+     */
+    private int softDeleteCommentsByIdsBatch(List<ObjectId> commentIds, Instant deletedAt) {
+        int totalDeleted = 0;
+
+        for (int i = 0; i < commentIds.size(); i += BATCH_SIZE) {
+            List<ObjectId> batch = commentIds.subList(i, Math.min(i + BATCH_SIZE, commentIds.size()));
+            long deleted = softDeleteBatch("comments", Criteria.where("_id").in(batch), deletedAt);
+            totalDeleted += deleted;
+            log.debug("Soft deleted batch of {} comments", deleted);
+        }
+
+        return totalDeleted;
+    }
+    
+    /**
      * Batch soft delete votes on posts
      */
     private int softDeletePostVotesBatch(List<ObjectId> postIds, Instant deletedAt) {
@@ -341,17 +357,19 @@ public class CascadeDeletionService {
             allIds.addAll(descendantIds);
         }
 
-        int totalComments = softDeleteCommentsBatch(allIds, deletedAt);
+        int totalComments = softDeleteCommentsByIdsBatch(allIds, deletedAt);
 
         // Delete votes on comments
         cascadeDeleteCommentsVotesBatch(allIds, deletedAt);
         Post post = postRepository.findById(postId)
                 .orElseThrow(() -> new RuntimeException("Post not found"));
         post.setCommentCount(post.getCommentCount() - totalComments);
+        postRepository.save(post);
         if(parentId != null) {
             Comment parent = commentRepository.findById(parentId)
                     .orElseThrow(() -> new RuntimeException("Comment not found"));
             parent.setNumberOfReplies(parent.getNumberOfReplies() - totalComments);
+            commentRepository.save(parent);
         }
     }
 
