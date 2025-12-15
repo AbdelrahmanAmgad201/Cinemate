@@ -18,7 +18,7 @@ export const MAX_VALUES = {
 };
 
 export const PAGE_SIZE = {
-    FORUM : 2,
+    FORUM : 5,
 }
 
 export const ROLES = {
