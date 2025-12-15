@@ -69,11 +69,33 @@ const CommentItem = ({ comment, onVoteUpdate, onRemoveComment, onEdit, postOwner
                 // preserve client-side createdAt when present and keep optimistic local replies that server hasn't returned yet
                 const prevById = Object.fromEntries((replies || []).map(r => [r.id, r]));
                 const merged = list.map(r => ({ ...r, createdAt: r.createdAt || prevById[r.id]?.createdAt }));
+                // fetch one level of nested replies for each reply so replies-to-replies persist on reload
+                const withNested = await Promise.all(merged.map(async r => {
+                    try {
+                        const childRes = await getRepliesApi({ parentId: r.id, sortBy });
+                        if (childRes.success) {
+                            r.replies = childRes.data || [];
+                            r.numberOfReplies = Math.max(r.numberOfReplies || 0, (r.replies || []).length);
+                        } else {
+                            r.replies = r.replies || [];
+                        }
+                    } catch (e) {
+                        r.replies = r.replies || [];
+                    }
+                    return r;
+                }));
                 // append any local-only replies that the server didn't return (optimistic responses)
                 Object.values(prevById).forEach(p => {
-                    if (!merged.find(m => m.id === p.id)) merged.push(p);
+                    if (!withNested.find(m => m.id === p.id)) withNested.push(p);
                 });
-                setReplies(merged);
+                setReplies(withNested);
+                // if server returned no replies, persist that fact so UI hides the button next time
+                if ((withNested || []).length === 0) {
+                    onEdit && onEdit({ commentId: comment.id, numberOfReplies: 0 });
+                } else {
+                    // ensure parent sees accurate counts for this comment
+                    onEdit && onEdit({ commentId: comment.id, numberOfReplies: Math.max(comment.numberOfReplies || 0, withNested.length) });
+                }
             }
         } catch (e) {
             console.error('Error loading replies:', e);
@@ -132,6 +154,10 @@ const CommentItem = ({ comment, onVoteUpdate, onRemoveComment, onEdit, postOwner
         }
     };
 
+    const repliesCountRaw = (typeof comment.numberOfReplies === 'number') ? comment.numberOfReplies : (comment.replies ? comment.replies.length : undefined);
+    const repliesCount = (typeof repliesCountRaw === 'number') ? repliesCountRaw : undefined;
+    const showRepliesButton = (typeof repliesCountRaw === 'undefined') ? true : repliesCountRaw > 0;
+
     return (
         <div className="comment-item">
             <VoteWidget
@@ -170,8 +196,8 @@ const CommentItem = ({ comment, onVoteUpdate, onRemoveComment, onEdit, postOwner
                 </div>
                 <div className="comment-actions">
                     <button className="reply-btn" onClick={() => setShowReplyBox(prev => !prev)}>Reply</button>
-                    { (comment.numberOfReplies || 0) > 0 && (
-                        <button className="view-replies-btn" onClick={handleViewReplies}>{showReplies ? 'Hide' : `View ${comment.numberOfReplies} replies`}</button>
+                    { showRepliesButton && (
+                        <button className="view-replies-btn" onClick={handleViewReplies}>{showReplies ? 'Hide' : (typeof repliesCount === 'number' ? `View ${repliesCount} replies` : 'View replies')}</button>
                     ) }
                 </div>
                 {showReplyBox && (
@@ -341,10 +367,11 @@ const PostFullPage = () => {
                         if (!res.success) return [];
                         const list = res.data || [];
                         if (depth > 1) {
+                            // Always attempt to fetch nested replies for one level deeper regardless of numberOfReplies
                             await Promise.all(list.map(async (r) => {
-                                if ((r.numberOfReplies || 0) > 0) {
-                                    r.replies = await fetchRecursive(r.id, depth - 1);
-                                }
+                                r.replies = await fetchRecursive(r.id, depth - 1);
+                                // ensure numberOfReplies is accurate for UI
+                                r.numberOfReplies = Math.max(r.numberOfReplies || 0, (r.replies || []).length);
                             }));
                         }
                         return list;
