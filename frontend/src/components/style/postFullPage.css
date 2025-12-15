@@ -109,7 +109,7 @@
     font-size: 16px;
     color: #ffffff;
     border-radius: 30px;
-    border: /* 1px solid #A8A8A8*/ none; 
+    border: /* 1px solid #A8A8A8*/ none;
     padding: 10px 0 0 15px;
     transition: outline 0.2s ease-in;
 }
@@ -119,11 +119,11 @@
 }
 
 .post-page .comment-input textarea:hover{
-    outline: 1px solid #A8A8A8; 
+    outline: 1px solid #A8A8A8;
 }
 
 .post-page .comment-input textarea:focus{
-    outline: 1px solid #A8A8A8; 
+    outline: 1px solid #A8A8A8;
 }
 
 .post-page .comment-input .comment-btn{
@@ -191,7 +191,7 @@
     right: 10px;
     top: 50%;
     transform: translateY(-50%);
-    pointer-events: none; 
+    pointer-events: none;
     cursor: pointer;
     color: var(--ghost-white);
     font-size: 16px;

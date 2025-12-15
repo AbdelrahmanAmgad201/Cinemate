@@ -1,11 +1,8 @@
-import "./style/Forum.css"
-import '../../style/CommonModal.css'
+import "./style/Forum.css";
+import '../../style/CommonModal.css';
 import calendar from "../../assets/icons/calendar.png";
-
-import {Link, useNavigate, useParams} from "react-router-dom";
-import React, {useCallback, useContext, useEffect, useState} from "react";
-import {MAX_LENGTHS, PATHS, PAGE_SIZE} from "../../constants/constants.jsx";
-import {formatCount} from "../../utils/formate.jsx";
+import React, { useCallback, useContext, useEffect, useState } from "react";
+import { Link, useNavigate, useParams } from "react-router-dom";
 import {checkFollowApi, followForumApi, unfollowForumApi, getForumPostsApi, getForumApi, getModApi} from "../../api/forum-api.jsx";
 import PostsFeed from "../../components/PostsFeed.jsx";
 import  {addPostApi} from "../../api/post-api.jsx";
@@ -187,6 +184,58 @@ export default function Forum() {
         setHasMore(true);
         fetchPosts(0, activeSort.value);
     }, [forumId, activeSort, fetchPosts])
+
+    // Update post comment counts when other views (e.g., PostFullPage) broadcast changes
+    useEffect(() => {
+        const handler = (e) => {
+            const detail = e?.detail || {};
+            const { postId, commentCount, delta } = detail;
+            if (!postId && postId !== 0) return;
+            setPosts(prev => prev.map(p => {
+                const id = p.id || p.postId;
+                if (String(id) === String(postId)) {
+                    if (typeof commentCount === 'number') return { ...p, commentCount };
+                    if (typeof delta === 'number') return { ...p, commentCount: Math.max((p.commentCount || 0) + delta, 0) };
+                }
+                return p;
+            }));
+        };
+
+        window.addEventListener('postCommentCountUpdated', handler);
+        return () => window.removeEventListener('postCommentCountUpdated', handler);
+    }, []);
+
+    // Apply any persisted updates that were stored while this page was not mounted
+    useEffect(() => {
+        if (!posts || posts.length === 0) return;
+        let updated = false;
+        const newPosts = posts.map(p => {
+            const id = p.id || p.postId;
+            if (!id) return p;
+            try {
+                const key = `postCommentCountUpdate-${id}`;
+                const raw = sessionStorage.getItem(key);
+                if (!raw) return p;
+                const parsed = JSON.parse(raw);
+                if (typeof parsed.commentCount === 'number') {
+                    updated = true;
+                    sessionStorage.removeItem(key);
+                    return { ...p, commentCount: parsed.commentCount };
+                }
+                if (typeof parsed.delta === 'number') {
+                    updated = true;
+                    sessionStorage.removeItem(key);
+                    return { ...p, commentCount: Math.max((p.commentCount || 0) + parsed.delta, 0) };
+                }
+            } catch (e) {
+                // ignore parse errors
+            }
+            return p;
+        });
+        if (updated) setPosts(newPosts);
+    }, [posts]);
+
+    
 
     const handleLoadMore = () => {
         const nextPage = page + 1;

@@ -73,6 +73,30 @@ const HomePage = () => {
         setHasMore(true);
     }, [feed]);
 
+    // Listen for comment count updates from PostFullPage and update posts in the feed
+    useEffect(() => {
+        const handler = (e) => {
+            const detail = e?.detail || {};
+            const { postId, commentCount, delta } = detail;
+            if (!postId && postId !== 0) return;
+            setPosts(prev => prev.map(p => {
+                const id = p.id || p.postId;
+                // compare as strings to avoid type mismatch between numeric and string ids
+                if (String(id) === String(postId)) {
+                    if (typeof commentCount === 'number') return { ...p, commentCount };
+                    if (typeof delta === 'number') return { ...p, commentCount: Math.max((p.commentCount || 0) + delta, 0) };
+                    return { ...p };
+                }
+                return p;
+            }));
+        };
+
+        window.addEventListener('postCommentCountUpdated', handler);
+        return () => window.removeEventListener('postCommentCountUpdated', handler);
+    }, []);
+
+    
+
     useEffect(() => {
         const sentinel = sentinelRef.current;
         if (!sentinel) return;
@@ -91,6 +115,36 @@ const HomePage = () => {
             observer.disconnect();
         };
     }, [hasMore, loadingMore, loading]);
+
+    // Apply any persisted updates that were stored while this page was not mounted
+    useEffect(() => {
+        if (!posts || posts.length === 0) return;
+        let updated = false;
+        const newPosts = posts.map(p => {
+            const id = p.id || p.postId;
+            if (!id) return p;
+            try {
+                const key = `postCommentCountUpdate-${id}`;
+                const raw = sessionStorage.getItem(key);
+                if (!raw) return p;
+                const parsed = JSON.parse(raw);
+                if (typeof parsed.commentCount === 'number') {
+                    updated = true;
+                    sessionStorage.removeItem(key);
+                    return { ...p, commentCount: parsed.commentCount };
+                }
+                if (typeof parsed.delta === 'number') {
+                    updated = true;
+                    sessionStorage.removeItem(key);
+                    return { ...p, commentCount: Math.max((p.commentCount || 0) + parsed.delta, 0) };
+                }
+            } catch (e) {
+                // ignore parse errors
+            }
+            return p;
+        });
+        if (updated) setPosts(newPosts);
+    }, [posts]);
 
     return (
         <div>

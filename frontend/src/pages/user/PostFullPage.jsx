@@ -291,7 +291,7 @@ const PostFullPage = () => {
                 console.log('Comment posted successfully:', result.data);
                 setCommentText("");
                 // Optimistically increment post comment count and reload comments
-                setPost(prev => prev ? { ...prev, commentCount: (prev.commentCount || 0) + 1 } : prev);
+                incrementPostComments(1);
                 loadComments();
             } else {
                 console.error('Failed to post comment:', result.message);
@@ -363,11 +363,15 @@ const PostFullPage = () => {
                     };
                     const totalComments = loadedWithReplies.reduce((sum, it) => sum + 1 + countRepliesRecursive(it.replies || []), 0);
                     setComments(loadedWithReplies);
+                    // ensure post and any listeners are informed of the authoritative comment count
                     setPost(prev => prev ? { ...prev, commentCount: totalComments } : prev);
+                    broadcastCommentCount(post?.id || post?.postId, totalComments, 0);
                 } else {
                     setComments(loaded);
                     const totalComments = loaded.reduce((sum, it) => sum + 1, 0);
-                    setPost(prev => prev ? { ...prev, commentCount: Math.max(prev.commentCount || 0, totalComments) } : prev);
+                    // Use authoritative count returned from the server (don't preserve stale higher values)
+                    setPost(prev => prev ? { ...prev, commentCount: totalComments } : prev);
+                    broadcastCommentCount(post?.id || post?.postId, totalComments, 0);
                 }
             }
         } catch (error) {
@@ -375,6 +379,35 @@ const PostFullPage = () => {
         } finally {
             setCommentsLoading(false);
         }
+    };
+
+    // Broadcast helper: informs other pages (e.g., feeds) about comment count changes
+    const broadcastCommentCount = (postId, commentCount, delta = 0) => {
+        try {
+            const idToSend = postId || post?.id || post?.postId;
+            const detail = { postId: idToSend, commentCount, delta };
+            window.dispatchEvent(new CustomEvent('postCommentCountUpdated', { detail }));
+            try {
+                if (idToSend) {
+                    const key = `postCommentCountUpdate-${idToSend}`;
+                    sessionStorage.setItem(key, JSON.stringify({ commentCount, delta, ts: Date.now() }));
+                }
+            } catch (e) {
+                // ignore storage errors
+            }
+        } catch (e) {
+            // ignore environments where window is not available
+        }
+    };
+
+    const incrementPostComments = (delta) => {
+        setPost(prev => {
+            if (!prev) return prev;
+            const newCount = Math.max((prev.commentCount || 0) + delta, 0);
+            const id = prev.id || prev.postId;
+            broadcastCommentCount(id, newCount, delta);
+            return { ...prev, commentCount: newCount };
+        });
     };
 
     // Find and increment numberOfReplies for the top-level comment that contains targetId in its subtree
@@ -635,7 +668,7 @@ const PostFullPage = () => {
                                 key={comment.id}
                                 comment={comment}
                                 postOwnerId={post?.ownerId}
-                                onPostCommentAdded={() => setPost(prev => prev ? { ...prev, commentCount: (prev.commentCount || 0) + 1 } : prev)}
+                                onPostCommentAdded={() => incrementPostComments(1)}
                                 onIncrementTopLevelReplies={(id, delta) => incrementTopLevelRepliesFor(id, delta)}
                                 onVoteUpdate={(payload) => {
                                     // payload: { targetId, previousVote, newVote }
@@ -696,7 +729,7 @@ const PostFullPage = () => {
                                         }
                                         return filtered;
                                     });
-                                    setPost(prev => prev ? { ...prev, commentCount: Math.max((prev.commentCount || 1) - 1, 0) } : prev);
+                                    incrementPostComments(-1);
                                 }}
                                 onEdit={({ commentId, content, numberOfReplies }) => setComments(prev => prev.map(c => c.id === commentId ? { ...c, ...(content !== undefined ? { content } : {}), ...(numberOfReplies !== undefined ? { numberOfReplies } : {}) } : c))}
                             />
