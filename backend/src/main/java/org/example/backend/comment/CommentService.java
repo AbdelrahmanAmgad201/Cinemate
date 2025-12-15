@@ -40,11 +40,12 @@ public class CommentService {
         else {
             int depth = parentComment.getDepth() + 1;
             comment.setDepth(depth);
+            parentComment.setNumberOfReplies(parentComment.getNumberOfReplies() + 1);
+            commentRepository.save(comment);
         }
         Post post = mongoTemplate.findById(postId, Post.class);
         post.setCommentCount(post.getCommentCount() + 1);
         post.updateLastActivityAt(Instant.now());
-        parentComment.setNumberOfReplies(parentComment.getNumberOfReplies() + 1);
         postRepository.save(post);
         return commentRepository.save(comment);
     }
