@@ -279,7 +279,7 @@ public class CascadeDeletionService {
 
         return totalDeleted;
     }
-    
+
     /**
      * Batch soft delete votes on posts
      */
