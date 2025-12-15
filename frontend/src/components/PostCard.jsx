@@ -6,62 +6,20 @@ import { BiUpvote, BiDownvote, BiSolidUpvote, BiSolidDownvote } from "react-icon
 import { RiShareForwardLine } from "react-icons/ri";
 import { FaRegComment } from "react-icons/fa";
 import "./style/postCard.css";
-import { deletePostApi,isVotedPostApi, deleteVotePostApi, votePostApi, updateVotePostApi } from '../api/post-api.jsx';
+import { deletePostApi } from '../api/post-api.jsx';
+import VoteWidget from './VoteWidget';
 import { AuthContext } from '../context/AuthContext.jsx';
 import { PATHS } from '../constants/constants';
 
 const PostCard = ({ postBody }) => {
-    const [userVote, setUserVote] = useState(0);
-    const [voteCount, setVoteCount] = useState(postBody?.votes || 0);
     const [postOptions, setPostOptions] = useState(false);
-    const [voteId, setVoteId] = useState(postBody?.voteId || null);
     const isVotingRef = useRef(false);
     
     const { user } = useContext(AuthContext);
     const navigate = useNavigate();
     const menuRef = useRef(null);
 
-    const handleVote = async (voteType) => {
-        const previousVote = userVote;
-        const newVote = userVote === voteType ? 0 : voteType;
-        
-        const voteDifference = newVote - previousVote;
-        
-        setUserVote(newVote);
-        setVoteCount(prevCount => prevCount + voteDifference);
 
-        try{
-            let result;
-            if(previousVote === 0 && newVote !== 0){
-                result = await votePostApi({ postId: postBody.id, value: newVote });
-                if (result.success) {
-                    console.log("Vote created");
-                }
-            }
-            else if (newVote === 0 && previousVote !== 0){
-                result = await deleteVotePostApi({ targetId: postBody.id });
-                
-                
-                if (result.success) {
-                    console.log("Vote deleted");
-                }
-            }
-
-            else if (previousVote !== 0 && newVote !== 0) {
-                result = await updateVotePostApi({ postId: postBody.id, value: newVote });
-            }
-            if (!result?.success) {
-                setUserVote(previousVote);
-                setVoteCount(prevCount => prevCount - voteDifference);
-                console.error('Vote failed:', result?.message);
-            }
-        }
-        catch(e){
-            setUserVote(previousVote);
-            setVoteCount(prevCount => prevCount - voteDifference);
-            console.error('Vote error:', e);
-        }
-    };
 
     const navigateToPost = () => {
         navigate(PATHS.POST.FULLPAGE(postBody.id), {state: {post: postBody}});
@@ -108,45 +66,9 @@ const PostCard = ({ postBody }) => {
         { label: "Delete", onClick: handleDelete }
     ]
 
-    useEffect(() => {
-        const checkVote = async () => {
-            if (!postBody?.id || !user?.id || isVotingRef.current) {
-                return;
-            }
 
-            try {
-                const result = await isVotedPostApi({ targetId: postBody.id });
-                
-                if (result.success) {
-                    let voteValue = 0;
-                    if (typeof result.data === 'number') {
-                        voteValue = result.data;
-                    } else if (typeof result.data === 'boolean') {
-                        voteValue = 0;
-                    } else if (result.data && typeof result.data.value === 'number') {
-                        voteValue = result.data.value;
-                    }
-                    
-                    setUserVote(voteValue);
-                } else {
-                    console.log("No existing vote found");
-                    setUserVote(0);
-                }
-            } catch (e) {
-                console.error('Error checking vote:', e);
-                setUserVote(0);
-            }
-        }
 
-        checkVote();
-    }, [postBody?.id, user?.id]);
 
-    useEffect(() => {
-        if (postBody) {
-            const totalVotes = (postBody.upvoteCount || 0) - (postBody.downvoteCount || 0);
-            setVoteCount(totalVotes);
-        }
-    }, [postBody?.id, postBody?.upvoteCount, postBody?.downvoteCount]);
 
     useEffect(() => {
         const handleClickOutside = (event) => {
@@ -206,22 +128,15 @@ const PostCard = ({ postBody }) => {
                 </div>
             </div>
             <footer className="post-footer">
-                <div className="up-down-vote">
-                    {userVote === 1 ? (
-                        <BiSolidUpvote className="selected" onClick={() => handleVote(1)} />
-                    ) : (
-                        <BiUpvote onClick={() => handleVote(1)} />
-                    )}
-                    <span className="vote-count">{voteCount}</span>
-                    <span className="vote-separator">|</span>
-                    {userVote === -1 ? (
-                        <BiSolidDownvote className="selected" onClick={() => handleVote(-1)} />
-                    ) : (
-                        <BiDownvote onClick={() => handleVote(-1)} />
-                    )}
-                </div>
+                <VoteWidget
+                    targetId={postBody.id}
+                    initialUp={postBody.upvoteCount}
+                    initialDown={postBody.downvoteCount}
+                    isPost={true}
+                />
                 <div className="post-comment" onClick={navigateToPost}>
                     <FaRegComment />
+                    <span className="comment-count">{postBody.commentCount || 0}</span>
                 </div>
                 {/* <div className="post-share">
                     <RiShareForwardLine />
