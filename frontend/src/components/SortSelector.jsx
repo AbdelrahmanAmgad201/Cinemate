@@ -31,9 +31,9 @@ export default function SortSelector({ currentSort, options, onSortChange }){
                             <div
                                 key={option.value}
                                 className={`sort-option ${currentSort.value === option.value ? 'selected' : ''}`}
-                                onClick={() => {
+                                onMouseDown={(e) => {
+                                    e.preventDefault();
                                     handleChangeSort(option);
-                                    setIsOpen(false);
                                 }}
                             >
                                 <span className="sort-option-icon">{option.icon}</span>
