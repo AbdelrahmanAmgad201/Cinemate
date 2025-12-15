@@ -8,4 +8,5 @@ public class ForumPostsRequestDTO {
     private int page;
     private int pageSize;
     private ObjectId forumId;
+    private String sortBy; // new - old - top
 }
