@@ -10,11 +10,10 @@ import { deletePostApi,isVotedPostApi, deleteVotePostApi, votePostApi, updateVot
 import { AuthContext } from '../context/AuthContext.jsx';
 import { PATHS } from '../constants/constants';
 
-const PostCard = ({ postBody, fullMode = false }) => {
+const PostCard = ({ postBody }) => {
     const [userVote, setUserVote] = useState(0);
     const [voteCount, setVoteCount] = useState(postBody?.votes || 0);
     const [postOptions, setPostOptions] = useState(false);
-    const [voteId, setVoteId] = useState(postBody?.voteId || null);
     const isVotingRef = useRef(false);
     
     const { user } = useContext(AuthContext);
