@@ -97,7 +97,7 @@ public class PostService {
             throw new IllegalArgumentException("Post not found with id: " + postId);
         }
         Forum forum = mongoTemplate.findById(post.getForumId(), Forum.class);
-        forum.setPostCount(forum.getPostCount() + 1);
+        forum.setPostCount(forum.getPostCount() - 1);
         forumRepository.save(forum);
         deletionService.deletePost(postId);
     }
