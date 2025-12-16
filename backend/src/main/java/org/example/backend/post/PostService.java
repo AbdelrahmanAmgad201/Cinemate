@@ -13,6 +13,8 @@ import org.example.backend.hateSpeach.HateSpeechException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.domain.*;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
@@ -69,9 +71,12 @@ public class PostService {
 
     @Transactional
     public Page<Post> getForumPosts(ForumPostsRequestDTO forumPostsRequestDTO) {
+        Sort sort = PostUtils.getSort(forumPostsRequestDTO.getSortBy());
+
         Pageable pageable = PageRequest.of(
                 forumPostsRequestDTO.getPage(),
-                forumPostsRequestDTO.getPageSize());
+                forumPostsRequestDTO.getPageSize(),
+                sort);
         return postRepository.findByIsDeletedFalseAndForumId(forumPostsRequestDTO.getForumId(), pageable);
     }
 

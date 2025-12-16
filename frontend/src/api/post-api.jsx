@@ -81,7 +81,7 @@ export async function isVotedPostApi({ targetId }) {
         const response = await api.get(`/vote/v1/is-voted/${targetId}`);
         const data = response.data;
 
-        console.log(data);
+        // console.log(data);
         return { success: true, data: data};
     }
     catch(err){

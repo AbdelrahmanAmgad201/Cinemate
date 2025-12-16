@@ -68,7 +68,7 @@ export async function followForumApi({ forumId }) {
 export async function getForumApi({ forumId }) {
     try {
         const response = await api.get(`/forum/v1/get-forum-by-id/${forumId}`);
-        console.log(response.data);
+        // console.log(response.data);
 
         const normalId = parseInt(response.data.ownerId, 16);
 
@@ -82,7 +82,7 @@ export async function getForumApi({ forumId }) {
             ownerId24Bit: response.data.ownerId, // TODO: THIS HAS ISSUES
             ownerId: normalId,
         }
-        console.log(data);
+        // console.log(data);
         return { success: true, data: data };
     } catch (err) {
         return { success: false, message: err.message };
@@ -93,7 +93,7 @@ export async function getForumApi({ forumId }) {
 export async function checkFollowApi({ forumId }) {
     try {
         const response = await api.get(`/forum-follow/v1/is-followed/${forumId}`);
-        console.log(response.data);
+        // console.log(response.data);
 
         return { success: true, data: response.data }; // true or false
     } catch (err) {
@@ -102,9 +102,10 @@ export async function checkFollowApi({ forumId }) {
 }
 
 // TODO: Get a forum's posts -> 
-export async function getForumPostsApi({ forumId, page, size }) {
+export async function getForumPostsApi({ forumId, page, size, sort: sort = "new" }) {
     try {
-        const response = await api.post(`/post/v1/forum-posts`, {page, pageSize: size, forumId});
+        const response = await api.post(`/post/v1/forum-posts`, {page, pageSize: size, forumId, sortBy: sort});
+        console.log("Fetch forum posts")
         console.log(response);
         const data = {
             posts: response.data.content,
@@ -120,7 +121,7 @@ export async function getForumPostsApi({ forumId, page, size }) {
 export async function getModApi({userId}) {
     try {
         const response = await api.get(`/user/v1/user-name-from-object-user-id/${userId}`);
-        console.log(response);
+        // console.log(response);
 
         return { success: true, data: response.data };
     } catch (err) {
