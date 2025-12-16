@@ -2,6 +2,7 @@ package org.example.backend.post;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.bson.types.ObjectId;
+import org.example.backend.hateSpeach.HateSpeechException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.MediaType;

@@ -51,11 +51,15 @@ public class CommentService {
         if (comment == null) {
             throw new IllegalArgumentException("Comment not found with id: " + commentId);
         }
+        systemDeleteComment(comment);
+    }
+
+    public void systemDeleteComment(Comment comment) {
         Post post = mongoTemplate.findById(comment.getPostId(), Post.class);
         post.setCommentCount(post.getCommentCount() + 1);
         post.updateLastActivityAt(Instant.now());
         postRepository.save(post);
-        deletionService.deleteComment(commentId);
+        deletionService.deleteComment(comment.getId());
     }
 
     private void canComment(ObjectId postId) {
