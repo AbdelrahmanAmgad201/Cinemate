@@ -15,7 +15,7 @@ import { AuthContext } from '../context/AuthContext.jsx';
 import { ToastContext } from '../context/ToastContext.jsx';
 import { PATHS } from '../constants/constants';
 
-const PostCard = ({ postBody }) => {
+const PostCard = ({ postBody, fullMode = false  }) => {
     const [postOptions, setPostOptions] = useState(false);
     const [firstName, setFirstName] = useState("");
     const [lastName, setLastName] = useState("");
@@ -45,55 +45,13 @@ const PostCard = ({ postBody }) => {
 
     const formattedTime = postBody.createdAt ? formatDistanceToNow(new Date(postBody.createdAt), { addSuffix: true }) : 'Recently';
 
-    const handleVote = async (voteType) => {
-        const previousVote = userVote;
-        const newVote = userVote === voteType ? 0 : voteType;
-        
-        const voteDifference = newVote - previousVote;
-        
-        setUserVote(newVote);
-        setVoteCount(prevCount => prevCount + voteDifference);
-
-        try{
-            let result;
-            if(previousVote === 0 && newVote !== 0){
-                result = await votePostApi({ postId: postBody.id, value: newVote });
-                if (result.success) {
-                    console.log("Vote created");
-                }
-            }
-            else if (newVote === 0 && previousVote !== 0){
-                result = await deleteVotePostApi({ targetId: postBody.id });
-                
-                
-                if (result.success) {
-                    console.log("Vote deleted");
-                }
-            }
-
-            else if (previousVote !== 0 && newVote !== 0) {
-                result = await updateVotePostApi({ postId: postBody.id, value: newVote });
-            }
-            if (!result?.success) {
-                setUserVote(previousVote);
-                setVoteCount(prevCount => prevCount - voteDifference);
-                showToast('Failed to vote', result.message || 'unknown error', 'error')
-            }
-        }
-        catch(error){
-            setUserVote(previousVote);
-            setVoteCount(prevCount => prevCount - voteDifference);
-            showToast('Failed to vote', error || 'unknown error', 'error')
-        }
-    };
-
     const navigateToPost = () => {
+        if(fullMode)return;
         try {
             sessionStorage.setItem(`CINEMATE_LAST_POST_${postBody.id}`, JSON.stringify(postBody));
         } catch (e) {
             // ignore storage errors
-        }
-        navigate(PATHS.POST.FULLPAGE(postBody.id), {state: {post: postBody}});
+        }navigate(PATHS.POST.FULLPAGE(postBody.id));
     };
 
     const handleDelete = async () => {
@@ -133,6 +91,10 @@ const PostCard = ({ postBody }) => {
     }
 
     const handleEdit = () => {
+        if(fullMode){
+            navigate('.', { state: { editMode: true }, replace: true });
+            return;
+        }
         setPostOptions(false);
         navigate(PATHS.POST.FULLPAGE(postBody.id), { state: { post: postBody, editMode: true } });
     };
@@ -172,13 +134,6 @@ const PostCard = ({ postBody }) => {
         checkVote();
         getUsername();
     }, [postBody?.ownerId, user?.id]);
-
-    useEffect(() => {
-        if (postBody) {
-            const totalVotes = (postBody.upvoteCount || 0) - (postBody.downvoteCount || 0);
-            setVoteCount(totalVotes);
-        }
-    }, [postBody?.upvoteCount, postBody?.downvoteCount]);
 
     useEffect(() => {
         const handleClickOutside = (event) => {
