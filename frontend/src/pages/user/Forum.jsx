@@ -174,21 +174,6 @@ export default function Forum() {
             return [...prevPosts, ...newPosts];
         });
 
-        // Apply any session-stored comment count overrides (from PostFullPage dispatch) so counts update
-        // immediately in the forum list even if the backend cache hasn't propagated yet.
-        try {
-            setPosts(prev => prev.map(p => {
-                const key = `CINEMATE_LAST_COMMENT_COUNT_${p.postId || p.id}`;
-                const raw = sessionStorage.getItem(key);
-                if (!raw) return p;
-                const parsed = JSON.parse(raw);
-                if (!parsed || typeof parsed.count !== 'number') return p;
-                return { ...p, commentCount: parsed.count };
-            }));
-        } catch (e) {
-            // ignore storage errors
-        }
-
         if (newPosts.length < PAGE_SIZE.FORUM) setHasMore(false);
 
         setLoading(false);
@@ -201,24 +186,6 @@ export default function Forum() {
         setHasMore(true);
         fetchPosts(0, activeSort.value);
     }, [forumId, activeSort, fetchPosts])
-
-    useEffect(() => {
-        function handlePostCommentCountUpdated(e) {
-            if (!e.detail) return;
-            const pid = e.detail.postId;
-            const n = Number(e.detail.commentCount);
-            const sanitized = Number.isFinite(n) ? Math.max(0, Math.trunc(n)) : 0;
-            console.debug('[Forum] Received comment count update', { pid, sanitized });
-            setPosts(prev => prev.map(p => {
-                if ((p.id && p.id === pid) || (p.postId && p.postId === pid)) {
-                    return { ...p, commentCount: sanitized };
-                }
-                return p;
-            }));
-        }
-        window.addEventListener('postCommentCountUpdated', handlePostCommentCountUpdated);
-        return () => window.removeEventListener('postCommentCountUpdated', handlePostCommentCountUpdated);
-    }, []);
 
     const handleLoadMore = () => {
         const nextPage = page + 1;
