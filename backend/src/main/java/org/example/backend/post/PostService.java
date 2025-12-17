@@ -121,4 +121,8 @@ public class PostService {
     private ObjectId longToObjectId(Long value) {
         return new ObjectId(String.format("%024x", value));
     }
+
+    public Post getPostById(ObjectId postId) {
+        return mongoTemplate.findById(postId, Post.class);
+    }
 }
