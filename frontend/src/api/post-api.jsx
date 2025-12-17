@@ -95,7 +95,7 @@ export async function isVotedPostApi({ targetId }) {
 
 export async function getPostApi({ postId }) {
     try {
-        const response = await api.get(`/post/v1/post/${postId}`);
+        const response = await api.get(`/post/v1/${postId}`);
         const data = response.data;
 
         return { success: true, data: data };

@@ -4,7 +4,7 @@ import { AuthContext } from '../../context/AuthContext';
 import { ToastContext } from '../../context/ToastContext.jsx';
 import Swal from 'sweetalert2';
 import EditPost from '../../components/EditPost';
-import { updatePostApi, deletePostApi, isVotedPostApi } from '../../api/post-api';
+import { updatePostApi, deletePostApi, isVotedPostApi, getPostApi } from '../../api/post-api';
 import PostMain from '../../components/PostMain';
 import PostComments from '../../components/PostComments';
 import { PATHS } from '../../constants/constants';
@@ -20,13 +20,25 @@ const PostFullPage = () => {
     const { showToast } = useContext(ToastContext);
     const navigate = useNavigate();
 
-    const [post, setPost] = useState(location.state?.post || null);
+    const [post, setPost] = useState({
+        commentCount: 0,
+        content: '',
+        createdAt: null,
+        deletedAt: null,
+        downvoteCount: 0,
+        forumId: 0,
+        id: postId,
+        isDeleted: false,
+        lastActivityAt: null,
+        ownerId: 0,
+        score: 0,
+        title: '',
+        upvoteCount: 0
+    });
     const [editMode, setEditMode] = useState(false);
     const [userVote, setUserVote] = useState(0);
-    const [voteCount, setVoteCount] = useState(0);
     const [openImage, setOpenImage] = useState(false);
 
-    const [postOptions, setPostOptions] = useState(false);
 
     const cancelEdit = () => {
         setEditMode(false);
@@ -82,43 +94,44 @@ const PostFullPage = () => {
             }
         }
 
+        const fetchPost = async () =>{
+            if (!postId || !user?.id) {
+                showToast('Failed to fetch post', 'Invalid postId / userId', 'error');
+                return;
+            }
+
+            try{
+                const result = await getPostApi({postId: postId});
+
+                if(result.success){
+                    console.log("RESULT:" , result);
+                    setPost(result.data);
+                }
+                else{
+                    showToast('Failed to fetch post', result.message || 'unknown error', 'error');
+                }
+            }
+            catch(error){
+                showToast('Failed to fetch post', result.message || 'unknown error', 'error');
+            }
+        }
+
         checkVote();
-    }, [postId, user?.id]);
-
-    useEffect(() => {
-        if (post) {
-            const totalVotes = (post.upvoteCount || 0) - (post.downvoteCount || 0);
-            setVoteCount(totalVotes);
-        }
-    }, [post]);
-
-    useEffect(() => {
-        if (location.state?.post) {
-            return;
-        }
-    }, [postId, location.state]);
+        fetchPost();
+    }, [postId]);
 
     useEffect(() => {
         if (location.state?.editMode) {
             setEditMode(true);
             navigate(location.pathname, { replace: true, state: {} });
         }
-    }, [postId, location.state, location.pathname, navigate]);
+    }, [postId, location.state?.editMode, location.pathname, navigate]);
 
-    const [loadingPost, setLoadingPost] = useState(false);
     const [postLoadError, setPostLoadError] = useState(null);
 
     useEffect(() => {
-        const suppliedPost = location.state?.post;
-        const pid = suppliedPost?.id || suppliedPost?.postId || location.state?.postId || postId;
-        if (suppliedPost) {
-            setPost(suppliedPost);
-            setPostLoadError(null);
-            return;
-        }
-        if (!pid) return;
         try {
-            const cached = sessionStorage.getItem(`CINEMATE_LAST_POST_${pid}`);
+            const cached = sessionStorage.getItem(`CINEMATE_LAST_POST_${postId}`);
             if (cached) {
                 const parsed = JSON.parse(cached);
                 setPost(parsed);
@@ -130,7 +143,7 @@ const PostFullPage = () => {
         }
         setPost({ id: pid, postId: pid, title: 'Post', content: '', media: null, ownerId: null, commentCount: 0, isPlaceholder: true });
         setPostLoadError(null);
-    }, [postId, location.state]);
+    }, [postId]);
 
     useEffect(() => {
         const commentIdToScroll = location.state?.commentId;
@@ -162,7 +175,7 @@ const PostFullPage = () => {
             cancelled = true;
             timers.forEach(t => clearTimeout(t));
         };
-    }, [post, location.state, location.pathname, navigate]);
+    }, [post, location.state?.commentId, location.pathname, navigate]);
 
     if (!post) {
         return <div>Not Found...</div>;
