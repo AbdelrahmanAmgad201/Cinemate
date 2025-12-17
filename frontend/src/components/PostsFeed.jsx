@@ -1,7 +1,7 @@
 import {useCallback, useRef} from "react";
 
 
-import "./style/postsFeed.css";
+import "./style/PostsFeed.css";
 import emptySetIcon from "../assets/icons/empty-set.png"
 import PostCard from "./PostCard.jsx";
 import LoadingFallback from "./LoadingFallback.jsx";

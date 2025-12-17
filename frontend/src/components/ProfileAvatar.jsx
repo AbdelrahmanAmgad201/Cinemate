@@ -1,6 +1,6 @@
 import { useState, useRef, useContext, useEffect } from "react";
 import { CgProfile } from "react-icons/cg";
-import { AuthContext } from '../context/authContext.jsx';
+import { AuthContext } from '../context/AuthContext.jsx';
 import "./style/profileAvatar.css";
 
 import {ROLES} from "../constants/constants.jsx";
