@@ -1,23 +1,20 @@
 import { useState, useEffect, useRef, useContext } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
-import pic from "../../assets/action.jpg";
 import { AuthContext } from '../../context/AuthContext';
+import { ToastContext } from '../../context/ToastContext.jsx';
 import EditPost from '../../components/EditPost';
-import { updatePostApi, isVotedPostApi, deletePostApi, votePostApi, updateVotePostApi, deleteVotePostApi } from '../../api/post-api';
+import { updatePostApi, isVotedPostApi } from '../../api/post-api';
 import "../../components/style/postCard.css";
-import "../../components/style/postFullPage.css";
-import { IoIosPerson } from "react-icons/io";
-import { BsThreeDots } from "react-icons/bs";
-import { BiUpvote, BiDownvote, BiSolidUpvote, BiSolidDownvote } from "react-icons/bi";
-import { RiShareForwardLine } from "react-icons/ri";
-import { FaRegComment } from "react-icons/fa";
+import "./style/postFullPage.css";
 import { MdKeyboardArrowDown } from "react-icons/md";
 import { IoClose } from "react-icons/io5";
+import PostCard from '../../components/PostCard';
 
 const PostFullPage = () => {
     const { postId } = useParams();
     const location = useLocation();
     const { user } = useContext(AuthContext);
+    const { showToast } = useContext(ToastContext);
     const navigate = useNavigate();
     const menuRef = useRef(null);
 
@@ -29,81 +26,6 @@ const PostFullPage = () => {
     const [sort, setSort] = useState("best");
     const [commentText, setCommentText] = useState("");
     const [postOptions, setPostOptions] = useState(false);
-    const ownerIdConverted = post.ownerId ? parseInt(post.ownerId, 10) : null;
-
-    const handleVote = async (voteType) => {
-        const previousVote = userVote;
-        const newVote = userVote === voteType ? 0 : voteType;
-        
-        const voteDifference = newVote - previousVote;
-        
-        setUserVote(newVote);
-        setVoteCount(prevCount => prevCount + voteDifference);
-
-        try{
-            let result;
-            if(previousVote === 0 && newVote !== 0){
-                result = await votePostApi({ postId: postId, value: newVote });
-                if (result.success) {
-                    console.log("Vote created");
-                }
-            }
-            else if (newVote === 0 && previousVote !== 0){
-                result = await deleteVotePostApi({ targetId: postId });
-                
-                
-                if (result.success) {
-                    console.log("Vote deleted");
-                }
-            }
-
-            else if (previousVote !== 0 && newVote !== 0) {
-                result = await updateVotePostApi({ postId: postId, value: newVote });
-            }
-            if (!result?.success) {
-                setUserVote(previousVote);
-                setVoteCount(prevCount => prevCount - voteDifference);
-                console.error('Vote failed:', result?.message);
-            }
-        }
-        catch(e){
-            setUserVote(previousVote);
-            setVoteCount(prevCount => prevCount - voteDifference);
-            console.error('Vote error:', e);
-        }
-    };
-
-    const handleDelete = async () => {
-        if (!window.confirm('Are you sure you want to delete this post?')) {
-            return;
-        }
-
-        setPostOptions(false);
-
-        try{
-            const result = await deletePostApi({
-                postId: post.postId
-            });
-
-            if(result.success){
-                console.log('Post deleted successfully');
-                navigate(`/forum/${post.forumId}`);
-            }
-
-            else{
-                console.log(result.message || 'Failed to delete post');
-            }
-        }
-        catch(error){
-            console.error('Error delete post:', error);
-        } 
-
-    }
-
-    const handleEdit = () => {
-        setEditMode(true);
-        setPostOptions(false);
-    };
 
     const cancelEdit = () => {
         setEditMode(false);
@@ -119,7 +41,6 @@ const PostFullPage = () => {
             });
     
             if (result.success) {
-                // Update the local post state with new data
                 setPost({
                     ...post,
                     title: updatedPost.title,
@@ -129,10 +50,11 @@ const PostFullPage = () => {
                 setEditMode(false);
                 console.log('Post updated successfully');
             } else {
-                console.error('Update failed:', result.message);
+                if (!result.success) return showToast('Failed to edit post', result.message || 'unknown error', 'error');
             }
-        } catch (error) {
-            console.error('Error updating post:', error);
+        } 
+        catch(error){
+            showToast('Failed to edit post', error || 'unknown error', 'error');
         }
     };
 
@@ -149,11 +71,12 @@ const PostFullPage = () => {
                     const voteValue = typeof result.data === 'number' ? result.data : 0;
                     setUserVote(voteValue);
                 } else {
-                    console.error("Vote check failed:", result.message);
+                    showToast('Failed to check vote', result.message || 'unknown error', 'error');
                     setUserVote(0);
                 }
-            } catch(e) {
-                console.error('Error checking vote:', e);
+            } 
+            catch(error){
+                showToast('Failed to check vote', error || 'unknown error', 'error');
                 setUserVote(0);
             }
         }
@@ -198,19 +121,8 @@ const PostFullPage = () => {
     }, [postOptions]);
 
 
-
-
-    const viewerMenu = [
-        { label: "Follow", onClick: () => console.log("Follow clicked") }
-    ];
-    
-    const authorMenu = [
-        { label: "Edit", onClick: handleEdit },
-        { label: "Delete", onClick: handleDelete }
-    ];
-
     if (!post) {
-        return <div>Loading...</div>;
+        return <div>Not Found...</div>;
     }
 
     if(editMode){
@@ -223,65 +135,7 @@ const PostFullPage = () => {
 
     return (
         <div className="post-page">
-            <article className="post-card">
-                <div className="post-header">
-                    <div className="user-profile-pic">
-                        {post.avatar ? post.avatar : <IoIosPerson />}
-                    </div>
-                    <div className="user-info">
-                        <h2 className="user-name">{user.id}</h2>
-                        <time dateTime={post.time}>{post.time}</time>
-                    </div>
-                    <div className="post-settings" ref={menuRef}>
-                        {ownerIdConverted === user.id && ( 
-                            <>
-                            <BsThreeDots onClick={() => setPostOptions(prev => !prev)}/>
-                            {postOptions && (
-                                <div className="options-menu">
-                                <ul>
-                                {(ownerIdConverted === user?.id ? authorMenu : viewerMenu).map((item, index) => (
-                                    <li key={index} onClick={item.onClick}>{item.label}</li>
-                                ))}
-                                </ul>
-                            </div>
-                            )}
-                            </>
-                        )}
-                        
-                    </div>
-                </div>
-                <div className="post-content">
-                    <div className="post-title" >
-                        <p>{post.title}</p>
-                    </div>
-                    <div className="post-media" >
-                        {post.media && <img src={post.media} alt={post.title || "Post content"} onClick={() => setOpenImage(true)}/>}
-                        {post.content && <p className="post-text">{post.content}</p>}
-                    </div>
-                </div>
-                <footer className="post-footer">
-                    <div className="up-down-vote">
-                        {userVote === 1 ? (
-                            <BiSolidUpvote className="selected" onClick={() => handleVote(1)} />
-                        ) : (
-                            <BiUpvote onClick={() => handleVote(1)} />
-                        )}
-                        <span className="vote-count">{voteCount}</span>
-                        <span className="vote-separator">|</span>
-                        {userVote === -1 ? (
-                            <BiSolidDownvote className="selected" onClick={() => handleVote(-1)} />
-                        ) : (
-                            <BiDownvote onClick={() => handleVote(-1)} />
-                        )}
-                    </div>
-                    <div className="post-comment">
-                        <FaRegComment />
-                    </div>
-                    {/* <div className="post-share">
-                        <RiShareForwardLine />
-                    </div> */}
-                </footer>
-            </article>
+            <PostCard postBody={post} fullMode={true} />
             {openImage && (
                 <div className="view-image-container" onClick={() => setOpenImage(false)}>
                     <div className="view-image">

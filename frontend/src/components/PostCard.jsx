@@ -1,25 +1,33 @@
-import { useState, useEffect, useRef, useContext } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useState, useEffect, useRef, useContext, use } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import { IoIosPerson } from "react-icons/io";
 import { BsThreeDots } from "react-icons/bs";
 import { BiUpvote, BiDownvote, BiSolidUpvote, BiSolidDownvote } from "react-icons/bi";
 import { RiShareForwardLine } from "react-icons/ri";
 import { FaRegComment } from "react-icons/fa";
 import "./style/postCard.css";
+import Swal from "sweetalert2";
+import { formatDistanceToNow } from 'date-fns';
 import { deletePostApi,isVotedPostApi, deleteVotePostApi, votePostApi, updateVotePostApi } from '../api/post-api.jsx';
+import { getModApi } from '../api/forum-api.jsx';
 import { AuthContext } from '../context/AuthContext.jsx';
+import { ToastContext } from '../context/ToastContext.jsx';
 import { PATHS } from '../constants/constants';
 
 const PostCard = ({ postBody }) => {
     const [userVote, setUserVote] = useState(0);
     const [voteCount, setVoteCount] = useState(postBody?.votes || 0);
     const [postOptions, setPostOptions] = useState(false);
-    const [voteId, setVoteId] = useState(postBody?.voteId || null);
+    const [firstName, setFirstName] = useState("");
+    const [lastName, setLastName] = useState("");
     const isVotingRef = useRef(false);
     
     const { user } = useContext(AuthContext);
+    const { showToast } = useContext(ToastContext);
     const navigate = useNavigate();
     const menuRef = useRef(null);
+
+    const formattedTime = postBody.createdAt ? formatDistanceToNow(new Date(postBody.createdAt), { addSuffix: true }) : 'Recently';
 
     const handleVote = async (voteType) => {
         const previousVote = userVote;
@@ -53,13 +61,13 @@ const PostCard = ({ postBody }) => {
             if (!result?.success) {
                 setUserVote(previousVote);
                 setVoteCount(prevCount => prevCount - voteDifference);
-                console.error('Vote failed:', result?.message);
+                showToast('Failed to vote', result.message || 'unknown error', 'error')
             }
         }
-        catch(e){
+        catch(error){
             setUserVote(previousVote);
             setVoteCount(prevCount => prevCount - voteDifference);
-            console.error('Vote error:', e);
+            showToast('Failed to vote', error || 'unknown error', 'error')
         }
     };
 
@@ -68,35 +76,44 @@ const PostCard = ({ postBody }) => {
     };
 
     const handleDelete = async () => {
-        if (!window.confirm('Are you sure you want to delete this post?')) {
-            return;
-        }
+        const result = await Swal.fire({
+            title: 'Delete Post?',
+            text: 'Are you sure you want to delete this post?',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonText: 'Yes, delete',
+            confirmButtonColor: '#d33',
+            cancelButtonText: 'Cancel',
+
+        });
+
+        if (!result.isConfirmed) return;
 
         setPostOptions(false);
 
         try{
-            const result = await deletePostApi({
+            const res = await deletePostApi({
                 postId: postBody.id
             });
 
-            if(result.success){
+            if(res.success){
                 console.log('Post deleted successfully');
-                navigate(`/forum/${post.forumId}`);
+                navigate(`/forum/${postBody.forumId}`);
             }
 
             else{
-                console.log(result.message || 'Failed to delete post');
+                if (res.success === false) return showToast('Failed to delete post', res.message || 'unknown error', 'error')
             }
         }
         catch(error){
-            console.error('Error delete post:', error);
+            return showToast('Failed to delete post', error || 'unknown error', 'error')
         } 
 
     }
 
     const handleEdit = () => {
         setPostOptions(false);
-        navigate(PATHS.POST.FULLPAGE(postBody.id), { state: { post: postBody, editMode: true } });s
+        navigate(PATHS.POST.FULLPAGE(postBody.id), { state: { post: postBody, editMode: true } });
     };
 
     const viewerMenu = [
@@ -116,37 +133,36 @@ const PostCard = ({ postBody }) => {
 
             try {
                 const result = await isVotedPostApi({ targetId: postBody.id });
-                
-                if (result.success) {
-                    let voteValue = 0;
-                    if (typeof result.data === 'number') {
-                        voteValue = result.data;
-                    } else if (typeof result.data === 'boolean') {
-                        voteValue = 0;
-                    } else if (result.data && typeof result.data.value === 'number') {
-                        voteValue = result.data.value;
-                    }
-                    
-                    setUserVote(voteValue);
+                console.log("isVoted", result);
+                if(result.success) {
+                    setUserVote(result.data);
                 } else {
-                    console.log("No existing vote found");
+                    showToast('Failed to fetch votes', result.message || 'unknown error', 'error')
                     setUserVote(0);
                 }
-            } catch (e) {
-                console.error('Error checking vote:', e);
+            } 
+            catch(error){
+                showToast('Failed to fetch votes', error || 'unknown error', 'error')
                 setUserVote(0);
             }
         }
 
+        const getUsername = async () => {
+            const result = await getModApi({userId: postBody.ownerId});
+            setFirstName(result.data);
+        }
+
+
         checkVote();
-    }, [postBody?.id, user?.id]);
+        getUsername();
+    }, [postBody?.ownerId, user?.id]);
 
     useEffect(() => {
         if (postBody) {
             const totalVotes = (postBody.upvoteCount || 0) - (postBody.downvoteCount || 0);
             setVoteCount(totalVotes);
         }
-    }, [postBody?.id, postBody?.upvoteCount, postBody?.downvoteCount]);
+    }, [postBody?.upvoteCount, postBody?.downvoteCount]);
 
     useEffect(() => {
         const handleClickOutside = (event) => {
@@ -171,12 +187,12 @@ const PostCard = ({ postBody }) => {
     return(
         <article className="post-card">
             <div className="post-header">
-                <div className="user-profile-pic">
+                <div className="user-profile-pic" onClick={() => {navigate(PATHS.USER.PROFILE(ownerIdConverted))}}>
                     {postBody.avatar ? postBody.avatar : <IoIosPerson />}
                 </div>
                 <div className="user-info">
-                    <h2 className="user-name">{postBody.firstName} {postBody.lastName}</h2>
-                    <time dateTime={postBody.time}>{postBody.time}</time>
+                    <Link className="user-name" to={PATHS.USER.PROFILE(ownerIdConverted)} >{firstName} {/*lastName*/}</Link>
+                    <time dateTime={postBody.createdAt} >{formattedTime}</time>
                 </div>
                 <div className="post-settings" ref={menuRef}>
                     {ownerIdConverted === user.id && (
@@ -196,7 +212,7 @@ const PostCard = ({ postBody }) => {
                     
                 </div>
             </div>
-            <div className="post-content">
+            <div className="post-content" onClick={navigateToPost}>
                 <div className="post-title" onClick={navigateToPost}>
                     <p>{postBody.title}</p>
                 </div>
