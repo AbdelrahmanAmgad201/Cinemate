@@ -82,7 +82,7 @@ class PostServiceTest extends AbstractMongoIntegrationTest {
         assertThat(fromDb.getForumId()).isEqualTo(forumId);
         assertThat(fromDb.getOwnerId()).isEqualTo(new ObjectId(String.format("%024x", userId)));
 
-        verify(restTemplate, times(1))
+        verify(restTemplate, times(2))
                 .postForEntity(eq(url), any(HttpEntity.class), eq(Boolean.class));
     }
 

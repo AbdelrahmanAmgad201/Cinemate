@@ -107,7 +107,7 @@ class CascadeDeletionServiceTest {
 
     // ==================== DELETE COMMENT TESTS ====================
 
-       @Test
+    @Test
     void deleteComment_WithVotes_CascadesCorrectly() {
         // Arrange
         Comment comment = Comment.builder()
@@ -224,6 +224,7 @@ class CascadeDeletionServiceTest {
                 eq(org.bson.Document.class));
         verify(mongoTemplate, atLeastOnce()).updateMulti(any(Query.class), any(Update.class), anyString());
     }
+
     // ==================== DELETE VOTE TESTS ====================
 
     @Test
@@ -254,32 +255,36 @@ class CascadeDeletionServiceTest {
     void cascadeDeleteForumPostsAsync_WithPosts_DeletesAll() {
         List<ObjectId> postIds = Arrays.asList(new ObjectId(), new ObjectId());
 
-        when(mongoTemplate.find(any(Query.class), eq(ObjectId.class), eq("posts")))
+        // FIXED: Changed from find() to findDistinct()
+        when(mongoTemplate.findDistinct(any(Query.class), eq("_id"), eq("posts"), eq(ObjectId.class)))
                 .thenReturn(postIds);
+        when(mongoTemplate.findDistinct(any(Query.class), eq("_id"), eq("comments"), eq(ObjectId.class)))
+                .thenReturn(Collections.emptyList());
         when(mongoTemplate.updateMulti(any(Query.class), any(Update.class), eq("posts")))
                 .thenReturn(updateResult);
         when(mongoTemplate.updateMulti(any(Query.class), any(Update.class), eq("comments")))
                 .thenReturn(updateResult);
         when(mongoTemplate.updateMulti(any(Query.class), any(Update.class), eq("votes")))
                 .thenReturn(updateResult);
-        when(mongoTemplate.find(any(Query.class), eq(ObjectId.class), eq("comments")))
-                .thenReturn(Collections.emptyList());
         when(updateResult.getModifiedCount()).thenReturn(2L);
 
         cascadeDeletionService.cascadeDeleteForumPostsAsync(forumId, Instant.now());
 
-        verify(mongoTemplate).find(any(Query.class), eq(ObjectId.class), eq("posts"));
+        // FIXED: Changed verification
+        verify(mongoTemplate).findDistinct(any(Query.class), eq("_id"), eq("posts"), eq(ObjectId.class));
         verify(mongoTemplate, atLeastOnce()).updateMulti(any(Query.class), any(Update.class), anyString());
     }
 
     @Test
     void cascadeDeleteForumPostsAsync_NoPosts_DoesNothing() {
-        when(mongoTemplate.find(any(Query.class), eq(ObjectId.class), eq("posts")))
+        // FIXED: Changed from find() to findDistinct()
+        when(mongoTemplate.findDistinct(any(Query.class), eq("_id"), eq("posts"), eq(ObjectId.class)))
                 .thenReturn(Collections.emptyList());
 
         cascadeDeletionService.cascadeDeleteForumPostsAsync(forumId, Instant.now());
 
-        verify(mongoTemplate).find(any(Query.class), eq(ObjectId.class), eq("posts"));
+        // FIXED: Changed verification
+        verify(mongoTemplate).findDistinct(any(Query.class), eq("_id"), eq("posts"), eq(ObjectId.class));
         verify(mongoTemplate, never()).updateMulti(any(Query.class), any(Update.class), eq("posts"));
     }
 
@@ -287,7 +292,8 @@ class CascadeDeletionServiceTest {
     void cascadeDeletePostAsync_WithComments_DeletesAll() {
         List<ObjectId> commentIds = Arrays.asList(new ObjectId(), new ObjectId());
 
-        when(mongoTemplate.find(any(Query.class), eq(ObjectId.class), eq("comments")))
+        // FIXED: Changed from find() to findDistinct()
+        when(mongoTemplate.findDistinct(any(Query.class), eq("_id"), eq("comments"), eq(ObjectId.class)))
                 .thenReturn(commentIds);
         when(mongoTemplate.updateMulti(any(Query.class), any(Update.class), anyString()))
                 .thenReturn(updateResult);
@@ -295,13 +301,15 @@ class CascadeDeletionServiceTest {
 
         cascadeDeletionService.cascadeDeletePostAsync(postId, Instant.now());
 
-        verify(mongoTemplate).find(any(Query.class), eq(ObjectId.class), eq("comments"));
+        // FIXED: Changed verification
+        verify(mongoTemplate).findDistinct(any(Query.class), eq("_id"), eq("comments"), eq(ObjectId.class));
         verify(mongoTemplate, atLeastOnce()).updateMulti(any(Query.class), any(Update.class), anyString());
     }
 
     @Test
     void cascadeDeletePostAsync_NoComments_DeletesPostVotesOnly() {
-        when(mongoTemplate.find(any(Query.class), eq(ObjectId.class), eq("comments")))
+        // FIXED: Changed from find() to findDistinct() and removed unnecessary stubbing
+        when(mongoTemplate.findDistinct(any(Query.class), eq("_id"), eq("comments"), eq(ObjectId.class)))
                 .thenReturn(Collections.emptyList());
         when(mongoTemplate.updateMulti(any(Query.class), any(Update.class), eq("votes")))
                 .thenReturn(updateResult);
@@ -344,12 +352,13 @@ class CascadeDeletionServiceTest {
             postIds.add(new ObjectId());
         }
 
-        when(mongoTemplate.find(any(Query.class), eq(ObjectId.class), eq("posts")))
+        // FIXED: Changed from find() to findDistinct()
+        when(mongoTemplate.findDistinct(any(Query.class), eq("_id"), eq("posts"), eq(ObjectId.class)))
                 .thenReturn(postIds);
+        when(mongoTemplate.findDistinct(any(Query.class), eq("_id"), eq("comments"), eq(ObjectId.class)))
+                .thenReturn(Collections.emptyList());
         when(mongoTemplate.updateMulti(any(Query.class), any(Update.class), anyString()))
                 .thenReturn(updateResult);
-        when(mongoTemplate.find(any(Query.class), eq(ObjectId.class), eq("comments")))
-                .thenReturn(Collections.emptyList());
         when(updateResult.getModifiedCount()).thenReturn(100L, 50L, 0L);
 
         cascadeDeletionService.cascadeDeleteForumPostsAsync(forumId, Instant.now());
@@ -402,24 +411,26 @@ class CascadeDeletionServiceTest {
 
     @Test
     void cascadeDeleteForumPostsAsync_ExceptionThrown_LogsError() {
-        when(mongoTemplate.find(any(Query.class), eq(ObjectId.class), eq("posts")))
+        // FIXED: Changed from find() to findDistinct()
+        when(mongoTemplate.findDistinct(any(Query.class), eq("_id"), eq("posts"), eq(ObjectId.class)))
                 .thenThrow(new RuntimeException("Database error"));
 
         // Should not throw, just log the error
         cascadeDeletionService.cascadeDeleteForumPostsAsync(forumId, Instant.now());
 
-        verify(mongoTemplate).find(any(Query.class), eq(ObjectId.class), eq("posts"));
+        verify(mongoTemplate).findDistinct(any(Query.class), eq("_id"), eq("posts"), eq(ObjectId.class));
     }
 
     @Test
     void cascadeDeletePostAsync_ExceptionThrown_LogsError() {
-        when(mongoTemplate.find(any(Query.class), eq(ObjectId.class), eq("comments")))
+        // FIXED: Changed from find() to findDistinct()
+        when(mongoTemplate.findDistinct(any(Query.class), eq("_id"), eq("comments"), eq(ObjectId.class)))
                 .thenThrow(new RuntimeException("Database error"));
 
         // Should not throw, just log the error
         cascadeDeletionService.cascadeDeletePostAsync(postId, Instant.now());
 
-        verify(mongoTemplate).find(any(Query.class), eq(ObjectId.class), eq("comments"));
+        verify(mongoTemplate).findDistinct(any(Query.class), eq("_id"), eq("comments"), eq(ObjectId.class));
     }
 
     @Test

@@ -44,6 +44,9 @@ public class CascadeDeletionService {
 
         // 2. Cascade to all posts in this forum
         cascadeDeleteForumPostsAsync(forumId, deletedAt);
+
+        // 3. Cascade to all followings in this forum
+        cascadeDeleteForumFollowingAsync(forumId, deletedAt);
     }
 
     /**
@@ -165,6 +168,30 @@ public class CascadeDeletionService {
     }
 
     /**
+     * Cascade delete for following forums
+     */
+    @Async
+    public void cascadeDeleteForumFollowingAsync(ObjectId forumId, Instant deletedAt) {
+        try {
+            // Get all following IDs for this forum
+            List<ObjectId> followingIds = getIds("following", Criteria.where("forumId").is(forumId));
+            log.info("Found {} posts to delete for forum {}", followingIds.size(), forumId);
+
+            if (followingIds.isEmpty()) {
+                log.info("No posts to delete for forum {}", forumId);
+                return;
+            }
+
+            // Soft delete followings in batches
+            int totalPosts = softDeleteFollowingsBatch(followingIds, deletedAt);
+            log.info("Soft deleted {} posts for forum {}", totalPosts, forumId);
+
+        } catch (Exception e) {
+            log.error("Error during forum cascade deletion: {}", forumId, e);
+        }
+    }
+
+    /**
      * Cascade delete for a single post
      */
     @Async
@@ -227,6 +254,22 @@ public class CascadeDeletionService {
             long deleted = softDeleteBatch("posts", Criteria.where("_id").in(batch), deletedAt);
             totalDeleted += deleted;
             log.debug("Soft deleted batch of {} posts", deleted);
+        }
+
+        return totalDeleted;
+    }
+
+    /**
+     * Batch soft delete followings
+     */
+    private int softDeleteFollowingsBatch(List<ObjectId> followingIds, Instant deletedAt) {
+        int totalDeleted = 0;
+
+        for (int i = 0; i < followingIds.size(); i += BATCH_SIZE) {
+            List<ObjectId> batch = followingIds.subList(i, Math.min(i + BATCH_SIZE, followingIds.size()));
+            long deleted = softDeleteBatch("following", Criteria.where("_id").in(batch), deletedAt);
+            totalDeleted += deleted;
+            log.debug("Soft deleted batch of {} followings", deleted);
         }
 
         return totalDeleted;
