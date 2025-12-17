@@ -16,6 +16,9 @@ export async function updatePostApi({postId, forumId, title, content}) {
 }
 
 export async function deletePostApi({postId}) {
+    if (!postId) {
+        return { success: false, message: 'Invalid postId' };
+    }
     try{
         const response = await api.delete(`/post/v1/post/${postId}`);
         const data = response.data;
@@ -87,6 +90,17 @@ export async function isVotedPostApi({ targetId }) {
     catch(err){
     //     console.log(err);
         return { success: false , message: err.message };
+    }
+}
+
+export async function getPostApi({ postId }) {
+    try {
+        const response = await api.get(`/post/v1/post/${postId}`);
+        const data = response.data;
+
+        return { success: true, data: data };
+    } catch (err) {
+        return { success: false, message: err.message };
     }
 }
 

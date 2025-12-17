@@ -10,15 +10,17 @@ import api from './api-client.jsx';
  */
 export async function addCommentApi({ postId, parentId, content }) {
     try {
+        console.debug('[API] addComment request', { postId, parentId: parentId || null, contentLength: content?.length });
         const response = await api.post("/comment/v1/create-comment", {
             postId,
             parentId: parentId || null,
             content
         });
+        console.debug('[API] addComment response', { status: response.status, data: response.data });
 
         return { success: true, data: response.data };
     } catch (err) {
-        console.error("Error adding comment:", err);
+        console.error("[API] addComment error:", err);
         return { 
             success: false, 
             message: err.response?.data?.error || err.message 

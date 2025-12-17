@@ -67,6 +67,7 @@ export const PATHS = {
 
     POST: {
         FULLPAGE: (id = ":postId") => `/post/${id}`,
+        THREAD: (id = ":commentId") => `/post/thread/${id}`,
     },
 
     FORUM : {

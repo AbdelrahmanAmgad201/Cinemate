@@ -23,7 +23,11 @@ const PostCard = ({ postBody }) => {
     useEffect(() => {
         function handleCommentCountUpdate(e) {
             if (e.detail && (e.detail.postId === postBody.id || e.detail.postId === postBody.postId)) {
-                setCommentCount(e.detail.commentCount);
+                const pid = e.detail.postId;
+                const n = Number(e.detail.commentCount);
+                const sanitized = Number.isFinite(n) ? Math.max(0, Math.trunc(n)) : 0;
+                console.debug('[PostCard] received postCommentCountUpdated event', { pid, raw: e.detail.commentCount, sanitized });
+                setCommentCount(sanitized);
             }
         }
         window.addEventListener('postCommentCountUpdated', handleCommentCountUpdate);
@@ -31,6 +35,11 @@ const PostCard = ({ postBody }) => {
     }, [postBody.id, postBody.postId]);
 
     const navigateToPost = () => {
+        try {
+            sessionStorage.setItem(`CINEMATE_LAST_POST_${postBody.id}`, JSON.stringify(postBody));
+        } catch (e) {
+            // ignore storage errors
+        }
         navigate(PATHS.POST.FULLPAGE(postBody.id), {state: {post: postBody}});
     };
 
@@ -63,7 +72,7 @@ const PostCard = ({ postBody }) => {
 
     const handleEdit = () => {
         setPostOptions(false);
-        navigate(PATHS.POST.FULLPAGE(postBody.id), { state: { post: postBody, editMode: true } });s
+        navigate(PATHS.POST.FULLPAGE(postBody.id), { state: { post: postBody, editMode: true } });
     };
 
     const viewerMenu = [
@@ -97,6 +106,11 @@ const PostCard = ({ postBody }) => {
 
 
     const ownerIdConverted = postBody.ownerId ? parseInt(postBody.ownerId, 10) : null;
+
+    useEffect(() => {
+        const pid = postBody.postId || postBody.id;
+        console.debug('[PostCard] mount', { pid, initialCommentCount: commentCount });
+    }, []);
 
 
     return(

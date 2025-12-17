@@ -25,12 +25,14 @@ async function fetchUserNameById(userId) {
         return null;
     }
 }
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { IoIosPerson } from 'react-icons/io';
 import { BsThreeDots } from 'react-icons/bs';
 import { MdKeyboardArrowDown } from 'react-icons/md';
 import { addCommentApi, getPostCommentsApi, deleteCommentApi, getRepliesApi } from '../api/comment-api';
+import { MAX_LENGTHS } from '../constants/constants';
 import VoteWidget from './VoteWidget';
+import { ToastContext } from '../context/ToastContext';
 import { AuthContext } from '../context/AuthContext';
 import { PATHS } from '../constants/constants';
 import './style/postFullPage.css';
@@ -44,7 +46,27 @@ const normalizeId = (id) => {
     return Number.isNaN(hex) ? null : hex;
 };
 
-const CommentItem = ({ comment, postOwnerId, onVoteUpdate, onRemoveComment, onEdit, onPostCommentAdded, onIncrementTopLevelReplies }) => {
+const INLINE_MAX_DEPTH = 2;
+
+const ThreadLinkButton = ({ comment, repliesCount, post }) => {
+    const navigate = useNavigate();
+    const handleOpenThread = () => {
+        const url = `${PATHS.POST.THREAD(comment.id)}?postId=${encodeURIComponent(comment.postId || '')}`;
+        // If we have a locally cached vote update for this comment, merge it into the navigation state
+        // so the thread page shows the latest client-side counts even if the parent state hasn't re-rendered yet.
+        let navComment = comment;
+        try {
+            const cached = JSON.parse(sessionStorage.getItem(`CINEMATE_LAST_COMMENT_${comment.id}`) || 'null');
+            if (cached) navComment = { ...comment, ...cached };
+        } catch (e) { /* ignore storage errors */ }
+        navigate(url, { state: { comment: navComment, postId: comment.postId, post } });
+    };
+    return (
+        <button className="view-thread-btn" onClick={handleOpenThread}>{`Open thread (${(typeof repliesCount === 'number' ? repliesCount : (comment.numberOfReplies || 'some'))} replies)`}</button>
+    );
+};
+
+const CommentItem = ({ comment, post, postOwnerId, onVoteUpdate, onRemoveComment, onEdit, onPostCommentAdded, onIncrementTopLevelReplies, inlineMaxDepth = INLINE_MAX_DEPTH, maxInlineReplies = Infinity, isModal = false, hideViewReplies = false, hideReplyButton = false, fetchRepliesTreeOnOpen = false, preferInlineReplies = false }) => {
     const { user } = useContext(AuthContext);
     const [menuOpen, setMenuOpen] = useState(false);
     const menuRef = useRef(null);
@@ -106,20 +128,61 @@ const CommentItem = ({ comment, postOwnerId, onVoteUpdate, onRemoveComment, onEd
     const [submittingReply, setSubmittingReply] = useState(false);
     const [showReplies, setShowReplies] = useState(false);
     const [replies, setReplies] = useState(comment.replies || []);
+    const [repliesTotalCount, setRepliesTotalCount] = useState(undefined);
     const [repliesLoading, setRepliesLoading] = useState(false);
     const [repliesPage, setRepliesPage] = useState(0);
     const [repliesHasMore, setRepliesHasMore] = useState(false);
 
     const REPLIES_PAGE_SIZE = 5;
+    const COUNT_PAGE_SIZE = 20;
     const loadReplies = async (page = 0) => {
         if (!comment.id) return;
         setRepliesLoading(true);
         const sortBy = 'score';
         try {
-            // Assume getRepliesApi supports pagination: add page/size if needed
+            const fetchRepliesTree = async (parentId) => {
+                const r = await getRepliesApi({ parentId, sortBy });
+                if (!r.success) return [];
+                const list = r.data || [];
+                const nodes = await Promise.all(list.map(async (it) => {
+                    it.replies = await fetchRepliesTree(it.id);
+                    it.numberOfReplies = Math.max(it.numberOfReplies || 0, (it.replies || []).length);
+                    return it;
+                }));
+                return nodes;
+            };
+
+            if (fetchRepliesTreeOnOpen && page === 0) {
+                const fullList = await fetchRepliesTree(comment.id);
+                setReplies(fullList);
+                setRepliesPage(0);
+                setRepliesHasMore(false);
+                onEdit && onEdit({ commentId: comment.id, numberOfReplies: (comment.numberOfReplies || 0) });
+
+                const computeFromLoaded = (items) => {
+                    const countRecursive = (arr) => (arr || []).reduce((s, it) => s + 1 + countRecursive(it.replies || []), 0);
+                    return countRecursive(items);
+                };
+                setRepliesTotalCount(computeFromLoaded(fullList));
+                return;
+            }
+
             const res = await getRepliesApi({ parentId: comment.id, sortBy, page, size: REPLIES_PAGE_SIZE });
             if (!res.success) throw new Error('Failed to fetch replies');
             const list = res.data || [];
+
+            if ((list || []).length === 0 && page === 0) {
+                const deeper = await fetchRepliesTree(comment.id);
+                if (deeper && deeper.length > 0) {
+                    setReplies(deeper);
+                    setRepliesPage(0);
+                    setRepliesHasMore(false);
+                    setRepliesTotalCount((deeper || []).length);
+                    onEdit && onEdit({ commentId: comment.id, numberOfReplies: (comment.numberOfReplies || 0) });
+                    return;
+                }
+            }
+
             if (page === 0) {
                 setReplies(list);
             } else {
@@ -128,12 +191,72 @@ const CommentItem = ({ comment, postOwnerId, onVoteUpdate, onRemoveComment, onEd
             setRepliesPage(page);
             setRepliesHasMore(list.length === REPLIES_PAGE_SIZE);
             onEdit && onEdit({ commentId: comment.id, numberOfReplies: (comment.numberOfReplies || 0) });
+
+            const computeFromLoaded = (items) => {
+                const countRecursive = (arr) => (arr || []).reduce((s, it) => s + 1 + countRecursive(it.replies || []), 0);
+                return countRecursive(items);
+            };
+            const loadedTotal = computeFromLoaded(list);
+            if (!repliesHasMore && (list || []).length > 0) {
+                (async () => {
+                    let acc = 0;
+                    const stack = [...list];
+                    while (stack.length) {
+                        const node = stack.pop();
+                        acc += 1;
+                        let p = 0;
+                        while (true) {
+                            const r = await getRepliesApi({ parentId: node.id, sortBy: 'score', page: p, size: COUNT_PAGE_SIZE });
+                            if (!r.success) break;
+                            const items = r.data || [];
+                            for (const child of items) stack.push(child);
+                            if (items.length < COUNT_PAGE_SIZE) break;
+                            p++;
+                        }
+                    }
+                    const descendants = Math.max(0, acc - (list || []).length);
+                    setRepliesTotalCount((list || []).length + descendants);
+                })();
+            } else {
+                setRepliesTotalCount(loadedTotal + (comment.numberOfReplies ? 0 : 0));
+            }
         } catch (e) {
             console.error('Error loading replies:', e);
         } finally {
             setRepliesLoading(false);
         }
     };
+
+    useEffect(() => {
+        let mounted = true;
+        if (Array.isArray(comment.replies) && comment.replies.length > 0) {
+            const countRecursive = (arr) => (arr || []).reduce((s, it) => s + 1 + countRecursive(it.replies || []), 0);
+            if (mounted) setRepliesTotalCount(countRecursive(comment.replies));
+            return () => { mounted = false; };
+        }
+
+        if ((comment.numberOfReplies || 0) > 0 && repliesTotalCount === undefined) {
+            (async () => {
+                let total = 0;
+                const stack = [comment.id];
+                while (stack.length) {
+                    const pid = stack.pop();
+                    let page = 0;
+                    while (true) {
+                        const res = await getRepliesApi({ parentId: pid, sortBy: 'score', page, size: COUNT_PAGE_SIZE });
+                        if (!res.success) break;
+                        const items = res.data || [];
+                        total += items.length;
+                        for (const it of items) stack.push(it.id);
+                        if (items.length < COUNT_PAGE_SIZE) break;
+                        page++;
+                    }
+                }
+                if (mounted) setRepliesTotalCount(total);
+            })();
+        }
+        return () => { mounted = false; };
+    }, [comment.id, comment.replies, comment.numberOfReplies]);
 
     const handleViewReplies = async () => {
         if (showReplies) {
@@ -148,8 +271,15 @@ const CommentItem = ({ comment, postOwnerId, onVoteUpdate, onRemoveComment, onEd
         await loadReplies(repliesPage + 1);
     };
 
+    const { showToast } = useContext(ToastContext);
+
     const handleReplySubmit = async () => {
         if (!replyText.trim() || submittingReply) return;
+        if (comment.isDeleted) {
+            setShowReplyBox(false);
+            try { showToast('Error', 'Cannot reply to a deleted comment.', 'error'); } catch (e) {}
+            return;
+        }
         setSubmittingReply(true);
         const nowIso = new Date().toISOString();
         const ownerHex = user?.id ? user.id.toString(16).padStart(24, '0') : '0'.padStart(24, '0');
@@ -178,6 +308,8 @@ const CommentItem = ({ comment, postOwnerId, onVoteUpdate, onRemoveComment, onEd
         setReplyText('');
         setShowReplyBox(false);
         setShowReplies(true);
+        // optimistic total update for UI
+        setRepliesTotalCount(prev => (typeof prev === 'number' ? prev + 1 : (comment.numberOfReplies || 0) + 1));
         // Simple cache for user names. Use forum API helper so we get axios + auth handling.
         onPostCommentAdded && onPostCommentAdded();
         onEdit && onEdit({ commentId: comment.id, numberOfReplies: (comment.numberOfReplies || 0) + 1 });
@@ -191,13 +323,17 @@ const CommentItem = ({ comment, postOwnerId, onVoteUpdate, onRemoveComment, onEd
                     id: res.data,
                     isOptimistic: false
                 } : r));
+                setRepliesTotalCount(prev => (typeof prev === 'number' ? prev : (comment.numberOfReplies || 0)) );
             } else {
                 // Remove optimistic reply on failure
                 setReplies(prev => prev.filter(r => !r.isOptimistic));
+                setRepliesTotalCount(prev => (typeof prev === 'number' ? Math.max(0, prev - 1) : undefined));
+                try { showToast('Error', 'Failed to post reply: ' + (res.message || 'Unknown error'), 'error'); } catch (e) {}
                 console.error('Failed to post reply:', res.message);
             }
         } catch (e) {
             setReplies(prev => prev.filter(r => !r.isOptimistic));
+            try { showToast('Error', 'Error posting reply'); } catch (err) {}
             console.error('Error posting reply:', e);
         } finally {
             setSubmittingReply(false);
@@ -205,8 +341,9 @@ const CommentItem = ({ comment, postOwnerId, onVoteUpdate, onRemoveComment, onEd
     };
 
     const repliesCountRaw = (() => {
-        // Prefer live loaded replies count when visible; otherwise fall back to server hint
-        if (showReplies) return (replies || []).length;
+        if (showReplies && typeof repliesTotalCount === 'number') return repliesTotalCount;
+        if (showReplies) return computeTotalComments([comment]) - 1; // exclude the parent itself
+        if (typeof repliesTotalCount === 'number') return repliesTotalCount;
         if (typeof comment.numberOfReplies === 'number') return comment.numberOfReplies;
         if (Array.isArray(comment.replies)) return comment.replies.length;
         return undefined;
@@ -215,7 +352,7 @@ const CommentItem = ({ comment, postOwnerId, onVoteUpdate, onRemoveComment, onEd
     const showRepliesButton = repliesCount > 0;
 
     return (
-        <div className="comment-item">
+        <div id={`comment-${comment.id}`} className="comment-item">
             <VoteWidget
                 targetId={comment.id}
                 initialUp={comment.upvoteCount}
@@ -269,8 +406,13 @@ const CommentItem = ({ comment, postOwnerId, onVoteUpdate, onRemoveComment, onEd
                     <p>{comment.content}</p>
                 </div>
                 <div className="comment-actions">
-                    <button className="reply-btn" onClick={() => setShowReplyBox(prev => !prev)}>Reply</button>
-                    { showRepliesButton && (
+                    { !hideReplyButton && !comment.isDeleted && (
+                        <button className="reply-btn" onClick={() => setShowReplyBox(prev => !prev)}>Reply</button>
+                    ) }
+                    { comment.isDeleted && (
+                        <span style={{ color: 'rgba(168,168,168,0.9)', fontSize: 13 }}>This comment has been deleted</span>
+                    ) }
+                    { showRepliesButton && !hideViewReplies && (
                         <button className="view-replies-btn" onClick={handleViewReplies}>{showReplies ? 'Hide' : (typeof repliesCount === 'number' ? `View ${repliesCount} replies` : 'View replies')}</button>
                     ) }
                 </div>
@@ -280,7 +422,9 @@ const CommentItem = ({ comment, postOwnerId, onVoteUpdate, onRemoveComment, onEd
                             value={replyText}
                             onChange={(e) => setReplyText(e.target.value)}
                             placeholder="Write a reply..."
+                            maxLength={MAX_LENGTHS.TEXTAREA}
                         />
+                        <div className="char-count" aria-hidden="true">{replyText.length}/{MAX_LENGTHS.TEXTAREA}</div>
                         <div className="reply-actions">
                             <button className="comment-btn" onClick={handleReplySubmit} disabled={!replyText.trim() || submittingReply}>{submittingReply ? 'Replying...' : 'Reply'}</button>
                             <button className="comment-btn" onClick={() => setShowReplyBox(false)}>Cancel</button>
@@ -290,19 +434,60 @@ const CommentItem = ({ comment, postOwnerId, onVoteUpdate, onRemoveComment, onEd
                 {showReplies && (
                     <div className="comment-replies">
                         {repliesLoading && <div className="loading-comments">Loading replies...</div>}
-                        {replies.map(r => (
-                            <CommentItem key={r.id} comment={r} postOwnerId={postOwnerId}
-                                onVoteUpdate={onVoteUpdate}
-                                onRemoveComment={(rid) => {
-                                    onRemoveComment && onRemoveComment(rid);
-                                    setReplies(prev => prev.filter(x => x.id !== rid));
-                                }}
-                                onEdit={({ commentId, content, numberOfReplies }) => setReplies(prev => prev.map(x => x.id === commentId ? { ...x, ...(content !== undefined ? { content } : {}), ...(numberOfReplies !== undefined ? { numberOfReplies } : {}) } : x))}
-                                onPostCommentAdded={onPostCommentAdded}
-                                onIncrementTopLevelReplies={onIncrementTopLevelReplies}
-                            />
-                        ))}
-                        {repliesHasMore && !repliesLoading && (
+
+                        {/* If this comment is already deep, don't render further inline replies (to avoid extreme indentation)
+                            instead show a compact button to open the full thread as a dedicated page */}
+                        {(comment.depth || 0) >= inlineMaxDepth && !isModal ? (
+                            (preferInlineReplies ? (
+                                replies.map(r => (
+                                    <CommentItem key={r.id} comment={r} post={post} postOwnerId={postOwnerId}
+                                        onVoteUpdate={onVoteUpdate}
+                                        onRemoveComment={(rid) => {
+                                            onRemoveComment && onRemoveComment(rid);
+                                            setReplies(prev => prev.filter(x => x.id !== rid));
+                                            setRepliesTotalCount(prev => (typeof prev === 'number' ? Math.max(0, prev - 1) : undefined));
+                                        }}
+                                        onEdit={({ commentId, content, numberOfReplies }) => setReplies(prev => prev.map(x => x.id === commentId ? { ...x, ...(content !== undefined ? { content } : {}), ...(numberOfReplies !== undefined ? { numberOfReplies } : {}) } : x)) }
+                                        onPostCommentAdded={onPostCommentAdded}
+                                        onIncrementTopLevelReplies={onIncrementTopLevelReplies}
+                                        inlineMaxDepth={inlineMaxDepth}
+                                        maxInlineReplies={maxInlineReplies}
+                                        fetchRepliesTreeOnOpen={fetchRepliesTreeOnOpen}
+                                        preferInlineReplies={preferInlineReplies}
+                                    />
+                                ))
+                            ) : (
+                                <div className="deep-thread-placeholder">
+                                    <ThreadLinkButton comment={comment} repliesCount={repliesCount} post={post} />
+                                </div>
+                            ))
+                        ) : (
+                            replies.slice(0, maxInlineReplies).map(r => (
+                                <CommentItem key={r.id} comment={r} postOwnerId={postOwnerId}
+                                    onVoteUpdate={onVoteUpdate}
+                                    onRemoveComment={(rid) => {
+                                        onRemoveComment && onRemoveComment(rid);
+                                        setReplies(prev => prev.filter(x => x.id !== rid));
+                                        setRepliesTotalCount(prev => (typeof prev === 'number' ? Math.max(0, prev - 1) : undefined));
+                                    }}
+                                    onEdit={({ commentId, content, numberOfReplies }) => setReplies(prev => prev.map(x => x.id === commentId ? { ...x, ...(content !== undefined ? { content } : {}), ...(numberOfReplies !== undefined ? { numberOfReplies } : {}) } : x))}
+                                    onPostCommentAdded={onPostCommentAdded}
+                                    onIncrementTopLevelReplies={onIncrementTopLevelReplies}
+                                    inlineMaxDepth={inlineMaxDepth}
+                                    maxInlineReplies={maxInlineReplies}
+                                    fetchRepliesTreeOnOpen={fetchRepliesTreeOnOpen}
+                                    preferInlineReplies={preferInlineReplies}
+                                />
+                            ))
+                        )}
+
+                        {showReplies && replies && replies.length > maxInlineReplies && maxInlineReplies !== Infinity && (
+                            <div className="deep-thread-placeholder">
+                                <ThreadLinkButton comment={comment} repliesCount={repliesCount} post={post} />
+                            </div>
+                        )}
+
+                        {repliesHasMore && !repliesLoading && maxInlineReplies === Infinity && (
                             <button className="load-more-replies-btn" onClick={handleLoadMoreReplies}>Load more replies</button>
                         )}
                     </div>
@@ -317,7 +502,7 @@ const computeTotalComments = (arr) => {
     return (arr || []).reduce((sum, it) => sum + 1 + countRepliesRecursive(it.replies || []), 0);
 };
 
-const PostComments = ({ postId, postOwnerId, onCommentCountChange }) => {
+const PostComments = ({ postId, post, postOwnerId, onCommentCountChange }) => {
     const [sort, setSort] = useState('best');
     const [commentText, setCommentText] = useState('');
     const [isSubmittingComment, setIsSubmittingComment] = useState(false);
@@ -365,7 +550,15 @@ const PostComments = ({ postId, postOwnerId, onCommentCountChange }) => {
                     const replies = await fetchRepliesTree(c.id);
                     return { ...c, replies, numberOfReplies: Math.max(c.numberOfReplies || 0, replies.length) };
                 }));
-                setComments(loadedWithReplies);
+                const mergedWithCache = loadedWithReplies.map(c => {
+                    try {
+                        const cached = JSON.parse(sessionStorage.getItem(`CINEMATE_LAST_COMMENT_${c.id}`) || 'null');
+                        if (cached) return { ...c, ...cached };
+                    } catch (e) { /* ignore */ }
+                    return c;
+                });
+                setComments(mergedWithCache);
+                console.debug('[Comments] Loaded comments for', postId, { topCount: loaded.length, loadedWithReplies: mergedWithCache.length });
             }
         } catch (error) {
             console.error('Error loading comments:', error);
@@ -386,6 +579,11 @@ const PostComments = ({ postId, postOwnerId, onCommentCountChange }) => {
             window.dispatchEvent(new CustomEvent('postCommentCountUpdated', {
                 detail: { postId, commentCount: total }
             }));
+            try {
+                sessionStorage.setItem(`CINEMATE_LAST_COMMENT_COUNT_${postId}`, JSON.stringify({ count: total, ts: Date.now() }));
+            } catch (e) {
+                // ignore storage errors
+            }
         }
         // Intentionally exclude onCommentCountChange from deps to avoid infinite loops
         // when parent recreates the handler per render.
@@ -399,11 +597,10 @@ const PostComments = ({ postId, postOwnerId, onCommentCountChange }) => {
 
         setIsSubmittingComment(true);
         try {
-            const result = await addCommentApi({
-                postId,
-                parentId: null,
-                content: commentText.trim()
-            });
+            const payload = { postId, parentId: null, content: commentText.trim() };
+            console.debug('[Comments] Posting comment', { postId, parentId: null, length: payload.content.length });
+            const result = await addCommentApi(payload);
+            console.debug('[Comments] Post comment result', { postId, success: result?.success, message: result?.message });
 
             if (result.success) {
                 setCommentText('');
@@ -450,7 +647,9 @@ const PostComments = ({ postId, postOwnerId, onCommentCountChange }) => {
                     onChange={(e) => setCommentText(e.target.value)} 
                     placeholder="Share your thoughts"
                     disabled={isSubmittingComment}
+                    maxLength={MAX_LENGTHS.TEXTAREA}
                 />
+                <div className="char-count" aria-hidden="true">{commentText.length}/{MAX_LENGTHS.TEXTAREA}</div>
                 <button 
                     className="comment-btn" 
                     onClick={handleCommentSubmit}
@@ -478,6 +677,7 @@ const PostComments = ({ postId, postOwnerId, onCommentCountChange }) => {
                             <CommentItem
                                 key={comment.id}
                                 comment={comment}
+                                post={post}
                                 postOwnerId={postOwnerId}
                                 onPostCommentAdded={() => loadComments()}
                                 onIncrementTopLevelReplies={(id, delta) => incrementTopLevelRepliesFor(id, delta)}
@@ -500,6 +700,14 @@ const PostComments = ({ postId, postOwnerId, onCommentCountChange }) => {
                                                 downvoteCount: (c.downvoteCount || 0) + downDelta,
                                             };
                                         });
+
+                                        try {
+                                            const target = updated.find(x => x.id === payload.targetId);
+                                            if (target) {
+                                                sessionStorage.setItem(`CINEMATE_LAST_COMMENT_${target.id}`, JSON.stringify({ upvoteCount: target.upvoteCount, downvoteCount: target.downvoteCount, ts: Date.now() }));
+                                            }
+                                        } catch (e) { /* ignore storage errors */ }
+
                                         if (sort === 'best') {
                                             return [...updated].sort((a, b) => {
                                                 const scoreA = (a.upvoteCount || 0) - (a.downvoteCount || 0);
@@ -551,3 +759,4 @@ const PostComments = ({ postId, postOwnerId, onCommentCountChange }) => {
 };
 
 export default PostComments;
+export { CommentItem };

@@ -51,6 +51,23 @@ const VoteWidget = ({ targetId, initialUp = 0, initialDown = 0, isPost = false, 
             } else {
                 // notify parent with previous and new vote so parent can update optimistically
                 onChange && onChange({ targetId, previousVote, newVote });
+
+                try {
+                    const prevUp = previousVote === 1 ? 1 : 0;
+                    const prevDown = previousVote === -1 ? 1 : 0;
+                    const newUp = newVote === 1 ? 1 : 0;
+                    const newDown = newVote === -1 ? 1 : 0;
+                    const upDelta = newUp - prevUp;
+                    const downDelta = newDown - prevDown;
+                    const key = `CINEMATE_LAST_COMMENT_${targetId}`;
+                    const existing = JSON.parse(sessionStorage.getItem(key) || 'null') || {};
+                    const baseUp = (typeof existing.upvoteCount === 'number') ? existing.upvoteCount : (initialUp || 0);
+                    const baseDown = (typeof existing.downvoteCount === 'number') ? existing.downvoteCount : (initialDown || 0);
+                    const updated = { upvoteCount: baseUp + upDelta, downvoteCount: baseDown + downDelta, ts: Date.now() };
+                    sessionStorage.setItem(key, JSON.stringify(updated));
+                } catch (e) {
+                    /* ignore storage errors */
+                }
             }
         } catch (e) {
             setUserVote(previousVote);
