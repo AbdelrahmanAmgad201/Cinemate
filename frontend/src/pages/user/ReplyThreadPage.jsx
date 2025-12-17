@@ -242,35 +242,37 @@ const ReplyThreadPage = () => {
                 </div>
 
                 <div style={{ marginTop: 12 }}>
-                    <CommentItem
-                        comment={comment}
-                        postOwnerId={comment.ownerId}
-                        hideViewReplies={true}
-                        hideReplyButton={true}
-                        onVoteUpdate={handleMainVoteUpdate}
-                        onPostCommentAdded={async () => {
-                            setLoading(true);
-                            const res = await getRepliesApi({ parentId: comment.id, sortBy: sort === 'best' ? 'score' : 'new', page: 0, size: REPLIES_PAGE_SIZE });
-                            if (res.success) setReplies(await enrichRepliesWithChildrenFlag(res.data || []));
-                            setLoading(false);
-                        }}
-                        onRemoveComment={(id) => {
-                            let postObj = (location && location.state && location.state.post) || null;
-                            if (!postObj) {
-                                try {
-                                    const cached = sessionStorage.getItem(`CINEMATE_LAST_POST_${comment.postId}`);
-                                    if (cached) postObj = JSON.parse(cached);
-                                } catch (e) {
-                                    // ignore
+                    <div className="thread-main-comment">
+                        <CommentItem
+                            comment={comment}
+                            postOwnerId={comment.ownerId}
+                            hideViewReplies={true}
+                            hideReplyButton={true}
+                            onVoteUpdate={handleMainVoteUpdate}
+                            onPostCommentAdded={async () => {
+                                setLoading(true);
+                                const res = await getRepliesApi({ parentId: comment.id, sortBy: sort === 'best' ? 'score' : 'new', page: 0, size: REPLIES_PAGE_SIZE });
+                                if (res.success) setReplies(await enrichRepliesWithChildrenFlag(res.data || []));
+                                setLoading(false);
+                            }}
+                            onRemoveComment={(id) => {
+                                let postObj = (location && location.state && location.state.post) || null;
+                                if (!postObj) {
+                                    try {
+                                        const cached = sessionStorage.getItem(`CINEMATE_LAST_POST_${comment.postId}`);
+                                        if (cached) postObj = JSON.parse(cached);
+                                    } catch (e) {
+                                        // ignore
+                                    }
                                 }
-                            }
-                            if (!postObj) postObj = { id: comment.postId, postId: comment.postId };
-                            try { window.alert('This comment has been deleted. Returning to the post.'); } catch (e) {}
-                            navigate(PATHS.POST.FULLPAGE(comment.postId), { state: { post: postObj } });
-                        }}
-                        inlineMaxDepth={2}
-                        maxInlineReplies={3}
-                    />
+                                if (!postObj) postObj = { id: comment.postId, postId: comment.postId };
+                                try { window.alert('This comment has been deleted. Returning to the post.'); } catch (e) {}
+                                navigate(PATHS.POST.FULLPAGE(comment.postId), { state: { post: postObj } });
+                            }}
+                            inlineMaxDepth={2}
+                            maxInlineReplies={3}
+                        />
+                    </div>
                 </div>
 
                 <div className="comment-input" style={{ marginTop: 18 }}>

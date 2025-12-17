@@ -10,7 +10,6 @@ import PostComments from '../../components/PostComments';
 import { PATHS } from '../../constants/constants';
 import "../../components/style/postCard.css";
 import "./style/postFullPage.css";
-import { MdKeyboardArrowDown } from "react-icons/md";
 import { IoClose } from "react-icons/io5";
 import PostCard from '../../components/PostCard';
 
@@ -26,8 +25,7 @@ const PostFullPage = () => {
     const [userVote, setUserVote] = useState(0);
     const [voteCount, setVoteCount] = useState(0);
     const [openImage, setOpenImage] = useState(false);
-    const [sort, setSort] = useState("best");
-    const [commentText, setCommentText] = useState("");
+
     const [postOptions, setPostOptions] = useState(false);
 
     const cancelEdit = () => {
@@ -180,31 +178,22 @@ const PostFullPage = () => {
 
     return (
         <div className="post-page">
-            <PostCard postBody={post} fullMode={true} />
-            {openImage && (
-                <div className="view-image-container" onClick={() => setOpenImage(false)}>
-                    <div className="view-image">
-                        <IoClose className="close-button" onClick={() => setOpenImage(false)} />
-                        <img src={post.media} alt={post.title || "Post content"} onClick={(e) => e.stopPropagation()} />
+            <div className="post-main-area">
+                <PostCard postBody={post} fullMode={true} />
+                {openImage && (
+                    <div className="view-image-container" onClick={() => setOpenImage(false)}>
+                        <div className="view-image">
+                            <IoClose className="close-button" onClick={() => setOpenImage(false)} />
+                            <img src={post.media} alt={post.title || "Post content"} onClick={(e) => e.stopPropagation()} />
+                        </div>
                     </div>
-                </div>
-            )}
-            <div className="comment-input">
-            <textarea value={commentText} onChange={(e) => setCommentText(e.target.value)} placeholder="Share your thoughts"/>
-            </div>
-            <div className="comments-section">
-                {/* <h3>Comments</h3> */}
-                <div className="comments-sort">
-                    <label htmlFor="sort-by">Sort by:</label>
-                    <div className="select-wrapper">
-                        <select id="sort-by" name="sort-by" value={sort} onChange={(e) => setSort(e.target.value)}>
-                            <option value="best">Best</option>
-                            <option value="new">New</option>
-                        </select>
-                        <MdKeyboardArrowDown className="select-arrow" />
-                    </div>
-                </div>
-                <p>No comments yet.</p>
+                )}
+                <PostComments
+                    postId={post.id}
+                    post={post}
+                    postOwnerId={post.ownerId}
+                    onCommentCountChange={(count) => setPost(prev => prev ? { ...prev, commentCount: count } : prev)}
+                />
             </div>
         </div>
     );
