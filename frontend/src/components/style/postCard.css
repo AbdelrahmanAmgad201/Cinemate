@@ -16,7 +16,7 @@
     display: flex;
     flex-direction: row;
     justify-content: flex-start;
-    align-items: flex-start;
+    align-items: center;
     padding-top: 24px;
 }
 
@@ -28,6 +28,13 @@
     margin-left: 4px;
 }
 
+.post-header .user-info h2{
+    font-size: 20px;
+    font-weight: normal;
+    cursor: pointer;
+    transition: color 0.2s ease-in ;
+}
+
 .post-header .user-profile-pic{
     font-size: 30px;
     cursor: pointer;
@@ -37,20 +44,20 @@
 .post-header .user-info .user-name{
     text-decoration: none;
     color: var(--ghost-white);
-    font-size: 18px;
+    font-size: 16px;
     font-weight: normal;
     cursor: pointer;
     transition: color 0.2s ease-in ;
 }
 
 .post-header .user-info .user-name:hover,
-.post-header .user-profile-pic:hover{
+.post-header .user-profile-pic:hover,
+.post-header .user-info h2:hover{
     color: var(--blue-bell);
 }
 
-.post-header .user-info time{
+.post-header .user-info .post-time{
     font-size: 12px;
-    font-weight: lighter;
 }
 
 .post-header .post-settings{

@@ -8,19 +8,19 @@ import { FaRegComment } from "react-icons/fa";
 import "./style/postCard.css";
 import Swal from "sweetalert2";
 import { formatDistanceToNow } from 'date-fns';
-import { deletePostApi,isVotedPostApi, deleteVotePostApi, votePostApi, updateVotePostApi } from '../api/post-api.jsx';
+import { deletePostApi, isVotedPostApi, deleteVotePostApi, votePostApi, updateVotePostApi, getForumNameApi } from '../api/post-api.jsx';
 import { getModApi } from '../api/forum-api.jsx';
 import VoteWidget from './VoteWidget';
 import { AuthContext } from '../context/AuthContext.jsx';
 import { ToastContext } from '../context/ToastContext.jsx';
 import { PATHS } from '../constants/constants';
 
-const PostCard = ({ postBody, fullMode = false  }) => {
+const PostCard = ({ postBody, fullMode = false, showForumName = false }) => {
     const [postOptions, setPostOptions] = useState(false);
     const [firstName, setFirstName] = useState("");
     const [lastName, setLastName] = useState("");
     const [userVote, setUserVote] = useState(0);
-    const [voteCount, setVoteCount] = useState(0);
+    const [forumName, setForumName] = useState("");
     const isVotingRef = useRef(false);
     const [commentCount, setCommentCount] = useState(postBody.commentCount || 0);
     const { user } = useContext(AuthContext);
@@ -131,8 +131,15 @@ const PostCard = ({ postBody, fullMode = false  }) => {
             setFirstName(result.data);
         }
 
+        const getForumName = async () => {
+            const result = await getForumNameApi({forumId: postBody.forumId});
+            console.log("forum name" , result);
+            setForumName(result.data);
+        }
+
         checkVote();
         getUsername();
+        getForumName();
     }, [postBody?.ownerId, user?.id]);
 
     useEffect(() => {
@@ -166,9 +173,15 @@ const PostCard = ({ postBody, fullMode = false  }) => {
                 <div className="user-profile-pic" onClick={() => {navigate(PATHS.USER.PROFILE(ownerIdConverted))}}>
                     {postBody.avatar ? postBody.avatar : <IoIosPerson />}
                 </div>
+                
                 <div className="user-info">
+                    {showForumName && (
+                    <h2 onClick={() => {navigate(PATHS.FORUM.PAGE(postBody.forumId))}}>
+                        {forumName}
+                    </h2>
+                    )}
                     <Link className="user-name" to={PATHS.USER.PROFILE(ownerIdConverted)} >{firstName} {/*lastName*/}</Link>
-                    <time dateTime={postBody.createdAt} >{formattedTime}</time>
+                    <time dateTime={postBody.createdAt} className="post-time" >{formattedTime}</time>
                 </div>
                 <div className="post-settings" ref={menuRef}>
                     {ownerIdConverted === user.id && (

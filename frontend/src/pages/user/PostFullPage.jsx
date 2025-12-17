@@ -184,7 +184,7 @@ const PostFullPage = () => {
     if (editMode) {
         return (
             <div className="post-page">
-                <EditPost post={post} onSave={saveEdit} onCancel={cancelEdit} />
+                <EditPost post={post} onSave={saveEdit} onCancel={cancelEdit}/>
             </div>
         );
     }
@@ -192,7 +192,7 @@ const PostFullPage = () => {
     return (
         <div className="post-page">
             <div className="post-main-area">
-                <PostCard postBody={post} fullMode={true} />
+                <PostCard postBody={post} fullMode={true} showForumName={true} />
                 {openImage && (
                     <div className="view-image-container" onClick={() => setOpenImage(false)}>
                         <div className="view-image">

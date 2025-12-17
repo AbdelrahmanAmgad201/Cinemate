@@ -114,3 +114,14 @@ export async function addPostApi({ forumId, title, content }) {
         return { success: false, message: err.message };
     }
 }
+
+export async function getForumNameApi({ forumId }){
+    try {
+        const response = await api.get(`/forum/v1/forum-name/${forumId}`);
+        console.log(response.data);
+
+        return { success: true, data: response.data };
+    } catch (err) {
+        return { success: false, message: err.message };
+    }
+}
