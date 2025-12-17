@@ -39,7 +39,7 @@ public class PostService {
 
     @Transactional
     public Post addPost(AddPostDto addPostDto, Long userId) {
-        if (!hateSpeachService.analyzeText(addPostDto.getContent())&&!hateSpeachService.analyzeText(addPostDto.getTitle())) {
+        if (!hateSpeachService.analyzeText(addPostDto.getContent())||!hateSpeachService.analyzeText(addPostDto.getTitle())) {
             throw new HateSpeechException("hate speech detected");
         }
         ObjectId ObjectUserId = longToObjectId(userId);
@@ -59,7 +59,7 @@ public class PostService {
 
     @Transactional
     public Post updatePost(ObjectId postId, AddPostDto addPostDto, Long userId) {
-        if (!hateSpeachService.analyzeText(addPostDto.getContent())&&!hateSpeachService.analyzeText(addPostDto.getTitle())) {
+        if (!hateSpeachService.analyzeText(addPostDto.getContent())||!hateSpeachService.analyzeText(addPostDto.getTitle())) {
             throw new HateSpeechException("hate speech detected");
         }
         Post post = mongoTemplate.findById(postId, Post.class);

@@ -25,7 +25,7 @@ public class ForumService {
     private final HateSpeachService hateSpeachService;
 
     public Forum createForum(ForumCreationRequest request, Long userId) {
-        if (!hateSpeachService.analyzeText(request.getName())&&!hateSpeachService.analyzeText(request.getDescription())) {
+        if (!hateSpeachService.analyzeText(request.getName())||!hateSpeachService.analyzeText(request.getDescription())) {
             throw new HateSpeechException("hate speech detected");
         }
 
@@ -62,7 +62,7 @@ public class ForumService {
             throw new AccessDeniedException("User does not have permission to update this forum");
         }
 
-        if (!hateSpeachService.analyzeText(request.getName())&&!hateSpeachService.analyzeText(request.getDescription())) {
+        if (!hateSpeachService.analyzeText(request.getName())||!hateSpeachService.analyzeText(request.getDescription())) {
             throw new HateSpeechException("hate speech detected");
         }
 
