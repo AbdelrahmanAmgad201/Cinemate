@@ -123,10 +123,16 @@ public class CascadeDeletionService {
      */
     private List<ObjectId> getIds(String collection, Criteria criteria) {
         Query query = new Query(criteria);
-        query.fields().include("_id");
-        return mongoTemplate.find(query, ObjectId.class, collection);
-    }
+        List<ObjectId> ids = mongoTemplate.findDistinct(
+                query,
+                "_id",
+                collection,
+                ObjectId.class
+        );
 
+        log.info("Found {} posts to delete for forum {}", ids.size(), criteria);
+        return ids;
+    }
     // ==================== ASYNC CASCADE METHODS ====================
 
     /**
