@@ -83,4 +83,8 @@ public class Comment implements Votable {
     public void decrementDownvote() {
         this.downvoteCount--;
     }
+    @Override
+    public void updateScore(){
+        this.score = this.upvoteCount - this.downvoteCount;
+    }
 }
