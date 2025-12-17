@@ -49,6 +49,7 @@ public class SecurityConfig {
                 .requestMatchers("/api/auth/**").permitAll()
                 .requestMatchers("/api/verification/**").permitAll()
                 .requestMatchers("/api/user/v1/sign-up").permitAll()
+                .requestMatchers("api/health/**").permitAll()
                 .requestMatchers("/api/admin/**").hasAuthority("ROLE_ADMIN")
                 .requestMatchers("/api/organization/**").hasAuthority("ROLE_ORGANIZATION")
                 .requestMatchers("/api/user/**").hasAuthority("ROLE_USER")
@@ -59,6 +60,7 @@ public class SecurityConfig {
                 .requestMatchers("/api/watch-later/**").hasAuthority("ROLE_USER")
                 .requestMatchers("api/post/**").hasAuthority("ROLE_USER")
                 .requestMatchers("/api/forum/**").hasAuthority("ROLE_USER")
+
 
                 .anyRequest().authenticated()
         )
@@ -80,7 +82,7 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOrigins(List.of("http://localhost:5173"));
+        configuration.setAllowedOrigins(List.of("http://localhost:5173" , "http://localhost:3000"));
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(List.of("*"));
         configuration.setAllowCredentials(true);
