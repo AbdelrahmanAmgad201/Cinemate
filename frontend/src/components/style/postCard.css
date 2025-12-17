@@ -169,9 +169,28 @@
     border: 1px solid var(--blue-bell);
 }
 
+.post-comment .comment-count{
+    margin-left: 6px;
+    margin-right: 4px;
+    font-size: 14px;
+    font-weight: 500;
+}
+
 .up-down-vote .vote-count{
     margin-right: 4px;
     margin-left: 2px;
+}
+.up-down-vote .vote-separator{
+    width: 1px;
+    height: 18px;
+    background: #A8A8A8;
+    display: inline-block;
+    margin: 0 8px;
+    border-radius: 1px;
+    transition: background 0.15s ease;
+}
+.up-down-vote:hover .vote-separator{
+    background: var(--blue-bell);
 }
 .up-down-vote .vote-separator{
     margin-right: 3px;

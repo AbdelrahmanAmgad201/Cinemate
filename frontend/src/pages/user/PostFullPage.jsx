@@ -1,12 +1,15 @@
-import { useState, useEffect, useRef, useContext } from 'react';
+import { useState, useEffect, useContext } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { AuthContext } from '../../context/AuthContext';
 import { ToastContext } from '../../context/ToastContext.jsx';
+import Swal from 'sweetalert2';
 import EditPost from '../../components/EditPost';
-import { updatePostApi, isVotedPostApi } from '../../api/post-api';
+import { updatePostApi, deletePostApi, isVotedPostApi } from '../../api/post-api';
+import PostMain from '../../components/PostMain';
+import PostComments from '../../components/PostComments';
+import { PATHS } from '../../constants/constants';
 import "../../components/style/postCard.css";
 import "./style/postFullPage.css";
-import { MdKeyboardArrowDown } from "react-icons/md";
 import { IoClose } from "react-icons/io5";
 import PostCard from '../../components/PostCard';
 
@@ -16,15 +19,13 @@ const PostFullPage = () => {
     const { user } = useContext(AuthContext);
     const { showToast } = useContext(ToastContext);
     const navigate = useNavigate();
-    const menuRef = useRef(null);
 
     const [post, setPost] = useState(location.state?.post || null);
-    const [openImage, setOpenImage] = useState(false);
+    const [editMode, setEditMode] = useState(false);
     const [userVote, setUserVote] = useState(0);
     const [voteCount, setVoteCount] = useState(0);
-    const [editMode, setEditMode] = useState(false);
-    const [sort, setSort] = useState("best");
-    const [commentText, setCommentText] = useState("");
+    const [openImage, setOpenImage] = useState(false);
+
     const [postOptions, setPostOptions] = useState(false);
 
     const cancelEdit = () => {
@@ -104,28 +105,70 @@ const PostFullPage = () => {
         }
     }, [postId, location.state, location.pathname, navigate]);
 
+    const [loadingPost, setLoadingPost] = useState(false);
+    const [postLoadError, setPostLoadError] = useState(null);
+
     useEffect(() => {
-        const handleClickOutside = (event) => {
-            if (menuRef.current && !menuRef.current.contains(event.target)) {
-                setPostOptions(false);
+        const suppliedPost = location.state?.post;
+        const pid = suppliedPost?.id || suppliedPost?.postId || location.state?.postId || postId;
+        if (suppliedPost) {
+            setPost(suppliedPost);
+            setPostLoadError(null);
+            return;
+        }
+        if (!pid) return;
+        try {
+            const cached = sessionStorage.getItem(`CINEMATE_LAST_POST_${pid}`);
+            if (cached) {
+                const parsed = JSON.parse(cached);
+                setPost(parsed);
+                setPostLoadError(null);
+                return;
+            }
+        } catch (e) {
+            // ignore storage errors
+        }
+        setPost({ id: pid, postId: pid, title: 'Post', content: '', media: null, ownerId: null, commentCount: 0, isPlaceholder: true });
+        setPostLoadError(null);
+    }, [postId, location.state]);
+
+    useEffect(() => {
+        const commentIdToScroll = location.state?.commentId;
+        if (!commentIdToScroll) return;
+        let attempts = 0;
+        let cancelled = false;
+        const timers = [];
+        const tryScroll = () => {
+            if (cancelled) return;
+            const el = document.getElementById(`comment-${commentIdToScroll}`);
+            if (el) {
+                el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                el.classList.add('highlight');
+                const t = setTimeout(() => el.classList.remove('highlight'), 3000);
+                timers.push(t);
+                navigate(location.pathname, { replace: true, state: {} });
+                return;
+            }
+            attempts++;
+            if (attempts < 20) {
+                const t = setTimeout(tryScroll, 150);
+                timers.push(t);
+            } else {
+                navigate(location.pathname, { replace: true, state: {} });
             }
         };
-
-        if (postOptions) {
-            document.addEventListener('mousedown', handleClickOutside);
-        }
-
+        tryScroll();
         return () => {
-            document.removeEventListener('mousedown', handleClickOutside);
+            cancelled = true;
+            timers.forEach(t => clearTimeout(t));
         };
-    }, [postOptions]);
-
+    }, [post, location.state, location.pathname, navigate]);
 
     if (!post) {
         return <div>Not Found...</div>;
     }
 
-    if(editMode){
+    if (editMode) {
         return (
             <div className="post-page">
                 <EditPost post={post} onSave={saveEdit} onCancel={cancelEdit} />
@@ -135,31 +178,22 @@ const PostFullPage = () => {
 
     return (
         <div className="post-page">
-            <PostCard postBody={post} fullMode={true} />
-            {openImage && (
-                <div className="view-image-container" onClick={() => setOpenImage(false)}>
-                    <div className="view-image">
-                        <IoClose className="close-button" onClick={() => setOpenImage(false)} />
-                        <img src={post.media} alt={post.title || "Post content"} onClick={(e) => e.stopPropagation()} />
+            <div className="post-main-area">
+                <PostCard postBody={post} fullMode={true} />
+                {openImage && (
+                    <div className="view-image-container" onClick={() => setOpenImage(false)}>
+                        <div className="view-image">
+                            <IoClose className="close-button" onClick={() => setOpenImage(false)} />
+                            <img src={post.media} alt={post.title || "Post content"} onClick={(e) => e.stopPropagation()} />
+                        </div>
                     </div>
-                </div>
-            )}
-            <div className="comment-input">
-            <textarea value={commentText} onChange={(e) => setCommentText(e.target.value)} placeholder="Share your thoughts"/>
-            </div>
-            <div className="comments-section">
-                {/* <h3>Comments</h3> */}
-                <div className="comments-sort">
-                    <label htmlFor="sort-by">Sort by:</label>
-                    <div className="select-wrapper">
-                        <select id="sort-by" name="sort-by" value={sort} onChange={(e) => setSort(e.target.value)}>
-                            <option value="best">Best</option>
-                            <option value="new">New</option>
-                        </select>
-                        <MdKeyboardArrowDown className="select-arrow" />
-                    </div>
-                </div>
-                <p>No comments yet.</p>
+                )}
+                <PostComments
+                    postId={post.id}
+                    post={post}
+                    postOwnerId={post.ownerId}
+                    onCommentCountChange={(count) => setPost(prev => prev ? { ...prev, commentCount: count } : prev)}
+                />
             </div>
         </div>
     );

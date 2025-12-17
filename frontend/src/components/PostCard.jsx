@@ -10,22 +10,38 @@ import Swal from "sweetalert2";
 import { formatDistanceToNow } from 'date-fns';
 import { deletePostApi,isVotedPostApi, deleteVotePostApi, votePostApi, updateVotePostApi } from '../api/post-api.jsx';
 import { getModApi } from '../api/forum-api.jsx';
+import VoteWidget from './VoteWidget';
 import { AuthContext } from '../context/AuthContext.jsx';
 import { ToastContext } from '../context/ToastContext.jsx';
 import { PATHS } from '../constants/constants';
 
 const PostCard = ({ postBody }) => {
-    const [userVote, setUserVote] = useState(0);
-    const [voteCount, setVoteCount] = useState(postBody?.votes || 0);
     const [postOptions, setPostOptions] = useState(false);
     const [firstName, setFirstName] = useState("");
     const [lastName, setLastName] = useState("");
+    const [userVote, setUserVote] = useState(0);
+    const [voteCount, setVoteCount] = useState(0);
     const isVotingRef = useRef(false);
-    
+    const [commentCount, setCommentCount] = useState(postBody.commentCount || 0);
     const { user } = useContext(AuthContext);
     const { showToast } = useContext(ToastContext);
     const navigate = useNavigate();
     const menuRef = useRef(null);
+
+    // Listen for comment count update events
+    useEffect(() => {
+        function handleCommentCountUpdate(e) {
+            if (e.detail && (e.detail.postId === postBody.id || e.detail.postId === postBody.postId)) {
+                const pid = e.detail.postId;
+                const n = Number(e.detail.commentCount);
+                const sanitized = Number.isFinite(n) ? Math.max(0, Math.trunc(n)) : 0;
+                console.debug('[PostCard] received postCommentCountUpdated event', { pid, raw: e.detail.commentCount, sanitized });
+                setCommentCount(sanitized);
+            }
+        }
+        window.addEventListener('postCommentCountUpdated', handleCommentCountUpdate);
+        return () => window.removeEventListener('postCommentCountUpdated', handleCommentCountUpdate);
+    }, [postBody.id, postBody.postId]);
 
     const formattedTime = postBody.createdAt ? formatDistanceToNow(new Date(postBody.createdAt), { addSuffix: true }) : 'Recently';
 
@@ -72,6 +88,11 @@ const PostCard = ({ postBody }) => {
     };
 
     const navigateToPost = () => {
+        try {
+            sessionStorage.setItem(`CINEMATE_LAST_POST_${postBody.id}`, JSON.stringify(postBody));
+        } catch (e) {
+            // ignore storage errors
+        }
         navigate(PATHS.POST.FULLPAGE(postBody.id), {state: {post: postBody}});
     };
 
@@ -127,10 +148,6 @@ const PostCard = ({ postBody }) => {
 
     useEffect(() => {
         const checkVote = async () => {
-            if (!postBody?.id || !user?.id || isVotingRef.current) {
-                return;
-            }
-
             try {
                 const result = await isVotedPostApi({ targetId: postBody.id });
                 console.log("isVoted", result);
@@ -151,7 +168,6 @@ const PostCard = ({ postBody }) => {
             const result = await getModApi({userId: postBody.ownerId});
             setFirstName(result.data);
         }
-
 
         checkVote();
         getUsername();
@@ -182,6 +198,11 @@ const PostCard = ({ postBody }) => {
 
 
     const ownerIdConverted = postBody.ownerId ? parseInt(postBody.ownerId, 10) : null;
+
+    useEffect(() => {
+        const pid = postBody.postId || postBody.id;
+        console.debug('[PostCard] mount', { pid, initialCommentCount: commentCount });
+    }, []);
 
 
     return(
@@ -222,22 +243,15 @@ const PostCard = ({ postBody }) => {
                 </div>
             </div>
             <footer className="post-footer">
-                <div className="up-down-vote">
-                    {userVote === 1 ? (
-                        <BiSolidUpvote className="selected" onClick={() => handleVote(1)} />
-                    ) : (
-                        <BiUpvote onClick={() => handleVote(1)} />
-                    )}
-                    <span className="vote-count">{voteCount}</span>
-                    <span className="vote-separator">|</span>
-                    {userVote === -1 ? (
-                        <BiSolidDownvote className="selected" onClick={() => handleVote(-1)} />
-                    ) : (
-                        <BiDownvote onClick={() => handleVote(-1)} />
-                    )}
-                </div>
+                <VoteWidget
+                    targetId={postBody.id}
+                    initialUp={postBody.upvoteCount}
+                    initialDown={postBody.downvoteCount}
+                    isPost={true}
+                />
                 <div className="post-comment" onClick={navigateToPost}>
                     <FaRegComment />
+                    <span className="comment-count">{commentCount}</span>
                 </div>
                 {/* <div className="post-share">
                     <RiShareForwardLine />

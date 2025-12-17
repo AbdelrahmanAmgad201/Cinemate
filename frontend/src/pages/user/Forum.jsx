@@ -1,11 +1,10 @@
-import "./style/Forum.css"
-import '../../style/CommonModal.css'
+import "./style/Forum.css";
+import '../../style/CommonModal.css';
 import calendar from "../../assets/icons/calendar.png";
-
-import {Link, useNavigate, useParams} from "react-router-dom";
-import React, {useCallback, useContext, useEffect, useState} from "react";
-import {MAX_LENGTHS, PATHS, PAGE_SIZE} from "../../constants/constants.jsx";
-import {formatCount} from "../../utils/formate.jsx";
+import React, { useCallback, useContext, useEffect, useState } from "react";
+import { PATHS, MAX_LENGTHS, PAGE_SIZE } from "../../constants/constants.jsx";
+import { formatCount } from "../../utils/formate.jsx";
+import { Link, useNavigate, useParams } from "react-router-dom";
 import {checkFollowApi, followForumApi, unfollowForumApi, getForumPostsApi, getForumApi, getModApi} from "../../api/forum-api.jsx";
 import PostsFeed from "../../components/PostsFeed.jsx";
 import  {addPostApi} from "../../api/post-api.jsx";
