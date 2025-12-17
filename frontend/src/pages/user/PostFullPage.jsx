@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useContext } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { AuthContext } from '../../context/AuthContext';
+import { ToastContext } from '../../context/ToastContext.jsx';
 import EditPost from '../../components/EditPost';
 import { updatePostApi, isVotedPostApi } from '../../api/post-api';
 import "../../components/style/postCard.css";
@@ -13,6 +14,7 @@ const PostFullPage = () => {
     const { postId } = useParams();
     const location = useLocation();
     const { user } = useContext(AuthContext);
+    const { showToast } = useContext(ToastContext);
     const navigate = useNavigate();
     const menuRef = useRef(null);
 
@@ -48,10 +50,11 @@ const PostFullPage = () => {
                 setEditMode(false);
                 console.log('Post updated successfully');
             } else {
-                console.error('Update failed:', result.message);
+                if (!result.success) return showToast('Failed to edit post', result.message || 'unknown error', 'error');
             }
-        } catch (error) {
-            console.error('Error updating post:', error);
+        } 
+        catch(error){
+            showToast('Failed to edit post', error || 'unknown error', 'error');
         }
     };
 
@@ -68,11 +71,12 @@ const PostFullPage = () => {
                     const voteValue = typeof result.data === 'number' ? result.data : 0;
                     setUserVote(voteValue);
                 } else {
-                    console.error("Vote check failed:", result.message);
+                    showToast('Failed to check vote', result.message || 'unknown error', 'error');
                     setUserVote(0);
                 }
-            } catch(e) {
-                console.error('Error checking vote:', e);
+            } 
+            catch(error){
+                showToast('Failed to check vote', error || 'unknown error', 'error');
                 setUserVote(0);
             }
         }
