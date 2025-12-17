@@ -108,7 +108,7 @@ public class FeedService {
         Sort sort = buildSortForum(sortBy);
         Pageable pageable = PageRequest.of(page, size, sort);
 
-        Page<Forum> forumsPage = forumRepository.findAll(pageable);
+        Page<Forum> forumsPage = forumRepository.findAllByIsDeletedFalse(pageable);
 
         return ForumPageResponse.builder()
                 .forums(forumsPage.getContent())

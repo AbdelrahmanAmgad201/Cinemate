@@ -81,8 +81,9 @@ class ForumServiceTest {
 
     @Test
     void createForum_ValidRequest_Success() {
-        // Both return true (no hate speech)
+        // FIXED: Both name AND description must return true (no hate speech)
         when(hateSpeachService.analyzeText("New Forum")).thenReturn(true);
+        when(hateSpeachService.analyzeText("New Forum Description")).thenReturn(true);
         when(forumRepository.save(any(Forum.class))).thenAnswer(i -> {
             Forum forum = i.getArgument(0);
             forum.setId(forumId);
@@ -98,7 +99,7 @@ class ForumServiceTest {
         assertNotNull(result.getCreatedAt());
 
         verify(hateSpeachService).analyzeText("New Forum");
-        // Description is never checked due to short-circuit evaluation
+        verify(hateSpeachService).analyzeText("New Forum Description");
         verify(forumRepository).save(argThat(forum ->
                 forum.getName().equals("New Forum") &&
                         forum.getDescription().equals("New Forum Description") &&
@@ -108,8 +109,38 @@ class ForumServiceTest {
 
     @Test
     void createForum_HateSpeechInName_ThrowsHateSpeechException() {
-        // Name returns false (hate speech detected), description also false
+        // FIXED: Name returns false (hate speech detected)
         when(hateSpeachService.analyzeText("New Forum")).thenReturn(false);
+        // Description won't be checked due to short-circuit evaluation (|| operator)
+
+        assertThrows(HateSpeechException.class,
+                () -> forumService.createForum(creationRequest, userId));
+
+        verify(hateSpeachService).analyzeText("New Forum");
+        // FIXED: Description is NOT checked due to short-circuit
+        verify(hateSpeachService, never()).analyzeText("New Forum Description");
+        verify(forumRepository, never()).save(any());
+    }
+
+    @Test
+    void createForum_HateSpeechInBothNameAndDescription_ThrowsHateSpeechException() {
+        // FIXED: Name returns false - description won't be checked
+        when(hateSpeachService.analyzeText("New Forum")).thenReturn(false);
+
+        assertThrows(HateSpeechException.class,
+                () -> forumService.createForum(creationRequest, userId));
+
+        verify(hateSpeachService).analyzeText("New Forum");
+        // FIXED: Description check is skipped due to short-circuit
+        verify(hateSpeachService, never()).analyzeText("New Forum Description");
+        verify(forumRepository, never()).save(any());
+    }
+
+    @Test
+    void createForum_CleanNameDirtyDescription_ThrowsHateSpeechException() {
+        // FIXED: Name is clean (true), description is dirty (false)
+        // With || logic: !true || !false = false || true = true (throws exception)
+        when(hateSpeachService.analyzeText("New Forum")).thenReturn(true);
         when(hateSpeachService.analyzeText("New Forum Description")).thenReturn(false);
 
         assertThrows(HateSpeechException.class,
@@ -118,39 +149,6 @@ class ForumServiceTest {
         verify(hateSpeachService).analyzeText("New Forum");
         verify(hateSpeachService).analyzeText("New Forum Description");
         verify(forumRepository, never()).save(any());
-    }
-
-    @Test
-    void createForum_HateSpeechInBothNameAndDescription_ThrowsHateSpeechException() {
-        // Both return false (both contain hate speech)
-        // Note: Only name will be checked due to short-circuit evaluation
-        when(hateSpeachService.analyzeText("New Forum")).thenReturn(false);
-
-        assertThrows(HateSpeechException.class,
-                () -> forumService.createForum(creationRequest, userId));
-
-        verify(hateSpeachService).analyzeText("New Forum");
-        verify(forumRepository, never()).save(any());
-    }
-
-    @Test
-    void createForum_CleanNameDirtyDescription_Success() {
-        // Name is clean (true), description is dirty (false)
-        // Due to && operator, both must be false to throw exception
-        // So this actually succeeds!
-        when(hateSpeachService.analyzeText("New Forum")).thenReturn(true);
-        when(forumRepository.save(any(Forum.class))).thenAnswer(i -> {
-            Forum forum = i.getArgument(0);
-            forum.setId(forumId);
-            return forum;
-        });
-
-        // This will NOT throw an exception due to the && logic
-        Forum result = forumService.createForum(creationRequest, userId);
-
-        assertNotNull(result);
-        verify(hateSpeachService).analyzeText("New Forum");
-        verify(forumRepository).save(any(Forum.class));
     }
 
     @Test
@@ -223,7 +221,9 @@ class ForumServiceTest {
         updateRequest.setDescription("Updated Description");
 
         when(mongoTemplate.findById(forumId, Forum.class)).thenReturn(testForum);
+        // FIXED: Both must return true
         when(hateSpeachService.analyzeText("Updated Forum")).thenReturn(true);
+        when(hateSpeachService.analyzeText("Updated Description")).thenReturn(true);
         when(forumRepository.save(any(Forum.class))).thenAnswer(i -> i.getArgument(0));
 
         Forum result = forumService.updateForum(forumId, updateRequest, userId);
@@ -231,7 +231,7 @@ class ForumServiceTest {
         assertEquals("Updated Forum", result.getName());
         assertEquals("Updated Description", result.getDescription());
         verify(hateSpeachService).analyzeText("Updated Forum");
-        // Description is never checked due to short-circuit evaluation
+        verify(hateSpeachService).analyzeText("Updated Description");
         verify(forumRepository).save(testForum);
     }
 
@@ -242,33 +242,35 @@ class ForumServiceTest {
         updateRequest.setDescription("Updated Description");
 
         when(mongoTemplate.findById(forumId, Forum.class)).thenReturn(testForum);
+        // FIXED: Name returns false - description won't be checked
         when(hateSpeachService.analyzeText("Hateful Forum")).thenReturn(false);
-        when(hateSpeachService.analyzeText("Updated Description")).thenReturn(false);
 
         assertThrows(HateSpeechException.class,
                 () -> forumService.updateForum(forumId, updateRequest, userId));
 
         verify(hateSpeachService).analyzeText("Hateful Forum");
-        verify(hateSpeachService).analyzeText("Updated Description");
+        // FIXED: Description is NOT checked due to short-circuit
+        verify(hateSpeachService, never()).analyzeText("Updated Description");
         verify(forumRepository, never()).save(any());
     }
 
     @Test
-    void updateForum_CleanNameDirtyDescription_Success() {
+    void updateForum_CleanNameDirtyDescription_ThrowsHateSpeechException() {
         ForumCreationRequest updateRequest = new ForumCreationRequest();
         updateRequest.setName("Clean Forum");
         updateRequest.setDescription("Hateful Description");
 
         when(mongoTemplate.findById(forumId, Forum.class)).thenReturn(testForum);
+        // FIXED: Name clean (true), description dirty (false)
         when(hateSpeachService.analyzeText("Clean Forum")).thenReturn(true);
-        when(forumRepository.save(any(Forum.class))).thenAnswer(i -> i.getArgument(0));
+        when(hateSpeachService.analyzeText("Hateful Description")).thenReturn(false);
 
-        // This will NOT throw an exception due to the && logic
-        Forum result = forumService.updateForum(forumId, updateRequest, userId);
+        assertThrows(HateSpeechException.class,
+                () -> forumService.updateForum(forumId, updateRequest, userId));
 
-        assertNotNull(result);
         verify(hateSpeachService).analyzeText("Clean Forum");
-        verify(forumRepository).save(any(Forum.class));
+        verify(hateSpeachService).analyzeText("Hateful Description");
+        verify(forumRepository, never()).save(any());
     }
 
     @Test
