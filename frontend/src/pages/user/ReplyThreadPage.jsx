@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useLocation, useParams, useNavigate, Link } from 'react-router-dom';
 import { CommentItem } from '../../components/PostComments';
 import { getRepliesApi, getPostCommentsApi, addCommentApi } from '../../api/comment-api';
+import { getPostApi } from '../../api/post-api';
 import { PATHS, MAX_LENGTHS } from '../../constants/constants';
 import { MdKeyboardArrowDown } from 'react-icons/md';
 import '../../components/style/postFullPage.css';
@@ -223,18 +224,17 @@ const ReplyThreadPage = () => {
                     <button
                         className="back-to-post-btn btn-primary"
                         aria-label="Back to post"
-                        onClick={() => {
-                            let postObj = (location && location.state && location.state.post) || null;
-                            if (!postObj) {
-                                try {
-                                    const cached = sessionStorage.getItem(`CINEMATE_LAST_POST_${comment.postId}`);
-                                    if (cached) postObj = JSON.parse(cached);
-                                } catch (e) {
-                                    // ignore
+                        onClick={async () => {
+                            try {
+                                const res = await getPostApi({ postId: comment.postId });
+                                if (res.success) {
+                                    navigate(PATHS.POST.FULLPAGE(comment.postId), { state: { post: res.data, commentId: comment.id } });
+                                } else {
+                                    navigate(PATHS.POST.FULLPAGE(comment.postId), { state: { post: { id: comment.postId, postId: comment.postId }, commentId: comment.id } });
                                 }
+                            } catch (e) {
+                                navigate(PATHS.POST.FULLPAGE(comment.postId), { state: { post: { id: comment.postId, postId: comment.postId }, commentId: comment.id } });
                             }
-                            if (!postObj) postObj = { id: comment.postId, postId: comment.postId };
-                            navigate(PATHS.POST.FULLPAGE(comment.postId), { state: { post: postObj, commentId: comment.id } });
                         }}
                     >
                         Back to post
@@ -255,19 +255,18 @@ const ReplyThreadPage = () => {
                                 if (res.success) setReplies(await enrichRepliesWithChildrenFlag(res.data || []));
                                 setLoading(false);
                             }}
-                            onRemoveComment={(id) => {
-                                let postObj = (location && location.state && location.state.post) || null;
-                                if (!postObj) {
-                                    try {
-                                        const cached = sessionStorage.getItem(`CINEMATE_LAST_POST_${comment.postId}`);
-                                        if (cached) postObj = JSON.parse(cached);
-                                    } catch (e) {
-                                        // ignore
+                            onRemoveComment={async (id) => {
+                                try {
+                                    const res = await getPostApi({ postId: comment.postId });
+                                    if (res.success) {
+                                        navigate(PATHS.POST.FULLPAGE(comment.postId), { state: { post: res.data } });
+                                    } else {
+                                        navigate(PATHS.POST.FULLPAGE(comment.postId), { state: { post: { id: comment.postId, postId: comment.postId } } });
                                     }
+                                } catch (e) {
+                                    navigate(PATHS.POST.FULLPAGE(comment.postId), { state: { post: { id: comment.postId, postId: comment.postId } } });
                                 }
-                                if (!postObj) postObj = { id: comment.postId, postId: comment.postId };
                                 try { window.alert('This comment has been deleted. Returning to the post.'); } catch (e) {}
-                                navigate(PATHS.POST.FULLPAGE(comment.postId), { state: { post: postObj } });
                             }}
                             inlineMaxDepth={2}
                             maxInlineReplies={3}
