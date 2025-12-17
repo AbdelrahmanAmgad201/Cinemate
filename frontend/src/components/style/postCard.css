@@ -16,7 +16,7 @@
     display: flex;
     flex-direction: row;
     justify-content: flex-start;
-    align-items: center;
+    align-items: flex-end;
     padding-top: 24px;
 }
 
@@ -28,8 +28,9 @@
     margin-left: 4px;
 }
 
-.post-header .user-info h2{
-    font-size: 20px;
+.post-header .user-info .forum-name{
+    font-size: 24px;
+    text-decoration: underline;
     font-weight: normal;
     cursor: pointer;
     transition: color 0.2s ease-in ;
@@ -44,7 +45,6 @@
 .post-header .user-info .user-name{
     text-decoration: none;
     color: var(--ghost-white);
-    font-size: 16px;
     font-weight: normal;
     cursor: pointer;
     transition: color 0.2s ease-in ;
@@ -52,12 +52,14 @@
 
 .post-header .user-info .user-name:hover,
 .post-header .user-profile-pic:hover,
-.post-header .user-info h2:hover{
+.post-header .user-info .forum-name:hover{
     color: var(--blue-bell);
 }
 
+
 .post-header .user-info .post-time{
-    font-size: 12px;
+    font-size: 0.75rem;
+    opacity: 0.6;
 }
 
 .post-header .post-settings{
@@ -184,7 +186,6 @@
 }
 
 .up-down-vote .vote-count{
-    margin-right: 4px;
     margin-left: 2px;
 }
 .up-down-vote .vote-separator{
@@ -194,11 +195,8 @@
     display: inline-block;
     margin: 0 8px;
     border-radius: 1px;
-    transition: background 0.15s ease;
 }
-.up-down-vote:hover .vote-separator{
-    background: var(--blue-bell);
-}
+
 .up-down-vote .vote-separator{
     margin-right: 3px;
 }

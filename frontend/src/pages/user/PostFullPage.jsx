@@ -123,7 +123,7 @@ const PostFullPage = () => {
     useEffect(() => {
         if (location.state?.editMode) {
             setEditMode(true);
-            navigate(location.pathname, { replace: true, state: {} });
+            navigate('.', { replace: true, state: {} });
         }
     }, [postId, location.state?.editMode, location.pathname, navigate]);
 

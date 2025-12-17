@@ -21,6 +21,7 @@ const PostCard = ({ postBody, fullMode = false, showForumName = false }) => {
     const [lastName, setLastName] = useState("");
     const [userVote, setUserVote] = useState(0);
     const [forumName, setForumName] = useState("");
+    const [loading, setLoading] = useState(true);
     const isVotingRef = useRef(false);
     const [commentCount, setCommentCount] = useState(postBody.commentCount || 0);
     const { user } = useContext(AuthContext);
@@ -109,38 +110,43 @@ const PostCard = ({ postBody, fullMode = false, showForumName = false }) => {
     ]
 
     useEffect(() => {
-        const checkVote = async () => {
-            try {
-                const result = await isVotedPostApi({ targetId: postBody.id });
-                console.log("isVoted", result);
-                if(result.success) {
-                    setUserVote(result.data);
-                } else {
-                    showToast('Failed to fetch votes', result.message || 'unknown error', 'error')
-                    setUserVote(0);
+        const initializePost = async () => {
+            try{
+                const requests = [
+                    getModApi({userId: postBody.ownerId}),
+                ];
+                if(showForumName){
+                    requests.push(getForumNameApi({forumId: postBody.forumId}));
                 }
-            } 
-            catch(error){
-                showToast('Failed to fetch votes', error || 'unknown error', 'error')
-                setUserVote(0);
+                if(user?.id){
+                    requests.push(isVotedPostApi({ targetId: postBody.id }));
+                }
+
+                const results = await Promise.all(requests);
+
+                if (results[0]?.data) {
+                    setFirstName(results[0].data);
+                }
+    
+                if (showForumName && postBody.forumId) {
+                    if (results[1]?.data) {
+                        setForumName(results[1].data);
+                    }
+                }
+    
+                if (user?.id && results[2]?.success) {
+                    setUserVote(results[2].data);
+                }
+            setLoading(false);
+            }
+            catch (error) {
+                showToast('Failed to fetch post', error || 'unknown error', 'error')
+                setLoading(false);
             }
         }
 
-        const getUsername = async () => {
-            const result = await getModApi({userId: postBody.ownerId});
-            setFirstName(result.data);
-        }
-
-        const getForumName = async () => {
-            const result = await getForumNameApi({forumId: postBody.forumId});
-            console.log("forum name" , result);
-            setForumName(result.data);
-        }
-
-        checkVote();
-        getUsername();
-        getForumName();
-    }, [postBody?.ownerId, user?.id]);
+        initializePost();
+    }, [postBody]);
 
     useEffect(() => {
         const handleClickOutside = (event) => {
@@ -161,11 +167,6 @@ const PostCard = ({ postBody, fullMode = false, showForumName = false }) => {
 
     const ownerIdConverted = postBody.ownerId ? parseInt(postBody.ownerId, 10) : null;
 
-    useEffect(() => {
-        const pid = postBody.postId || postBody.id;
-        console.debug('[PostCard] mount', { pid, initialCommentCount: commentCount });
-    }, []);
-
 
     return(
         <article className="post-card">
@@ -176,11 +177,11 @@ const PostCard = ({ postBody, fullMode = false, showForumName = false }) => {
                 
                 <div className="user-info">
                     {showForumName && (
-                    <h2 onClick={() => {navigate(PATHS.FORUM.PAGE(postBody.forumId))}}>
-                        {forumName}
-                    </h2>
+                    <p className="forum-name" onClick={() => {navigate(PATHS.FORUM.PAGE(postBody.forumId))}} >
+                        {loading ? "Loading..." : forumName}
+                    </p>
                     )}
-                    <Link className="user-name" to={PATHS.USER.PROFILE(ownerIdConverted)} >{firstName} {/*lastName*/}</Link>
+                    <Link className="user-name" style={{ fontSize : showForumName ? "14px" : "18px"}} to={PATHS.USER.PROFILE(ownerIdConverted)}> {loading ? "Loading..." : firstName} </Link>
                     <time dateTime={postBody.createdAt} className="post-time" >{formattedTime}</time>
                 </div>
                 <div className="post-settings" ref={menuRef}>
