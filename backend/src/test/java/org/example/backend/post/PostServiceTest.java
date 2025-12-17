@@ -6,6 +6,8 @@ import org.example.backend.deletion.AccessService;
 import org.example.backend.deletion.CascadeDeletionService;
 import org.example.backend.forum.Forum;
 import org.example.backend.forum.ForumRepository;
+import org.example.backend.hateSpeach.HateSpeachService;
+import org.example.backend.hateSpeach.HateSpeechException;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -26,6 +28,9 @@ class PostServiceTest extends AbstractMongoIntegrationTest {
 
     @Autowired
     private PostService postService;
+
+    @Autowired
+    private HateSpeachService hateSpeachService;
 
     @Autowired
     private PostRepository postRepository;
@@ -109,7 +114,7 @@ class PostServiceTest extends AbstractMongoIntegrationTest {
         when(restTemplate.postForEntity(eq(url), any(HttpEntity.class), eq(Boolean.class)))
                 .thenReturn(aiResponse);
 
-        boolean result = postService.analyzeText(text);
+        boolean result = hateSpeachService.analyzeText(text);
 
         assertThat(result).isTrue();
 

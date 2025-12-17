@@ -7,27 +7,22 @@ import org.example.backend.deletion.AccessService;
 import org.example.backend.deletion.CascadeDeletionService;
 import org.example.backend.forum.Forum;
 import org.example.backend.forum.ForumRepository;
-import org.example.backend.forumfollowing.Following;
 import org.example.backend.forumfollowing.FollowingRepository;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.data.domain.*;
-import org.springframework.data.mongodb.core.MongoTemplate;
-import org.springframework.http.*;
-import org.springframework.security.access.AccessDeniedException;
-import org.springframework.stereotype.Service;
-import org.springframework.web.client.RestTemplate;
+import org.example.backend.hateSpeach.HateSpeachService;
+import org.example.backend.hateSpeach.HateSpeechException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.domain.*;
+import org.springframework.data.mongodb.core.MongoTemplate;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestTemplate;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
 import java.time.Instant;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.web.server.ResponseStatusException;
 
 @Service
 @RequiredArgsConstructor
@@ -36,16 +31,15 @@ public class PostService {
     private final ForumRepository forumRepository;
     private final FollowingRepository followingRepository;
 
-    @Value("${hatespeech.model.url}")
-    private String url;
     private final PostRepository postRepository;
     private final MongoTemplate mongoTemplate;
     private final CascadeDeletionService deletionService;
     private final AccessService accessService;
+    private final HateSpeachService hateSpeachService;
 
     @Transactional
     public Post addPost(AddPostDto addPostDto, Long userId) {
-        if (!analyzeText(addPostDto.getContent())) {
+        if (!hateSpeachService.analyzeText(addPostDto.getContent())||!hateSpeachService.analyzeText(addPostDto.getTitle())) {
             throw new HateSpeechException("hate speech detected");
         }
         ObjectId ObjectUserId = longToObjectId(userId);
@@ -65,7 +59,7 @@ public class PostService {
 
     @Transactional
     public Post updatePost(ObjectId postId, AddPostDto addPostDto, Long userId) {
-        if (!analyzeText(addPostDto.getContent())) {
+        if (!hateSpeachService.analyzeText(addPostDto.getContent())||!hateSpeachService.analyzeText(addPostDto.getTitle())) {
             throw new HateSpeechException("hate speech detected");
         }
         Post post = mongoTemplate.findById(postId, Post.class);
@@ -98,18 +92,6 @@ public class PostService {
         }
     }
 
-    public boolean analyzeText(String text) {
-        HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.APPLICATION_JSON);
-
-        // Safe JSON string
-        String body = "{\"text\":\"" + text.replace("\"", "\\\"") + "\"}";
-
-        HttpEntity<String> request = new HttpEntity<>(body, headers);
-        ResponseEntity<Boolean> response = restTemplate.postForEntity(url, request, Boolean.class);
-        return response.getBody();
-    }
-
     @Transactional
     public void deletePost(ObjectId postId, Long userId) {
         if (!accessService.canDeletePost(longToObjectId(userId), postId)) {
@@ -120,7 +102,7 @@ public class PostService {
             throw new IllegalArgumentException("Post not found with id: " + postId);
         }
         Forum forum = mongoTemplate.findById(post.getForumId(), Forum.class);
-        forum.setPostCount(forum.getPostCount() + 1);
+        forum.setPostCount(forum.getPostCount() - 1);
         forumRepository.save(forum);
         deletionService.deletePost(postId);
     }

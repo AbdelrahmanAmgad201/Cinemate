@@ -125,6 +125,7 @@ public class VoteService {
         else {
             target.incrementDownvote();
         }
+        target.updateScore();
         if(target instanceof Post post) {
             postRepository.save(post);
         }
@@ -140,6 +141,7 @@ public class VoteService {
         else {
             target.decrementDownvote();
         }
+        target.updateScore();
         if(target instanceof Post post) {
             postRepository.save(post);
         }
@@ -157,6 +159,7 @@ public class VoteService {
             target.incrementDownvote();
             target.decrementUpvote();
         }
+        target.updateScore();
         if(target instanceof Post post) {
             postRepository.save(post);
         }

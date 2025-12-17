@@ -1,24 +1,98 @@
 import { useState, useEffect, useContext } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { AuthContext } from '../../context/AuthContext';
-import { ToastContext } from '../../context/ToastContext';
+import { ToastContext } from '../../context/ToastContext.jsx';
 import Swal from 'sweetalert2';
 import EditPost from '../../components/EditPost';
-import { updatePostApi, deletePostApi } from '../../api/post-api';
+import { updatePostApi, deletePostApi, isVotedPostApi } from '../../api/post-api';
 import PostMain from '../../components/PostMain';
 import PostComments from '../../components/PostComments';
 import { PATHS } from '../../constants/constants';
-import '../../components/style/postCard.css';
-import '../../components/style/postFullPage.css';
+import "../../components/style/postCard.css";
+import "./style/postFullPage.css";
+import { MdKeyboardArrowDown } from "react-icons/md";
+import { IoClose } from "react-icons/io5";
+import PostCard from '../../components/PostCard';
 
 const PostFullPage = () => {
     const { postId } = useParams();
     const location = useLocation();
     const { user } = useContext(AuthContext);
+    const { showToast } = useContext(ToastContext);
     const navigate = useNavigate();
 
     const [post, setPost] = useState(location.state?.post || null);
     const [editMode, setEditMode] = useState(false);
+    const [userVote, setUserVote] = useState(0);
+    const [voteCount, setVoteCount] = useState(0);
+    const [openImage, setOpenImage] = useState(false);
+    const [sort, setSort] = useState("best");
+    const [commentText, setCommentText] = useState("");
+    const [postOptions, setPostOptions] = useState(false);
+
+    const cancelEdit = () => {
+        setEditMode(false);
+    };
+
+    const saveEdit = async (updatedPost, mediaFile) => {
+        try {
+            const result = await updatePostApi({
+                postId: post.id, 
+                forumId: post.forumId,
+                title: updatedPost.title,
+                content: updatedPost.content
+            });
+    
+            if (result.success) {
+                setPost({
+                    ...post,
+                    title: updatedPost.title,
+                    content: updatedPost.content,
+                    media: updatedPost.media
+                });
+                setEditMode(false);
+                console.log('Post updated successfully');
+            } else {
+                if (!result.success) return showToast('Failed to edit post', result.message || 'unknown error', 'error');
+            }
+        } 
+        catch(error){
+            showToast('Failed to edit post', error || 'unknown error', 'error');
+        }
+    };
+
+    useEffect(() => {
+        const checkVote = async () => {
+            if (!postId || !user?.id) {
+                return;
+            }
+
+            try {
+                const result = await isVotedPostApi({ targetId: postId });
+                
+                if (result.success) {
+                    const voteValue = typeof result.data === 'number' ? result.data : 0;
+                    setUserVote(voteValue);
+                } else {
+                    showToast('Failed to check vote', result.message || 'unknown error', 'error');
+                    setUserVote(0);
+                }
+            } 
+            catch(error){
+                showToast('Failed to check vote', error || 'unknown error', 'error');
+                setUserVote(0);
+            }
+        }
+
+        checkVote();
+    }, [postId, user?.id]);
+
+    useEffect(() => {
+        if (post) {
+            const totalVotes = (post.upvoteCount || 0) - (post.downvoteCount || 0);
+            setVoteCount(totalVotes);
+        }
+    }, [post]);
 
     useEffect(() => {
         if (location.state?.post) {
@@ -92,94 +166,8 @@ const PostFullPage = () => {
         };
     }, [post, location.state, location.pathname, navigate]);
 
-    const { showToast } = useContext(ToastContext);
-
-    const handleDelete = async () => {
-        const result = await Swal.fire({
-            title: 'Delete post?',
-            text: 'Are you sure you want to delete this post?',
-            icon: 'warning',
-            showCancelButton: true,
-            confirmButtonText: 'Yes, delete',
-            confirmButtonColor: '#d33',
-            cancelButtonText: 'Cancel',
-        });
-
-        if (!result.isConfirmed) return;
-
-        try {
-            const pid = post?.id || post?.postId || postId;
-            if (!pid) {
-                console.error('Delete aborted: no postId available', { post });
-                showToast('Error', 'Could not determine post id to delete', 'error');
-                return;
-            }
-            const res = await deletePostApi({ postId: pid });
-            if (res.success) {
-                showToast('Deleted', 'Post removed', 'info');
-                navigate(PATHS.HOME);
-            } else {
-                console.log(res.message || 'Failed to delete post');
-                showToast('Error', res.message || 'Failed to delete post', 'error');
-            }
-        } catch (error) {
-            console.error('Error delete post:', error);
-            showToast('Error', 'Failed to delete post', 'error');
-        }
-    };
-
-    const handleEdit = () => {
-        setEditMode(true);
-    };
-
-    const cancelEdit = () => {
-        setEditMode(false);
-    };
-
-    const saveEdit = async (updatedPost) => {
-        try {
-            const result = await updatePostApi({
-                postId: post.id,
-                forumId: post.forumId,
-                title: updatedPost.title,
-                content: updatedPost.content
-            });
-
-            if (result.success) {
-                setPost({
-                    ...post,
-                    title: updatedPost.title,
-                    content: updatedPost.content,
-                    media: updatedPost.media
-                });
-                setEditMode(false);
-            } else {
-                console.error('Update failed:', result.message);
-            }
-        } catch (error) {
-            console.error('Error updating post:', error);
-        }
-    };
-
-    const handleCommentCountChange = (count) => {
-        setPost(prev => (prev ? { ...prev, commentCount: count } : prev));
-    };
-
-    if (loadingPost) {
-        return <div>Loading...</div>;
-    }
-
-    if (postLoadError) {
-        return (
-            <div className="post-page" style={{ padding: 24 }}>
-                <h2>Error</h2>
-                <p>Failed to load post: {postLoadError}</p>
-            </div>
-        );
-    }
-
     if (!post) {
-        return <div>Loading...</div>;
+        return <div>Not Found...</div>;
     }
 
     if (editMode) {
@@ -192,18 +180,32 @@ const PostFullPage = () => {
 
     return (
         <div className="post-page">
-            <PostMain
-                post={post}
-                user={user}
-                onEdit={handleEdit}
-                onDelete={handleDelete}
-            />
-            <PostComments
-                postId={post?.id || post?.postId || postId}
-                post={post}
-                postOwnerId={post?.ownerId}
-                onCommentCountChange={handleCommentCountChange}
-            />
+            <PostCard postBody={post} fullMode={true} />
+            {openImage && (
+                <div className="view-image-container" onClick={() => setOpenImage(false)}>
+                    <div className="view-image">
+                        <IoClose className="close-button" onClick={() => setOpenImage(false)} />
+                        <img src={post.media} alt={post.title || "Post content"} onClick={(e) => e.stopPropagation()} />
+                    </div>
+                </div>
+            )}
+            <div className="comment-input">
+            <textarea value={commentText} onChange={(e) => setCommentText(e.target.value)} placeholder="Share your thoughts"/>
+            </div>
+            <div className="comments-section">
+                {/* <h3>Comments</h3> */}
+                <div className="comments-sort">
+                    <label htmlFor="sort-by">Sort by:</label>
+                    <div className="select-wrapper">
+                        <select id="sort-by" name="sort-by" value={sort} onChange={(e) => setSort(e.target.value)}>
+                            <option value="best">Best</option>
+                            <option value="new">New</option>
+                        </select>
+                        <MdKeyboardArrowDown className="select-arrow" />
+                    </div>
+                </div>
+                <p>No comments yet.</p>
+            </div>
         </div>
     );
 };

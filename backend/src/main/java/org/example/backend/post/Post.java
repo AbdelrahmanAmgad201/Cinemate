@@ -89,4 +89,8 @@ public class Post implements Votable {
         updateLastActivityAt(Instant.now());
         this.downvoteCount--;
     }
+    @Override
+    public void updateScore(){
+        this.score = this.upvoteCount - this.downvoteCount;
+    }
 }

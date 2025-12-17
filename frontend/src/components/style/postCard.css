@@ -30,11 +30,22 @@
 
 .post-header .user-profile-pic{
     font-size: 30px;
+    cursor: pointer;
+    transition: color 0.2s ease-in ;
 }
 
-.post-header .user-info h2{
+.post-header .user-info .user-name{
+    text-decoration: none;
+    color: var(--ghost-white);
     font-size: 18px;
     font-weight: normal;
+    cursor: pointer;
+    transition: color 0.2s ease-in ;
+}
+
+.post-header .user-info .user-name:hover,
+.post-header .user-profile-pic:hover{
+    color: var(--blue-bell);
 }
 
 .post-header .user-info time{
@@ -79,6 +90,7 @@
     flex-direction: column;
     justify-content: center;
     align-items: flex-start;
+    cursor: pointer;
 }
 
 .post-content img{
@@ -184,14 +196,12 @@
     margin-right: 3px;
 }
 
-.up-down-vote svg,
-.vote-count{
+.up-down-vote svg{
     transition: color 0.2s;
 }
 
 .up-down-vote svg:hover,
-.up-down-vote  svg.selected:hover,
-.vote-count:hover{
+.up-down-vote  svg.selected:hover{
     color: var(--blue-bell);
 }
 
