@@ -1,8 +1,8 @@
 import { useState, useContext, useEffect, useRef } from 'react';
 import {Link} from 'react-router-dom';
-import ProfileAvatar from './profileAvatar';
-import { AuthContext } from '../context/authContext.jsx';
-import "../pages/admin/style/navBar.css";
+import ProfileAvatar from './ProfileAvatar';
+import { AuthContext } from '../context/AuthContext.jsx';
+import "../pages/admin/style/NavBar.css";
 
 import {ROLES, PATHS} from "../constants/constants.jsx";
 

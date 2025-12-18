@@ -2,7 +2,7 @@ import React, { useState, useContext, useEffect, useRef } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { IoSearch } from "react-icons/io5";
 import './style/navBar.css';
-import ProfileAvatar from './profileAvatar.jsx';
+import ProfileAvatar from './ProfileAvatar.jsx';
 import MoviesDetailsApi from '../api/movies-details-api.jsx';
 import {searchForumsApi} from "../api/forum-api.jsx";
 
