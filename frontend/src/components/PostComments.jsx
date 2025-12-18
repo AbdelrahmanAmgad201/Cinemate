@@ -52,14 +52,7 @@ const ThreadLinkButton = ({ comment, repliesCount, post }) => {
     const navigate = useNavigate();
     const handleOpenThread = () => {
         const url = `${PATHS.POST.THREAD(comment.id)}?postId=${encodeURIComponent(comment.postId || '')}`;
-        // If we have a locally cached vote update for this comment, merge it into the navigation state
-        // so the thread page shows the latest client-side counts even if the parent state hasn't re-rendered yet.
-        let navComment = comment;
-        try {
-            const cached = JSON.parse(sessionStorage.getItem(`CINEMATE_LAST_COMMENT_${comment.id}`) || 'null');
-            if (cached) navComment = { ...comment, ...cached };
-        } catch (e) { /* ignore storage errors */ }
-        navigate(url, { state: { comment: navComment, postId: comment.postId, post } });
+        navigate(url, { state: { comment, postId: comment.postId, post } });
     };
     return (
         <button className="view-thread-btn" onClick={handleOpenThread}>{`Open thread (${(typeof repliesCount === 'number' ? repliesCount : (comment.numberOfReplies || 'some'))} replies)`}</button>
@@ -708,17 +701,6 @@ const PostComments = ({ postId, post, postOwnerId, onCommentCountChange }) => {
                                             }
                                         } catch (e) { /* ignore storage errors */ }
 
-                                        if (sort === 'best') {
-                                            return [...updated].sort((a, b) => {
-                                                const scoreA = (a.upvoteCount || 0) - (a.downvoteCount || 0);
-                                                const scoreB = (b.upvoteCount || 0) - (b.downvoteCount || 0);
-                                                if (scoreB !== scoreA) return scoreB - scoreA;
-                                                return new Date(b.createdAt || 0) - new Date(a.createdAt || 0);
-                                            });
-                                        }
-                                        if (sort === 'new') {
-                                            return [...updated].sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
-                                        }
                                         return updated;
                                     });
                                 }}
