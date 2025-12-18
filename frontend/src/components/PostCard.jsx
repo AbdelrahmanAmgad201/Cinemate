@@ -115,7 +115,10 @@ const PostCard = ({ postBody }) => {
 
         });
 
-        if (!result.isConfirmed) return;
+        if (!result.isConfirmed) {
+            try { showToast('', 'Delete cancelled', 'info'); } catch (e) {}
+            return;
+        }
 
         setPostOptions(false);
 
@@ -125,6 +128,7 @@ const PostCard = ({ postBody }) => {
             });
 
             if(res.success){
+                try { showToast('', 'Post deleted', 'success'); } catch (e) {}
                 console.log('Post deleted successfully');
                 navigate(`/forum/${postBody.forumId}`);
             }
