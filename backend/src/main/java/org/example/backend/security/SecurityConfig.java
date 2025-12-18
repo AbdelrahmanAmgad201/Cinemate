@@ -60,6 +60,7 @@ public class SecurityConfig {
                 .requestMatchers("/api/watch-later/**").hasAuthority("ROLE_USER")
                 .requestMatchers("api/post/**").hasAuthority("ROLE_USER")
                 .requestMatchers("/api/forum/**").hasAuthority("ROLE_USER")
+                .requestMatchers("/api/watch-party/**").hasAuthority("ROLE_USER")
 
 
                 .anyRequest().authenticated()
