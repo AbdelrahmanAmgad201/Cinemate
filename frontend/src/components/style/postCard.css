@@ -16,7 +16,7 @@
     display: flex;
     flex-direction: row;
     justify-content: flex-start;
-    align-items: flex-start;
+    align-items: flex-end;
     padding-top: 24px;
 }
 
@@ -28,18 +28,38 @@
     margin-left: 4px;
 }
 
+.post-header .user-info .forum-name{
+    font-size: 24px;
+    text-decoration: underline;
+    font-weight: normal;
+    cursor: pointer;
+    transition: color 0.2s ease-in ;
+}
+
 .post-header .user-profile-pic{
     font-size: 30px;
+    cursor: pointer;
+    transition: color 0.2s ease-in ;
 }
 
-.post-header .user-info h2{
-    font-size: 18px;
+.post-header .user-info .user-name{
+    text-decoration: none;
+    color: var(--ghost-white);
     font-weight: normal;
+    cursor: pointer;
+    transition: color 0.2s ease-in ;
 }
 
-.post-header .user-info time{
-    font-size: 12px;
-    font-weight: lighter;
+.post-header .user-info .user-name:hover,
+.post-header .user-profile-pic:hover,
+.post-header .user-info .forum-name:hover{
+    color: var(--blue-bell);
+}
+
+
+.post-header .user-info .post-time{
+    font-size: 0.75rem;
+    opacity: 0.6;
 }
 
 .post-header .post-settings{
@@ -79,6 +99,7 @@
     flex-direction: column;
     justify-content: center;
     align-items: flex-start;
+    cursor: pointer;
 }
 
 .post-content img{
@@ -157,22 +178,35 @@
     border: 1px solid var(--blue-bell);
 }
 
-.up-down-vote .vote-count{
+.post-comment .comment-count{
+    margin-left: 6px;
     margin-right: 4px;
+    font-size: 14px;
+    font-weight: 500;
+}
+
+.up-down-vote .vote-count{
     margin-left: 2px;
 }
+.up-down-vote .vote-separator{
+    width: 1px;
+    height: 18px;
+    background: #A8A8A8;
+    display: inline-block;
+    margin: 0 8px;
+    border-radius: 1px;
+}
+
 .up-down-vote .vote-separator{
     margin-right: 3px;
 }
 
-.up-down-vote svg,
-.vote-count{
+.up-down-vote svg{
     transition: color 0.2s;
 }
 
 .up-down-vote svg:hover,
-.up-down-vote  svg.selected:hover,
-.vote-count:hover{
+.up-down-vote  svg.selected:hover{
     color: var(--blue-bell);
 }
 

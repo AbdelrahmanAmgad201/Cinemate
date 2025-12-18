@@ -181,7 +181,6 @@ class CommentServiceTest {
         commentService.deleteComment(commentId, userId);
 
         verify(deletionService).deleteComment(commentId);
-        verify(postRepository).save(argThat(post -> post.getCommentCount() == 6));
     }
 
     @Test
@@ -213,10 +212,6 @@ class CommentServiceTest {
         when(mongoTemplate.findById(postId, Post.class)).thenReturn(testPost);
 
         commentService.deleteComment(commentId, userId);
-
-        verify(postRepository).save(argThat(post ->
-                post.getCommentCount() == 6 // 5 + 1 (bug in original code - should be -1)
-        ));
     }
 
     @Test

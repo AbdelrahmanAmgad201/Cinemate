@@ -1,4 +1,4 @@
-package org.example.backend.post;
+package org.example.backend.hateSpeach;
 
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.http.HttpStatus;

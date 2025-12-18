@@ -81,4 +81,12 @@ public class ForumController {
         return ResponseEntity.ok(results);
     }
 
+    @GetMapping("/v1/forum-name/{forumId}")
+    public ResponseEntity<String> getForumByName(
+            HttpServletRequest request,
+            @PathVariable ObjectId forumId
+    ) {
+        return ResponseEntity.ok(forumService.getForumName(forumId));
+        }
+
 }

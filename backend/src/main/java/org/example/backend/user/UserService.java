@@ -74,7 +74,9 @@ public class UserService {
         Long userId = objectIdToLong(objectUserId);
         Optional<User> user = userRepository.findById(userId);
         if (user.isPresent()) {
-            return user.get().getFirstName();
+            if(user.get().getLastName()==null)
+                return user.get().getFirstName();
+            return user.get().getFirstName()+" "+user.get().getLastName();
         }
         else  {
             return "Unknown user";
