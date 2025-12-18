@@ -62,7 +62,7 @@ export const PATHS = {
         BROWSE: "/browse",
         GENRE: (title = ":title") => `/genre/${title}`, // "/genre/:title"
         WATCH: "/watch",
-        WATCH_PARTY: (partyId = ":partyId") => `/watch-party/${partyId}`,
+        WATCH_PARTY: (roomId = ":roomId") => `/watch-party/${roomId}`,
 
     },
 
