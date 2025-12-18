@@ -107,7 +107,6 @@ export async function getPostApi({ postId }) {
 export async function addPostApi({ forumId, title, content }) {
     try {
         const response = await api.post(`/post/v1/post`, { forumId, title, content });
-        console.log(response.data);
 
         return { success: true, data: response.data };
     } catch (err) {
@@ -118,7 +117,6 @@ export async function addPostApi({ forumId, title, content }) {
 export async function getForumNameApi({ forumId }){
     try {
         const response = await api.get(`/forum/v1/forum-name/${forumId}`);
-        console.log(response.data);
 
         return { success: true, data: response.data };
     } catch (err) {

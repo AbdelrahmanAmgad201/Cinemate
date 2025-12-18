@@ -104,7 +104,6 @@ const PostFullPage = () => {
                 const result = await getPostApi({postId: postId});
 
                 if(result.success){
-                    console.log("RESULT:" , result);
                     setPost(result.data);
                 }
                 else{
@@ -112,7 +111,7 @@ const PostFullPage = () => {
                 }
             }
             catch(error){
-                showToast('Failed to fetch post', result.message || 'unknown error', 'error');
+                showToast('Failed to fetch post', error || 'unknown error', 'error');
             }
         }
 
@@ -141,7 +140,6 @@ const PostFullPage = () => {
         } catch (e) {
             // ignore storage errors
         }
-        setPost({ id: pid, postId: pid, title: 'Post', content: '', media: null, ownerId: null, commentCount: 0, isPlaceholder: true });
         setPostLoadError(null);
     }, [postId]);
 
