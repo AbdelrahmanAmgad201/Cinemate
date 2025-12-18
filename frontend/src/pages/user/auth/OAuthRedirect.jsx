@@ -15,12 +15,12 @@ const OAuthRedirect = () => {
 
     if(token){
         try{
-            localStorage.setItem(JWT.STORAGE_NAME, token);
+            sessionStorage.setItem(JWT.STORAGE_NAME, token);
 
             const userData = jwtDecode(token); // returns { id, email, role, iat }
             // if (userData.exp * 1000 < Date.now()) {
             //     // token expired
-            //     localStorage.removeItem(JWT.STORAGE_NAME);
+            //     sessionStorage.removeItem(JWT.STORAGE_NAME);
             //     setUser(null);
             // }
 

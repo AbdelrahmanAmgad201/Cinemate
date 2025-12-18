@@ -15,7 +15,7 @@ export default async function verifyApi({email, code}) {
             role: data.role.replace("ROLE_", "")
         }
 
-        localStorage.setItem(JWT.STORAGE_NAME, token);
+        sessionStorage.setItem(JWT.STORAGE_NAME, token);
 
         return { success: true, user: user};
 

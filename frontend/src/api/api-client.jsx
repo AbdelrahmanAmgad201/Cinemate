@@ -12,7 +12,7 @@ const api = axios.create({
 
 api.interceptors.request.use(config => {
     // Get token from local storage
-    const token = localStorage.getItem(JWT.STORAGE_NAME);
+    const token = sessionStorage.getItem(JWT.STORAGE_NAME);
     if (token) {
         // Adds the token header
         config.headers.Authorization = `Bearer ${token}`;

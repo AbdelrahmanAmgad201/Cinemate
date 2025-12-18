@@ -63,20 +63,34 @@ public class Post implements Votable {
 
     private Instant deletedAt;
 
+
+    public void updateLastActivityAt(Instant lastActivityAt) {
+        if (this.lastActivityAt == null || this.lastActivityAt.isBefore(lastActivityAt)) {
+            this.lastActivityAt = lastActivityAt;
+        }
+    }
     @Override
     public void incrementUpvote() {
+        updateLastActivityAt(Instant.now());
         this.upvoteCount++;
     }
     @Override
     public void incrementDownvote() {
+        updateLastActivityAt(Instant.now());
         this.downvoteCount++;
     }
     @Override
     public void decrementUpvote() {
+        updateLastActivityAt(Instant.now());
         this.upvoteCount--;
     }
     @Override
     public void decrementDownvote() {
+        updateLastActivityAt(Instant.now());
         this.downvoteCount--;
+    }
+    @Override
+    public void updateScore(){
+        this.score = this.upvoteCount - this.downvoteCount;
     }
 }

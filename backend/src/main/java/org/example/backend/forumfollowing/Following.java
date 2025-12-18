@@ -33,4 +33,9 @@ public class Following {
 
     private Instant createdAt;
 
+    @Builder.Default
+    private Boolean isDeleted = false;
+
+    private Instant deletedAt;
+
 }

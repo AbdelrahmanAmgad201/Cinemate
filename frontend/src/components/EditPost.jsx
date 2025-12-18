@@ -1,8 +1,10 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useContext } from 'react';
 import { updatePostApi } from '../api/post-api';
 import { IoClose } from "react-icons/io5";
 import { MdDelete } from "react-icons/md";
 import { FaFileImage } from "react-icons/fa";
+import Swal from "sweetalert2";
+import { ToastContext } from '../context/ToastContext';
 import "./style/editPost.css";
 
 const EditPost = ({ post, onSave, onCancel }) => {
@@ -16,6 +18,7 @@ const EditPost = ({ post, onSave, onCancel }) => {
 
     
     const fileInputRef = useRef(null);
+    const { showToast } = useContext(ToastContext);
 
     function uploadMedia(e) {
         const file = e.target.files[0];
@@ -48,10 +51,19 @@ const EditPost = ({ post, onSave, onCancel }) => {
         }
     };
 
-    const handleCancel = () => {
-        if (window.confirm('Discard changes?')) {
-            onCancel();
-        }
+    const handleCancel = async () => {
+        const result = await Swal.fire({
+            title: 'Discard changes?',
+            showCancelButton: true,
+            confirmButtonText: 'Discard',
+            confirmButtonColor: '#d33',
+            cancelButtonText: 'Cancel',
+
+        });
+        if (!result.isConfirmed) return;
+
+        onCancel();
+        
     };
 
     const handleSave = async () => {
