@@ -35,6 +35,7 @@ import UserMainLayout from "../components/UserMainLayout.jsx";
 import SimpleLayout from "../components/SimpleLayout.jsx";
 import Forum from "../pages/user/Forum.jsx";
 import Mod from "../pages/user/Mod.jsx";
+import WatchParty from "../pages/user/WatchParty.jsx"
 
 export default function AppRoutes() {
 
@@ -87,9 +88,11 @@ export default function AppRoutes() {
 
             {/*Added here for testing*/}
             {/*<Route path="/test-sand-box" element={<TestSandBox />} />*/}
+
             <Route element={<UserMainLayout />}>
                 <Route path={PATHS.FORUM.PAGE()} element={<Forum/>} />
             </Route>
+
             {/* protected routes (requires login + verified) */}
             <Route element={<RoleRoute allowedRoles={[ROLES.USER]} />}>
                 <Route element={<UserMainLayout />}> {/* Navbar + Sidebar*/}
@@ -102,15 +105,16 @@ export default function AppRoutes() {
                 <Route element={<SimpleLayout />}> {/* Navbar only */}
                     <Route path={PATHS.MOVIE.BROWSE} element={<Browse />} />
                     <Route path={PATHS.MOVIE.GENRE()} element={<Genre />} />
-                    {/*<Route path={PATHS.MOVIE.DETAILS()} element={<MoviePreviewPage />} />*/}
-                    <Route path={PATHS.MOVIE.WATCH} element={<WatchPage />} />
+                    <Route path={PATHS.MOVIE.WATCH_PARTY()} element={<WatchParty />} />
                     <Route path={PATHS.MOD.PAGE()} element={<Mod />}/>
-                    
-                </Route>                
+                </Route>
+
+                {/* No navbar or sidebar */}
+                <Route path={PATHS.MOVIE.WATCH} element={<WatchPage />} />
 
             </Route>
 
-            {/* If any unknown path is entered, it will be redirected to the UserSignIn page*/}
+            {/* If any unknown path is entered, it will be redirected to the following page*/}
             <Route path="*" element={<NotFoundPage />} />
 
         </Routes>
