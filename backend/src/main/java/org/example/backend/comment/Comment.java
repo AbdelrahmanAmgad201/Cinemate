@@ -58,6 +58,9 @@ public class Comment implements Votable {
 
     private Instant createdAt;
 
+    @Builder.Default
+    private Integer numberOfReplies = 0;
+
     // Soft delete
     @Builder.Default
     private Boolean isDeleted = false;
@@ -79,5 +82,9 @@ public class Comment implements Votable {
     @Override
     public void decrementDownvote() {
         this.downvoteCount--;
+    }
+    @Override
+    public void updateScore(){
+        this.score = this.upvoteCount - this.downvoteCount;
     }
 }

@@ -98,7 +98,7 @@ const HomePage = () => {
             <div className="posts-list">
                 {loading && <LoadingFallback />}
                 {posts.map((post, index) => (
-                    <PostCard key={post.id || index} postBody={post} />
+                    <PostCard key={post.id || index} postBody={post} showForumName={true} />
                 ))}
 
                 {loadingMore && (

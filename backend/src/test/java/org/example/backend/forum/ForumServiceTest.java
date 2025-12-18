@@ -3,6 +3,8 @@ package org.example.backend.forum;
 import org.bson.types.ObjectId;
 import org.example.backend.deletion.AccessService;
 import org.example.backend.deletion.CascadeDeletionService;
+import org.example.backend.hateSpeach.HateSpeachService;
+import org.example.backend.hateSpeach.HateSpeechException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -41,6 +43,9 @@ class ForumServiceTest {
     @Mock
     private MongoTemplate mongoTemplate;
 
+    @Mock
+    private HateSpeachService hateSpeachService;
+
     @InjectMocks
     private ForumService forumService;
 
@@ -76,6 +81,9 @@ class ForumServiceTest {
 
     @Test
     void createForum_ValidRequest_Success() {
+        // FIXED: Both name AND description must return true (no hate speech)
+        when(hateSpeachService.analyzeText("New Forum")).thenReturn(true);
+        when(hateSpeachService.analyzeText("New Forum Description")).thenReturn(true);
         when(forumRepository.save(any(Forum.class))).thenAnswer(i -> {
             Forum forum = i.getArgument(0);
             forum.setId(forumId);
@@ -89,10 +97,9 @@ class ForumServiceTest {
         assertEquals("New Forum Description", result.getDescription());
         assertEquals(userObjectId, result.getOwnerId());
         assertNotNull(result.getCreatedAt());
-        assertEquals(0, result.getFollowerCount());
-        assertEquals(0, result.getPostCount());
-        assertFalse(result.getIsDeleted());
 
+        verify(hateSpeachService).analyzeText("New Forum");
+        verify(hateSpeachService).analyzeText("New Forum Description");
         verify(forumRepository).save(argThat(forum ->
                 forum.getName().equals("New Forum") &&
                         forum.getDescription().equals("New Forum Description") &&
@@ -101,7 +108,52 @@ class ForumServiceTest {
     }
 
     @Test
+    void createForum_HateSpeechInName_ThrowsHateSpeechException() {
+        // FIXED: Name returns false (hate speech detected)
+        when(hateSpeachService.analyzeText("New Forum")).thenReturn(false);
+        // Description won't be checked due to short-circuit evaluation (|| operator)
+
+        assertThrows(HateSpeechException.class,
+                () -> forumService.createForum(creationRequest, userId));
+
+        verify(hateSpeachService).analyzeText("New Forum");
+        // FIXED: Description is NOT checked due to short-circuit
+        verify(hateSpeachService, never()).analyzeText("New Forum Description");
+        verify(forumRepository, never()).save(any());
+    }
+
+    @Test
+    void createForum_HateSpeechInBothNameAndDescription_ThrowsHateSpeechException() {
+        // FIXED: Name returns false - description won't be checked
+        when(hateSpeachService.analyzeText("New Forum")).thenReturn(false);
+
+        assertThrows(HateSpeechException.class,
+                () -> forumService.createForum(creationRequest, userId));
+
+        verify(hateSpeachService).analyzeText("New Forum");
+        // FIXED: Description check is skipped due to short-circuit
+        verify(hateSpeachService, never()).analyzeText("New Forum Description");
+        verify(forumRepository, never()).save(any());
+    }
+
+    @Test
+    void createForum_CleanNameDirtyDescription_ThrowsHateSpeechException() {
+        // FIXED: Name is clean (true), description is dirty (false)
+        // With || logic: !true || !false = false || true = true (throws exception)
+        when(hateSpeachService.analyzeText("New Forum")).thenReturn(true);
+        when(hateSpeachService.analyzeText("New Forum Description")).thenReturn(false);
+
+        assertThrows(HateSpeechException.class,
+                () -> forumService.createForum(creationRequest, userId));
+
+        verify(hateSpeachService).analyzeText("New Forum");
+        verify(hateSpeachService).analyzeText("New Forum Description");
+        verify(forumRepository, never()).save(any());
+    }
+
+    @Test
     void createForum_DefaultValues_AreSet() {
+        when(hateSpeachService.analyzeText(anyString())).thenReturn(true);
         when(forumRepository.save(any(Forum.class))).thenAnswer(i -> i.getArgument(0));
 
         Forum result = forumService.createForum(creationRequest, userId);
@@ -114,6 +166,7 @@ class ForumServiceTest {
 
     @Test
     void createForum_SetsCreatedAtTimestamp() {
+        when(hateSpeachService.analyzeText(anyString())).thenReturn(true);
         Instant before = Instant.now();
         when(forumRepository.save(any(Forum.class))).thenAnswer(i -> i.getArgument(0));
 
@@ -168,13 +221,56 @@ class ForumServiceTest {
         updateRequest.setDescription("Updated Description");
 
         when(mongoTemplate.findById(forumId, Forum.class)).thenReturn(testForum);
+        // FIXED: Both must return true
+        when(hateSpeachService.analyzeText("Updated Forum")).thenReturn(true);
+        when(hateSpeachService.analyzeText("Updated Description")).thenReturn(true);
         when(forumRepository.save(any(Forum.class))).thenAnswer(i -> i.getArgument(0));
 
         Forum result = forumService.updateForum(forumId, updateRequest, userId);
 
         assertEquals("Updated Forum", result.getName());
         assertEquals("Updated Description", result.getDescription());
+        verify(hateSpeachService).analyzeText("Updated Forum");
+        verify(hateSpeachService).analyzeText("Updated Description");
         verify(forumRepository).save(testForum);
+    }
+
+    @Test
+    void updateForum_HateSpeechInName_ThrowsHateSpeechException() {
+        ForumCreationRequest updateRequest = new ForumCreationRequest();
+        updateRequest.setName("Hateful Forum");
+        updateRequest.setDescription("Updated Description");
+
+        when(mongoTemplate.findById(forumId, Forum.class)).thenReturn(testForum);
+        // FIXED: Name returns false - description won't be checked
+        when(hateSpeachService.analyzeText("Hateful Forum")).thenReturn(false);
+
+        assertThrows(HateSpeechException.class,
+                () -> forumService.updateForum(forumId, updateRequest, userId));
+
+        verify(hateSpeachService).analyzeText("Hateful Forum");
+        // FIXED: Description is NOT checked due to short-circuit
+        verify(hateSpeachService, never()).analyzeText("Updated Description");
+        verify(forumRepository, never()).save(any());
+    }
+
+    @Test
+    void updateForum_CleanNameDirtyDescription_ThrowsHateSpeechException() {
+        ForumCreationRequest updateRequest = new ForumCreationRequest();
+        updateRequest.setName("Clean Forum");
+        updateRequest.setDescription("Hateful Description");
+
+        when(mongoTemplate.findById(forumId, Forum.class)).thenReturn(testForum);
+        // FIXED: Name clean (true), description dirty (false)
+        when(hateSpeachService.analyzeText("Clean Forum")).thenReturn(true);
+        when(hateSpeachService.analyzeText("Hateful Description")).thenReturn(false);
+
+        assertThrows(HateSpeechException.class,
+                () -> forumService.updateForum(forumId, updateRequest, userId));
+
+        verify(hateSpeachService).analyzeText("Clean Forum");
+        verify(hateSpeachService).analyzeText("Hateful Description");
+        verify(forumRepository, never()).save(any());
     }
 
     @Test
@@ -185,6 +281,7 @@ class ForumServiceTest {
         assertThrows(AccessDeniedException.class,
                 () -> forumService.updateForum(forumId, creationRequest, differentUserId));
 
+        verify(hateSpeachService, never()).analyzeText(anyString());
         verify(forumRepository, never()).save(any());
     }
 
@@ -195,6 +292,7 @@ class ForumServiceTest {
         assertThrows(IllegalArgumentException.class,
                 () -> forumService.updateForum(forumId, creationRequest, userId));
 
+        verify(hateSpeachService, never()).analyzeText(anyString());
         verify(forumRepository, never()).save(any());
     }
 
@@ -206,12 +304,14 @@ class ForumServiceTest {
         assertThrows(IllegalStateException.class,
                 () -> forumService.updateForum(forumId, creationRequest, userId));
 
+        verify(hateSpeachService, never()).analyzeText(anyString());
         verify(forumRepository, never()).save(any());
     }
 
     @Test
     void updateForum_PreservesOtherFields() {
         when(mongoTemplate.findById(forumId, Forum.class)).thenReturn(testForum);
+        when(hateSpeachService.analyzeText(anyString())).thenReturn(true);
         when(forumRepository.save(any(Forum.class))).thenAnswer(i -> i.getArgument(0));
 
         Forum result = forumService.updateForum(forumId, creationRequest, userId);
@@ -231,6 +331,7 @@ class ForumServiceTest {
         updateRequest.setDescription("New Description");
 
         when(mongoTemplate.findById(forumId, Forum.class)).thenReturn(testForum);
+        when(hateSpeachService.analyzeText(anyString())).thenReturn(true);
         when(forumRepository.save(any(Forum.class))).thenAnswer(i -> i.getArgument(0));
 
         Forum result = forumService.updateForum(forumId, updateRequest, userId);
@@ -346,4 +447,39 @@ class ForumServiceTest {
         verify(forumRepository).findByNameContainingIgnoreCaseAndIsDeletedFalse("TEST", pageable);
     }
 
+    // ==================== GET FORUM BY ID TESTS ====================
+
+    @Test
+    void getForumById_ValidNonDeletedForum_Success() {
+        when(mongoTemplate.findById(forumId, Forum.class)).thenReturn(testForum);
+
+        Forum result = forumService.getForumById(forumId);
+
+        assertNotNull(result);
+        assertEquals(forumId, result.getId());
+        assertEquals("Test Forum", result.getName());
+        assertFalse(result.getIsDeleted());
+        verify(mongoTemplate).findById(forumId, Forum.class);
+    }
+
+    @Test
+    void getForumById_DeletedForum_ThrowsIllegalStateException() {
+        testForum.setIsDeleted(true);
+        when(mongoTemplate.findById(forumId, Forum.class)).thenReturn(testForum);
+
+        assertThrows(IllegalStateException.class,
+                () -> forumService.getForumById(forumId));
+
+        verify(mongoTemplate).findById(forumId, Forum.class);
+    }
+
+    @Test
+    void getForumById_ForumNotFound_ThrowsNullPointerException() {
+        when(mongoTemplate.findById(forumId, Forum.class)).thenReturn(null);
+
+        assertThrows(NullPointerException.class,
+                () -> forumService.getForumById(forumId));
+
+        verify(mongoTemplate).findById(forumId, Forum.class);
+    }
 }

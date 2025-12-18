@@ -47,7 +47,7 @@ export default function AuthProvider({ children }){
                 return { success: false, message: res?.message || "Sign up failed" };
             }
 
-            localStorage.setItem('pendingUser', JSON.stringify({ email: email, role:role, details:details }));
+            sessionStorage.setItem('pendingUser', JSON.stringify({ email: email, role:role, details:details }));
             setPendingUser({email, role, details})
             return {success: true}
         }
@@ -62,7 +62,7 @@ export default function AuthProvider({ children }){
         signOutApi();
         setUser(null);
         setPendingUser(null);
-        localStorage.removeItem(JWT.STORAGE_NAME);
+        sessionStorage.removeItem(JWT.STORAGE_NAME);
     }
 
     const verifyEmail = async ( email, code ) => {
@@ -94,7 +94,7 @@ export default function AuthProvider({ children }){
             }
 
             setPendingUser(null);
-            localStorage.removeItem("pendingUser");
+            sessionStorage.removeItem("pendingUser");
 
             return { success: true };
         } catch (err) {
@@ -105,7 +105,7 @@ export default function AuthProvider({ children }){
     const [pendingRestored, setPendingRestored] = useState(false);
 
     useEffect(() => {
-        const savedPending = localStorage.getItem('pendingUser');
+        const savedPending = sessionStorage.getItem('pendingUser');
 
 
         if (savedPending) {
@@ -117,7 +117,7 @@ export default function AuthProvider({ children }){
 
 
     useEffect(()=>{
-        const token = localStorage.getItem(JWT.STORAGE_NAME);
+        const token = sessionStorage.getItem(JWT.STORAGE_NAME);
         // console.log(token);
         // const token = null; // uncomment this if you want to sign out
 
@@ -130,7 +130,7 @@ export default function AuthProvider({ children }){
             const userData = jwtDecode(token); // returns { id, email, role, iat }
             if (userData.exp * 1000 < Date.now()) {
                 // token expired
-                localStorage.removeItem(JWT.STORAGE_NAME);
+                sessionStorage.removeItem(JWT.STORAGE_NAME);
                 setUser(null);
             }
             else {
@@ -144,7 +144,7 @@ export default function AuthProvider({ children }){
         }
         catch(err){
             console.log(err);
-            localStorage.removeItem(JWT.STORAGE_NAME); // invalid token
+            sessionStorage.removeItem(JWT.STORAGE_NAME); // invalid token
         }
         finally {
             setLoading(false);

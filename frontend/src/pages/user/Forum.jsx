@@ -1,29 +1,19 @@
-import "./style/Forum.css"
-import '../../style/CommonModal.css'
-import {BsClockHistory, BsFire, BsGraphUp, BsStars} from "react-icons/bs";
-import {IoIosArrowDown, IoIosPerson} from "react-icons/io";
-import pic from "../../assets/action.jpg";
+import "./style/Forum.css";
+import '../../style/CommonModal.css';
 import calendar from "../../assets/icons/calendar.png";
-
-import {Link, useNavigate, useParams} from "react-router-dom";
-import React, {useCallback, useContext, useEffect, useState} from "react";
-import {MAX_LENGTHS, PATHS, PAGE_SIZE} from "../../constants/constants.jsx";
-import {formatCount} from "../../utils/formate.jsx";
+import React, { useCallback, useContext, useEffect, useState } from "react";
+import { PATHS, MAX_LENGTHS, PAGE_SIZE } from "../../constants/constants.jsx";
+import { formatCount } from "../../utils/formate.jsx";
+import { Link, useNavigate, useParams } from "react-router-dom";
 import {checkFollowApi, followForumApi, unfollowForumApi, getForumPostsApi, getForumApi, getModApi} from "../../api/forum-api.jsx";
 import PostsFeed from "../../components/PostsFeed.jsx";
 import  {addPostApi} from "../../api/post-api.jsx";
 
 import {AuthContext} from "../../context/AuthContext.jsx";
 import {ToastContext} from "../../context/ToastContext.jsx";
+import SortSelector from "../../components/SortSelector.jsx";
 
-
-// TODO: fetch from backend and handle the format
-const SORT_OPTIONS = [
-    { label: "New", icon: <BsClockHistory />, value: "new" },
-    { label: "Hot", icon: <BsFire />, value: "hot" },
-    { label: "Top", icon: <BsGraphUp />, value: "top" },
-    { label: "Best", icon: <BsStars />, value: "best" },
-];
+import {SORT_OPTIONS} from "../../constants/uiConstants.jsx";
 
 export default function Forum() {
 
@@ -41,7 +31,7 @@ export default function Forum() {
 
     const [forumName, setForumName] = useState();
     const [forumDescription, setForumDescription] = useState();
-    const [forumCreationDate, setForumCreationDate] = useState("Mar 17, 2010");
+    const [forumCreationDate, setForumCreationDate] = useState();
     const [followersCount, setFollowersCount] = useState();
     const [postsCount, setPostsCount] = useState();
 
@@ -85,7 +75,7 @@ export default function Forum() {
             try {
                 const res = await checkFollowApi({ forumId });
                 const joined = res.data;
-                console.log(res)
+                // console.log(res)
 
                 if (res && joined) {
                     setIsJoined(true);
@@ -153,6 +143,12 @@ export default function Forum() {
             setPostText("");
             setPostMedia("");
             setShowForm(false);
+
+            // Refresh ->
+            setPage(0);
+            setHasMore(true);
+            setPosts([]);
+            await fetchPosts(0, activeSort.value);
         }
         else {
             showToast("Failed to submit review", res.message || "unknown error", "error")
@@ -162,17 +158,16 @@ export default function Forum() {
     }
 
     // we use useCallback to memoize the fetchPosts function so that it doesn't re-render on every render cycle.
-    const fetchPosts = useCallback(async (pageNum) => {
+    const fetchPosts = useCallback(async (pageNum, sort) => {
         setLoading(true);
 
-        const res = await getForumPostsApi({forumId, page:pageNum, size: PAGE_SIZE.FORUM});
-        console.log("posts", res.data.posts);
+        const res = await getForumPostsApi({forumId, page:pageNum, size: PAGE_SIZE.FORUM, sort: sort});
+
         const newPosts = res.data.posts;
         if (!res.success){
             setHasMore(false);
             return;
         }
-        const activePosts = newPosts.filter(post => !post.isDeleted);
 
         setPosts(prevPosts => {
             if (pageNum === 0) return newPosts;
@@ -182,23 +177,28 @@ export default function Forum() {
         if (newPosts.length < PAGE_SIZE.FORUM) setHasMore(false);
 
         setLoading(false);
+    }, [forumId]);
 
-
-    }, [forumId])
-
-    // Initial page load
+    // Reload page
     useEffect(() => {
         setPosts([])
         setPage(0);
         setHasMore(true);
-        fetchPosts(0);
-    }, [forumId, fetchPosts])
+        fetchPosts(0, activeSort.value);
+    }, [forumId, activeSort, fetchPosts])
 
     const handleLoadMore = () => {
         const nextPage = page + 1;
         setPage(nextPage);
-        fetchPosts(nextPage);
+        fetchPosts(nextPage, activeSort.value);
     };
+
+    const handleChangeSort = (sort) => {
+        if (activeSort.value !== sort.value) {
+            setActiveSort(sort);
+        }
+        setIsSortOpen(false);
+    }
 
     if (error != null) return (
         <div className="forum-container" style={{display: "flex", justifyContent: "center"}}>
@@ -281,6 +281,12 @@ export default function Forum() {
             {/* Main Grid -> 2 Cols*/}
             <div className="forum-main-grid">
                 <main className="feed-col">
+
+                    <SortSelector
+                        currentSort = {activeSort}
+                        options = {SORT_OPTIONS}
+                        onSortChange = {handleChangeSort}
+                    />
 
                     <PostsFeed
                         posts={posts}
