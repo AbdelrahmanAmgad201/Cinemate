@@ -22,7 +22,7 @@ const PostCard = ({ postBody }) => {
     const [userVote, setUserVote] = useState(0);
     const [voteCount, setVoteCount] = useState(0);
     const isVotingRef = useRef(false);
-    const [commentCount, setCommentCount] = useState(postBody.commentCount || 0);
+    const [commentCount, setCommentCount] = useState(null);
     const { user } = useContext(AuthContext);
     const { showToast } = useContext(ToastContext);
     const navigate = useNavigate();
@@ -42,6 +42,13 @@ const PostCard = ({ postBody }) => {
         window.addEventListener('postCommentCountUpdated', handleCommentCountUpdate);
         return () => window.removeEventListener('postCommentCountUpdated', handleCommentCountUpdate);
     }, [postBody.id, postBody.postId]);
+
+    // Set initial comment count from post data if available
+    useEffect(() => {
+        if (commentCount === null && postBody.commentCount != null) {
+            setCommentCount(postBody.commentCount);
+        }
+    }, [postBody.commentCount]);
 
     const formattedTime = postBody.createdAt ? formatDistanceToNow(new Date(postBody.createdAt), { addSuffix: true }) : 'Recently';
 
@@ -251,7 +258,7 @@ const PostCard = ({ postBody }) => {
                 />
                 <div className="post-comment" onClick={navigateToPost}>
                     <FaRegComment />
-                    <span className="comment-count">{commentCount}</span>
+                    <span className="comment-count">{commentCount !== null ? commentCount : (postBody.commentCount || 0)}</span>
                 </div>
                 {/* <div className="post-share">
                     <RiShareForwardLine />
