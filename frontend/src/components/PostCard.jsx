@@ -8,19 +8,20 @@ import { FaRegComment } from "react-icons/fa";
 import "./style/postCard.css";
 import Swal from "sweetalert2";
 import { formatDistanceToNow } from 'date-fns';
-import { deletePostApi,isVotedPostApi, deleteVotePostApi, votePostApi, updateVotePostApi } from '../api/post-api.jsx';
+import { deletePostApi, isVotedPostApi, deleteVotePostApi, votePostApi, updateVotePostApi, getForumNameApi } from '../api/post-api.jsx';
 import { getModApi } from '../api/forum-api.jsx';
 import VoteWidget from './VoteWidget';
 import { AuthContext } from '../context/AuthContext.jsx';
 import { ToastContext } from '../context/ToastContext.jsx';
 import { PATHS } from '../constants/constants';
 
-const PostCard = ({ postBody }) => {
+const PostCard = ({ postBody, fullMode = false, showForumName = false }) => {
     const [postOptions, setPostOptions] = useState(false);
     const [firstName, setFirstName] = useState("");
     const [lastName, setLastName] = useState("");
     const [userVote, setUserVote] = useState(0);
-    const [voteCount, setVoteCount] = useState(0);
+    const [forumName, setForumName] = useState("");
+    const [loading, setLoading] = useState(true);
     const isVotingRef = useRef(false);
     const [commentCount, setCommentCount] = useState(null);
     const { user } = useContext(AuthContext);
@@ -52,55 +53,13 @@ const PostCard = ({ postBody }) => {
 
     const formattedTime = postBody.createdAt ? formatDistanceToNow(new Date(postBody.createdAt), { addSuffix: true }) : 'Recently';
 
-    const handleVote = async (voteType) => {
-        const previousVote = userVote;
-        const newVote = userVote === voteType ? 0 : voteType;
-        
-        const voteDifference = newVote - previousVote;
-        
-        setUserVote(newVote);
-        setVoteCount(prevCount => prevCount + voteDifference);
-
-        try{
-            let result;
-            if(previousVote === 0 && newVote !== 0){
-                result = await votePostApi({ postId: postBody.id, value: newVote });
-                if (result.success) {
-                    console.log("Vote created");
-                }
-            }
-            else if (newVote === 0 && previousVote !== 0){
-                result = await deleteVotePostApi({ targetId: postBody.id });
-                
-                
-                if (result.success) {
-                    console.log("Vote deleted");
-                }
-            }
-
-            else if (previousVote !== 0 && newVote !== 0) {
-                result = await updateVotePostApi({ postId: postBody.id, value: newVote });
-            }
-            if (!result?.success) {
-                setUserVote(previousVote);
-                setVoteCount(prevCount => prevCount - voteDifference);
-                showToast('Failed to vote', result.message || 'unknown error', 'error')
-            }
-        }
-        catch(error){
-            setUserVote(previousVote);
-            setVoteCount(prevCount => prevCount - voteDifference);
-            showToast('Failed to vote', error || 'unknown error', 'error')
-        }
-    };
-
     const navigateToPost = () => {
+        if(fullMode)return;
         try {
             sessionStorage.setItem(`CINEMATE_LAST_POST_${postBody.id}`, JSON.stringify(postBody));
         } catch (e) {
             // ignore storage errors
-        }
-        navigate(PATHS.POST.FULLPAGE(postBody.id), {state: {post: postBody}});
+        }navigate(PATHS.POST.FULLPAGE(postBody.id));
     };
 
     const handleDelete = async () => {
@@ -144,6 +103,10 @@ const PostCard = ({ postBody }) => {
     }
 
     const handleEdit = () => {
+        if(fullMode){
+            navigate('.', { state: { editMode: true }, replace: true });
+            return;
+        }
         setPostOptions(false);
         navigate(PATHS.POST.FULLPAGE(postBody.id), { state: { post: postBody, editMode: true } });
     };
@@ -158,38 +121,43 @@ const PostCard = ({ postBody }) => {
     ]
 
     useEffect(() => {
-        const checkVote = async () => {
-            try {
-                const result = await isVotedPostApi({ targetId: postBody.id });
-                console.log("isVoted", result);
-                if(result.success) {
-                    setUserVote(result.data);
-                } else {
-                    showToast('Failed to fetch votes', result.message || 'unknown error', 'error')
-                    setUserVote(0);
+        const initializePost = async () => {
+            try{
+                const requests = [
+                    getModApi({userId: postBody.ownerId}),
+                ];
+                if(showForumName){
+                    requests.push(getForumNameApi({forumId: postBody.forumId}));
                 }
-            } 
-            catch(error){
-                showToast('Failed to fetch votes', error || 'unknown error', 'error')
-                setUserVote(0);
+                if(user?.id){
+                    requests.push(isVotedPostApi({ targetId: postBody.id }));
+                }
+
+                const results = await Promise.all(requests);
+
+                if (results[0]?.data) {
+                    setFirstName(results[0].data);
+                }
+    
+                if (showForumName && postBody.forumId) {
+                    if (results[1]?.data) {
+                        setForumName(results[1].data);
+                    }
+                }
+    
+                if (user?.id && results[2]?.success) {
+                    setUserVote(results[2].data);
+                }
+            setLoading(false);
+            }
+            catch (error) {
+                showToast('Failed to fetch post', error || 'unknown error', 'error')
+                setLoading(false);
             }
         }
 
-        const getUsername = async () => {
-            const result = await getModApi({userId: postBody.ownerId});
-            setFirstName(result.data);
-        }
-
-        checkVote();
-        getUsername();
-    }, [postBody?.ownerId, user?.id]);
-
-    useEffect(() => {
-        if (postBody) {
-            const totalVotes = (postBody.upvoteCount || 0) - (postBody.downvoteCount || 0);
-            setVoteCount(totalVotes);
-        }
-    }, [postBody?.upvoteCount, postBody?.downvoteCount]);
+        initializePost();
+    }, [postBody]);
 
     useEffect(() => {
         const handleClickOutside = (event) => {
@@ -210,11 +178,6 @@ const PostCard = ({ postBody }) => {
 
     const ownerIdConverted = postBody.ownerId ? parseInt(postBody.ownerId, 10) : null;
 
-    useEffect(() => {
-        const pid = postBody.postId || postBody.id;
-        console.debug('[PostCard] mount', { pid, initialCommentCount: commentCount });
-    }, []);
-
 
     return(
         <article className="post-card">
@@ -222,9 +185,15 @@ const PostCard = ({ postBody }) => {
                 <div className="user-profile-pic" onClick={() => {navigate(PATHS.USER.PROFILE(ownerIdConverted))}}>
                     {postBody.avatar ? postBody.avatar : <IoIosPerson />}
                 </div>
+                
                 <div className="user-info">
-                    <Link className="user-name" to={PATHS.USER.PROFILE(ownerIdConverted)} >{firstName} {/*lastName*/}</Link>
-                    <time dateTime={postBody.createdAt} >{formattedTime}</time>
+                    {showForumName && (
+                    <p className="forum-name" onClick={() => {navigate(PATHS.FORUM.PAGE(postBody.forumId))}} >
+                        {loading ? "Loading..." : forumName}
+                    </p>
+                    )}
+                    <Link className="user-name" style={{ fontSize : showForumName ? "14px" : "18px"}} to={PATHS.USER.PROFILE(ownerIdConverted)}> {loading ? "Loading..." : firstName} </Link>
+                    <time dateTime={postBody.createdAt} className="post-time" >{formattedTime}</time>
                 </div>
                 <div className="post-settings" ref={menuRef}>
                     {ownerIdConverted === user.id && (

@@ -16,7 +16,7 @@
     display: flex;
     flex-direction: row;
     justify-content: flex-start;
-    align-items: flex-start;
+    align-items: flex-end;
     padding-top: 24px;
 }
 
@@ -28,6 +28,14 @@
     margin-left: 4px;
 }
 
+.post-header .user-info .forum-name{
+    font-size: 24px;
+    text-decoration: underline;
+    font-weight: normal;
+    cursor: pointer;
+    transition: color 0.2s ease-in ;
+}
+
 .post-header .user-profile-pic{
     font-size: 30px;
     cursor: pointer;
@@ -37,20 +45,21 @@
 .post-header .user-info .user-name{
     text-decoration: none;
     color: var(--ghost-white);
-    font-size: 18px;
     font-weight: normal;
     cursor: pointer;
     transition: color 0.2s ease-in ;
 }
 
 .post-header .user-info .user-name:hover,
-.post-header .user-profile-pic:hover{
+.post-header .user-profile-pic:hover,
+.post-header .user-info .forum-name:hover{
     color: var(--blue-bell);
 }
 
-.post-header .user-info time{
-    font-size: 12px;
-    font-weight: lighter;
+
+.post-header .user-info .post-time{
+    font-size: 0.75rem;
+    opacity: 0.6;
 }
 
 .post-header .post-settings{
@@ -177,7 +186,6 @@
 }
 
 .up-down-vote .vote-count{
-    margin-right: 4px;
     margin-left: 2px;
 }
 .up-down-vote .vote-separator{
@@ -187,11 +195,8 @@
     display: inline-block;
     margin: 0 8px;
     border-radius: 1px;
-    transition: background 0.15s ease;
 }
-.up-down-vote:hover .vote-separator{
-    background: var(--blue-bell);
-}
+
 .up-down-vote .vote-separator{
     margin-right: 3px;
 }

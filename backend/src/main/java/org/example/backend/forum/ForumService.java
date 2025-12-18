@@ -100,6 +100,13 @@ public class ForumService {
                 .build();
     }
 
+    public String getForumName(ObjectId forumId) {
+        Forum forum = mongoTemplate.findById(forumId, Forum.class);
+        if (forum == null) {
+            throw new IllegalArgumentException("Forum not found with id: " + forumId);
+        }
+        return forum.getName();
+    }
 
     private ObjectId longToObjectId(Long value) {
         return new ObjectId(String.format("%024x", value));

@@ -95,7 +95,7 @@ export async function isVotedPostApi({ targetId }) {
 
 export async function getPostApi({ postId }) {
     try {
-        const response = await api.get(`/post/v1/post/${postId}`);
+        const response = await api.get(`/post/v1/${postId}`);
         const data = response.data;
 
         return { success: true, data: data };
@@ -107,7 +107,16 @@ export async function getPostApi({ postId }) {
 export async function addPostApi({ forumId, title, content }) {
     try {
         const response = await api.post(`/post/v1/post`, { forumId, title, content });
-        console.log(response.data);
+
+        return { success: true, data: response.data };
+    } catch (err) {
+        return { success: false, message: err.message };
+    }
+}
+
+export async function getForumNameApi({ forumId }){
+    try {
+        const response = await api.get(`/forum/v1/forum-name/${forumId}`);
 
         return { success: true, data: response.data };
     } catch (err) {
