@@ -1,0 +1,19 @@
+.watch-party-container {
+    display: grid;
+    grid-template-columns: 1fr 350px;
+    gap: 20px;
+    height: calc(100vh - 60px);
+}
+
+.watch-party-main {
+    display: flex;
+    flex-direction: column;
+}
+
+
+.watch-party-sidebar {
+    background: var(--faded-black);
+    display: flex;
+    flex-direction: column;
+    border-radius: 16px 0 0 0; /* Border on the top left only */
+}
