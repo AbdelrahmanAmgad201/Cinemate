@@ -32,6 +32,7 @@ import { MdKeyboardArrowDown } from 'react-icons/md';
 import { addCommentApi, getPostCommentsApi, deleteCommentApi, getRepliesApi } from '../api/comment-api';
 import { MAX_LENGTHS } from '../constants/constants';
 import VoteWidget from './VoteWidget';
+import Swal from 'sweetalert2';
 import { ToastContext } from '../context/ToastContext';
 import { AuthContext } from '../context/AuthContext';
 import { PATHS } from '../constants/constants';
@@ -52,14 +53,7 @@ const ThreadLinkButton = ({ comment, repliesCount, post }) => {
     const navigate = useNavigate();
     const handleOpenThread = () => {
         const url = `${PATHS.POST.THREAD(comment.id)}?postId=${encodeURIComponent(comment.postId || '')}`;
-        // If we have a locally cached vote update for this comment, merge it into the navigation state
-        // so the thread page shows the latest client-side counts even if the parent state hasn't re-rendered yet.
-        let navComment = comment;
-        try {
-            const cached = JSON.parse(sessionStorage.getItem(`CINEMATE_LAST_COMMENT_${comment.id}`) || 'null');
-            if (cached) navComment = { ...comment, ...cached };
-        } catch (e) { /* ignore storage errors */ }
-        navigate(url, { state: { comment: navComment, postId: comment.postId, post } });
+        navigate(url, { state: { comment, postId: comment.postId, post } });
     };
     return (
         <button className="view-thread-btn" onClick={handleOpenThread}>{`Open thread (${(typeof repliesCount === 'number' ? repliesCount : (comment.numberOfReplies || 'some'))} replies)`}</button>
@@ -86,6 +80,9 @@ const CommentItem = ({ comment, post, postOwnerId, onVoteUpdate, onRemoveComment
     const isPostOwner = postOwnerId ? normalizeId(postOwnerId) === user?.id : false;
     const canDelete = isCommentOwner || isPostOwner;
 
+    // Toast helper from context
+    const { showToast } = useContext(ToastContext);
+
     const ownerProfileId = comment.ownerId || comment.userId || comment.owner?.id || '';
     const ownerUsername = comment.ownerName?.username || comment.username || comment.ownerUsername || comment.owner?.username;
     const ownerFirst = comment.ownerName?.firstName || comment.firstName || comment.owner?.firstName;
@@ -110,16 +107,33 @@ const CommentItem = ({ comment, post, postOwnerId, onVoteUpdate, onRemoveComment
     const avatarSrc = (isCommentOwner && user?.avatar) || comment.ownerAvatar || comment.avatar || comment.owner?.avatar;
 
     const handleDeleteClick = async () => {
-        if (!window.confirm('Delete this comment?')) return;
+        const result = await Swal.fire({
+            title: 'Delete comment?',
+            text: 'Are you sure you want to delete this comment?',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonText: 'Yes, delete',
+            confirmButtonColor: '#d33',
+            cancelButtonText: 'Cancel',
+        });
+
+        if (!result.isConfirmed) {
+            try { showToast('', 'Delete cancelled', 'info'); } catch (e) {}
+            return;
+        }
+
         try {
             const res = await deleteCommentApi({ commentId: comment.id });
             if (res.success) {
                 onRemoveComment && onRemoveComment(comment.id);
+                try { showToast('', 'Comment deleted', 'success'); } catch (e) {}
             } else {
                 console.error('Failed to delete comment:', res.message);
+                try { showToast('Error', 'Failed to delete comment: ' + (res.message || 'Unknown error'), 'error'); } catch (e) {}
             }
         } catch (e) {
             console.error('Error deleting comment:', e);
+            try { showToast('Error', 'Error deleting comment', 'error'); } catch (err) {}
         }
     };
 
@@ -271,7 +285,7 @@ const CommentItem = ({ comment, post, postOwnerId, onVoteUpdate, onRemoveComment
         await loadReplies(repliesPage + 1);
     };
 
-    const { showToast } = useContext(ToastContext);
+
 
     const handleReplySubmit = async () => {
         if (!replyText.trim() || submittingReply) return;
@@ -708,17 +722,6 @@ const PostComments = ({ postId, post, postOwnerId, onCommentCountChange }) => {
                                             }
                                         } catch (e) { /* ignore storage errors */ }
 
-                                        if (sort === 'best') {
-                                            return [...updated].sort((a, b) => {
-                                                const scoreA = (a.upvoteCount || 0) - (a.downvoteCount || 0);
-                                                const scoreB = (b.upvoteCount || 0) - (b.downvoteCount || 0);
-                                                if (scoreB !== scoreA) return scoreB - scoreA;
-                                                return new Date(b.createdAt || 0) - new Date(a.createdAt || 0);
-                                            });
-                                        }
-                                        if (sort === 'new') {
-                                            return [...updated].sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
-                                        }
                                         return updated;
                                     });
                                 }}
