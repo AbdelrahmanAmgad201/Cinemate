@@ -9,7 +9,7 @@ import {searchForumsApi} from "../api/forum-api.jsx";
 import {MAX_LENGTHS, PATHS} from "../constants/constants.jsx";
 import {formatCount} from "../utils/formate.jsx";
 import ForumCard from "./ForumCard.jsx";
-
+import JoinButton from "./watch-party/JoinButton.jsx";
 
 function NavBar() {
 
@@ -30,7 +30,7 @@ function NavBar() {
     }, [searchValue]);
 
     useEffect(() => {
-        if (location.pathname.includes('browse') || location.pathname.includes('movie') || location.pathname.includes('genre')) {
+        if (location.pathname.includes('browse') || location.pathname.includes('movie') || location.pathname.includes('genre') || location.pathname.includes('watch')) {
             setSearchType('movies');
         } else {
             setSearchType('forums');
@@ -143,10 +143,10 @@ function NavBar() {
         <div className="navbar-spacer"></div>
         <div className="navbar">
             <Link to={PATHS.HOME} className={`navbar-button ${isActive(PATHS.HOME) ? 'active' : ''}`}>
-                Home
+                Forums
             </Link>
             <Link to={PATHS.MOVIE.BROWSE} className={`navbar-button ${isActive(PATHS.MOVIE.BROWSE) ? 'active' : ''}`}>
-                Browse
+                Movies
             </Link>
             <div className="navbar-search" ref={searchRef}>
                 <input type="text" placeholder={`Search ${searchType}...`} maxLength={MAX_LENGTHS.INPUT} onChange={handleInputChange} /><IoSearch onClick={handleSearch} />
@@ -175,6 +175,7 @@ function NavBar() {
                 )}
             </div>  
         </div>
+        <JoinButton />
         <ProfileAvatar />
         </>
     );
