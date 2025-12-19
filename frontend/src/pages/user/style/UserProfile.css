@@ -1,0 +1,136 @@
+.user-profile-container{
+    max-width: 1000px;
+    margin: 0 auto;
+    padding: 24px;
+}
+
+.user-profile-header{
+    display:flex;
+    flex-direction:column;
+    gap:12px;
+    margin-bottom: 16px;
+}
+
+.header-top{
+    display:flex;
+    gap:12px;
+    align-items:center;
+}
+
+.profile-avatar-circle{
+    width:64px;
+    height:64px;
+    background: linear-gradient(135deg, rgba(36,65,77,0.9), rgba(30,57,66,0.9));
+    border-radius:999px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    color:var(--ghost-white);
+    overflow:hidden;
+}
+
+.profile-avatar-circle img{ width:100%; height:100%; object-fit:cover }
+
+.user-name{
+    font-size:24px;
+    font-weight:700;
+    color: var(--ghost-white);
+}
+
+.name-and-meta{ display:flex; flex-direction:column }
+
+.name-row{ display:flex; gap:10px; align-items:center }
+
+.follow-btn{
+    display:inline-flex;
+    align-items:center;
+    gap:8px;
+    padding:8px 12px;
+    border-radius:999px;
+    border:none;
+    background-color: var(--blue-bell); /* match .btn-fill */
+    color: var(--ghost-white);
+    cursor:pointer;
+    font-weight:700;
+    transition: filter 120ms ease, transform 120ms ease;
+}
+
+.follow-btn .react-icons { display:inline-block }
+
+/* Match forum join button hover/active behaviour */
+.follow-btn:hover{ filter:brightness(0.92); transform: translateY(-2px); }
+.follow-btn:active{ transform: translateY(0); }
+
+.follow-btn.following{
+    background-color: var(--blue-bell);
+    color: var(--ghost-white);
+    border: none;
+}
+
+.user-meta{ color: var(--grey-text); font-size:13px }
+
+.profile-tabbar{
+    display:flex;
+    gap:12px;
+    background: transparent;
+    padding: 6px;
+    border-radius: 8px;
+    align-items: center;
+}
+
+.profile-tab{
+    /* Unclicked: dark teal pill with white border and white text (matches site style) */
+    background-color: var(--lighter-dark-teal);
+    color: var(--ghost-white);
+    padding: 8px 16px;
+    border-radius: 999px;
+    border: 1px solid var(--ghost-white);
+    cursor:pointer;
+    font-weight:700;
+    min-height: 40px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: background-color 0.15s ease, color 0.15s ease, transform 0.08s ease;
+}
+
+.profile-tab:hover{
+    /* Slightly brighter background on hover, text stays white */
+    background-color: var(--dark-teal);
+    color: var(--ghost-white);
+    transform: translateY(-1px);
+}
+
+.profile-tab:focus{
+    outline: 2px solid rgba(54,161,243,0.25);
+    outline-offset: 2px;
+}
+
+.profile-tab.active{
+    background-color: var(--blue-bell);
+    color: var(--ghost-white); /* active tab text white */
+    box-shadow: 0 4px 10px rgba(12,56,73,0.12);
+}
+
+.profile-section{
+    margin-top: 20px;
+    padding: 16px;
+    border-radius: 8px;
+    background: #ffffff;
+    box-shadow: 0 1px 2px rgba(16,24,40,0.05);
+}
+
+.section-title{
+    font-size: 18px;
+    margin-bottom: 8px;
+    font-weight: 600;
+}
+
+.placeholder-note{
+    color: #6b7280;
+}
+
+@media (max-width: 600px){
+    .profile-tabbar{ flex-wrap:wrap }
+    .user-name{ font-size:22px }
+}
