@@ -64,12 +64,24 @@ public class User implements Authenticatable {
     @Column(name = "provider_id")
     private String providerId;
 
+    @Column(name = "number_of_followers")
+    private Integer numberOfFollowers;
+
+    @Column(name = "number_of_following")
+    private Integer numberOfFollowing;
+
     @PrePersist
     protected void onCreate() {
         createdAt = LocalDateTime.now();
         
         if(provider == null){
             provider = "local";
+        }
+        if(numberOfFollowers == null){
+            numberOfFollowers = 0;
+        }
+        if(numberOfFollowing == null){
+            numberOfFollowing = 0;
         }
     }
 
