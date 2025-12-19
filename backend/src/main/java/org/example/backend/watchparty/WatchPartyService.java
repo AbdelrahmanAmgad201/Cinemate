@@ -27,7 +27,7 @@ public class WatchPartyService {
     @Value("${watchparty.service.url:http://localhost:8081}")
     private String watchPartyServiceUrl;
 
-    @Value("${watchparty.service.api.key:secret-key}")
+    @Value("${watchparty.service.internal.api.key}")
     private String apiKey;
 
     @Transactional(readOnly = true)
