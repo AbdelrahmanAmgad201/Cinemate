@@ -69,6 +69,7 @@ public class User implements Authenticatable {
 
     @Column(name = "number_of_following")
     private Integer numberOfFollowing;
+    
     @Column(name = "profile_complete")
     @Builder.Default
     private Boolean profileComplete = true;
@@ -80,6 +81,12 @@ public class User implements Authenticatable {
         if(provider == null){
             provider = "local";
             profileComplete = true;
+        }
+        if(numberOfFollowers == null){
+            numberOfFollowers = 0;
+        }
+        if(numberOfFollowing == null){
+            numberOfFollowing = 0;
         }
         if(numberOfFollowers == null){
             numberOfFollowers = 0;
