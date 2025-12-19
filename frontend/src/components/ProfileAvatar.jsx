@@ -4,7 +4,7 @@ import { CgProfile } from "react-icons/cg";
 import { AuthContext } from '../context/AuthContext.jsx';
 import "./style/profileAvatar.css";
 
-import { PATHS } from "../constants/constants.jsx";
+import { PATHS, ROLES } from "../constants/constants.jsx";
 
 export default function ProfileAvatar({ className="" }) {
     const [menuShow, setMenuShow] = useState(false);
@@ -27,11 +27,14 @@ export default function ProfileAvatar({ className="" }) {
     const menuItems = (() => {
         if (!user) return [];
 
-        // Show view profile first, then sign out
-        return [
-            { label: "View Profile", onClick: handleViewProfile },
-            { label: "Sign Out", onClick: handleSignOut },
-        ];
+        if (user?.role === ROLES.USER) {
+            return [
+                { label: "View Profile", onClick: handleViewProfile },
+                { label: "Sign Out", onClick: handleSignOut },
+            ];
+        }
+
+        return [{ label: "Sign Out", onClick: handleSignOut }];
     })();
 
     // Close dropdown if clicked outside
