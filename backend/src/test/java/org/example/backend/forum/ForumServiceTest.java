@@ -72,9 +72,10 @@ class ForumServiceTest {
                 .isDeleted(false)
                 .build();
 
-        creationRequest = new ForumCreationRequest();
-        creationRequest.setName("New Forum");
-        creationRequest.setDescription("New Forum Description");
+        creationRequest = ForumCreationRequest.builder()
+                .name("New Forum")
+                .description("New Forum Description")
+                .build();
     }
 
     // ==================== CREATE FORUM TESTS ====================
@@ -216,10 +217,10 @@ class ForumServiceTest {
 
     @Test
     void updateForum_Owner_Success() {
-        ForumCreationRequest updateRequest = new ForumCreationRequest();
-        updateRequest.setName("Updated Forum");
-        updateRequest.setDescription("Updated Description");
-
+        ForumCreationRequest updateRequest = ForumCreationRequest.builder()
+                .name("Updated Forum")
+                .description("Updated Description")
+                .build();
         when(mongoTemplate.findById(forumId, Forum.class)).thenReturn(testForum);
         // FIXED: Both must return true
         when(hateSpeachService.analyzeText("Updated Forum")).thenReturn(true);
@@ -237,9 +238,10 @@ class ForumServiceTest {
 
     @Test
     void updateForum_HateSpeechInName_ThrowsHateSpeechException() {
-        ForumCreationRequest updateRequest = new ForumCreationRequest();
-        updateRequest.setName("Hateful Forum");
-        updateRequest.setDescription("Updated Description");
+        ForumCreationRequest updateRequest = ForumCreationRequest.builder()
+                .name("Hateful Forum")
+                .description("Updated Description")
+                .build();
 
         when(mongoTemplate.findById(forumId, Forum.class)).thenReturn(testForum);
         // FIXED: Name returns false - description won't be checked
@@ -256,9 +258,10 @@ class ForumServiceTest {
 
     @Test
     void updateForum_CleanNameDirtyDescription_ThrowsHateSpeechException() {
-        ForumCreationRequest updateRequest = new ForumCreationRequest();
-        updateRequest.setName("Clean Forum");
-        updateRequest.setDescription("Hateful Description");
+        ForumCreationRequest updateRequest = ForumCreationRequest.builder()
+                        .name("Clean Forum")
+                        .description("Hateful Description")
+                        .build();
 
         when(mongoTemplate.findById(forumId, Forum.class)).thenReturn(testForum);
         // FIXED: Name clean (true), description dirty (false)
@@ -326,9 +329,10 @@ class ForumServiceTest {
 
     @Test
     void updateForum_OnlyUpdatesNameAndDescription() {
-        ForumCreationRequest updateRequest = new ForumCreationRequest();
-        updateRequest.setName("New Name");
-        updateRequest.setDescription("New Description");
+        ForumCreationRequest updateRequest = ForumCreationRequest.builder()
+                .name("New Name")
+                .description("New Description")
+                .build();
 
         when(mongoTemplate.findById(forumId, Forum.class)).thenReturn(testForum);
         when(hateSpeachService.analyzeText(anyString())).thenReturn(true);
