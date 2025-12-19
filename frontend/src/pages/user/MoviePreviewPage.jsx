@@ -18,7 +18,7 @@ import addIcon from "./../../assets/icons/add-white.png"
 import clockIcon from "../../assets/icons/clock-white.png";
 
 import {MAX_LENGTHS, PATHS, ROLES} from "../../constants/constants.jsx";
-import {createRoom} from "../../api/watch-together-api.jsx";
+import {createRoomApi} from "../../api/watch-together-api.jsx";
 
 export default function MoviePreviewPage() {
 
