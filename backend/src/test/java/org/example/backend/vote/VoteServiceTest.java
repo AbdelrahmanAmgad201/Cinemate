@@ -88,9 +88,10 @@ class VoteServiceTest {
                 .isDeleted(false)
                 .build();
 
-        voteDTO = new VoteDTO();
-        voteDTO.setTargetId(postId);
-        voteDTO.setValue(1);
+        voteDTO = VoteDTO.builder()
+                        .targetId(postId)
+                        .value(1)
+                        .build();
 
         updateVoteDTO = new UpdateVoteDTO();
         updateVoteDTO.setTargetId(postId);
