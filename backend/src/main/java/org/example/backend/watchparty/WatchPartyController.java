@@ -19,8 +19,6 @@ public class WatchPartyController {
             @PathVariable Long movieId
     ) {
         Long userId = (Long) request.getAttribute("userId");
-
-        // TODO: validation for movieId exists in your movie repository
         WatchParty response = watchPartyService.create(userId, movieId);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
@@ -32,7 +30,7 @@ public class WatchPartyController {
             @PathVariable String partyId
     ) {
         Long userId = (Long) request.getAttribute("userId");
-
+        String name = (String) request.getAttribute("userName");
         // TODO: Validate if user is member in party
 
         WatchPartyDetailsResponse response = watchPartyService.get(userId, partyId);
@@ -60,6 +58,7 @@ public class WatchPartyController {
             @PathVariable String partyId
     ) {
         Long userId = (Long) request.getAttribute("userId");
+        String name = (String) request.getAttribute("userName");
         WatchPartyDetailsResponse response = watchPartyService.join(userId, partyId);
         return ResponseEntity.ok(response);
     }
