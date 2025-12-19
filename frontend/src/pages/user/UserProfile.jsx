@@ -8,13 +8,13 @@ import { getModApi } from '../../api/forum-api.jsx';
 import './style/UserProfile.css';
 
 const TABS = [
-    { key: 'personal', label: 'Personal data' },
     { key: 'posts', label: 'Posts' },
     { key: 'forums', label: 'Forums' },
-    { key: 'history', label: 'Watch history' },
-    { key: 'watchlater', label: 'Watch later' },
-    { key: 'liked', label: 'Liked movies' },
-    { key: 'reviews', label: 'Movie reviews' },
+    { key: 'watchlater', label: 'Watch Later' },
+    { key: 'history', label: 'Watch History' },
+    { key: 'liked', label: 'Liked Movies' },
+    { key: 'reviews', label: 'Reviews' },
+    { key: 'personal', label: 'Personal data' },
 ];
 
 export default function UserProfile() {
@@ -24,30 +24,23 @@ export default function UserProfile() {
     const [active, setActive] = useState(TABS[0].key);
 
     useEffect(() => {
-        // Load basic info if available (use AuthContext for current user)
         setLoading(false);
     }, [userId]);
 
     const [fetchedName, setFetchedName] = useState(null);
-
     const { showToast } = useContext(ToastContext);
-
-    const [isFollowing, setIsFollowing] = useState(false); // local optimistic follow state
+    const [isFollowing, setIsFollowing] = useState(false);
     const followLastToggleAtRef = useRef(0);
 
     const displayName = (() => {
-        // If viewing own profile, prefer authenticated user data
         if (user && String(user.id) === String(userId)) {
             return `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.email;
         }
-        // If we fetched a name for an object id, use it
         if (fetchedName) return fetchedName;
-        // fallback
         return `User ${userId}`;
     })();
 
     useEffect(() => {
-        // If the param looks like a 24-char Mongo ObjectId, try fetching a display name
         let ignore = false;
         const isObjectId = typeof userId === 'string' && /^[0-9a-fA-F]{24}$/.test(userId);
         if (isObjectId) {
@@ -62,25 +55,140 @@ export default function UserProfile() {
         }
         return () => { ignore = true; };
     }, [userId]);
-
-    // Is the profile being viewed by the owner?
     const isOwnProfile = user && (String(user.id) === String(userId));
-
-    // Tabs visible depends on owner vs other user
     const visibleTabs = isOwnProfile
-        ? TABS
+        ? TABS.filter(t => t.key !== 'personal')
         : TABS.filter(t => ['posts','forums'].includes(t.key));
 
-    // Ensure active tab is valid for current visibility
     useEffect(() => {
+        if (active === 'personal') return;
         if (!visibleTabs.find(t => t.key === active)) {
             setActive(visibleTabs[0]?.key || 'posts');
         }
-    }, [visibleTabs, userId]);
+    }, [visibleTabs, userId, active]);
+
+    const tabListRef = useRef(null);
+    const headerRef = useRef(null);
+    const sidebarRef = useRef(null);
+    const [showLeftArrow, setShowLeftArrow] = useState(false);
+    const [showRightArrow, setShowRightArrow] = useState(false);
+    const leftBtnRef = useRef(null);
+    const rightBtnRef = useRef(null);
+    const [showProfileSidebar, setShowProfileSidebar] = useState(true);
+    const checkSidebarOverlap = () => {
+        const leftNav = document.querySelector('.user-left-sidebar');
+        const sidebar = sidebarRef.current;
+        if (!leftNav || !sidebar || window.innerWidth <= 768) {
+            setShowProfileSidebar(true);
+            return;
+        }
+        const leftRect = leftNav.getBoundingClientRect();
+        const sideRect = sidebar.getBoundingClientRect();
+        const minMargin = 16;
+        const minMainWidth = 520;
+        const sidebarWidthFallback = 370;
+        const sidebarWidth = sideRect.width || sidebarWidthFallback;
+        const availableBetween = (window.innerWidth - leftRect.right - sidebarWidth);
+        const visible = (availableBetween > (minMainWidth + minMargin));
+        if (typeof process !== 'undefined' && process.env && process.env.NODE_ENV === 'development') {
+            console.debug('[ProfileOverlap] leftRight=', leftRect.right, 'sideRectLeft=', sideRect.left, 'sideWidth=', sidebarWidth, 'availableBetween=', availableBetween, 'visible=', visible);
+        }
+        if (showProfileSidebar !== visible) setShowProfileSidebar(visible);
+    };
+
+    const updateTabOverflow = () => {
+        const list = tabListRef.current;
+        const header = headerRef.current;
+        const sidebar = sidebarRef.current;
+        const leftBtn = leftBtnRef.current;
+        const rightBtn = rightBtnRef.current;
+        if (!list || !header) return;
+        const isNarrow = window.innerWidth <= 768;
+        checkSidebarOverlap();
+        const sidebarWidth = (!isNarrow && sidebar && showProfileSidebar) ? Math.max(0, sidebar.getBoundingClientRect().width) : 0;
+        const available = Math.max(80, header.getBoundingClientRect().width - sidebarWidth - 24);
+        list.style.maxWidth = `${available}px`;
+        const leftVisible = list.scrollLeft > 0;
+        const rightVisible = list.scrollWidth > list.clientWidth + list.scrollLeft + 1;
+        setShowLeftArrow(leftVisible);
+        setShowRightArrow(rightVisible);
+        if (rightVisible && rightBtn) {
+            const headerRect = header.getBoundingClientRect();
+            const listRect = list.getBoundingClientRect();
+            const btnRect = rightBtn.getBoundingClientRect();
+            let left = Math.round(listRect.right - headerRect.left - btnRect.width - 8);
+            if (left + btnRect.width > headerRect.width - 8) left = headerRect.width - btnRect.width - 8;
+            if (left < 8) left = 8;
+            rightBtn.style.left = `${left}px`;
+        }
+
+        if (leftVisible && leftBtn) {
+            const headerRect = header.getBoundingClientRect();
+            const listRect = list.getBoundingClientRect();
+            const btnRect = leftBtn.getBoundingClientRect();
+            let left = Math.round(listRect.left - headerRect.left + 8);
+            if (left < 8) left = 8;
+            leftBtn.style.left = `${left}px`;
+        }
+    };
+
+    useEffect(() => {
+        updateTabOverflow();
+        const onResize = () => { checkSidebarOverlap(); updateTabOverflow(); };
+        window.addEventListener('resize', onResize);
+        window.addEventListener('focus', onResize);
+        const leftNav = document.querySelector('.user-left-sidebar');
+        let observer = null;
+        if (leftNav && window.MutationObserver) {
+            observer = new MutationObserver(() => { checkSidebarOverlap(); updateTabOverflow(); });
+            observer.observe(leftNav, { attributes: true, attributeFilter: ['class'] });
+        }
+        return () => {
+            window.removeEventListener('resize', onResize);
+            window.removeEventListener('focus', onResize);
+            if (observer) observer.disconnect();
+        };
+    }, [visibleTabs]);
+
+    useEffect(() => { updateTabOverflow(); }, [showProfileSidebar]);
+
+    const pollRef = useRef(null);
+    useEffect(() => {
+        if (!showProfileSidebar) {
+            if (!pollRef.current) {
+                pollRef.current = setInterval(() => { checkSidebarOverlap(); }, 300);
+            }
+        } else {
+            if (pollRef.current) { clearInterval(pollRef.current); pollRef.current = null; }
+        }
+        return () => { if (pollRef.current) { clearInterval(pollRef.current); pollRef.current = null; } };
+    }, [showProfileSidebar]);
+
+    const handleTabScroll = () => {
+        const list = tabListRef.current;
+        if (!list) return;
+        setShowLeftArrow(list.scrollLeft > 0);
+        setShowRightArrow(list.scrollWidth > list.clientWidth + list.scrollLeft + 1);
+        updateTabOverflow();
+    };
+
+    const scrollRight = () => {
+        const list = tabListRef.current;
+        if (!list) return;
+        list.scrollBy({ left: Math.round(list.clientWidth * 0.65), behavior: 'smooth' });
+        setTimeout(handleTabScroll, 300);
+    };
+
+    const scrollLeft = () => {
+        const list = tabListRef.current;
+        if (!list) return;
+        list.scrollBy({ left: -Math.round(list.clientWidth * 0.65), behavior: 'smooth' });
+        setTimeout(handleTabScroll, 300);
+    };
+
 
     const handleFollowToggle = () => {
         const now = Date.now();
-        // guard against double clicks / duplicate events within 400ms
         if (now - followLastToggleAtRef.current < 400) {
             return;
         }
@@ -91,7 +199,6 @@ export default function UserProfile() {
             return;
         }
 
-        // Toggle locally — backend will be implemented later
         const next = !isFollowing;
         setIsFollowing(next);
         showToast(next ? 'Following' : 'Unfollowed', next ? 'You are now following this user' : 'Follow removed', 'success');
@@ -110,7 +217,7 @@ export default function UserProfile() {
                     </div>
                     <div className="name-and-meta">
                         <div className="name-row">
-                            <div className="user-name">{displayName}</div>
+                            <span className="user-name">{displayName}</span>
 
                             {!isOwnProfile && (
                                 <button
@@ -125,70 +232,141 @@ export default function UserProfile() {
                         </div>
 
                         <div className="user-meta">{String(userId)}</div>
+
+                        <div className="name-stats-row">
+                            <div className="count">
+                                <div className="count-num">{(user && (user.followersCount || user.followers)) ?? '50'}</div>
+                                <div className="count-label">followers</div>
+                            </div>
+
+                            <div className="count">
+                                <div className="count-num">{(user && (user.followingCount || user.following)) ?? '50'}</div>
+                                <div className="count-label">following</div>
+                            </div>
+                        </div>
+
+                        <hr className="profile-header-sep" />
                     </div>
                 </div>
 
-                <div className="profile-tabbar" role="tablist">
-                    {visibleTabs.map(tab => (
-                        <button
-                            key={tab.key}
-                            className={`profile-tab ${active === tab.key ? 'active' : ''}`}
-                            onClick={() => setActive(tab.key)}
-                            role="tab"
-                            aria-selected={active === tab.key}
-                        >
-                            {tab.label}
-                        </button>
-                    ))}
+                <div className="profile-tabbar" role="tablist" ref={headerRef}>
+                    <div className="tab-scroll-wrap">
+                        <div className="tab-list" ref={tabListRef} onScroll={handleTabScroll}>
+                            {visibleTabs.map(tab => (
+                                <button
+                                    key={tab.key}
+                                    className={`profile-tab ${active === tab.key ? 'active' : ''}`}
+                                    onClick={() => setActive(tab.key)}
+                                    role="tab"
+                                    aria-selected={active === tab.key}
+                                >
+                                    {tab.label}
+                                </button>
+                            ))}
+                        </div>
+
+                        {showLeftArrow && (<button ref={leftBtnRef} className="tab-scroll-btn left" onClick={scrollLeft} aria-label="Scroll left">‹</button>)}
+
+                        {showRightArrow && (<button ref={rightBtnRef} className="tab-scroll-btn right" onClick={scrollRight} aria-label="Scroll right">›</button>)}
+                    </div>
                 </div>
             </div>
 
-            <div className="profile-section">
-                <div className="section-title">{TABS.find(t => t.key === active).label}</div>
+            <div className={`profile-main-grid ${!showProfileSidebar ? 'sidebar-hidden' : ''}`}>
+                <main className="profile-content-col">
+                    <div className="profile-section">
+                        <div className="section-title">{TABS.find(t => t.key === active).label}</div>
 
-                {active === 'personal' && (
-                    <div>
-                        <p className="placeholder-note">Personal data read endpoint not implemented yet.</p>
-                        <p><strong>Email:</strong> {user && user.email ? user.email : '-'}</p>
-                        <p><strong>Name:</strong> {user && (user.firstName || user.lastName) ? `${user.firstName || ''} ${user.lastName || ''}` : '-'}</p>
-                    </div>
-                )}
+                        {active === 'personal' && (
+                            <div>
+                                <p className="placeholder-note">Personal data read endpoint not implemented yet.</p>
+                                <p><strong>Email:</strong> {user && user.email ? user.email : '-'}</p>
+                                <p><strong>Name:</strong> {user && (user.firstName || user.lastName) ? `${user.firstName || ''} ${user.lastName || ''}` : '-'}</p>
+                            </div>
+                        )}
 
-                {active === 'history' && (
-                    <div>
-                        <p className="placeholder-note">Watch history endpoint missing — will display a paged list of movies when implemented.</p>
-                    </div>
-                )}
+                        {active === 'history' && (
+                            <div>
+                                <p className="placeholder-note">Watch history endpoint missing — will display a paged list of movies when implemented.</p>
+                            </div>
+                        )}
 
-                {active === 'watchlater' && (
-                    <div>
-                        <p className="placeholder-note">Watch later endpoint missing — will list saved movies when implemented.</p>
-                    </div>
-                )}
+                        {active === 'watchlater' && (
+                            <div>
+                                <p className="placeholder-note">Watch later endpoint missing — will list saved movies when implemented.</p>
+                            </div>
+                        )}
 
-                {active === 'liked' && (
-                    <div>
-                        <p className="placeholder-note">Liked movies endpoint missing — will show movie thumbnails or titles when implemented.</p>
-                    </div>
-                )}
+                        {active === 'liked' && (
+                            <div>
+                                <p className="placeholder-note">Liked movies endpoint missing — will show movie thumbnails or titles when implemented.</p>
+                            </div>
+                        )}
 
-                {active === 'reviews' && (
-                    <div>
-                        <p className="placeholder-note">Reviews by this user are not yet queryable via the API.</p>
-                    </div>
-                )}
+                        {active === 'reviews' && (
+                            <div>
+                                <p className="placeholder-note">Reviews by this user are not yet queryable via the API.</p>
+                            </div>
+                        )}
 
-                {active === 'forums' && (
-                    <div>
-                        <p className="placeholder-note">Forums owned by this user: endpoint missing. Will list forums with links.</p>
-                    </div>
-                )}
+                        {active === 'forums' && (
+                            <div>
+                                <p className="placeholder-note">Forums owned by this user: endpoint missing. Will list forums with links.</p>
+                            </div>
+                        )}
 
-                {active === 'posts' && (
-                    <div>
-                        <p className="placeholder-note">Posts authored by this user: endpoint missing. Will show paged posts when implemented.</p>
+                        {active === 'posts' && (
+                            <div>
+                                <p className="placeholder-note">Posts authored by this user: endpoint missing. Will show paged posts when implemented.</p>
+                            </div>
+                        )}
                     </div>
-                )}
+                </main>
+
+                <aside ref={sidebarRef} className={`sidebar-col profile-sidebar ${!showProfileSidebar ? 'hidden-by-overlap' : ''}`} aria-hidden={!showProfileSidebar}>
+                    <div className="sidebar-card">
+                        <div className="sidebar-top-hero" />
+                        <h2 className="sidebar-title">{displayName}</h2>
+                        <p className="sidebar-desc">{user && (user.username || '')}</p>
+
+                        <div className="sidebar-about">
+                            <div className="about-title">About</div>
+                            <div className="about-text">{(user && user.about && user.about.trim()) ? user.about : 'No info about the user'}</div>
+                        </div>
+
+                        <div className="sidebar-stats row">
+                            <div className="stat-box">
+                                <span className="stat-num">{user && user.createdAt ? (() => {
+                                    const diff = Date.now() - new Date(user.createdAt).getTime();
+                                    const years = Math.floor(diff / (1000*60*60*24*365));
+                                    const months = Math.floor((diff % (1000*60*60*24*365)) / (1000*60*60*24*30));
+                                    return `${years}y ${months}m`;
+                                })() : '—'}</span>
+                                <span className="stat-label">account age</span>
+                            </div>
+                        </div>
+
+                        <hr className="sidebar-divider"/>
+
+                        {isOwnProfile && (
+                            <div className="sidebar-mods">
+                                <h3>Settings</h3>
+                                <div className="mod-user">
+                                    <div className="profile-avatar-circle profile-avatar-small" aria-hidden>
+                                        {avatarSrc ? <img src={avatarSrc} alt="avatar" /> : <IoIosPerson size={18} />}
+                                    </div>
+                                    <div className="mod-text-wrap">
+                                        <div className="mod-text">personal data</div>
+                                        <div className="mod-sub">Update personal data</div>
+                                    </div>
+                                    <div style={{marginLeft: 'auto'}}>
+                                        <button className="btn btn-fill btn-small" onClick={() => setActive('personal')}>Update</button>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                </aside>
             </div>
         </div>
     );
