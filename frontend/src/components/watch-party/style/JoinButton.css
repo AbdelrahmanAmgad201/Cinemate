@@ -1,0 +1,100 @@
+.join-wrapper {
+    position: fixed;
+    right: 110px;
+    /*right: 1150px;*/
+    top: 40px;
+    z-index: 1100;
+}
+
+.join-btn {
+    background-color: transparent;
+    border: none;
+    cursor: pointer;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 8px;
+    color: #ffffff;
+    transition: transform 0.2s ease, opacity 0.2s ease;
+}
+
+.join-btn:hover {
+    opacity: 0.8;
+    transform: translateY(-1px);
+}
+
+.join-popover {
+    position: absolute;
+    top: 50px;
+    right: 0;
+    background-color: #182B33;
+    padding: 8px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+    border: 1px solid #24414D;
+    transform: none !important;
+    opacity: 1 !important;
+    cursor: default;
+}
+
+.join-popover input {
+    background: #2B3C44;
+    border: none;
+    border-radius: 8px;
+    padding: 8px 12px;
+    color: white;
+    width: 150px;
+    font-size: 14px;
+    outline: none;
+    cursor: text;
+}
+
+.join-container {
+    position: fixed;
+    right: 110px; /* Matching your previous position */
+    top: 40px;
+    z-index: 1100;
+}
+
+.join-text{
+    font-size: 16px;
+}
+
+.confirm-icon-btn {
+    background: #3b82f6;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    width: 35px;
+    height: 35px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.confirm-icon-btn:hover {
+    background: #2563eb;
+}
+
+/* The small triangle pointing up */
+.popover-arrow {
+    position: absolute;
+    top: -6px;
+    right: 20px;
+    width: 12px;
+    height: 12px;
+    background-color: #182B33;
+    transform: rotate(45deg);
+    border-left: 1px solid #24414D;
+    border-top: 1px solid #24414D;
+}
+
+@keyframes fadeInDown {
+    from { opacity: 0; transform: translateY(-10px); }
+    to { opacity: 1; transform: translateY(0); }
+}

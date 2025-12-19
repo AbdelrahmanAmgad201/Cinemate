@@ -9,7 +9,6 @@ import UserSignUp from "../pages/auth/SignUp.jsx";
 import EmailVerification from "../pages/auth/EmailVerification.jsx";
 import HomePage from "../pages/user/HomePage.jsx";
 import ExploreForums from "../pages/user/ExploreForums.jsx";
-import ForumPage from "../pages/user/ForumPage.jsx";
 import Browse from "../pages/user/Browse.jsx";
 import Genre from '../pages/user/Genre.jsx';
 import OrgSignUp from "../pages/org/auth/OrgSignUp.jsx";
