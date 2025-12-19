@@ -18,8 +18,12 @@ public class WatchPartyController {
             HttpServletRequest request,
             @PathVariable Long movieId
     ) {
-        Long userId = (Long) request.getAttribute("userId");
-        WatchParty response = watchPartyService.create(userId, movieId);
+        WatchPartyUserDTO dto = WatchPartyUserDTO.builder()
+                .userName((String) request.getAttribute("userName"))
+                .userId((Long) request.getAttribute("userId"))
+                .build();
+
+        WatchParty response = watchPartyService.create(dto, movieId);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
@@ -29,11 +33,12 @@ public class WatchPartyController {
             HttpServletRequest request,
             @PathVariable String partyId
     ) {
-        Long userId = (Long) request.getAttribute("userId");
-        String name = (String) request.getAttribute("userName");
-        // TODO: Validate if user is member in party
+        WatchPartyUserDTO dto = WatchPartyUserDTO.builder()
+                .userName((String) request.getAttribute("userName"))
+                .userId((Long) request.getAttribute("userId"))
+                .build();
 
-        WatchPartyDetailsResponse response = watchPartyService.get(userId, partyId);
+        WatchPartyDetailsResponse response = watchPartyService.get(dto, partyId);
         return ResponseEntity.ok(response);
     }
 
@@ -44,10 +49,8 @@ public class WatchPartyController {
             @PathVariable String partyId
     ) {
         Long userId = (Long) request.getAttribute("userId");
-
-        // TODO: Service will verify user is the host
-
         watchPartyService.delete(userId, partyId);
+        // return simple mssg that its done
         return ResponseEntity.noContent().build();
     }
 
@@ -57,9 +60,13 @@ public class WatchPartyController {
             HttpServletRequest request,
             @PathVariable String partyId
     ) {
-        Long userId = (Long) request.getAttribute("userId");
-        String name = (String) request.getAttribute("userName");
-        WatchPartyDetailsResponse response = watchPartyService.join(userId, partyId);
+        WatchPartyUserDTO dto = WatchPartyUserDTO.builder()
+                .userName((String) request.getAttribute("userName"))
+                .userId((Long) request.getAttribute("userId"))
+                .build();
+
+        WatchPartyDetailsResponse response = watchPartyService.join(dto, partyId);
         return ResponseEntity.ok(response);
     }
+
 }

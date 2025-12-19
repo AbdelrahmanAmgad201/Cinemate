@@ -12,7 +12,7 @@ import java.util.List;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class WatchPartyDetailsResponse {
+public class MicroservicePartyResponse {
     private String partyId;
     private Long movieId;
     private String movieUrl;
