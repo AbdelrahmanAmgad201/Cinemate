@@ -88,18 +88,21 @@ class WatchLaterServiceTest {
         WatchLater existing = WatchLater.builder()
                 .watchLaterID(watchLaterID)
                 .user(user)
-                .movie(movie)
+                .movieName(movie.getName())
+                .isDeleted(false)
                 .build();
 
         when(movieRepository.findById(movieId)).thenReturn(Optional.of(movie));
         when(userRepository.findById(userId)).thenReturn(Optional.of(user));
         when(watchLaterRepository.findById(watchLaterID)).thenReturn(Optional.of(existing));
+        when(watchLaterRepository.save(existing)).thenReturn(existing);
 
         WatchLater result = watchLaterService.addMovie(userId, movieId);
 
         assertEquals(existing, result);
-        verify(watchLaterRepository, never()).save(any());
+        verify(watchLaterRepository).save(existing);
     }
+
 
     // -------------------------------------------------------------------------
     // TEST: WatchLater does not exist → create new
@@ -112,7 +115,7 @@ class WatchLaterServiceTest {
 
         WatchLater newWatchLater = WatchLater.builder()
                 .watchLaterID(watchLaterID)
-                .movie(movie)
+                .movieName(movie.getName())
                 .user(user)
                 .build();
 
@@ -122,7 +125,7 @@ class WatchLaterServiceTest {
 
         assertNotNull(result);
         assertEquals(user, result.getUser());
-        assertEquals(movie, result.getMovie());
+        assertEquals(movie.getName(), result.getMovieName());
         assertEquals(watchLaterID, result.getWatchLaterID());
 
         verify(watchLaterRepository, times(1)).save(any(WatchLater.class));

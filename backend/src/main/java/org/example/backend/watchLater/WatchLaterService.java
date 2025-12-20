@@ -9,8 +9,11 @@ import org.example.backend.movie.Movie;
 import org.example.backend.movie.MovieRepository;
 import org.example.backend.user.User;
 import org.example.backend.user.UserRepository;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.util.Optional;
 
 @Service
@@ -33,14 +36,35 @@ public class WatchLaterService {
 
         Optional<WatchLater> watchLater = watchLaterRepository.findById(id);
         if(watchLater.isPresent()) {
+            watchLater.get().setDateAdded(LocalDateTime.now());
+            if(watchLater.get().getIsDeleted()) {
+                watchLater.get().setIsDeleted(false);
+            }
+            watchLaterRepository.save(watchLater.get());
             return watchLater.get();
         }
         WatchLater newWatchLater = WatchLater.builder().
                 watchLaterID(id).
-                movie(movie).
+                movieName(movie.getName()).
                 user(user).
                 build();
         return watchLaterRepository.save(newWatchLater);
 
     }
+
+    @Transactional
+    public Page<WatchLaterView> getWatchLaters(Long userId, Pageable pageable) {
+        return watchLaterRepository.findAllByUserIdAndIsDeletedFalse(userId, pageable);
+    }
+
+    @Transactional
+    public void deleteWatchLater(Long userId, Long movieId) {
+        WatchLaterID id = new WatchLaterID(userId, movieId);
+        Optional<WatchLater> watchLater = watchLaterRepository.findById(id);
+        if(watchLater.isPresent() && !watchLater.get().getIsDeleted()) {
+            watchLater.get().setIsDeleted(true);
+            watchLaterRepository.save(watchLater.get());
+        }
+    }
+
 }
