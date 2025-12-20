@@ -66,11 +66,11 @@ public class DataInitializer implements CommandLineRunner {
             return;
         }
         String hashedPassword = passwordEncoder.encode(defaultPass);
-        for(int i=0;i<defaultNumberOfUsers;i++){
+        for(int i=1;i<=defaultNumberOfUsers;i++){
             User user=initializeUser(i,hashedPassword);
             Forum forum=initializeForum(i,user);
             forumFollowing(forum);
-            for(int j=0;j<defaultNumberOfPostsPerUser;j++){
+            for(int j=1;j<=defaultNumberOfPostsPerUser;j++){
                 initializePostWithVotesAndComments(i,j,forum,user);
             }
         }
@@ -116,7 +116,7 @@ public class DataInitializer implements CommandLineRunner {
     }
 
     private void initializeVotes(Post post){
-        for (int k=0;k<defaultNumberOfVotesPerPost;k++){
+        for (int k=1;k<=defaultNumberOfVotesPerPost;k++){
             VoteDTO voteDTO = VoteDTO.builder()
                     .targetId(post.getId())
                     .value(1)
@@ -126,7 +126,7 @@ public class DataInitializer implements CommandLineRunner {
     }
 
     private void initializeComments(int postNumber,int forumNumber,Post post){
-        for (int k=0;k<defaultNumberOfCommentsPerPost;k++){
+        for (int k=1;k<=defaultNumberOfCommentsPerPost;k++){
             AddCommentDTO addCommentDTO = AddCommentDTO.builder()
                     .postId(post.getId())
                     .content("comment "+k+" on post "+postNumber+" on user "+forumNumber)

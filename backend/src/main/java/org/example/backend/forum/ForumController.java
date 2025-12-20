@@ -4,6 +4,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import org.bson.types.ObjectId;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
@@ -89,4 +90,11 @@ public class ForumController {
         return ResponseEntity.ok(forumService.getForumName(forumId));
         }
 
+    @GetMapping("/v1/user-forums")
+    public ResponseEntity<Page<ForumDisplayDTO>> getForumsByUser(
+            HttpServletRequest request,
+            @PageableDefault(size = 20) Pageable pageable){
+            Long userId = (Long) request.getAttribute("userId");
+            return ResponseEntity.ok(forumService.findUserForums(userId,pageable));
+    }
 }
