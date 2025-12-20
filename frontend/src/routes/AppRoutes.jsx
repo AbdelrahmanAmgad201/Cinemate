@@ -21,6 +21,7 @@ import OrgMoviesAndAnalytics from "../pages/org/OrgMoviesAndAnalytics.jsx";
 import MoviePreviewPage from "../pages/user/MoviePreviewPage.jsx";
 import WatchPage from "../pages/user/WatchPage.jsx";
 import PostFullPage from '../pages/user/PostFullPage.jsx';
+import ReplyThreadPage from '../pages/user/ReplyThreadPage.jsx';
 
 import NotFoundPage from "../components/NotFoundPage.jsx";
 import TestSandBox from "../pages/TestSandBox.jsx";
@@ -95,6 +96,7 @@ export default function AppRoutes() {
                     <Route path={PATHS.HOME} element={<HomePage />} />
                     <Route path={PATHS.FORUM.EXPLORE} element={<ExploreForums />} />
                     <Route path={PATHS.POST.FULLPAGE()} element={<PostFullPage />} />
+                    <Route path={PATHS.POST.THREAD()} element={<ReplyThreadPage />} />
                     <Route path={PATHS.FORUM.PAGE()} element={<Forum/>} />
                 </Route>
                 <Route element={<SimpleLayout />}> {/* Navbar only */}

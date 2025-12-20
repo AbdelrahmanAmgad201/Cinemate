@@ -1,1 +1,5 @@
 .idea/
+backend/env
+.vscode/
+.env
+/model-api/__pycache__

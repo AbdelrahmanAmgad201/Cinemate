@@ -2,8 +2,15 @@ package org.example.backend.deletion;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.bson.Document;
 import org.bson.types.ObjectId;
+import org.example.backend.comment.Comment;
+import org.example.backend.comment.CommentRepository;
+import org.example.backend.post.Post;
+import org.example.backend.post.PostRepository;
 import org.springframework.data.mongodb.core.MongoTemplate;
+import org.springframework.data.mongodb.core.aggregation.Aggregation;
+import org.springframework.data.mongodb.core.aggregation.AggregationResults;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.data.mongodb.core.query.Update;
@@ -11,6 +18,8 @@ import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 @Slf4j
@@ -20,6 +29,8 @@ public class CascadeDeletionService {
 
     private final MongoTemplate mongoTemplate;
     private static final int BATCH_SIZE = 100;
+    private final PostRepository postRepository;
+    private final CommentRepository commentRepository;
 
     /**
      * Delete Forum - cascades to Posts, Comments, Votes
@@ -33,6 +44,9 @@ public class CascadeDeletionService {
 
         // 2. Cascade to all posts in this forum
         cascadeDeleteForumPostsAsync(forumId, deletedAt);
+
+        // 3. Cascade to all followings in this forum
+        cascadeDeleteForumFollowingAsync(forumId, deletedAt);
     }
 
     /**
@@ -56,11 +70,10 @@ public class CascadeDeletionService {
         log.info("Starting comment deletion: {}", commentId);
         Instant deletedAt = Instant.now();
 
-        // 1. Soft delete the comment itself
-        softDeleteEntity("comments", commentId, deletedAt);
-
-        // 2. Cascade to votes on this comment
-        cascadeDeleteCommentVotesAsync(commentId, deletedAt);
+        Comment comment = commentRepository.findById(commentId)
+                .orElseThrow(() -> new RuntimeException("Comment not found"));
+        ObjectId postId = comment.getPostId();
+        cascadeDeleteCommentAsync(commentId, deletedAt,postId,comment.getParentId());
     }
 
     /**
@@ -113,10 +126,16 @@ public class CascadeDeletionService {
      */
     private List<ObjectId> getIds(String collection, Criteria criteria) {
         Query query = new Query(criteria);
-        query.fields().include("_id");
-        return mongoTemplate.find(query, ObjectId.class, collection);
-    }
+        List<ObjectId> ids = mongoTemplate.findDistinct(
+                query,
+                "_id",
+                collection,
+                ObjectId.class
+        );
 
+        log.info("Found {} posts to delete for forum {}", ids.size(), criteria);
+        return ids;
+    }
     // ==================== ASYNC CASCADE METHODS ====================
 
     /**
@@ -142,6 +161,30 @@ public class CascadeDeletionService {
             cascadeDeletePostsBatch(postIds, deletedAt);
 
             log.info("Completed cascade deletion for forum {}", forumId);
+
+        } catch (Exception e) {
+            log.error("Error during forum cascade deletion: {}", forumId, e);
+        }
+    }
+
+    /**
+     * Cascade delete for following forums
+     */
+    @Async
+    public void cascadeDeleteForumFollowingAsync(ObjectId forumId, Instant deletedAt) {
+        try {
+            // Get all following IDs for this forum
+            List<ObjectId> followingIds = getIds("following", Criteria.where("forumId").is(forumId));
+            log.info("Found {} posts to delete for forum {}", followingIds.size(), forumId);
+
+            if (followingIds.isEmpty()) {
+                log.info("No posts to delete for forum {}", forumId);
+                return;
+            }
+
+            // Soft delete followings in batches
+            int totalPosts = softDeleteFollowingsBatch(followingIds, deletedAt);
+            log.info("Soft deleted {} posts for forum {}", totalPosts, forumId);
 
         } catch (Exception e) {
             log.error("Error during forum cascade deletion: {}", forumId, e);
@@ -217,6 +260,22 @@ public class CascadeDeletionService {
     }
 
     /**
+     * Batch soft delete followings
+     */
+    private int softDeleteFollowingsBatch(List<ObjectId> followingIds, Instant deletedAt) {
+        int totalDeleted = 0;
+
+        for (int i = 0; i < followingIds.size(); i += BATCH_SIZE) {
+            List<ObjectId> batch = followingIds.subList(i, Math.min(i + BATCH_SIZE, followingIds.size()));
+            long deleted = softDeleteBatch("following", Criteria.where("_id").in(batch), deletedAt);
+            totalDeleted += deleted;
+            log.debug("Soft deleted batch of {} followings", deleted);
+        }
+
+        return totalDeleted;
+    }
+
+    /**
      * Cascade delete for multiple posts (comments + votes)
      */
     private void cascadeDeletePostsBatch(List<ObjectId> postIds, Instant deletedAt) {
@@ -247,6 +306,22 @@ public class CascadeDeletionService {
         for (int i = 0; i < postIds.size(); i += BATCH_SIZE) {
             List<ObjectId> batch = postIds.subList(i, Math.min(i + BATCH_SIZE, postIds.size()));
             long deleted = softDeleteBatch("comments", Criteria.where("postId").in(batch), deletedAt);
+            totalDeleted += deleted;
+            log.debug("Soft deleted batch of {} comments", deleted);
+        }
+
+        return totalDeleted;
+    }
+
+    /**
+     * Batch soft delete comments by comment IDs (not post IDs)
+     */
+    private int softDeleteCommentsByIdsBatch(List<ObjectId> commentIds, Instant deletedAt) {
+        int totalDeleted = 0;
+
+        for (int i = 0; i < commentIds.size(); i += BATCH_SIZE) {
+            List<ObjectId> batch = commentIds.subList(i, Math.min(i + BATCH_SIZE, commentIds.size()));
+            long deleted = softDeleteBatch("comments", Criteria.where("_id").in(batch), deletedAt);
             totalDeleted += deleted;
             log.debug("Soft deleted batch of {} comments", deleted);
         }
@@ -290,6 +365,61 @@ public class CascadeDeletionService {
         }
 
         return totalDeleted;
+    }
+
+    @Async
+    public void cascadeDeleteCommentAsync(ObjectId commentId,Instant deletedAt,ObjectId postId,ObjectId parentId) {
+        Aggregation aggregation = Aggregation.newAggregation(
+                // Match the parent comment
+                Aggregation.match(Criteria.where("_id").is(commentId)),
+
+                // Use $graphLookup to recursively find all descendants
+                Aggregation.graphLookup("comments")
+                        .startWith("$_id")
+                        .connectFrom("_id")
+                        .connectTo("parentId")
+                        .maxDepth(100)
+                        .depthField("level")
+                        .as("descendants"),
+
+                Aggregation.project()
+                        .and("_id").as("parentId")
+                        .and("descendants._id").as("descendantIds")
+        );
+
+        AggregationResults<Document> results = mongoTemplate.aggregate(
+                aggregation,
+                "comments",
+                Document.class
+        );
+
+        Document result = results.getUniqueMappedResult();
+        if (result == null) {
+            return ;
+        }
+
+        List<ObjectId> allIds = new ArrayList<>();
+        allIds.add(result.getObjectId("parentId"));
+
+        List<ObjectId> descendantIds = result.getList("descendantIds", ObjectId.class);
+        if (descendantIds != null) {
+            allIds.addAll(descendantIds);
+        }
+
+        int totalComments = softDeleteCommentsByIdsBatch(allIds, deletedAt);
+
+        // Delete votes on comments
+        cascadeDeleteCommentsVotesBatch(allIds, deletedAt);
+        Post post = postRepository.findById(postId)
+                .orElseThrow(() -> new RuntimeException("Post not found"));
+        post.setCommentCount(post.getCommentCount() - totalComments);
+        postRepository.save(post);
+        if(parentId != null) {
+            Comment parent = commentRepository.findById(parentId)
+                    .orElseThrow(() -> new RuntimeException("Comment not found"));
+            parent.setNumberOfReplies(parent.getNumberOfReplies() - totalComments);
+            commentRepository.save(parent);
+        }
     }
 
     /**

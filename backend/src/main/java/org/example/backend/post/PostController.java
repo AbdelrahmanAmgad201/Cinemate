@@ -51,4 +51,9 @@ public class PostController {
             @RequestBody ForumPostsRequestDTO forumPostsRequestDTO) {
         return ResponseEntity.ok(postService.getForumPosts(forumPostsRequestDTO));
     }
+
+    @GetMapping("/v1/{postId}")
+    public ResponseEntity<Post> getPost(HttpServletRequest request, @PathVariable ObjectId postId) {
+        return ResponseEntity.ok(postService.getPostById(postId));
+    }
 }

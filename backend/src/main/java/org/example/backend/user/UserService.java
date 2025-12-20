@@ -72,9 +72,15 @@ public class UserService {
 
     public String getUserNameFromObjectUserId(ObjectId objectUserId) {
         Long userId = objectIdToLong(objectUserId);
+        return getUserName(userId);
+    }
+
+    public String getUserName(Long userId) {
         Optional<User> user = userRepository.findById(userId);
         if (user.isPresent()) {
-            return user.get().getFirstName();
+            if(user.get().getLastName()==null)
+                return user.get().getFirstName();
+            return user.get().getFirstName()+" "+user.get().getLastName();
         }
         else  {
             return "Unknown user";

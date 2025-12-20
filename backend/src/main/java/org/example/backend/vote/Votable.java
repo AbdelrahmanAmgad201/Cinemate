@@ -5,4 +5,5 @@ public interface Votable {
     void incrementDownvote();
     void decrementUpvote();
     void decrementDownvote();
+    void updateScore();
 }

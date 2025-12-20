@@ -59,9 +59,10 @@ class ForumControllerTest {
                 .isDeleted(false)
                 .build();
 
-        creationRequest = new ForumCreationRequest();
-        creationRequest.setName("New Forum");
-        creationRequest.setDescription("New Forum Description");
+        creationRequest =  ForumCreationRequest.builder()
+                .name("New Forum")
+                .description("New Forum Description")
+                .build();
     }
 
     // ==================== CREATE FORUM TESTS ====================

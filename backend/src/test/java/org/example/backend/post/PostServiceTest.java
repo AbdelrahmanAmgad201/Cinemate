@@ -6,14 +6,20 @@ import org.example.backend.deletion.AccessService;
 import org.example.backend.deletion.CascadeDeletionService;
 import org.example.backend.forum.Forum;
 import org.example.backend.forum.ForumRepository;
+import org.example.backend.hateSpeach.HateSpeachService;
+import org.example.backend.hateSpeach.HateSpeechException;
+import org.example.backend.user.UserService;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.data.domain.Page;
 import org.springframework.http.*;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.security.access.AccessDeniedException;
+
+import java.time.Instant;
 
 import static org.assertj.core.api.Assertions.*;
 import static org.mockito.Mockito.*;
@@ -23,6 +29,9 @@ class PostServiceTest extends AbstractMongoIntegrationTest {
 
     @Autowired
     private PostService postService;
+
+    @Autowired
+    private HateSpeachService hateSpeachService;
 
     @Autowired
     private PostRepository postRepository;
@@ -39,6 +48,9 @@ class PostServiceTest extends AbstractMongoIntegrationTest {
     @MockBean
     private CascadeDeletionService deletionService; // for deletePost
 
+    @MockBean
+    private UserService userService; // for getUserName
+
     private final String url = "http://localhost:8000/api/hate/v1/analyze";
 
     // ---------------------------
@@ -48,18 +60,21 @@ class PostServiceTest extends AbstractMongoIntegrationTest {
     void testAddPost_whenCleanText_shouldSavePost() {
         ObjectId forumId = new ObjectId("00000000000000000000006f");
 
-        // --- FIX: Save forum in DB ---
+        // Save forum in DB
         Forum forum = Forum.builder()
                 .id(forumId)
                 .name("Test Forum")
                 .postCount(0)
                 .description("Test Description")
+                .isDeleted(false)
                 .build();
         forumRepository.save(forum);
-        // -----------------------------
 
         AddPostDto dto = new AddPostDto(forumId, "Test Title", "Normal content");
         Long userId = 5L;
+
+        // Mock UserService
+        when(userService.getUserName(userId)).thenReturn("TestUser");
 
         ResponseEntity<Boolean> aiResponse = new ResponseEntity<>(true, HttpStatus.OK);
         when(restTemplate.postForEntity(eq(url), any(HttpEntity.class), eq(Boolean.class)))
@@ -73,16 +88,53 @@ class PostServiceTest extends AbstractMongoIntegrationTest {
         assertThat(fromDb.getContent()).isEqualTo("Normal content");
         assertThat(fromDb.getForumId()).isEqualTo(forumId);
         assertThat(fromDb.getOwnerId()).isEqualTo(new ObjectId(String.format("%024x", userId)));
+        assertThat(fromDb.getForumName()).isEqualTo("Test Forum");
+        assertThat(fromDb.getAuthorName()).isEqualTo("TestUser");
 
-        verify(restTemplate, times(1))
+        verify(restTemplate, times(2))
                 .postForEntity(eq(url), any(HttpEntity.class), eq(Boolean.class));
+        verify(userService, times(1)).getUserName(userId);
     }
 
+    @Test
+    void testAddPost_whenForumDeleted_shouldThrowException() {
+        ObjectId forumId = new ObjectId("00000000000000000000006f");
+
+        // Save deleted forum
+        Forum forum = Forum.builder()
+                .id(forumId)
+                .name("Test Forum")
+                .postCount(0)
+                .description("Test Description")
+                .isDeleted(true)
+                .build();
+        forumRepository.save(forum);
+
+        AddPostDto dto = new AddPostDto(forumId, "Test Title", "Normal content");
+        Long userId = 5L;
+
+        assertThatThrownBy(() -> postService.addPost(dto, userId))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("Forum has been deleted");
+
+        assertThat(postRepository.count()).isZero();
+    }
 
     @Test
     void testAddPost_whenHateSpeech_shouldThrowException() {
-        AddPostDto dto = new AddPostDto(new ObjectId("00000000000000000000006f"),
-                "Bad Title", "Some hateful text");
+        ObjectId forumId = new ObjectId("00000000000000000000006f");
+
+        // Save forum
+        Forum forum = Forum.builder()
+                .id(forumId)
+                .name("Test Forum")
+                .postCount(0)
+                .description("Test Description")
+                .isDeleted(false)
+                .build();
+        forumRepository.save(forum);
+
+        AddPostDto dto = new AddPostDto(forumId, "Bad Title", "Some hateful text");
         Long userId = 5L;
 
         ResponseEntity<Boolean> aiResponse = new ResponseEntity<>(false, HttpStatus.OK);
@@ -106,7 +158,7 @@ class PostServiceTest extends AbstractMongoIntegrationTest {
         when(restTemplate.postForEntity(eq(url), any(HttpEntity.class), eq(Boolean.class)))
                 .thenReturn(aiResponse);
 
-        boolean result = postService.analyzeText(text);
+        boolean result = hateSpeachService.analyzeText(text);
 
         assertThat(result).isTrue();
 
@@ -177,35 +229,85 @@ class PostServiceTest extends AbstractMongoIntegrationTest {
         assertThat(fromDb.getContent()).isEqualTo("Old Content");
     }
 
+    @Test
+    void testUpdatePost_whenPostDeleted_shouldThrowException() {
+        Long userId = 7L;
+        ObjectId postId = new ObjectId();
+        Post existingPost = Post.builder()
+                .id(postId)
+                .ownerId(new ObjectId(String.format("%024x", userId)))
+                .title("Old Title")
+                .content("Old Content")
+                .isDeleted(true)
+                .build();
+        postRepository.save(existingPost);
+
+        AddPostDto dto = new AddPostDto(null, "New Title", "New Content");
+
+        // Mock hate speech check (happens before deleted check)
+        ResponseEntity<Boolean> aiResponse = new ResponseEntity<>(true, HttpStatus.OK);
+        when(restTemplate.postForEntity(eq(url), any(HttpEntity.class), eq(Boolean.class)))
+                .thenReturn(aiResponse);
+
+        assertThatThrownBy(() -> postService.updatePost(postId, dto, userId))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("Cannot update a deleted post");
+    }
+
+    @Test
+    void testUpdatePost_whenWrongOwner_shouldThrowException() {
+        Long ownerId = 7L;
+        Long wrongUserId = 8L;
+        ObjectId postId = new ObjectId();
+        Post existingPost = Post.builder()
+                .id(postId)
+                .ownerId(new ObjectId(String.format("%024x", ownerId)))
+                .title("Old Title")
+                .content("Old Content")
+                .isDeleted(false)
+                .build();
+        postRepository.save(existingPost);
+
+        AddPostDto dto = new AddPostDto(null, "New Title", "New Content");
+
+        // Mock hate speech check (happens before owner check)
+        ResponseEntity<Boolean> aiResponse = new ResponseEntity<>(true, HttpStatus.OK);
+        when(restTemplate.postForEntity(eq(url), any(HttpEntity.class), eq(Boolean.class)))
+                .thenReturn(aiResponse);
+
+        assertThatThrownBy(() -> postService.updatePost(postId, dto, wrongUserId))
+                .isInstanceOf(AccessDeniedException.class)
+                .hasMessageContaining("User does not have permission");
+    }
+
     // ---------------------------
     // deletePost tests
     // ---------------------------
     @Test
     void testDeletePost_success() {
         Long userId = 9L;
-        ObjectId postId = new ObjectId("6939b98be4433966bc84987d"); // manually generate an ObjectId
-
+        ObjectId postId = new ObjectId("6939b98be4433966bc84987d");
         ObjectId forumId = new ObjectId("00000000000000000000006f");
 
-        // --- FIX: Save forum in DB ---
+        // Save forum in DB
         Forum forum = Forum.builder()
                 .id(forumId)
                 .name("Test Forum")
                 .postCount(1)
                 .description("Test Description")
+                .isDeleted(false)
                 .build();
         forumRepository.save(forum);
 
-        // Create Post using builder and set the id explicitly
+        // Create and save post
         Post post = Post.builder()
-                .id(postId)  // assign id yourself
+                .id(postId)
                 .forumId(forumId)
                 .ownerId(new ObjectId(String.format("%024x", userId)))
                 .title("Title")
                 .content("Content")
+                .isDeleted(false)
                 .build();
-
-        // Save post — MongoDB will accept the manually set id
         postRepository.save(post);
 
         // Mock dependent services
@@ -220,9 +322,11 @@ class PostServiceTest extends AbstractMongoIntegrationTest {
         verify(accessService, times(1))
                 .canDeletePost(new ObjectId(String.format("%024x", userId)), postId);
         verify(deletionService, times(1)).deletePost(postId);
+
+        // Verify forum post count was decremented
+        Forum updatedForum = forumRepository.findById(forumId).orElseThrow();
+        assertThat(updatedForum.getPostCount()).isEqualTo(0);
     }
-
-
 
     @Test
     void testDeletePost_accessDenied() {
@@ -249,8 +353,9 @@ class PostServiceTest extends AbstractMongoIntegrationTest {
         Forum forum = Forum.builder()
                 .id(forumId)
                 .name("Test Forum")
-                .postCount(0)
+                .postCount(1)
                 .description("Test Description")
+                .isDeleted(false)
                 .build();
         forumRepository.save(forum);
 
@@ -261,6 +366,7 @@ class PostServiceTest extends AbstractMongoIntegrationTest {
                 .ownerId(new ObjectId(String.format("%024x", userId)))
                 .title("Title")
                 .content("Content")
+                .isDeleted(false)
                 .build();
         postRepository.save(post);
 
@@ -277,4 +383,99 @@ class PostServiceTest extends AbstractMongoIntegrationTest {
                 .hasMessageContaining("failure");
     }
 
+    // ---------------------------
+    // get sorted posts (forum's)
+    // ---------------------------
+
+    @Test
+    void testGetForumPosts_defaultSort_newestFirst() {
+        ObjectId forumId = new ObjectId();
+
+        // save forum
+        Forum forum = Forum.builder().id(forumId).name("F").postCount(0).description("d").isDeleted(false).build();
+        forumRepository.save(forum);
+
+        // create posts with different createdAt
+        Instant now = Instant.now();
+        Post pOld = Post.builder().id(new ObjectId()).forumId(forumId).title("old").createdAt(now.minusSeconds(200)).score(1).isDeleted(false).build();
+        Post pMid = Post.builder().id(new ObjectId()).forumId(forumId).title("mid").createdAt(now.minusSeconds(100)).score(2).isDeleted(false).build();
+        Post pNew = Post.builder().id(new ObjectId()).forumId(forumId).title("new").createdAt(now).score(3).isDeleted(false).build();
+
+        postRepository.save(pOld);
+        postRepository.save(pMid);
+        postRepository.save(pNew);
+
+        ForumPostsRequestDTO dto = new ForumPostsRequestDTO();
+        dto.setPage(0);
+        dto.setPageSize(10);
+        dto.setForumId(forumId);
+
+        Page<Post> page = postService.getForumPosts(dto);
+
+        assertThat(page.getContent()).hasSize(3);
+        assertThat(page.getContent().get(0).getTitle()).isEqualTo("new");
+        assertThat(page.getContent().get(1).getTitle()).isEqualTo("mid");
+        assertThat(page.getContent().get(2).getTitle()).isEqualTo("old");
+    }
+
+    @Test
+    void testGetForumPosts_oldSort_oldestFirst() {
+        ObjectId forumId = new ObjectId();
+
+        Forum forum = Forum.builder().id(forumId).name("F").postCount(0).description("d").isDeleted(false).build();
+        forumRepository.save(forum);
+
+        Instant now = Instant.now();
+        Post pOld = Post.builder().id(new ObjectId()).forumId(forumId).title("old").createdAt(now.minusSeconds(200)).score(1).isDeleted(false).build();
+        Post pMid = Post.builder().id(new ObjectId()).forumId(forumId).title("mid").createdAt(now.minusSeconds(100)).score(2).isDeleted(false).build();
+        Post pNew = Post.builder().id(new ObjectId()).forumId(forumId).title("new").createdAt(now).score(3).isDeleted(false).build();
+
+        postRepository.save(pOld);
+        postRepository.save(pMid);
+        postRepository.save(pNew);
+
+        ForumPostsRequestDTO dto = new ForumPostsRequestDTO();
+        dto.setPage(0);
+        dto.setPageSize(10);
+        dto.setForumId(forumId);
+        dto.setSortBy("old");
+
+        Page<Post> page = postService.getForumPosts(dto);
+
+        assertThat(page.getContent()).hasSize(3);
+        assertThat(page.getContent().get(0).getTitle()).isEqualTo("old");
+        assertThat(page.getContent().get(1).getTitle()).isEqualTo("mid");
+        assertThat(page.getContent().get(2).getTitle()).isEqualTo("new");
+    }
+
+    @Test
+    void testGetForumPosts_topSort_scoreDesc_and_idDescTieBreak() {
+        ObjectId forumId = new ObjectId();
+
+        Forum forum = Forum.builder().id(forumId).name("F").postCount(0).description("d").isDeleted(false).build();
+        forumRepository.save(forum);
+
+        // p1 and p2 have same score; p2 should come before p1 because id is larger (id desc tie-break)
+        Post p1 = Post.builder().id(new ObjectId("000000000000000000000001")).forumId(forumId).title("p1").score(10).createdAt(Instant.now()).isDeleted(false).build();
+        Post p2 = Post.builder().id(new ObjectId("000000000000000000000002")).forumId(forumId).title("p2").score(10).createdAt(Instant.now()).isDeleted(false).build();
+        Post p3 = Post.builder().id(new ObjectId("000000000000000000000003")).forumId(forumId).title("p3").score(5).createdAt(Instant.now()).isDeleted(false).build();
+
+        postRepository.save(p1);
+        postRepository.save(p2);
+        postRepository.save(p3);
+
+        ForumPostsRequestDTO dto = new ForumPostsRequestDTO();
+        dto.setPage(0);
+        dto.setPageSize(10);
+        dto.setForumId(forumId);
+        dto.setSortBy("top");
+
+        Page<Post> page = postService.getForumPosts(dto);
+
+        assertThat(page.getContent()).hasSize(3);
+        // Expect p2 (id 2) first, then p1 (id 1), then p3
+        assertThat(page.getContent().get(0).getTitle()).isEqualTo("p2");
+        assertThat(page.getContent().get(1).getTitle()).isEqualTo("p1");
+        assertThat(page.getContent().get(2).getTitle()).isEqualTo("p3");
+    }
 }

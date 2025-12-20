@@ -18,7 +18,7 @@ export const MAX_VALUES = {
 };
 
 export const PAGE_SIZE = {
-    FORUM : 2,
+    FORUM : 5,
 }
 
 export const ROLES = {
@@ -67,6 +67,7 @@ export const PATHS = {
 
     POST: {
         FULLPAGE: (id = ":postId") => `/post/${id}`,
+        THREAD: (id = ":commentId") => `/post/thread/${id}`,
     },
 
     FORUM : {
