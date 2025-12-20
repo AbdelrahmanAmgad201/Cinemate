@@ -14,24 +14,27 @@ import java.util.List;
 public interface MovieRepository extends JpaRepository<Movie, Long>, JpaSpecificationExecutor<Movie> {
     List<Movie> findByAdminIsNull();
     @Query("""
-       SELECT 
-         COUNT(m), 
-         (SELECT COUNT(wh) 
-          FROM WatchHistory wh 
-          WHERE wh.movie.organization.id = :orgId)
-       FROM Movie m
-       WHERE m.organization.id = :orgId
-       """)
+   SELECT 
+     COUNT(m), 
+     (SELECT COUNT(wh) 
+      FROM WatchHistory wh 
+      JOIN Movie m2 ON m2.id = wh.movieId
+      WHERE m2.organization.id = :orgId
+      AND (wh.isDeleted = false OR wh.isDeleted IS NULL))
+   FROM Movie m
+   WHERE m.organization.id = :orgId
+   """)
     Object getMovieCountAndTotalViews(@Param("orgId") Long orgId);
 
     @Query("""
-       SELECT m.genre, COUNT(wh) as views
-       FROM WatchHistory wh
-       JOIN wh.movie m
-       WHERE m.organization.id = :orgId
-       GROUP BY m.genre
-       ORDER BY views DESC
-       """)
+   SELECT m.genre, COUNT(wh) as views
+   FROM WatchHistory wh
+   JOIN Movie m ON m.id = wh.movieId
+   WHERE m.organization.id = :orgId
+   AND (wh.isDeleted = false OR wh.isDeleted IS NULL)
+   GROUP BY m.genre
+   ORDER BY views DESC
+   """)
     List<Object[]> getGenresOrderedByViews(@Param("orgId") Long orgId);
 
     Page<Movie> findAllByAdminIsNotNull(Specification<Movie> spec, Pageable pageable);
@@ -39,16 +42,17 @@ public interface MovieRepository extends JpaRepository<Movie, Long>, JpaSpecific
     List<Movie> findByAdminIsNotNullAndOrganization_Id(Long orgId);
 
     @Query("""
-            SELECT new org.example.backend.movie.OneMovieOverView(
-                (SELECT COUNT(wh) FROM WatchHistory wh WHERE wh.movie.movieID = :movieId),
-                (SELECT COUNT(DISTINCT wh.user.id) FROM WatchHistory wh WHERE wh.movie.movieID = :movieId),
-                (SELECT COUNT(mr) FROM MovieReview mr WHERE mr.movie.movieID = :movieId),
-                (SELECT COUNT(mr) FROM MovieReview mr WHERE mr.movie.movieID = :movieId),
-                (SELECT COALESCE(AVG(mr.rating),0) FROM MovieReview mr WHERE mr.movie.movieID = :movieId),
-                (SELECT COUNT(wl) FROM WatchLater wl WHERE wl.movie.movieID = :movieId)
-            )
-            """)
+        SELECT new org.example.backend.movie.OneMovieOverView(
+            (SELECT COUNT(wh) FROM WatchHistory wh WHERE wh.movieId = :movieId AND (wh.isDeleted = false OR wh.isDeleted IS NULL)),
+            (SELECT COUNT(DISTINCT wh.user.id) FROM WatchHistory wh WHERE wh.movieId = :movieId AND (wh.isDeleted = false OR wh.isDeleted IS NULL)),
+            (SELECT COUNT(mr) FROM MovieReview mr WHERE mr.movie.movieID = :movieId),
+            (SELECT COUNT(mr) FROM MovieReview mr WHERE mr.movie.movieID = :movieId),
+            (SELECT COALESCE(AVG(mr.rating),0) FROM MovieReview mr WHERE mr.movie.movieID = :movieId),
+            (SELECT COUNT(wl) FROM WatchLater wl WHERE wl.movie.movieID = :movieId)
+        )
+        """)
     OneMovieOverView getMovieOverview(@Param("movieId") Long movieId);
+
     @Query("""
        SELECT lm.movie.movieID
        FROM LikedMovie lm
@@ -65,13 +69,15 @@ public interface MovieRepository extends JpaRepository<Movie, Long>, JpaSpecific
        """)
     List<Long> getMostRatedMovie(Pageable pageable);
 
+
     @Query("""
-   SELECT m.organization
-   FROM WatchHistory wh
-   JOIN wh.movie m
-   GROUP BY m.organization
-   ORDER BY COUNT(wh) DESC
-   """)
+    SELECT m.organization 
+    FROM WatchHistory wh 
+    JOIN Movie m ON m.movieID = wh.movieId 
+    WHERE wh.isDeleted = false OR wh.isDeleted IS NULL
+    GROUP BY m.organization 
+    ORDER BY COUNT(wh) DESC
+    """)
     List<Organization> getMostPopularOrganization(Pageable pageable);
 
 

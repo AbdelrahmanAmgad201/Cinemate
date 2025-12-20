@@ -27,13 +27,18 @@ public class WatchHistory {
     @JsonIgnore
     private User user;
 
-    @ManyToOne
-    @JoinColumn(name = "movie_id", nullable = false)
-    @JsonIgnore
-    private Movie movie;
+    @Column(name = "movie_id", nullable = false)
+    private Long movieId;
+
+    @Column(name = "movie_name", nullable = false)
+    private String movieName;
 
     @Column(name = "watched_at", nullable = false, updatable = false)
     private LocalDateTime watchedAt;
+
+    @Column(name = "is_deleted", columnDefinition = "TINYINT(1)")
+    @Builder.Default
+    private Boolean isDeleted = false;
 
     @PrePersist
     protected void onCreate() {
