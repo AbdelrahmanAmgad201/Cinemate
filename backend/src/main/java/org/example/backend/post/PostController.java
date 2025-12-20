@@ -5,6 +5,8 @@ import org.bson.types.ObjectId;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.data.domain.Page;
@@ -55,5 +57,18 @@ public class PostController {
     @GetMapping("/v1/{postId}")
     public ResponseEntity<Post> getPost(HttpServletRequest request, @PathVariable ObjectId postId) {
         return ResponseEntity.ok(postService.getPostById(postId));
+    }
+
+    @GetMapping("/v1/my-posts")
+    public  ResponseEntity<Page<PostView>> getMyPosts(HttpServletRequest request,
+                                                      @PageableDefault(size = 20) Pageable pageable){
+        Long userId = (Long) request.getAttribute("userId");
+        return ResponseEntity.ok(postService.getMyPosts(userId, pageable));
+    }
+
+    @GetMapping("/v1/other-user-posts/{userId}")
+    public  ResponseEntity<Page<PostView>> getMyPosts(@PathVariable Long userId,
+                                                      @PageableDefault(size = 20) Pageable pageable){
+        return ResponseEntity.ok(postService.getOtherUserPosts(userId, pageable));
     }
 }
