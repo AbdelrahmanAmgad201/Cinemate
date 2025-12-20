@@ -382,6 +382,23 @@
     .mod-text{ font-size:14px }
 }
 
+.mod-user.mod-user-clickable{
+    cursor: pointer;
+    transition: background-color 160ms ease, transform 160ms ease, box-shadow 160ms ease;
+    padding: 6px;
+    border-radius: 8px;
+}
+
+.mod-user.mod-user-clickable:hover{
+    background: rgba(255,255,255,0.06);
+    transform: translateY(-3px);
+}
+
+.mod-user.mod-user-clickable:focus-visible{
+    outline: 2px solid rgba(54,161,243,0.28);
+    outline-offset: 2px;
+}
+
 @media (max-width: 600px){
     .sidebar-stats.row{ gap: 12px }
     .sidebar-stats .stat-box .stat-num{ font-size:16px }

@@ -351,16 +351,19 @@ export default function UserProfile() {
                         {isOwnProfile && (
                             <div className="sidebar-mods">
                                 <h3>Settings</h3>
-                                <div className="mod-user">
+                                <div
+                                    className="mod-user mod-user-clickable"
+                                    role="button"
+                                    tabIndex={0}
+                                    onClick={() => setActive('personal')}
+                                    onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setActive('personal'); } }}
+                                >
                                     <div className="profile-avatar-circle profile-avatar-small" aria-hidden>
                                         {avatarSrc ? <img src={avatarSrc} alt="avatar" /> : <IoIosPerson size={18} />}
                                     </div>
                                     <div className="mod-text-wrap">
                                         <div className="mod-text">personal data</div>
-                                        <div className="mod-sub">Update personal data</div>
-                                    </div>
-                                    <div style={{marginLeft: 'auto'}}>
-                                        <button className="btn btn-fill btn-small" onClick={() => setActive('personal')}>Update</button>
+                                        <div className="mod-sub">View/Update personal data</div>
                                     </div>
                                 </div>
                             </div>
