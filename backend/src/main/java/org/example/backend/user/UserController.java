@@ -24,7 +24,7 @@ public class UserController {
     }
 
     @GetMapping("/v1/profile/{userId}")
-    public ResponseEntity<UserProfileResponseDTO> getProfile(HttpServletRequest request, @PathVariable Long userId) {
+    public ResponseEntity<UserProfileResponseDTO> getProfile(@PathVariable Long userId) {
         return ResponseEntity.ok(userService.getUserProfile(userId));
     }
 
