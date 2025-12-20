@@ -47,7 +47,7 @@ public class RedisService {
         return redisTemplate.getExpire(key, unit);
     }
 
-    // ========== Hash Operations (Perfect for Shared Objects) ==========
+    // ========== Hash Operations ==========
 
     public void setHashValue(String key, String hashKey, Object value) {
         redisTemplate.opsForHash().put(key, hashKey, value);
@@ -77,7 +77,15 @@ public class RedisService {
         return redisTemplate.opsForHash().size(key);
     }
 
-    // ========== List Operations (Queues, Stacks) ==========
+    public Long incrementHashValue(String key, String hashKey) {
+        return redisTemplate.opsForHash().increment(key, hashKey, 1);
+    }
+
+    public Long decrementHashValue(String key, String hashKey) {
+        return redisTemplate.opsForHash().increment(key, hashKey, -1);
+    }
+
+    // ========== List Operations ==========
 
     public Long addToList(String key, Object value) {
         return redisTemplate.opsForList().rightPush(key, value);
@@ -107,7 +115,7 @@ public class RedisService {
         return redisTemplate.opsForList().size(key);
     }
 
-    // ========== Set Operations (Unique Collections) ==========
+    // ========== Set Operations ==========
 
     public Long addToSet(String key, Object... values) {
         return redisTemplate.opsForSet().add(key, values);
@@ -133,7 +141,7 @@ public class RedisService {
         return redisTemplate.opsForSet().pop(key);
     }
 
-    // ========== Sorted Set Operations (Leaderboards, Rankings) ==========
+    // ========== Sorted Set Operations ==========
 
     public Boolean addToSortedSet(String key, Object value, double score) {
         return redisTemplate.opsForZSet().add(key, value, score);
@@ -163,7 +171,7 @@ public class RedisService {
         return redisTemplate.opsForZSet().size(key);
     }
 
-    // ========== Increment/Decrement Operations (Counters) ==========
+    // ========== Increment/Decrement Operations ==========
 
     public Long increment(String key) {
         return redisTemplate.opsForValue().increment(key);
@@ -198,7 +206,6 @@ public class RedisService {
         }
         return 0L;
     }
-
 
     // ========== Pub/Sub Support ==========
 

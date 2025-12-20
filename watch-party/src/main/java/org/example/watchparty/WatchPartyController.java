@@ -2,12 +2,9 @@ package org.example.watchparty;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.example.watchparty.redis.RedisService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.*;
 
 @Slf4j
 @RestController
@@ -16,55 +13,75 @@ import java.util.*;
 public class WatchPartyController {
 
     private final WatchPartyService watchPartyService;
-    private final RedisService redisService;
 
-
-    @PostMapping("/initialize")
-    public ResponseEntity<Map<String, Object>> initialize(@RequestBody WatchParty request) {
+    @PostMapping
+    public ResponseEntity<WatchParty> createParty(@RequestBody WatchParty request) {
         try {
-            log.info("Creating watch party for movie: {} by host: {}",
-                    request.getMovieId(), request.getHostId());
-
-            WatchParty createdParty = watchPartyService.create(request);
-
-            Map<String, Object> response = new HashMap<>();
-            response.put("success", true);
-            response.put("message", "Watch party created successfully");
-            response.put("party", createdParty);
-
-            return ResponseEntity.status(HttpStatus.CREATED).body(response);
-
+            WatchParty party = watchPartyService.createParty(request);
+            return ResponseEntity.status(HttpStatus.CREATED).body(party);
+        } catch (IllegalArgumentException e) {
+            log.error("Invalid party creation request: {}", e.getMessage());
+            return ResponseEntity.badRequest().build();
         } catch (Exception e) {
-            log.error("Error creating watch party", e);
-            Map<String, Object> errorResponse = new HashMap<>();
-            errorResponse.put("success", false);
-            errorResponse.put("error", "Failed to create watch party");
-            errorResponse.put("message", e.getMessage());
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
+            log.error("Error creating party", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
 
-    @GetMapping("/redis/test")
-    public ResponseEntity<Map<String, Object>> testRedis() {
+    @PostMapping("/{partyId}/join")
+    public ResponseEntity<Void> joinParty(
+            @PathVariable String partyId,
+            @RequestBody UserDataDTO user) {
         try {
-            String testKey = "test:connection";
-            String testValue = "Hello from Redis at " + System.currentTimeMillis();
-
-            redisService.setValue(testKey, testValue);
-            Object retrieved = redisService.getValue(testKey);
-
-            Map<String, Object> response = new HashMap<>();
-            response.put("stored", testValue);
-            response.put("retrieved", retrieved);
-            response.put("match", testValue.equals(retrieved));
-            response.put("redis_connected", testValue.equals(retrieved));
-
-            return ResponseEntity.ok(response);
-
+            watchPartyService.joinParty(partyId, user);
+            return ResponseEntity.ok().build();
+        } catch (IllegalArgumentException e) {
+            log.error("Invalid join party request: {}", e.getMessage());
+            return ResponseEntity.badRequest().build();
         } catch (Exception e) {
-            log.error("Redis connection test failed", e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(Map.of("success", false, "error", e.getMessage()));
+            log.error("Error joining party", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
+    @DeleteMapping("/{partyId}/leave")
+    public ResponseEntity<Void> leaveParty(
+            @PathVariable String partyId,
+            @RequestParam Long userId) {
+        try {
+            watchPartyService.leaveParty(partyId, userId);
+            return ResponseEntity.ok().build();
+        } catch (IllegalArgumentException e) {
+            log.error("Invalid leave party request: {}", e.getMessage());
+            return ResponseEntity.badRequest().build();
+        } catch (Exception e) {
+            log.error("Error leaving party", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
+    @GetMapping("/{partyId}")
+    public ResponseEntity<WatchPartyResponse> getParty(@PathVariable String partyId) {
+        try {
+            WatchPartyResponse party = watchPartyService.getPartyWithMembers(partyId);
+            if (party == null) {
+                return ResponseEntity.notFound().build();
+            }
+            return ResponseEntity.ok(party);
+        } catch (Exception e) {
+            log.error("Error getting party", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
+    @DeleteMapping("/{partyId}")
+    public ResponseEntity<Void> deleteParty(@PathVariable String partyId) {
+        try {
+            watchPartyService.deleteParty(partyId);
+            return ResponseEntity.noContent().build();
+        } catch (Exception e) {
+            log.error("Error deleting party", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
 }
