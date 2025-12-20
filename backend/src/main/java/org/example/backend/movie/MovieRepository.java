@@ -18,7 +18,7 @@ public interface MovieRepository extends JpaRepository<Movie, Long>, JpaSpecific
      COUNT(m), 
      (SELECT COUNT(wh) 
       FROM WatchHistory wh 
-      JOIN Movie m2 ON m2.id = wh.movieId
+      JOIN Movie m2 ON m2.movieID = wh.movieId
       WHERE m2.organization.id = :orgId
       AND (wh.isDeleted = false OR wh.isDeleted IS NULL))
    FROM Movie m
@@ -29,7 +29,7 @@ public interface MovieRepository extends JpaRepository<Movie, Long>, JpaSpecific
     @Query("""
    SELECT m.genre, COUNT(wh) as views
    FROM WatchHistory wh
-   JOIN Movie m ON m.id = wh.movieId
+   JOIN Movie m ON m.movieID = wh.movieId
    WHERE m.organization.id = :orgId
    AND (wh.isDeleted = false OR wh.isDeleted IS NULL)
    GROUP BY m.genre
