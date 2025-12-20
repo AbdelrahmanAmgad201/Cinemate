@@ -90,7 +90,7 @@ class LikedMovieServiceTest {
     void testLikeMovieAlreadyExists() {
         LikedMovie existing = LikedMovie.builder()
                 .likedMoviesID(likedMoviesID)
-                .movie(movie)
+                .movieName(movie.getName())
                 .user(user)
                 .build();
 
@@ -115,7 +115,7 @@ class LikedMovieServiceTest {
 
         LikedMovie newLikedMovie = LikedMovie.builder()
                 .likedMoviesID(likedMoviesID)
-                .movie(movie)
+                .movieName(movie.getName())
                 .user(user)
                 .build();
 
@@ -125,7 +125,7 @@ class LikedMovieServiceTest {
 
         assertNotNull(result);
         assertEquals(user, result.getUser());
-        assertEquals(movie, result.getMovie());
+        assertEquals(movie.getName(), result.getMovieName());
         assertEquals(likedMoviesID, result.getLikedMoviesID());
 
         verify(likedMovieRepository, times(1)).save(any(LikedMovie.class));

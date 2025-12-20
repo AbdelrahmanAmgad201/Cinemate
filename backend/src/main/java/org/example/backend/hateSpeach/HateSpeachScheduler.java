@@ -18,7 +18,7 @@ import java.util.List;
 public class HateSpeachScheduler {
 
     private final CommentService commentService;
-    private HateSpeachService hateSpeachService;
+    private final HateSpeachService hateSpeachService;
     private final CommentRepository commentRepository;
     @Scheduled(cron = "0 0 0 * * ?")
     public void schedule(){
