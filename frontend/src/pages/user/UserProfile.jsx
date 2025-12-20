@@ -5,6 +5,7 @@ import { IoIosPerson } from 'react-icons/io';
 import { FaUserPlus, FaUserCheck } from 'react-icons/fa';
 import { ToastContext } from '../../context/ToastContext.jsx';
 import { getModApi } from '../../api/forum-api.jsx';
+import { getUserProfileApi } from '../../api/user-api.jsx';
 import './style/UserProfile.css';
 
 const TABS = [
@@ -24,17 +25,24 @@ export default function UserProfile() {
     const [active, setActive] = useState(TABS[0].key);
 
     useEffect(() => {
-        setLoading(false);
+        setLoading(true);
     }, [userId]);
 
     const [fetchedName, setFetchedName] = useState(null);
+    const [profile, setProfile] = useState(null);
     const { showToast } = useContext(ToastContext);
     const [isFollowing, setIsFollowing] = useState(false);
     const followLastToggleAtRef = useRef(0);
 
+    const followersCount = profile?.numberOfFollowers ?? user?.followersCount ?? user?.followers ?? 0;
+    const followingCount = profile?.numberOfFollowing ?? user?.followingCount ?? user?.following ?? 0;
+
     const displayName = (() => {
+        if (profile && (profile.firstName || profile.lastName)) {
+            return `${profile.firstName || ''} ${profile.lastName || ''}`.trim();
+        }
         if (user && String(user.id) === String(userId)) {
-            return `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.email;
+            return user.email || `User ${userId}`;
         }
         if (fetchedName) return fetchedName;
         return `User ${userId}`;
@@ -43,6 +51,8 @@ export default function UserProfile() {
     useEffect(() => {
         let ignore = false;
         const isObjectId = typeof userId === 'string' && /^[0-9a-fA-F]{24}$/.test(userId);
+        const isNumericId = typeof userId === 'string' && /^\d+$/.test(userId);
+
         if (isObjectId) {
             getModApi({ userId }).then(res => {
                 if (!ignore && res?.success && res.data) {
@@ -52,7 +62,27 @@ export default function UserProfile() {
                     }
                 }
             }).catch(e => {});
+            setLoading(false);
         }
+        else if (isNumericId) {
+            setLoading(true);
+            getUserProfileApi({ userId: Number(userId) }).then(res => {
+                if (!ignore && res?.success && res.data) {
+                    setProfile(res.data);
+                    const name = `${res.data.firstName || ''} ${res.data.lastName || ''}`.trim();
+                    if (name) setFetchedName(name);
+                } else if (!ignore) {
+                    showToast('Failed to load profile', res?.message || 'Unknown error', 'error');
+                }
+            }).catch(e => {
+                console.error(e);
+                if (!ignore) showToast('Failed to load profile', 'Unknown error', 'error');
+            }).finally(() => { if (!ignore) setLoading(false); });
+        }
+        else {
+            setLoading(false);
+        }
+
         return () => { ignore = true; };
     }, [userId]);
     const isOwnProfile = user && (String(user.id) === String(userId));
@@ -164,6 +194,18 @@ export default function UserProfile() {
         return () => { if (pollRef.current) { clearInterval(pollRef.current); pollRef.current = null; } };
     }, [showProfileSidebar]);
 
+    const formatAccountAge = (created) => {
+        if (!created) return '—';
+        const date = new Date(created);
+        if (Number.isNaN(date.getTime())) return '—';
+        const days = Math.floor((Date.now() - date.getTime()) / (1000 * 60 * 60 * 24));
+        const years = Math.floor(days / 365);
+        const months = Math.floor((days % 365) / 30);
+        if (years > 0) return months > 0 ? `${years}y ${months}m` : `${years}y`;
+        if (months > 0) return `${months}m`;
+        return `${days}d`;
+    };
+
     const handleTabScroll = () => {
         const list = tabListRef.current;
         if (!list) return;
@@ -235,12 +277,12 @@ export default function UserProfile() {
 
                         <div className="name-stats-row">
                             <div className="count">
-                                <div className="count-num">{(user && (user.followersCount || user.followers)) ?? '50'}</div>
+                                <div className="count-num">{followersCount}</div>
                                 <div className="count-label">followers</div>
                             </div>
 
                             <div className="count">
-                                <div className="count-num">{(user && (user.followingCount || user.following)) ?? '50'}</div>
+                                <div className="count-num">{followingCount}</div>
                                 <div className="count-label">following</div>
                             </div>
                         </div>
@@ -279,9 +321,10 @@ export default function UserProfile() {
 
                         {active === 'personal' && (
                             <div>
-                                <p className="placeholder-note">Personal data read endpoint not implemented yet.</p>
+                                <p className="placeholder-note">Personal data read endpoint not implemented yet. Showing basic profile info below.</p>
                                 <p><strong>Email:</strong> {user && user.email ? user.email : '-'}</p>
-                                <p><strong>Name:</strong> {user && (user.firstName || user.lastName) ? `${user.firstName || ''} ${user.lastName || ''}` : '-'}</p>
+                                <p><strong>Name:</strong> {(profile && (profile.firstName || profile.lastName)) ? `${profile.firstName || ''} ${profile.lastName || ''}` : (user && (user.firstName || user.lastName) ? `${user.firstName || ''} ${user.lastName || ''}` : '-')}</p>
+                                <p><strong>About:</strong> {(profile && profile.aboutMe) ? profile.aboutMe : '-'}</p>
                             </div>
                         )}
 
@@ -331,17 +374,12 @@ export default function UserProfile() {
 
                         <div className="sidebar-about">
                             <div className="about-title">About</div>
-                            <div className="about-text">{(user && user.about && user.about.trim()) ? user.about : 'No info about the user'}</div>
+                        <div className="about-text">{(profile && profile.aboutMe && profile.aboutMe.trim()) ? profile.aboutMe : (user && user.about && user.about.trim()) ? user.about : 'No info about the user'}</div>
                         </div>
 
                         <div className="sidebar-stats row">
                             <div className="stat-box">
-                                <span className="stat-num">{user && user.createdAt ? (() => {
-                                    const diff = Date.now() - new Date(user.createdAt).getTime();
-                                    const years = Math.floor(diff / (1000*60*60*24*365));
-                                    const months = Math.floor((diff % (1000*60*60*24*365)) / (1000*60*60*24*30));
-                                    return `${years}y ${months}m`;
-                                })() : '—'}</span>
+                                <span className="stat-num">{formatAccountAge(profile?.createdAt || user?.createdAt)}</span>
                                 <span className="stat-label">account age</span>
                             </div>
                         </div>
