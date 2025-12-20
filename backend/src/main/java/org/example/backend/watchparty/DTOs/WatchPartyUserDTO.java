@@ -1,4 +1,4 @@
-package org.example.backend.watchparty;
+package org.example.backend.watchparty.DTOs;
 
 import lombok.Builder;
 import lombok.Data;

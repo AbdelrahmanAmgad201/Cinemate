@@ -6,6 +6,10 @@ import org.example.backend.movie.Movie;
 import org.example.backend.movie.MovieRepository;
 import org.example.backend.user.User;
 import org.example.backend.user.UserRepository;
+import org.example.backend.watchparty.DTOs.MicroserviceInitRequest;
+import org.example.backend.watchparty.DTOs.MicroserviceJoinRequest;
+import org.example.backend.watchparty.DTOs.WatchPartyDetailsResponse;
+import org.example.backend.watchparty.DTOs.WatchPartyUserDTO;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
 import org.springframework.stereotype.Service;
@@ -39,21 +43,8 @@ public class WatchPartyService {
             throw new RuntimeException("This party has ended");
         }
 
-        // Call microservice to get party details
-        WatchPartyDetails details = callMicroserviceGetParty(partyId, userDTO.getUserId());
-
-        WatchPartyDetailsResponse response = new WatchPartyDetailsResponse();
-        response.setPartyId(details.getPartyId());
-        response.setMovieId(details.getMovieId());
-        response.setMovieUrl(details.getMovieUrl());
-        response.setHostId(details.getHostId());
-        response.setIsHost(details.getIsHost());
-        response.setCurrentParticipants(details.getCurrentParticipants());
-        response.setMembers(details.getMembers());
-        response.setStatus(details.getStatus());
-        response.setCreatedAt(details.getCreatedAt());
-
-        return response;
+        // Call microservice to get party details (Checks if user is member and returns data)
+        return callMicroserviceGetParty(partyId, userDTO.getUserId());
     }
 
     @Transactional
@@ -140,7 +131,7 @@ public class WatchPartyService {
         log.info("Called microservice to initialize party: {}", partyId);
     }
 
-    private WatchPartyDetails callMicroserviceGetParty(String partyId, Long userId) {
+    private WatchPartyDetailsResponse callMicroserviceGetParty(String partyId, Long userId) {
         // TODO: GET {watchPartyServiceUrl}/api/parties/{partyId}?userId={userId}
         HttpHeaders headers = new HttpHeaders();
         headers.set("X-API-Key", apiKey);
@@ -159,7 +150,7 @@ public class WatchPartyService {
         log.info("Called microservice to get party: {}", partyId);
 
         // Temporary mock response
-        return WatchPartyDetails.builder()
+        return WatchPartyDetailsResponse.builder()
                 .partyId(partyId)
                 .movieId(1L)
                 .movieUrl("http://example.com/movie.mp4")

@@ -1,4 +1,4 @@
-package org.example.backend.watchparty;
+package org.example.backend.watchparty.DTOs;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -12,11 +12,12 @@ import java.util.List;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class MicroservicePartyResponse {
+public class WatchPartyDetails {
     private String partyId;
     private Long movieId;
     private String movieUrl;
     private Long hostId;
+    private String hostName;
     private Boolean isHost;
     private Integer currentParticipants;
     private List<WatchPartyUserDTO> members;
