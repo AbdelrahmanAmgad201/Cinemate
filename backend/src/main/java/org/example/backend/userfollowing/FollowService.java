@@ -6,6 +6,7 @@ import org.example.backend.user.User;
 import org.example.backend.user.UserRepository;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.util.Optional;
 
 @Service
@@ -61,23 +62,28 @@ public class FollowService {
     private void newFollow(Long followingUserId, Long followedUserId,FollowsID followsId){
         User followingUser = userRepository.findById(followingUserId)
                 .orElseThrow(()->new RuntimeException("User not found"));
+
         User followedUser = userRepository.findById(followedUserId)
                 .orElseThrow(()->new RuntimeException("User not found"));
+
         followingUser.setNumberOfFollowing(followingUser.getNumberOfFollowing()+1);
         followedUser.setNumberOfFollowers(followedUser.getNumberOfFollowers()+1);
+
         Follows follows = Follows.builder()
                 .followsID(followsId)
                 .followingUser(followingUser)
                 .followedUser(followedUser)
                 .build();
+
         userRepository.save(followingUser);
         userRepository.save(followedUser);
         followsRepository.save(follows);
     }
 
     private void refollow(Follows follow){
-        if(follow.getIsDeleted())    return;{
+        if(follow.getIsDeleted()){
             follow.setIsDeleted(false);
+            follow.setFollowedAt(LocalDateTime.now());
             followsRepository.save(follow);
         }
     }
