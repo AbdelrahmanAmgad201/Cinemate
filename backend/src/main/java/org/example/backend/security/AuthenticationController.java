@@ -1,5 +1,6 @@
 package org.example.backend.security;
 
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.example.backend.user.User;
 import org.example.backend.user.UserAlreadyExistsException;
@@ -52,5 +53,15 @@ public class AuthenticationController {
             return ResponseEntity.status(HttpStatus.CONFLICT).body(e.getMessage());
         }
     }
+
+    @PutMapping("/v1/password")
+    public ResponseEntity<String > updatePassword(HttpServletRequest request
+            , @RequestBody UpdatePasswordDTO updatePasswordDTO) {
+        String email = (String) request.getAttribute("userEmail");
+        String role = (String) request.getAttribute("userRole");
+        authenticationService.updatePassword(email, updatePasswordDTO, role);
+        return ResponseEntity.ok("password updated successfully");
+    }
+
 
 }
