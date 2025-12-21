@@ -14,7 +14,8 @@
     flex-direction:column;
     background: linear-gradient(180deg, rgba(12,56,73,0.75) 0%, rgba(1,17,22,1) 100%);
     border: 1px solid rgba(255,255,255,0.03);
-    overflow: hidden;
+    overflow: visible;
+    transition: box-shadow 150ms ease, padding 150ms ease, max-height 140ms ease;
 }
 
 .profile-sidebar .sidebar-top-hero{
@@ -74,8 +75,89 @@
     hyphens: auto;
 }
 
+.about-text.collapsed{
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    position: relative;
+    padding-right: 0;
+    -webkit-mask-image:
+        linear-gradient(180deg, black 0 calc(100% - 1.4em), transparent 100%),
+        linear-gradient(90deg, black 0 70%, transparent 100%);
+    -webkit-mask-repeat: no-repeat, no-repeat;
+    -webkit-mask-position: 0 0, 0 0;
+
+    mask-image:
+        linear-gradient(180deg, black 0 calc(100% - 1.4em), transparent 100%),
+        linear-gradient(90deg, black 0 70%, transparent 100%);
+    mask-repeat: no-repeat, no-repeat;
+    mask-position: 0 0, 0 0;
+}
+
+.about-text.collapsed:after{ display:none }
+
+
+.about-toggle.below{
+    position: static;
+    display: inline-block;
+    margin-left: 0;
+    margin-top: 2px;
+    background: transparent;
+    border: none;
+    color: var(--ghost-white);
+    cursor: pointer;
+    padding: 0 4px;
+    font-weight:500;
+    font-size:12px;
+    line-height:1;
+}
+
+.about-toggle-wrap{ margin-top: 2px }
+
+.about-toggle.below:hover{ text-decoration: none; }
+
+@media (max-width: 600px){
+    .about-toggle.below{ font-size:11px }
+}
+
+
+.about-toggle{
+    position: absolute;
+    right: 6px;
+    bottom: 0;
+    background: transparent;
+    border: none;
+    color: var(--ghost-white);
+    cursor: pointer;
+    padding: 4px 6px;
+    font-weight:600;
+    z-index: 2;
+}
+
+.about-toggle:hover{ text-decoration: underline; }
+.about-toggle:focus-visible{ outline: 2px solid rgba(54,161,243,0.28); outline-offset: 2px; border-radius:4px }
+
+.about-text.expanded{
+    white-space: normal;
+    padding-right: 0;
+}
+
 @media (max-width: 600px){
     .about-text{ font-size:13px; line-height:1.45 }
+    .about-text.collapsed{ padding-right: 0 }
+}
+.about-toggle:hover{ text-decoration: underline; }
+.about-toggle:focus-visible{ outline: 2px solid rgba(54,161,243,0.28); outline-offset: 2px; border-radius:4px }
+
+.about-text.expanded{
+    white-space: normal;
+    padding-right: 0;
+}
+
+@media (max-width: 600px){
+    .about-text{ font-size:13px; line-height:1.45 }
+    .about-text.collapsed{ padding-right: 44px }
 }
 
 .sidebar-divider{ border:none; height:1px; background: rgba(255,255,255,0.04); margin:8px 0 }
