@@ -4,6 +4,7 @@ import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.example.backend.movie.Movie;
 import org.example.backend.movie.MovieRepository;
+import org.example.backend.user.PrivateProfileException;
 import org.example.backend.user.User;
 import org.example.backend.user.UserRepository;
 import org.springframework.data.domain.Page;
@@ -62,7 +63,23 @@ public class MovieReviewService {
         return reviewRepository.save(review);
     }
 
+    @Transactional
     public Page<MovieReview> getMovieReviews(Long movieId, Pageable pageable) {
         return reviewRepository.findByMovie_MovieID(movieId, pageable);
+    }
+
+    @Transactional
+    public Page<MovieReview> getMyMovieReviews(Long movieId, Pageable pageable) {
+        return reviewRepository.findAllByReviewer_Id(movieId, pageable);
+    }
+
+    @Transactional
+    public Page<MovieReview> getOtherUserMovieReviews(Long userId, Pageable pageable) {
+        User  user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+        if(user.getIsPublic()){
+            return reviewRepository.findAllByReviewer_Id(userId, pageable);
+        }
+        throw new PrivateProfileException("this profile is private");
     }
 }

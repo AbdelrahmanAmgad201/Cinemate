@@ -4,6 +4,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -33,6 +34,23 @@ public class MovieReviewController {
         return ResponseEntity.ok(
                 movieReviewService.getMovieReviews(movieId, pageable)
         );
+    }
+
+    @GetMapping("/v1/my-movie-review")
+    public ResponseEntity<Page<MovieReview>> getMyMovieReviews(
+            HttpServletRequest request,
+            @PageableDefault Pageable pageable
+    ){
+        Long userId = (Long) request.getAttribute("userId");
+        return ResponseEntity.ok(movieReviewService.getMyMovieReviews(userId, pageable));
+    }
+
+    @GetMapping("/v1/other-user-movie-review/{userId}")
+    public ResponseEntity<Page<MovieReview>> getOtherUserMovieReviews(
+            @PathVariable Long userId,
+            Pageable pageable
+    ){
+        return ResponseEntity.ok(movieReviewService.getOtherUserMovieReviews(userId, pageable));
     }
 }
 
