@@ -199,7 +199,8 @@ export default function UserProfile() {
         if (!created) return '—';
         const date = new Date(created);
         if (Number.isNaN(date.getTime())) return '—';
-        const days = Math.floor((Date.now() - date.getTime()) / (1000 * 60 * 60 * 24));
+        const msDiff = Date.now() - date.getTime();
+        const days = Math.max(0, Math.floor(msDiff / (1000 * 60 * 60 * 24)));
         const years = Math.floor(days / 365);
         const months = Math.floor((days % 365) / 30);
         if (years > 0) return months > 0 ? `${years}y ${months}m` : `${years}y`;
@@ -287,12 +288,11 @@ export default function UserProfile() {
                                 <div className="count-label">following</div>
                             </div>
                         </div>
-
-                        <hr className="profile-header-sep" />
                     </div>
                 </div>
 
                 <div className="profile-tabbar" role="tablist" ref={headerRef}>
+                    <hr className="profile-header-sep" />
                     <div className="tab-scroll-wrap">
                         <div className="tab-list" ref={tabListRef} onScroll={handleTabScroll}>
                             {visibleTabs.map(tab => (

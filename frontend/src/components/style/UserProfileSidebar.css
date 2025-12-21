@@ -39,12 +39,17 @@
     gap:28px;
     align-items:flex-start;
     margin-top:8px;
+    margin-bottom:8px;
 }
 
 .sidebar-stats .stat-box .stat-num{
-    font-size:18px;
+    font-size:22px;
     font-weight:700;
     color:var(--ghost-white);
+}
+
+@media (max-width: 600px){
+    .sidebar-stats .stat-box .stat-num{ font-size:20px }
 }
 
 .sidebar-stats .stat-box .stat-label{
@@ -55,11 +60,25 @@
     margin-top:6px;
 }
 
-.sidebar-about{ margin-top:8px; margin-bottom:24px }
+.sidebar-about{ margin-top:2px; margin-bottom:24px }
+.profile-sidebar .sidebar-desc{ margin-bottom:6px }
 .about-title{ font-weight:700; color:var(--ghost-white); margin-bottom:6px }
-.about-text{ color:var(--grey-text); font-size:13px; line-height:1.3 }
+.about-text{
+    color:var(--grey-text);
+    font-size:14px;
+    line-height:1.6;
+    font-weight:400;
+    font-family: var(--ui-font, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial);
+    white-space: pre-wrap;
+    word-break: break-word;
+    hyphens: auto;
+}
 
-.sidebar-divider{ border:none; height:1px; background: rgba(255,255,255,0.04); margin:12px 0 }
+@media (max-width: 600px){
+    .about-text{ font-size:13px; line-height:1.45 }
+}
+
+.sidebar-divider{ border:none; height:1px; background: rgba(255,255,255,0.04); margin:8px 0 }
 
 .sidebar-mods h3{ font-size:13px; color:var(--grey-text); margin-bottom:12px }
 .mod-user{ display:flex; gap:12px; align-items:center }
