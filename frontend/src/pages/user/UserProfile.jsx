@@ -6,6 +6,7 @@ import { FaUserPlus, FaUserCheck } from 'react-icons/fa';
 import { ToastContext } from '../../context/ToastContext.jsx';
 import { getModApi } from '../../api/forum-api.jsx';
 import { getUserProfileApi } from '../../api/user-api.jsx';
+import { formatCount } from '../../utils/formate.jsx';
 import './style/UserProfile.css';
 import UserProfileSidebar from '../../components/UserProfileSidebar.jsx';
 
@@ -279,12 +280,12 @@ export default function UserProfile() {
 
                         <div className="name-stats-row">
                             <div className="count">
-                                <div className="count-num">{followersCount}</div>
+                                <div className="count-num" title={String(followersCount ?? 0)}>{formatCount(followersCount)}</div>
                                 <div className="count-label">followers</div>
                             </div>
 
                             <div className="count">
-                                <div className="count-num">{followingCount}</div>
+                                <div className="count-num" title={String(followingCount ?? 0)}>{formatCount(followingCount)}</div>
                                 <div className="count-label">following</div>
                             </div>
                         </div>

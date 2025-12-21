@@ -1,6 +1,51 @@
-import React from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { IoIosPerson } from 'react-icons/io';
 import './style/UserProfileSidebar.css';
+
+function AboutBlock({ user, profile }) {
+    const [aboutExpanded, setAboutExpanded] = useState(false);
+    const [aboutOverflow, setAboutOverflow] = useState(false);
+    const aboutRef = useRef(null);
+    const aboutText = (profile && profile.aboutMe && profile.aboutMe.trim()) ? profile.aboutMe : (user && user.about && user.about.trim()) ? user.about : 'No info about the user';
+
+    useEffect(() => {
+        const el = aboutRef.current;
+        if (!el) return;
+        const check = () => {
+            setAboutOverflow(el.scrollHeight > el.clientHeight + 1);
+        };
+        check();
+        window.addEventListener('resize', check);
+        return () => { window.removeEventListener('resize', check); };
+    }, [aboutText]);
+
+    const toggleAbout = () => { setAboutExpanded(v => !v); };
+
+    const id = `about-${user?.id || 'profile'}`;
+
+    return (
+        <div>
+            <div id={id} ref={aboutRef} className={`about-text ${aboutExpanded ? 'expanded' : 'collapsed'}`} title={aboutText}>
+                {aboutText}
+            </div>
+
+            {(aboutText !== 'No info about the user') && (aboutOverflow || aboutExpanded) && (
+                <div className="about-toggle-wrap">
+                    <button
+                        type="button"
+                        className="about-toggle below"
+                        onClick={toggleAbout}
+                        aria-expanded={aboutExpanded}
+                        aria-controls={id}
+                        aria-label={aboutExpanded ? 'Show less of about' : 'Show more of about'}
+                    >
+                        {aboutExpanded ? 'show less' : 'show more'}
+                    </button>
+                </div>
+            )}
+        </div>
+    );
+}
 
 export default function UserProfileSidebar({
     sidebarRef,
@@ -22,7 +67,8 @@ export default function UserProfileSidebar({
 
                 <div className="sidebar-about">
                     <div className="about-title">About</div>
-                    <div className="about-text">{(profile && profile.aboutMe && profile.aboutMe.trim()) ? profile.aboutMe : (user && user.about && user.about.trim()) ? user.about : 'No info about the user'}</div>
+                    {/* About text with collapse/expand */}
+                    <AboutBlock user={user} profile={profile} />
                 </div>
 
                 <div className="sidebar-stats row">
