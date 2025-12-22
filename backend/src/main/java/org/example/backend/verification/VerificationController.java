@@ -33,7 +33,7 @@ public class VerificationController  {
         return ResponseEntity.ok(verificationService.forgetPasswordVerification(email, code));
     }
 
-    @PutMapping("/v1/update-password-with-verification-code")
+    @PutMapping("/v1/update-password-with-code")
     public ResponseEntity<String> updatePasswordWithVerificationCode(HttpServletRequest request,
                 @RequestBody UpdatePasswordWithVerificationDTO updatePasswordWithVerificationDTO) {
         String email = (String) request.getAttribute("userEmail");

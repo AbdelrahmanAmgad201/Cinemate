@@ -82,7 +82,8 @@ public class UserService {
     }
 
     @Transactional
-    public void updateAbout(Long userId, String about) {
+    public void updateAbout(Long userId, AboutDTO aboutDTO) {
+        String about = aboutDTO.getAbout();
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("User not found"));
         user.setAbout(about);
@@ -90,7 +91,8 @@ public class UserService {
     }
 
     @Transactional
-    public void updateBirthDate(Long userId, LocalDate birthdate) {
+    public void updateBirthDate(Long userId, BirthDateDTO birthDateDTO) {
+        LocalDate birthdate = birthDateDTO.getBirthDate();
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("User not found"));
         user.setBirthDate(birthdate);
@@ -119,7 +121,7 @@ public class UserService {
             if (postIds.isEmpty()) {
                 return;
             }
-            int totalPosts = softChangeAuthorNamePostsBatch(postIds, newName);
+            int totalPosts = ChangePostsAuthor (postIds, newName);
         } catch (Exception e) {
             log.error("Error during posts cascade updating userName: {}",userId, e);
         }
@@ -138,7 +140,7 @@ public class UserService {
         return ids;
     }
 
-    private int softChangeAuthorNamePostsBatch(List<ObjectId> postIds, String newName) {
+    private int ChangePostsAuthor(List<ObjectId> postIds, String newName) {
         int totalChanged = 0;
 
         for (int i = 0; i < postIds.size(); i += BATCH_SIZE) {
