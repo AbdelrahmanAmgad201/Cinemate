@@ -276,19 +276,7 @@ export default function UserProfile() {
                             )}
                         </div>
 
-                        <div className="user-meta">{String(userId)}</div>
-
-                        <div className="name-stats-row">
-                            <div className="count">
-                                <div className="count-num" title={String(followersCount ?? 0)}>{formatCount(followersCount)}</div>
-                                <div className="count-label">followers</div>
-                            </div>
-
-                            <div className="count">
-                                <div className="count-num" title={String(followingCount ?? 0)}>{formatCount(followingCount)}</div>
-                                <div className="count-label">following</div>
-                            </div>
-                        </div>
+    
                     </div>
                 </div>
 
@@ -378,6 +366,8 @@ export default function UserProfile() {
                     setActive={setActive}
                     avatarSrc={avatarSrc}
                     formatAccountAge={formatAccountAge}
+                    followersCount={followersCount}
+                    followingCount={followingCount}
                 />
             </div>
         </div>
