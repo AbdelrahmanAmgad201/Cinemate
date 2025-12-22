@@ -14,7 +14,7 @@
     flex-direction:column;
     background: linear-gradient(180deg, rgba(12,56,73,0.75) 0%, rgba(1,17,22,1) 100%);
     border: 1px solid rgba(255,255,255,0.03);
-    overflow: visible;
+    overflow: hidden;
     transition: box-shadow 150ms ease, padding 150ms ease, max-height 140ms ease;
 }
 

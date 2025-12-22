@@ -106,8 +106,10 @@ export default function UserProfileSidebar({
                             className="mod-user mod-user-clickable"
                             role="button"
                             tabIndex={0}
-                            onClick={() => setActive('personal')}
-                            onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setActive('personal'); } }}
+                            title="Personal data (coming soon)"
+                            aria-disabled={true}
+                            onClick={() => { /* no-op while personal data is not implemented */ }}
+                            onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); /* no-op */ } }}
                         >
                             <div className="profile-avatar-circle profile-avatar-small" aria-hidden>
                                 {avatarSrc ? <img src={avatarSrc} alt="avatar" /> : <IoIosPerson size={18} />}
