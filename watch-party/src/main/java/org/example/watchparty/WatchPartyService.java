@@ -47,7 +47,7 @@ public class WatchPartyService {
                 .movieUrl(request.getMovieUrl())
                 .hostId(request.getHostId())
                 .hostName(request.getHostName())
-                .currentParticipants(1) // Host 
+                .currentParticipants(1) // Host
                 .status("ACTIVE")
                 .createdAt(LocalDateTime.now())
                 .build();
