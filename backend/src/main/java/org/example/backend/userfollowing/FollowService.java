@@ -4,6 +4,8 @@ import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.example.backend.user.User;
 import org.example.backend.user.UserRepository;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -18,6 +20,7 @@ public class FollowService {
 
     @Transactional
     public void follow(Long followingUserId, Long followedUserId){
+        if(followingUserId.equals(followedUserId)) return;
         FollowsID followsId = getFollowsID(followingUserId, followedUserId);
         Optional<Follows> optionalFollow =  followsRepository.findById(followsId);
         if(optionalFollow.isPresent()){
@@ -57,6 +60,16 @@ public class FollowService {
             return !follows.getIsDeleted();
         }
         return false;
+    }
+
+    @Transactional
+    public Page<FollowerView> getUserFollowers(Long followedUserId, Pageable pageable){
+        return followsRepository.findAllByFollowedUser_IdAndIsDeletedFalse(followedUserId,pageable);
+    }
+
+    @Transactional
+    public Page<FollowingView> getUserFollowings(Long followingUserId, Pageable pageable){
+        return followsRepository.findAllByFollowingUser_IdAndIsDeletedFalse(followingUserId,pageable);
     }
 
     private void newFollow(Long followingUserId, Long followedUserId,FollowsID followsId){
