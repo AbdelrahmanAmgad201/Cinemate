@@ -2,18 +2,28 @@ package org.example.backend.user;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.transaction.Transactional;
+import lombok.extern.slf4j.Slf4j;
 import org.bson.types.ObjectId;
 import org.example.backend.verification.Verfication;
 import org.example.backend.verification.VerificationService;
 import lombok.RequiredArgsConstructor;
 import org.example.backend.security.CredentialsRequest;
+import org.springframework.data.mongodb.core.MongoTemplate;
+import org.springframework.data.mongodb.core.query.Criteria;
+import org.springframework.data.mongodb.core.query.Query;
+import org.springframework.data.mongodb.core.query.Update;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import java.math.BigInteger;
+import java.time.Instant;
+import java.time.LocalDate;
+import java.util.List;
 import java.util.Optional;
 import java.util.Random;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class UserService {
@@ -22,7 +32,8 @@ public class UserService {
     private final Random random = new Random();
     @Autowired
     private VerificationService verificationService;
-
+    private final MongoTemplate mongoTemplate;
+    private static final int BATCH_SIZE = 100;
 
     public User addUser(String email, String password) {
         User user = User.builder()
@@ -70,6 +81,86 @@ public class UserService {
         }
     }
 
+    @Transactional
+    public void updateAbout(Long userId, AboutDTO aboutDTO) {
+        String about = aboutDTO.getAbout();
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+        user.setAbout(about);
+        userRepository.save(user);
+    }
+
+    @Transactional
+    public void updateBirthDate(Long userId, BirthDateDTO birthDateDTO) {
+        LocalDate birthdate = birthDateDTO.getBirthDate();
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+        user.setBirthDate(birthdate);
+        userRepository.save(user);
+    }
+
+    public void updateName(Long userId, UserName userName) {
+        String firstName = userName.getFirstName();
+        String lastName = userName.getLastName();
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+        user.setFirstName(firstName);
+        user.setLastName(lastName);
+        userRepository.save(user);
+        updatePostsUserName(user);
+    }
+
+    @Async
+    protected void updatePostsUserName(User user) {
+        ObjectId userId = longToObjectId(user.getId());
+        String newName = user.getFirstName()+ " " + user.getLastName();
+        try {
+            // Get all post IDs for this user
+            List<ObjectId> postIds = getIds("posts", Criteria.where("ownerId").is(userId));
+
+            if (postIds.isEmpty()) {
+                return;
+            }
+            int totalPosts = ChangePostsAuthor (postIds, newName);
+        } catch (Exception e) {
+            log.error("Error during posts cascade updating userName: {}",userId, e);
+        }
+    }
+
+    private List<ObjectId> getIds(String collection, Criteria criteria) {
+        Query query = new Query(criteria);
+        List<ObjectId> ids = mongoTemplate.findDistinct(
+                query,
+                "_id",
+                collection,
+                ObjectId.class
+        );
+
+        log.info("Found {} posts to change name for user {}", ids.size(), criteria);
+        return ids;
+    }
+
+    private int ChangePostsAuthor(List<ObjectId> postIds, String newName) {
+        int totalChanged = 0;
+
+        for (int i = 0; i < postIds.size(); i += BATCH_SIZE) {
+            List<ObjectId> batch = postIds.subList(i, Math.min(i + BATCH_SIZE, postIds.size()));
+            long changed = changeAuthorNameBatch("posts", Criteria.where("_id").in(batch), newName);
+            totalChanged += changed;
+            log.debug("change author name batch of {} posts", changed);
+        }
+
+        return totalChanged;
+    }
+
+    private long changeAuthorNameBatch(String collection, Criteria criteria, String newName) {
+        Query query = new Query(criteria);
+        Update update = new Update()
+                .set("authorName", newName);
+
+        return mongoTemplate.updateMulti(query, update, collection).getModifiedCount();
+    }
+
     public String getUserNameFromObjectUserId(ObjectId objectUserId) {
         Long userId = objectIdToLong(objectUserId);
         return getUserName(userId);
@@ -90,5 +181,9 @@ public class UserService {
     private Long objectIdToLong(ObjectId objectId) {
         String hex = objectId.toHexString();
         return new BigInteger(hex, 16).longValue();
+    }
+
+    private ObjectId longToObjectId(Long value) {
+        return new ObjectId(String.format("%024x", value));
     }
 }
