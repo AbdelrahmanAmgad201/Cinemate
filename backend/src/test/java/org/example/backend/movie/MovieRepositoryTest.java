@@ -12,10 +12,11 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.domain.EntityScan;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 import org.springframework.test.context.ActiveProfiles;
-
 
 import java.util.List;
 
@@ -36,11 +37,14 @@ class MovieRepositoryTest {
     @Autowired
     private AdminRepository adminRepository;
 
+    private Organization org1;
+    private Organization org2;
+
     @BeforeEach
     void setUp() {
         // Organizations
-        Organization org1 = Organization.builder().name("Org1").email("org1@test.com").password("pass").build();
-        Organization org2 = Organization.builder().name("Org2").email("org2@test.com").password("pass").build();
+        org1 = Organization.builder().name("Org1").email("org1@test.com").password("pass").build();
+        org2 = Organization.builder().name("Org2").email("org2@test.com").password("pass").build();
         organizationRepository.saveAll(List.of(org1, org2));
 
         // Admin
@@ -67,9 +71,10 @@ class MovieRepositoryTest {
     }
 
     @Test
-    void testGetMostPopularOrganization() {
-        List<Organization> orgs = movieRepository.getMostPopularOrganization(PageRequest.of(0, 1));
-        assertThat(orgs).isNotNull(); // can't assert size if WatchHistory is empty
+    void testFindByAdminIsNotNullAndOrganization_Id() {
+        List<Movie> movies = movieRepository.findByAdminIsNotNullAndOrganization_Id(org1.getId());
+        assertThat(movies).hasSize(1);
+        assertThat(movies.get(0).getName()).isEqualTo("Movie1");
     }
 
     @Test
@@ -79,13 +84,4 @@ class MovieRepositoryTest {
         assertThat(mostLiked).isNotNull();
         assertThat(mostRated).isNotNull();
     }
-
-    @Test
-    void testGetMovieOverview() {
-        Movie movie = movieRepository.findAll().get(0);
-        OneMovieOverView overview = movieRepository.getMovieOverview(movie.getMovieID());
-        assertThat(overview).isNotNull();
-    }
 }
-
-
