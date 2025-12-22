@@ -47,6 +47,8 @@ function AboutBlock({ user, profile }) {
     );
 }
 
+import { formatCount } from '../utils/formate.jsx';
+
 export default function UserProfileSidebar({
     sidebarRef,
     showProfileSidebar,
@@ -56,13 +58,30 @@ export default function UserProfileSidebar({
     isOwnProfile,
     setActive,
     avatarSrc,
-    formatAccountAge
+    formatAccountAge,
+    followersCount = 0,
+    followingCount = 0
 }) {
+    const followers = followersCount ?? 0;
+    const following = followingCount ?? 0;
+
     return (
         <aside ref={sidebarRef} className={`sidebar-col profile-sidebar ${!showProfileSidebar ? 'hidden-by-overlap' : ''}`} aria-hidden={!showProfileSidebar}>
             <div className="sidebar-card">
                 <div className="sidebar-top-hero" />
                 <h2 className="sidebar-title">{displayName}</h2>
+
+                <div className="sidebar-stats-inline">
+                    <div className="stat-inline">
+                        <span className="stat-num-inline" title={String(followers)}>{formatCount(followers)}</span>
+                        <span className="stat-label-inline">followers</span>
+                    </div>
+                    <div className="stat-inline">
+                        <span className="stat-num-inline" title={String(following)}>{formatCount(following)}</span>
+                        <span className="stat-label-inline">following</span>
+                    </div>
+                </div>
+
                 <p className="sidebar-desc">{user && (user.username || '')}</p>
 
                 <div className="sidebar-about">
@@ -71,7 +90,7 @@ export default function UserProfileSidebar({
                     <AboutBlock user={user} profile={profile} />
                 </div>
 
-                <div className="sidebar-stats row">
+                <div className="sidebar-account-age">
                     <div className="stat-box">
                         <span className="stat-num">{formatAccountAge(profile?.createdAt || user?.createdAt)}</span>
                         <span className="stat-label">account age</span>

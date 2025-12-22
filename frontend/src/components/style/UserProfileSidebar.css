@@ -117,6 +117,51 @@
 
 .about-toggle.below:hover{ text-decoration: none; }
 
+.sidebar-stats-inline{
+    display:flex;
+    gap:12px;
+    align-items:center;
+    justify-content:flex-start;
+    width:100%;
+    padding-left:0;
+    box-sizing:border-box;
+    margin-top:4px;
+    margin-bottom:4px;
+}
+.stat-inline{ display:flex; gap:8px; align-items:center }
+.stat-num-inline{ font-weight:700; color:var(--ghost-white); font-size:14px }
+.stat-label-inline{ color:var(--grey-text); font-size:13px }
+
+@media (max-width: 600px){
+    .sidebar-stats-inline{ gap:12px; margin-top:6px; padding-left:12px }
+    .stat-num-inline{ font-size:13px }
+    .stat-label-inline{ font-size:12px }
+}
+
+.sidebar-account-age{ margin-top:4px; margin-bottom:10px; padding-left:0 }
+.sidebar-account-age .stat-box{ display:flex; flex-direction:column; gap:12px; align-items:flex-start }
+.sidebar-account-age .stat-num{
+    font-size:24px;
+    font-weight:700;
+    color:var(--ghost-white);
+    line-height:1;
+    font-family: var(--ui-font, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial);
+    font-variant-numeric: tabular-nums;
+    -moz-font-feature-settings: 'tnum' 1;
+    -webkit-font-feature-settings: 'tnum' 1;
+    font-feature-settings: 'tnum' 1;
+    letter-spacing: 0;
+    line-height: 1.05;
+}
+.sidebar-account-age .stat-label{ font-size:13px; color:var(--grey-text); font-weight:400; margin-left:0; text-transform: none }
+
+@media (max-width: 600px){
+    .sidebar-account-age{ padding-left:0 }
+    .sidebar-account-age .stat-box{ gap:6px }
+    .sidebar-account-age .stat-num{ font-size:16px }
+    .sidebar-account-age .stat-label{ font-size:12px }
+}
+
 @media (max-width: 600px){
     .about-toggle.below{ font-size:11px }
 }
