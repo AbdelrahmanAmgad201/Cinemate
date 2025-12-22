@@ -58,8 +58,9 @@ public class AuthenticationController {
     }
 
     @PutMapping("/v1/password")
-    public ResponseEntity<String > updatePassword(HttpServletRequest request
-            , @RequestBody UpdatePasswordDTO updatePasswordDTO) {
+    public ResponseEntity<String > updatePassword(
+            HttpServletRequest request,
+            @RequestBody UpdatePasswordDTO updatePasswordDTO) {
         String email = (String) request.getAttribute("userEmail");
         String role = (String) request.getAttribute("userRole");
         authenticationService.updatePassword(email, updatePasswordDTO, role);
