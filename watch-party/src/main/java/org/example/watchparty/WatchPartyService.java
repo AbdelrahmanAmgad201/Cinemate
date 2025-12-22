@@ -47,7 +47,7 @@ public class WatchPartyService {
                 .movieUrl(request.getMovieUrl())
                 .hostId(request.getHostId())
                 .hostName(request.getHostName())
-                .currentParticipants(1) // Host is first participant
+                .currentParticipants(1) // Host 
                 .status("ACTIVE")
                 .createdAt(LocalDateTime.now())
                 .build();
@@ -81,7 +81,6 @@ public class WatchPartyService {
         String membersKey = partyKey + MEMBERS_SUFFIX;
         String memberKey = createMemberKey(user.getUserId());
 
-        // Check if user already joined using userId-based key
         if (Boolean.TRUE.equals(redisService.isMemberOfSet(membersKey, memberKey))) {
             log.info("User {} ({}) already in party {}", user.getUserName(), user.getUserId(), partyId);
             return;

@@ -19,7 +19,4 @@ public class WatchPartyCreationDTO {
     private String movieUrl;
     private Long hostId;
     private String hostName;
-    private Integer currentParticipants;
-    private String status;
-    private LocalDateTime createdAt;
 }
