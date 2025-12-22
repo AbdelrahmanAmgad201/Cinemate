@@ -144,6 +144,10 @@
     font-size:24px;
     font-weight:700;
     color:var(--ghost-white);
+    display: inline-block;
+    transform-origin: center;
+    transform: scaleY(1.12);
+    transition: transform 150ms ease;
     line-height:1;
     font-family: var(--ui-font, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial);
     font-variant-numeric: tabular-nums;
@@ -158,7 +162,7 @@
 @media (max-width: 600px){
     .sidebar-account-age{ padding-left:0 }
     .sidebar-account-age .stat-box{ gap:6px }
-    .sidebar-account-age .stat-num{ font-size:16px }
+    .sidebar-account-age .stat-num{ font-size:16px; display:inline-block; transform-origin: center; transform: scaleY(1.08); }
     .sidebar-account-age .stat-label{ font-size:12px }
 }
 
