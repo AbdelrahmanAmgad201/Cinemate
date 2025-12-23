@@ -42,8 +42,8 @@ const ProfileCompletion = () => {
                 gender: formData.gender,
             });
             if(response.success){
-                sessionStorage.setItem(JWT.STORAGE_NAME, response.token);
-                const userData = jwtDecode(response.token);
+                const token = sessionStorage.getItem(JWT.STORAGE_NAME);
+                const userData = jwtDecode(token);
                 setUser({
                         id: userData.id,
                         email: userData.email,
