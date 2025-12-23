@@ -30,6 +30,7 @@ public class JWTAuthenticationFilter extends OncePerRequestFilter {
             String email = jwtProvider.getEmailFromToken(token);
             String role = jwtProvider.getRoleFromToken(token);
             Long id = jwtProvider.getIdFromToken(token);
+            String name = jwtProvider.getNameFromToken(token);
 
             UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
                     email,
@@ -42,6 +43,7 @@ public class JWTAuthenticationFilter extends OncePerRequestFilter {
             request.setAttribute("userId", id);
             request.setAttribute("userRole", role);
             request.setAttribute("userEmail", email);
+            request.setAttribute("userName", name);
 
             SecurityContextHolder.getContext().setAuthentication(authentication);
         }
