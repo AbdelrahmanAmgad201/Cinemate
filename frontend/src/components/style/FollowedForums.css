@@ -9,6 +9,8 @@
 .forum-name { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex-grow: 1; font-size: 13px; }
 .forum-dot { display: none; }
 .show-more { background: transparent; border: none; color: var(--ghost-white); text-align: left; padding: 6px 10px; cursor: pointer; margin-top: 6px; }
+.show-controls { display: flex; gap: 8px; align-items: center; margin-top: 6px; }
+.collapse { background: transparent; border: none; color: var(--ghost-white); text-align: left; padding: 6px 8px; cursor: pointer; font-size: 13px; }
 
 @media (max-width: 800px) {
   .followed-forums { display: none; }
