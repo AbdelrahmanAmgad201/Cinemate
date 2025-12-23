@@ -8,6 +8,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDate;
+
 @RestController
 @RequestMapping("/api/user")
 public class UserController {
@@ -44,9 +46,32 @@ public class UserController {
         return  ResponseEntity.ok(userService.getUserNameFromObjectUserId(userId));
     }
 
-
     @GetMapping("/test")
     public ResponseEntity<String> testUser() {
         return ResponseEntity.ok("USER OK");
+    }
+
+    @PutMapping("/v1/user-about")
+    public ResponseEntity<String> updateAboutUser(HttpServletRequest request,
+                                            @RequestBody AboutDTO about) {
+        Long userId = (Long) request.getAttribute("userId");
+        userService.updateAbout(userId, about);
+        return ResponseEntity.ok("about is updated successfully");
+    }
+
+    @PutMapping("/v1/user-birth-date")
+    public ResponseEntity<String> updateBirthDate(HttpServletRequest request,
+                                                  @RequestBody BirthDateDTO birthDate){
+        Long userId = (Long) request.getAttribute("userId");
+        userService.updateBirthDate(userId, birthDate);
+        return ResponseEntity.ok("Birth Date is updated successfully");
+    }
+
+    @PutMapping("/v1/user-name")
+    public ResponseEntity<String> updateUserName(HttpServletRequest request,
+                                                 @RequestBody UserName userName) {
+        Long userId = (Long) request.getAttribute("userId");
+        userService.updateName(userId,userName);
+        return ResponseEntity.ok("User name is updated successfully");
     }
 }
