@@ -14,7 +14,7 @@
     flex-direction:column;
     background: linear-gradient(180deg, rgba(12,56,73,0.75) 0%, rgba(1,17,22,1) 100%);
     border: 1px solid rgba(255,255,255,0.03);
-    overflow: visible;
+    overflow: hidden;
     transition: box-shadow 150ms ease, padding 150ms ease, max-height 140ms ease;
 }
 
@@ -144,6 +144,10 @@
     font-size:24px;
     font-weight:700;
     color:var(--ghost-white);
+    display: inline-block;
+    transform-origin: center;
+    transform: scaleY(1.12);
+    transition: transform 150ms ease;
     line-height:1;
     font-family: var(--ui-font, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial);
     font-variant-numeric: tabular-nums;
@@ -158,7 +162,7 @@
 @media (max-width: 600px){
     .sidebar-account-age{ padding-left:0 }
     .sidebar-account-age .stat-box{ gap:6px }
-    .sidebar-account-age .stat-num{ font-size:16px }
+    .sidebar-account-age .stat-num{ font-size:16px; display:inline-block; transform-origin: center; transform: scaleY(1.08); }
     .sidebar-account-age .stat-label{ font-size:12px }
 }
 

@@ -90,7 +90,7 @@ export default function UserProfile() {
     const isOwnProfile = user && (String(user.id) === String(userId));
     const visibleTabs = isOwnProfile
         ? TABS.filter(t => t.key !== 'personal')
-        : TABS.filter(t => ['posts','forums'].includes(t.key));
+        : TABS.filter(t => ['posts','forums','liked','reviews'].includes(t.key));
 
     useEffect(() => {
         if (active === 'personal') return;
@@ -311,7 +311,6 @@ export default function UserProfile() {
 
                         {active === 'personal' && (
                             <div>
-                                <p className="placeholder-note">Personal data read endpoint not implemented yet. Showing basic profile info below.</p>
                                 <p><strong>Email:</strong> {user && user.email ? user.email : '-'}</p>
                                 <p><strong>Name:</strong> {(profile && (profile.firstName || profile.lastName)) ? `${profile.firstName || ''} ${profile.lastName || ''}` : (user && (user.firstName || user.lastName) ? `${user.firstName || ''} ${user.lastName || ''}` : '-')}</p>
                                 <p><strong>About:</strong> {(profile && profile.aboutMe) ? profile.aboutMe : '-'}</p>
