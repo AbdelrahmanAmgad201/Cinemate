@@ -34,6 +34,7 @@ export const PATHS = {
     ROOT: "/",
     HOME: "/home-page",
     EMAIL_VERIFICATION: "/email-verification",
+    PROFILE_COMPLETION: "/profile-completion",
 
     GOOGLE_AUTH : {
         REDIRECT: "/oauth2/redirect",

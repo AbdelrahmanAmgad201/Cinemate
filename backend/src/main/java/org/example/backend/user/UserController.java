@@ -44,6 +44,16 @@ public class UserController {
         return  ResponseEntity.ok(userService.getUserNameFromObjectUserId(userId));
     }
 
+    @PatchMapping("/v1/complete-profile")
+    @PreAuthorize("hasRole('USER')")
+    public ResponseEntity<?> completeProfile(
+        @RequestBody ProfileCompletionDTO request,
+        HttpServletRequest httpRequest){
+
+        Long userId = (Long) httpRequest.getAttribute("userId");
+        return ResponseEntity.ok(userService.completeProfile(userId, request));
+    }
+
 
     @GetMapping("/test")
     public ResponseEntity<String> testUser() {

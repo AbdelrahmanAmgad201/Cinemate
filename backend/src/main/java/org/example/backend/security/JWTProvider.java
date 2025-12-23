@@ -28,6 +28,10 @@ public class JWTProvider {
         claims.put("name", account.getName());
         claims.put("role", account.getRole());
 
+        if(account.getRole().equals("ROLE_USER")){
+            claims.put("profileComplete", account.getProfileComplete() != null ? account.getProfileComplete() : true);
+        }
+
         Date now = new Date();
         long jwtExpiration = 24 * 60 * 60 * 1000;
         Date expiryDate = new Date(now.getTime() + jwtExpiration);
@@ -60,6 +64,11 @@ public class JWTProvider {
     public String getNameFromToken(String token) {
         Claims claims = parseToken(token);
         return claims.get("name", String.class);
+    }
+    
+    public Boolean getProfileCompleteFromToken(String token) {
+        Claims claims = parseToken(token);
+        return claims.get("profileComplete", Boolean.class);
     }
 
     public boolean validateToken(String token) {
