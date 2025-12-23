@@ -120,6 +120,7 @@ export default function AdminProfile() {
                     {/* Email Field */}
                     <div className="input-field">
                         <label><LuMail size={14} /> Email Address</label>
+                        {/* The following is commented out because we don't want to allow editing the email address yet. */}
                         {/*{isEditable ? (*/}
                         {/*    <input*/}
                         {/*        type="email"*/}
@@ -192,8 +193,8 @@ export default function AdminProfile() {
                             <>
                                 <button className="secondary-btn" onClick={handleCancel}>Cancel</button>
                                 <button className="primary-btn" onClick={async () => {
-                                    setIsEditable(false)
                                     await handleSave()
+                                    setIsEditable(false)
                                 }}>Save Changes</button>
                             </>
                         )}
