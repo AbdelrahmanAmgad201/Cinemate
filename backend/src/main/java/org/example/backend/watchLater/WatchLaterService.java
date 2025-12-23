@@ -45,6 +45,7 @@ public class WatchLaterService {
         }
         WatchLater newWatchLater = WatchLater.builder().
                 watchLaterID(id).
+                movie(movie).
                 movieName(movie.getName()).
                 user(user).
                 build();

@@ -27,6 +27,7 @@ public class WatchLater {
     private User user;
 
     @ManyToOne
+    @MapsId("movieId")
     @JoinColumn(name = "movie_id")
     @JsonIgnore
     private Movie movie;
