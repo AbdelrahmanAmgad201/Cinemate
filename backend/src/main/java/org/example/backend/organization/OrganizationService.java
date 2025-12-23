@@ -56,4 +56,9 @@ public class OrganizationService {
         return savedMovie.getMovieID();
     }
 
+    public PersonalData getPersonalData(Long userId) {
+        return organizationRepository.findProjectedById(userId)
+                .orElseThrow(() -> new RuntimeException("Organization not found"));
+    }
+
 }
