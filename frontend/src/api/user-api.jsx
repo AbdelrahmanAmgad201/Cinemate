@@ -36,4 +36,4 @@ export async function unfollowUserApi({ userId }) {
     }
 }
 
-export default getUserProfileApi;
+
