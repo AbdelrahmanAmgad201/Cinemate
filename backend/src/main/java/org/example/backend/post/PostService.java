@@ -10,6 +10,7 @@ import org.example.backend.forum.ForumRepository;
 import org.example.backend.forumfollowing.FollowingRepository;
 import org.example.backend.hateSpeach.HateSpeachService;
 import org.example.backend.hateSpeach.HateSpeechException;
+import org.example.backend.user.UserService;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -36,15 +37,23 @@ public class PostService {
     private final CascadeDeletionService deletionService;
     private final AccessService accessService;
     private final HateSpeachService hateSpeachService;
+    private final UserService userService;
 
     @Transactional
     public Post addPost(AddPostDto addPostDto, Long userId) {
+        Forum forum = mongoTemplate.findById(addPostDto.getForumId(), Forum.class);
+        if (forum == null) {
+            throw new RuntimeException("Forum not found");
+        }
+        if(forum.getIsDeleted()){
+            throw new IllegalStateException("Forum has been deleted");
+        }
         if (!hateSpeachService.analyzeText(addPostDto.getContent())||!hateSpeachService.analyzeText(addPostDto.getTitle())) {
             throw new HateSpeechException("hate speech detected");
         }
         ObjectId ObjectUserId = longToObjectId(userId);
-        Forum forum = mongoTemplate.findById(addPostDto.getForumId(), Forum.class);
         forum.setPostCount(forum.getPostCount() + 1);
+        String ownerName = userService.getUserName(userId);
         forumRepository.save(forum);
         Instant now = Instant.now();
         Post post = Post.builder()
@@ -53,6 +62,8 @@ public class PostService {
                 .title(addPostDto.getTitle())
                 .content(addPostDto.getContent())
                 .createdAt(now)
+                .forumName(forum.getName())
+                .authorName(ownerName)
                 .build();
         return (postRepository.save(post));
     }
