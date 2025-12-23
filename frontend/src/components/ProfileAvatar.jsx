@@ -20,6 +20,13 @@ export default function ProfileAvatar({ className="" }) {
         }
     }
 
+    const handleViewAdminProfile = () => {
+        setMenuShow(false);
+        if (user?.id) {
+            navigate(PATHS.ADMIN.PROFILE(user.id));
+        }
+    }
+
     const handleSignOut = () => {
         setMenuShow(false);
         signOut();
