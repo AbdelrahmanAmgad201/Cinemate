@@ -114,4 +114,9 @@ public class OrganizationController {
         return  ResponseEntity.ok(movieService.getOrganizationMovies(orgId, pageable));
     }
 
+    @GetMapping("/v1/personal-data")
+    public ResponseEntity<PersonalData> getPersonalData(HttpServletRequest request) {
+        Long userId = (Long) request.getAttribute("userId");
+        return ResponseEntity.ok(organizationService.getPersonalData(userId));
+    }
 }
