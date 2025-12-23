@@ -83,7 +83,7 @@ public class DataInitializer implements CommandLineRunner {
             }
         }
         AddAdminDTO addAdminDTO = new AddAdminDTO();
-        addAdminDTO.setPassword(hashedPassword);
+        addAdminDTO.setPassword(defaultPass);
         addAdminDTO.setName("testAdmin");
         addAdminDTO.setEmail("testAdmin@example.com");
         Admin admin= adminService.addAdmin(addAdminDTO);
