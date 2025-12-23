@@ -1,4 +1,4 @@
-package org.example.backend.hateSpeach;
+package org.example.backend.hateSpeech;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
