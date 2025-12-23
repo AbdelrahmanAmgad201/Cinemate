@@ -9,4 +9,22 @@ export async function getUserProfileApi({ userId }) {
     }
 }
 
+export async function getIsPublicApi() {
+    try {
+        const response = await api.get(`/user/v1/is-public`);
+        return { success: true, data: response.data };
+    } catch (err) {
+        return { success: false, message: err.message };
+    }
+}
+
+export async function setIsPublicApi({ isPublic }) {
+    try {
+        const response = await api.put(`/user/v1/is-public/${isPublic}`);
+        return { success: true, data: response.data };
+    } catch (err) {
+        return { success: false, message: err.message };
+    }
+}
+
 export default getUserProfileApi;
