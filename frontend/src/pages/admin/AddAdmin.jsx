@@ -1,5 +1,5 @@
 import "./style/AddAdmin.css"
-import "./style/NavBar.css";
+import NavBar from "../../components/OrgAdminNavBar.jsx";
 
 import {useContext, useState} from "react";
 import {AuthContext} from "../../context/AuthContext.jsx";
@@ -61,12 +61,8 @@ export default function AddAdmin() {
 
     return (
         <div className="add-admin-page">
-            <div className="navigationBar">
-                <Link to={PATHS.ADMIN.REVIEW_REQUESTS} ><h1>Review Movies</h1></Link>
-                <Link to={PATHS.ADMIN.SITE_ANALYTICS} ><h1>Site Movies and Analytics</h1></Link>
-                <Link to={PATHS.ADMIN.ADD_ADMIN} ><h1>Add New Admin</h1></Link>
-                <ProfileAvatar menuItems={avatarMenuItems} />
-            </div>
+
+            <NavBar />
 
             <form onSubmit={handleSubmit}>
 

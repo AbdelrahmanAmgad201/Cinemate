@@ -22,3 +22,26 @@
     font-weight: 600;
     margin-right: 50px;
 }
+
+.nav-link {
+    text-decoration: none;
+    transition: all 0.2s ease-in-out;
+    padding: 8px 12px;
+    border-radius: 6px;
+}
+
+.nav-link:hover {
+    background-color: rgba(54, 161, 243, 0.1);
+}
+
+.nav-item-title {
+    color: var(--blue-bell);
+    margin: 0;
+    font-size: 20px;
+    font-weight: 500;
+    white-space: nowrap;
+}
+
+.nav-link:hover .nav-item-title {
+    color: #60b4f6;
+}

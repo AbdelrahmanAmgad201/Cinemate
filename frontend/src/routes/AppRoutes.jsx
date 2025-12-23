@@ -37,6 +37,7 @@ import SimpleLayout from "../components/SimpleLayout.jsx";
 import Forum from "../pages/user/Forum.jsx";
 import Mod from "../pages/user/Mod.jsx";
 import WatchParty from "../pages/user/WatchParty.jsx"
+import AdminProfile from "../pages/admin/AdminProfile.jsx";
 
 export default function AppRoutes() {
 
@@ -76,6 +77,7 @@ export default function AppRoutes() {
                 <Route path={PATHS.ADMIN.REVIEW_REQUESTS} element={<ReviewMovies />} />
                 <Route path={PATHS.ADMIN.SITE_ANALYTICS} element={<SiteAnalytics />} />
                 <Route path={PATHS.ADMIN.ADD_ADMIN} element={<AddAdmin />} />
+                <Route path={PATHS.ADMIN.PROFILE()} element={<AdminProfile />} />
                 {/*<Route path={PATHS.MOVIE.DETAILS()} element={<MoviePreviewPage />} />*/}
             </Route>
 
