@@ -40,4 +40,9 @@ public class Admin implements Authenticatable {
     @Builder.Default
     private List<Movie> approvedMovies = new ArrayList<>();
 
+    @Override
+    public String getName() {
+        return name != null ? name : email; // Fallback to email if name is null
+    }
+
 }

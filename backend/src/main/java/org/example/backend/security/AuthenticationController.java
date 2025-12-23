@@ -10,6 +10,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.example.backend.verification.*;
+
+import java.sql.SQLOutput;
 import java.util.Map;
 
 @RestController
@@ -34,6 +36,7 @@ public class AuthenticationController {
                     "token", token,
                     "id", account.getId(),
                     "email", account.getEmail(),
+                    "name", account.getName(),  // Added name to response
                     "role", account.getRole()
             );
 

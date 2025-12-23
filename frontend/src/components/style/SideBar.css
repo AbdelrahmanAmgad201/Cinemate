@@ -34,10 +34,20 @@
     text-decoration: none;
     padding: 10px 12px;
     border-radius: 10px;
+    transition: background-color 120ms ease, transform 120ms ease;
 }
-.sidebar-button:hover, .sidebar-button.active {
+.sidebar-button:hover {
     background-color: #24414D;
     cursor: pointer;
+    transform: translateY(-2px);
+    filter: brightness(1.02);
+}
+.sidebar-button.active {
+    background-color: #24414D;
+} 
+.sidebar-button:focus{
+    outline: 2px solid rgba(54,161,243,0.25);
+    outline-offset: 2px;
 }
 
 @media (max-width: 800px) {

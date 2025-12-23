@@ -18,7 +18,6 @@ public class UserController {
     private UserService userService;
 
     @GetMapping("/v1/profile")
-    @PreAuthorize("hasRole('USER')")
     public ResponseEntity<?> getProfile(HttpServletRequest request) {
         Long userId = (Long) request.getAttribute("userId");
         String email = (String) request.getAttribute("userEmail");
@@ -26,9 +25,12 @@ public class UserController {
         return ResponseEntity.ok("User profile for ID: " + userId + ", Email: " + email);
     }
 
+    @GetMapping("/v1/profile/{userId}")
+    public ResponseEntity<UserProfileResponseDTO> getProfile(@PathVariable Long userId) {
+        return ResponseEntity.ok(userService.getUserProfile(userId));
+    }
 
     @PostMapping("/v1/set-user-data")
-    @PreAuthorize("hasRole('USER')")
     public ResponseEntity<String> setPersonalData(
             HttpServletRequest request,
             @RequestBody UserDataDTO userDataDTO) {

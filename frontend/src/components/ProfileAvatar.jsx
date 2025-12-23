@@ -1,9 +1,10 @@
 import { useState, useRef, useContext, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { CgProfile } from "react-icons/cg";
 import { AuthContext } from '../context/AuthContext.jsx';
 import "./style/profileAvatar.css";
 
-import {PATHS, ROLES} from "../constants/constants.jsx";
+import {PATHS,  PATHS, ROLES } from "../constants/constants.jsx";
 import {useNavigate} from "react-router-dom";
 
 export default function ProfileAvatar({ className="" }) {
@@ -12,17 +13,29 @@ export default function ProfileAvatar({ className="" }) {
     const menuRef = useRef(null);
     const navigate = useNavigate();
 
+    const handleViewProfile = () => {
+        setMenuShow(false);
+        if (user?.id) {
+            navigate(PATHS.USER.PROFILE(user.id));
+        }
+    }
+
+    const handleSignOut = () => {
+        setMenuShow(false);
+        signOut();
+    }
+
     const menuItems = (() => {
-        if(user?.role === ROLES.USER){
-            return [{ label: "Sign Out", onClick: signOut }];
+        if (!user) return [];
+
+        if (user?.role === ROLES.USER) {
+            return [
+                { label: "View Profile", onClick: handleViewProfile },
+                { label: "Sign Out", onClick: handleSignOut },
+            ];
         }
-        else if(user?.role === ROLES.ORGANIZATION){
-            return [{ label: "Sign Out", onClick: signOut }];
-        }
-        return [
-            { label: "Admin Profile", onClick: () => navigate(PATHS.ADMIN.PROFILE(user?.id)) },
-            { label: "Sign Out", onClick: signOut },
-        ];
+
+        return [{ label: "Sign Out", onClick: handleSignOut }];
     })();
 
     // Close dropdown if clicked outside
