@@ -3,6 +3,7 @@ import { IoIosPerson } from 'react-icons/io';
 import './style/UserProfileSidebar.css';
 import { getIsPublicApi, setIsPublicApi } from '../api/user-api.jsx';
 import { ToastContext } from '../context/ToastContext.jsx';
+import { AuthContext } from '../context/AuthContext.jsx';
 
 function AboutBlock({ user, profile }) {
     const [aboutExpanded, setAboutExpanded] = useState(false);
@@ -54,13 +55,17 @@ import { formatCount } from '../utils/formate.jsx';
 
 function PrivacyToggle({ avatarSrc, clickableInPersonalData = false }) {
     const { showToast } = useContext(ToastContext);
-    const [isPublic, setIsPublic] = useState(null);
-    const [loading, setLoading] = useState(true);
+    const { user: authUser, setUser } = useContext(AuthContext);
+    const [isPublic, setIsPublic] = useState(authUser?.isPublic ?? null);
+    const [loading, setLoading] = useState(authUser?.isPublic === undefined);
     const [saving, setSaving] = useState(false);
 
     useEffect(() => {
         let mounted = true;
         const load = async () => {
+            if (authUser && typeof authUser.isPublic !== 'undefined') {
+                setIsPublic(Boolean(authUser.isPublic));
+            }
             setLoading(true);
             try {
                 const res = await getIsPublicApi();
@@ -76,7 +81,7 @@ function PrivacyToggle({ avatarSrc, clickableInPersonalData = false }) {
         };
         load();
         return () => { mounted = false; };
-    }, [showToast]);
+    }, [showToast, authUser]);
 
     const performToggle = async (next) => {
         const prev = isPublic;
@@ -88,6 +93,9 @@ function PrivacyToggle({ avatarSrc, clickableInPersonalData = false }) {
                 setIsPublic(prev);
                 showToast('Failed to update visibility', res.message || 'Unknown error', 'error');
                 return false;
+            }
+            if (setUser) {
+                setUser(u => u ? ({ ...u, isPublic: next }) : u);
             }
             showToast('Saved', next ? 'Profile is public' : 'Profile is private', 'success');
             return true;
