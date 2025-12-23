@@ -90,7 +90,7 @@ export default function UserProfile() {
     const isOwnProfile = user && (String(user.id) === String(userId));
     const visibleTabs = isOwnProfile
         ? TABS.filter(t => t.key !== 'personal')
-        : TABS.filter(t => ['posts','forums'].includes(t.key));
+        : TABS.filter(t => ['posts','forums','liked','reviews'].includes(t.key));
 
     useEffect(() => {
         if (active === 'personal') return;
