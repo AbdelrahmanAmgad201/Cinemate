@@ -119,4 +119,22 @@ public class OrganizationController {
         Long userId = (Long) request.getAttribute("userId");
         return ResponseEntity.ok(organizationService.getPersonalData(userId));
     }
+    @PutMapping("/v1/about")
+    public ResponseEntity<String> about(
+            HttpServletRequest request,
+            @RequestBody AboutDTO aboutDTO) {
+        Long userId = (Long) request.getAttribute("userId");
+        organizationService.updateAbout(userId, aboutDTO);
+        return  ResponseEntity.ok("about updated successfully");
+    }
+
+    @PutMapping("/v1/name/{name}")
+    public ResponseEntity<String> updateName(
+            HttpServletRequest request,
+            @PathVariable String name){
+        Long userId = (Long) request.getAttribute("userId");
+        organizationService.updateName(userId, name);
+        return  ResponseEntity.ok("name updated successfully");
+    }
+    
 }
