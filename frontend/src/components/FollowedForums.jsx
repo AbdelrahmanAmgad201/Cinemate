@@ -70,7 +70,7 @@ const FollowedForums = ({ maxVisible = DEFAULT_VISIBLE }) => {
   if (isLoading) showMoreLabel = 'Loading...';
   else if (remainingLoaded > 0) showMoreLabel = `Show ${Math.min(maxVisible, remainingLoaded)} more ▼`;
   else if (hasMore) showMoreLabel = `Show ${maxVisible} more ▼`;
-  else showMoreLabel = 'Show less ▲';
+  else showMoreLabel = '';
 
   const handleCollapse = () => setVisibleCount(maxVisible);
 
@@ -87,6 +87,9 @@ const FollowedForums = ({ maxVisible = DEFAULT_VISIBLE }) => {
     return out;
   })();
 
+  const showMoreVisible = (forums.length > visibleCount) || hasMore;
+  const showCollapseVisible = visibleCount > maxVisible;
+
   return (
     <div className="followed-forums">
       <div className="followed-forums-header">Followed forums</div>
@@ -100,12 +103,14 @@ const FollowedForums = ({ maxVisible = DEFAULT_VISIBLE }) => {
           </Link>
         ))} 
       </div>
-      {(forums.length > maxVisible || hasMore) && (
+      {(showMoreLabel || showCollapseVisible) && (
         <div className="show-controls">
-          <button className="show-more" onClick={handleShowMore} disabled={isLoading}>
-            {showMoreLabel}
-          </button>
-          {visibleCount > maxVisible && (
+          {showMoreLabel && (
+            <button className="show-more" onClick={handleShowMore} disabled={isLoading}>
+              {showMoreLabel}
+            </button>
+          )}
+          {showCollapseVisible && (
             <button className="collapse" onClick={handleCollapse}>Collapse ▲</button>
           )}
         </div>
