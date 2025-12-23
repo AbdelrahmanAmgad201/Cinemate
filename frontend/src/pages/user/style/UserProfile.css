@@ -267,7 +267,8 @@
 
     .profile-sidebar .sidebar-card{
         margin-top: -160px;
-        z-index: 2;
+        position: relative;
+        z-index: 30;
     }
 }
 

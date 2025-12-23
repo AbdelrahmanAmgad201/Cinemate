@@ -23,6 +23,8 @@ import WatchPage from "../pages/user/WatchPage.jsx";
 import PostFullPage from '../pages/user/PostFullPage.jsx';
 import ReplyThreadPage from '../pages/user/ReplyThreadPage.jsx';
 import UserProfile from "../pages/user/UserProfile.jsx";
+import FollowersPage from "../pages/user/FollowersPage.jsx";
+import FollowingPage from "../pages/user/FollowingPage.jsx";
 
 import NotFoundPage from "../components/NotFoundPage.jsx";
 import TestSandBox from "../pages/TestSandBox.jsx";
@@ -100,6 +102,8 @@ export default function AppRoutes() {
                     <Route path={PATHS.POST.THREAD()} element={<ReplyThreadPage />} />
                     <Route path={PATHS.FORUM.PAGE()} element={<Forum/>} />
                     <Route path={PATHS.USER.PROFILE()} element={<UserProfile />} />
+                    <Route path={PATHS.USER.FOLLOWERS()} element={<FollowersPage />} />
+                    <Route path={PATHS.USER.FOLLOWING()} element={<FollowingPage />} />
                 </Route>
                 <Route element={<SimpleLayout />}> {/* Navbar only */}
                     <Route path={PATHS.MOVIE.BROWSE} element={<Browse />} />

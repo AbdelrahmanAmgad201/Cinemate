@@ -36,4 +36,21 @@ export async function unfollowUserApi({ userId }) {
     }
 }
 
+export async function getFollowersApi({ userId, page = 0, size = 25 }) {
+    try {
+        const response = await api.get(`/follow/v1/followers/${userId}?page=${page}&size=${size}`);
+        return { success: true, data: response.data };
+    } catch (err) {
+        return { success: false, message: err?.response?.data || err.message };
+    }
+}
+
+export async function getFollowingApi({ userId, page = 0, size = 25 }) {
+    try {
+        const response = await api.get(`/follow/v1/following/${userId}?page=${page}&size=${size}`);
+        return { success: true, data: response.data };
+    } catch (err) {
+        return { success: false, message: err?.response?.data || err.message };
+    }
+}
 
