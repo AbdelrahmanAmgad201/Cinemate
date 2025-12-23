@@ -9,7 +9,7 @@ import {searchForumsApi} from "../api/forum-api.jsx";
 import {MAX_LENGTHS, PATHS} from "../constants/constants.jsx";
 import {formatCount} from "../utils/formate.jsx";
 import ForumCard from "./ForumCard.jsx";
-import JoinButton from "./watch-party/JoinButton.jsx";
+import PartySessionHandler from "./watch-party/PartySessionHandler.jsx";
 
 function NavBar() {
 
@@ -175,7 +175,7 @@ function NavBar() {
                 )}
             </div>  
         </div>
-        <JoinButton />
+        <PartySessionHandler />
         <ProfileAvatar />
         </>
     );
