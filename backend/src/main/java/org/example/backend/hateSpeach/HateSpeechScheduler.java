@@ -15,10 +15,10 @@ import java.util.List;
 @EnableScheduling
 @Service
 @RequiredArgsConstructor
-public class HateSpeachScheduler {
+public class HateSpeechScheduler {
 
     private final CommentService commentService;
-    private final HateSpeachService hateSpeachService;
+    private final HateSpeechService hateSpeechService;
     private final CommentRepository commentRepository;
     @Scheduled(cron = "0 0 0 * * ?")
     public void schedule(){
@@ -37,7 +37,7 @@ public class HateSpeachScheduler {
         if(comment.getIsDeleted()){
             return;
         }
-        if(!hateSpeachService.analyzeText(comment.getContent())){
+        if(!hateSpeechService.analyzeText(comment.getContent())){
             commentService.systemDeleteComment(comment);
         }
     }

@@ -3,7 +3,7 @@ package org.example.backend.forum;
 import org.bson.types.ObjectId;
 import org.example.backend.deletion.AccessService;
 import org.example.backend.deletion.CascadeDeletionService;
-import org.example.backend.hateSpeach.HateSpeachService;
+import org.example.backend.hateSpeach.HateSpeechService;
 import org.example.backend.hateSpeach.HateSpeechException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -44,7 +44,7 @@ class ForumServiceTest {
     private MongoTemplate mongoTemplate;
 
     @Mock
-    private HateSpeachService hateSpeachService;
+    private HateSpeechService hateSpeechService;
 
     @InjectMocks
     private ForumService forumService;
@@ -83,8 +83,8 @@ class ForumServiceTest {
     @Test
     void createForum_ValidRequest_Success() {
         // FIXED: Both name AND description must return true (no hate speech)
-        when(hateSpeachService.analyzeText("New Forum")).thenReturn(true);
-        when(hateSpeachService.analyzeText("New Forum Description")).thenReturn(true);
+        when(hateSpeechService.analyzeText("New Forum")).thenReturn(true);
+        when(hateSpeechService.analyzeText("New Forum Description")).thenReturn(true);
         when(forumRepository.save(any(Forum.class))).thenAnswer(i -> {
             Forum forum = i.getArgument(0);
             forum.setId(forumId);
@@ -99,8 +99,8 @@ class ForumServiceTest {
         assertEquals(userObjectId, result.getOwnerId());
         assertNotNull(result.getCreatedAt());
 
-        verify(hateSpeachService).analyzeText("New Forum");
-        verify(hateSpeachService).analyzeText("New Forum Description");
+        verify(hateSpeechService).analyzeText("New Forum");
+        verify(hateSpeechService).analyzeText("New Forum Description");
         verify(forumRepository).save(argThat(forum ->
                 forum.getName().equals("New Forum") &&
                         forum.getDescription().equals("New Forum Description") &&
@@ -111,29 +111,29 @@ class ForumServiceTest {
     @Test
     void createForum_HateSpeechInName_ThrowsHateSpeechException() {
         // FIXED: Name returns false (hate speech detected)
-        when(hateSpeachService.analyzeText("New Forum")).thenReturn(false);
+        when(hateSpeechService.analyzeText("New Forum")).thenReturn(false);
         // Description won't be checked due to short-circuit evaluation (|| operator)
 
         assertThrows(HateSpeechException.class,
                 () -> forumService.createForum(creationRequest, userId));
 
-        verify(hateSpeachService).analyzeText("New Forum");
+        verify(hateSpeechService).analyzeText("New Forum");
         // FIXED: Description is NOT checked due to short-circuit
-        verify(hateSpeachService, never()).analyzeText("New Forum Description");
+        verify(hateSpeechService, never()).analyzeText("New Forum Description");
         verify(forumRepository, never()).save(any());
     }
 
     @Test
     void createForum_HateSpeechInBothNameAndDescription_ThrowsHateSpeechException() {
         // FIXED: Name returns false - description won't be checked
-        when(hateSpeachService.analyzeText("New Forum")).thenReturn(false);
+        when(hateSpeechService.analyzeText("New Forum")).thenReturn(false);
 
         assertThrows(HateSpeechException.class,
                 () -> forumService.createForum(creationRequest, userId));
 
-        verify(hateSpeachService).analyzeText("New Forum");
+        verify(hateSpeechService).analyzeText("New Forum");
         // FIXED: Description check is skipped due to short-circuit
-        verify(hateSpeachService, never()).analyzeText("New Forum Description");
+        verify(hateSpeechService, never()).analyzeText("New Forum Description");
         verify(forumRepository, never()).save(any());
     }
 
@@ -141,20 +141,20 @@ class ForumServiceTest {
     void createForum_CleanNameDirtyDescription_ThrowsHateSpeechException() {
         // FIXED: Name is clean (true), description is dirty (false)
         // With || logic: !true || !false = false || true = true (throws exception)
-        when(hateSpeachService.analyzeText("New Forum")).thenReturn(true);
-        when(hateSpeachService.analyzeText("New Forum Description")).thenReturn(false);
+        when(hateSpeechService.analyzeText("New Forum")).thenReturn(true);
+        when(hateSpeechService.analyzeText("New Forum Description")).thenReturn(false);
 
         assertThrows(HateSpeechException.class,
                 () -> forumService.createForum(creationRequest, userId));
 
-        verify(hateSpeachService).analyzeText("New Forum");
-        verify(hateSpeachService).analyzeText("New Forum Description");
+        verify(hateSpeechService).analyzeText("New Forum");
+        verify(hateSpeechService).analyzeText("New Forum Description");
         verify(forumRepository, never()).save(any());
     }
 
     @Test
     void createForum_DefaultValues_AreSet() {
-        when(hateSpeachService.analyzeText(anyString())).thenReturn(true);
+        when(hateSpeechService.analyzeText(anyString())).thenReturn(true);
         when(forumRepository.save(any(Forum.class))).thenAnswer(i -> i.getArgument(0));
 
         Forum result = forumService.createForum(creationRequest, userId);
@@ -167,7 +167,7 @@ class ForumServiceTest {
 
     @Test
     void createForum_SetsCreatedAtTimestamp() {
-        when(hateSpeachService.analyzeText(anyString())).thenReturn(true);
+        when(hateSpeechService.analyzeText(anyString())).thenReturn(true);
         Instant before = Instant.now();
         when(forumRepository.save(any(Forum.class))).thenAnswer(i -> i.getArgument(0));
 
@@ -223,16 +223,16 @@ class ForumServiceTest {
                 .build();
         when(mongoTemplate.findById(forumId, Forum.class)).thenReturn(testForum);
         // FIXED: Both must return true
-        when(hateSpeachService.analyzeText("Updated Forum")).thenReturn(true);
-        when(hateSpeachService.analyzeText("Updated Description")).thenReturn(true);
+        when(hateSpeechService.analyzeText("Updated Forum")).thenReturn(true);
+        when(hateSpeechService.analyzeText("Updated Description")).thenReturn(true);
         when(forumRepository.save(any(Forum.class))).thenAnswer(i -> i.getArgument(0));
 
         Forum result = forumService.updateForum(forumId, updateRequest, userId);
 
         assertEquals("Updated Forum", result.getName());
         assertEquals("Updated Description", result.getDescription());
-        verify(hateSpeachService).analyzeText("Updated Forum");
-        verify(hateSpeachService).analyzeText("Updated Description");
+        verify(hateSpeechService).analyzeText("Updated Forum");
+        verify(hateSpeechService).analyzeText("Updated Description");
         verify(forumRepository).save(testForum);
     }
 
@@ -245,14 +245,14 @@ class ForumServiceTest {
 
         when(mongoTemplate.findById(forumId, Forum.class)).thenReturn(testForum);
         // FIXED: Name returns false - description won't be checked
-        when(hateSpeachService.analyzeText("Hateful Forum")).thenReturn(false);
+        when(hateSpeechService.analyzeText("Hateful Forum")).thenReturn(false);
 
         assertThrows(HateSpeechException.class,
                 () -> forumService.updateForum(forumId, updateRequest, userId));
 
-        verify(hateSpeachService).analyzeText("Hateful Forum");
+        verify(hateSpeechService).analyzeText("Hateful Forum");
         // FIXED: Description is NOT checked due to short-circuit
-        verify(hateSpeachService, never()).analyzeText("Updated Description");
+        verify(hateSpeechService, never()).analyzeText("Updated Description");
         verify(forumRepository, never()).save(any());
     }
 
@@ -265,14 +265,14 @@ class ForumServiceTest {
 
         when(mongoTemplate.findById(forumId, Forum.class)).thenReturn(testForum);
         // FIXED: Name clean (true), description dirty (false)
-        when(hateSpeachService.analyzeText("Clean Forum")).thenReturn(true);
-        when(hateSpeachService.analyzeText("Hateful Description")).thenReturn(false);
+        when(hateSpeechService.analyzeText("Clean Forum")).thenReturn(true);
+        when(hateSpeechService.analyzeText("Hateful Description")).thenReturn(false);
 
         assertThrows(HateSpeechException.class,
                 () -> forumService.updateForum(forumId, updateRequest, userId));
 
-        verify(hateSpeachService).analyzeText("Clean Forum");
-        verify(hateSpeachService).analyzeText("Hateful Description");
+        verify(hateSpeechService).analyzeText("Clean Forum");
+        verify(hateSpeechService).analyzeText("Hateful Description");
         verify(forumRepository, never()).save(any());
     }
 
@@ -284,7 +284,7 @@ class ForumServiceTest {
         assertThrows(AccessDeniedException.class,
                 () -> forumService.updateForum(forumId, creationRequest, differentUserId));
 
-        verify(hateSpeachService, never()).analyzeText(anyString());
+        verify(hateSpeechService, never()).analyzeText(anyString());
         verify(forumRepository, never()).save(any());
     }
 
@@ -295,7 +295,7 @@ class ForumServiceTest {
         assertThrows(IllegalArgumentException.class,
                 () -> forumService.updateForum(forumId, creationRequest, userId));
 
-        verify(hateSpeachService, never()).analyzeText(anyString());
+        verify(hateSpeechService, never()).analyzeText(anyString());
         verify(forumRepository, never()).save(any());
     }
 
@@ -307,14 +307,14 @@ class ForumServiceTest {
         assertThrows(IllegalStateException.class,
                 () -> forumService.updateForum(forumId, creationRequest, userId));
 
-        verify(hateSpeachService, never()).analyzeText(anyString());
+        verify(hateSpeechService, never()).analyzeText(anyString());
         verify(forumRepository, never()).save(any());
     }
 
     @Test
     void updateForum_PreservesOtherFields() {
         when(mongoTemplate.findById(forumId, Forum.class)).thenReturn(testForum);
-        when(hateSpeachService.analyzeText(anyString())).thenReturn(true);
+        when(hateSpeechService.analyzeText(anyString())).thenReturn(true);
         when(forumRepository.save(any(Forum.class))).thenAnswer(i -> i.getArgument(0));
 
         Forum result = forumService.updateForum(forumId, creationRequest, userId);
@@ -335,7 +335,7 @@ class ForumServiceTest {
                 .build();
 
         when(mongoTemplate.findById(forumId, Forum.class)).thenReturn(testForum);
-        when(hateSpeachService.analyzeText(anyString())).thenReturn(true);
+        when(hateSpeechService.analyzeText(anyString())).thenReturn(true);
         when(forumRepository.save(any(Forum.class))).thenAnswer(i -> i.getArgument(0));
 
         Forum result = forumService.updateForum(forumId, updateRequest, userId);

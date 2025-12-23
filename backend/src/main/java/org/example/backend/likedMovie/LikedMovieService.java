@@ -44,6 +44,7 @@ public class LikedMovieService {
         LikedMovie likedMovie = LikedMovie.builder()
                 .likedMoviesID(id)
                 .user(user)
+                .movie(movie)
                 .movieName(movie.getName())
                 .build();
 

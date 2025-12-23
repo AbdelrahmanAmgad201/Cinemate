@@ -26,6 +26,12 @@ public class LikedMovie {
     @JsonIgnore
     private User user;
 
+    @ManyToOne
+    @MapsId("movieId")
+    @JoinColumn(name = "movie_id")
+    @JsonIgnore
+    private Movie movie;
+
     @Column(name = "movie_name")
     private String movieName;
 
