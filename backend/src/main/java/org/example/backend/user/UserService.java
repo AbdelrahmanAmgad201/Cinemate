@@ -87,6 +87,19 @@ public class UserService {
         }
     }
 
+    public UserProfileResponseDTO getUserProfile(Long userId) {
+        User user =  userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+        return UserProfileResponseDTO.builder()
+                .firstName(user.getFirstName())
+                .lastName(user.getLastName())
+                .numberOfFollowers(user.getNumberOfFollowers())
+                .numberOfFollowing(user.getNumberOfFollowing())
+                .createdAt(user.getCreatedAt())
+                .aboutMe(user.getAbout())
+                .build();
+    }
+
     private Long objectIdToLong(ObjectId objectId) {
         String hex = objectId.toHexString();
         return new BigInteger(hex, 16).longValue();
