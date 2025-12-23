@@ -67,19 +67,38 @@ public class User implements Authenticatable {
     @Column(name = "profile_complete")
     @Builder.Default
     private Boolean profileComplete = true;
+    @Column(name = "number_of_followers")
+    private Integer numberOfFollowers;
+
+    @Column(name = "number_of_following")
+    private Integer numberOfFollowing;
 
     @PrePersist
     protected void onCreate() {
         createdAt = LocalDateTime.now();
-        
+
         if(provider == null){
             provider = "local";
             profileComplete = true;
+        }
+        if(numberOfFollowers == null){
+            numberOfFollowers = 0;
+        }
+        if(numberOfFollowing == null){
+            numberOfFollowing = 0;
         }
     }
 
     public String getRole(){
         return "ROLE_USER";
+    }
+
+    @Override
+    public String getName() {
+        if (firstName != null){
+            return firstName;
+        }
+        return email;
     }
 
     // Helper method to check if the user is an OAuth user (can change password or not)

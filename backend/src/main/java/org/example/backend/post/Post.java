@@ -42,6 +42,8 @@ public class Post implements Votable {
 
     private String title;
     private String content;
+    private String forumName;
+    private String authorName;
 
     @Builder.Default
     private Integer upvoteCount = 0;

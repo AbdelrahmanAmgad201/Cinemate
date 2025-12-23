@@ -25,6 +25,7 @@ public class JWTProvider {
         Map<String, Object> claims = new HashMap<>();
         claims.put("id", account.getId());
         claims.put("email", account.getEmail());
+        claims.put("name", account.getName());
         claims.put("role", account.getRole());
 
         if(account.getRole().equals("ROLE_USER")){
@@ -62,6 +63,11 @@ public class JWTProvider {
     public Boolean getProfileCompleteFromToken(String token) {
         Claims claims = parseToken(token);
         return claims.get("profileComplete", Boolean.class);
+    }
+    // Added method to extract name from token
+    public String getNameFromToken(String token) {
+        Claims claims = parseToken(token);
+        return claims.get("name", String.class);
     }
 
     public boolean validateToken(String token) {

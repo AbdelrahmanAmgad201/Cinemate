@@ -45,10 +45,10 @@ class VoteControllerTest {
         targetId = new ObjectId();
         voteId = new ObjectId();
 
-        voteDTO = new VoteDTO();
-        voteDTO.setTargetId(targetId);
-        voteDTO.setValue(1);
-
+        voteDTO = VoteDTO.builder()
+                .targetId(targetId)
+                .value(1)
+                .build();
         updateVoteDTO = new UpdateVoteDTO();
         updateVoteDTO.setTargetId(voteId);
         updateVoteDTO.setValue(-1);
