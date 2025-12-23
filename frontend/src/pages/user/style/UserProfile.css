@@ -73,6 +73,17 @@
     transition: filter 120ms ease, transform 120ms ease;
 }
 
+.follow-btn.disabled{ opacity:0.6; cursor:not-allowed }
+
+.btn-spinner{ width:16px; height:16px; margin-left:6px; vertical-align:middle; animation: rotate 1s linear infinite; }
+.btn-spinner .path{ stroke: currentColor; stroke-linecap: round; stroke-dasharray: 90,150; stroke-dashoffset: 0; animation: dash 1.2s ease-in-out infinite; }
+@keyframes rotate{ 100%{ transform: rotate(360deg); } }
+@keyframes dash{ 0%{ stroke-dasharray: 1,150; stroke-dashoffset: 0; } 50%{ stroke-dasharray: 90,150; stroke-dashoffset: -35; } 100%{ stroke-dasharray: 90,150; stroke-dashoffset: -124; } }
+
+.follow-btn.saving{ opacity: 0.9; cursor:not-allowed }
+
+.sr-only{ position: absolute !important; height: 1px; width: 1px; overflow: hidden; clip: rect(1px, 1px, 1px, 1px); white-space: nowrap; border: 0; padding: 0; margin: -1px; }
+
 .follow-btn .react-icons { display:inline-block }
 .follow-btn:hover{ filter:brightness(0.92); transform: translateY(-2px); }
 .follow-btn:active{ transform: translateY(0); }
