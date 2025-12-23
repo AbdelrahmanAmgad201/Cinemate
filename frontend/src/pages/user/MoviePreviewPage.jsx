@@ -19,8 +19,13 @@ import clockIcon from "../../assets/icons/clock-white.png";
 
 import {MAX_LENGTHS, PATHS, ROLES} from "../../constants/constants.jsx";
 import {createRoomApi} from "../../api/watch-together-api.jsx";
+import {WatchPartyContext} from "../../context/WatchPartyContext.jsx";
 
 export default function MoviePreviewPage() {
+
+    const { user } = useContext(AuthContext);
+    const { showToast } = useContext(ToastContext);
+    const { createParty } = useContext(WatchPartyContext);
 
     // Movie details
     const { movieId } = useParams();
@@ -47,9 +52,6 @@ export default function MoviePreviewPage() {
     const [submitting, setSubmitting] = useState(false);
     const [formRating, setFormRating] = useState(5);
     const [formDesc, setFormDesc] = useState("");
-
-    const { user } = useContext(AuthContext);
-    const { showToast } = useContext(ToastContext);
 
     // add a new review
     const handleAdd = async (e) => {
@@ -173,13 +175,12 @@ export default function MoviePreviewPage() {
         showToast("Watch later movie", "Added movie to watch later list", "success")
     }
 
-    // TODO: Handle this later
     const handleWatchTogether = async () => {
 
         showToast("Watch together", "Starting a new watch together room...", "info")
 
-        const res = await createRoom({ movieId });
-
+        const res = await createParty(movieId);
+        const partyData = res.data;
         if (res.success === false){
             showToast("Failed to create a watch together room", res.message || "unknown error", "error")
             return
@@ -187,9 +188,7 @@ export default function MoviePreviewPage() {
 
         showToast("Watch together", "Room created successfully", "success")
 
-        navigate(PATHS.MOVIE.WATCH_PARTY(res.id))
-        // navigate(PATHS.MOVIE.WATCH_PARTY(1))
-
+        navigate(PATHS.MOVIE.WATCH_PARTY(partyData.partyId))
     }
 
     // Fetches reviews and maybe movie details from backend

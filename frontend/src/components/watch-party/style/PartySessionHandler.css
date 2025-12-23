@@ -1,0 +1,177 @@
+.party-handler-wrapper {
+    position: fixed;
+    right: 110px;
+    top: 37px;
+    z-index: 1100;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+/* Base button: Remove backgrounds and borders by default */
+.handler-btn {
+    background: transparent;
+    border: 1px solid transparent;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: #ffffff;
+    font-weight: 600;
+    font-size: 16px;
+    padding: 8px 12px;
+    border-radius: 8px;
+    transition: all 0.2s ease;
+}
+
+/* --- STATE 1: JOIN MODE (Completely Transparent) --- */
+.join-mode {
+    opacity: 0.9;
+}
+
+.join-mode:hover {
+    opacity: 1;
+    background: rgba(255, 255, 255, 0.05); /* Very subtle hint on hover */
+    transform: translateY(-1px);
+}
+
+/* --- STATE 2: LEAVE ONLY (Inside the room) --- */
+.leave-only-mode {
+    color: #ef4444;
+    border: 1px solid rgba(239, 68, 68, 0.3); /* Transparent red border */
+    background: transparent;
+}
+
+.leave-only-mode:hover {
+    background: rgba(239, 68, 68, 0.1); /* Subtle red glow instead of solid */
+    border-color: #ef4444;
+    transform: translateY(-2px);
+}
+
+/* --- STATE 3: SPLIT BUTTON (Transparent Pill) --- */
+.split-handler-container {
+    display: flex;
+    align-items: center;
+    background: transparent; /* Removed the solid dark background */
+    border: 1px solid rgba(255, 255, 255, 0.15); /* Thin glass border */
+    border-radius: 10px;
+    backdrop-filter: blur(4px); /* Optional: slight blur for readability */
+}
+
+.go-to-part {
+    color: var(--blue-bell);
+    border-right: 1px solid rgba(255, 255, 255, 0.15);
+    padding: 8px 14px;
+}
+
+.go-to-part:hover {
+    background: rgba(54, 161, 243, 0.1);
+}
+
+.leave-part {
+    color: #6b7280;
+    padding: 8px 10px;
+}
+
+.leave-part:hover {
+    color: #ef4444;
+    background: rgba(239, 68, 68, 0.1);
+}
+
+/* --- POPOVER (Keep this slightly solid so text is readable) --- */
+.join-popover {
+    position: absolute;
+    top: 45px;
+    right: 0;
+    background-color: rgba(24, 43, 51, 0.95); /* Semi-transparent */
+    backdrop-filter: blur(10px);
+    padding: 8px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    border: 1px solid #24414D;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+}
+
+.join-popover input {
+    background: #2B3C44;
+    border: none;
+    border-radius: 8px;
+    padding: 8px 12px;
+    color: white;
+    width: 160px;
+    font-size: 14px;
+    outline: none;
+}
+
+.join-popover input:focus {
+    box-shadow: 0 0 0 2px rgba(54, 161, 243, 0.3);
+}
+
+.confirm-icon-btn {
+    background: var(--blue-bell);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    width: 35px;
+    height: 35px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.confirm-icon-btn:hover {
+    background: var(--faded-blue-bell);
+}
+
+/* Small triangle pointing up to the button */
+.popover-arrow {
+    position: absolute;
+    top: -6px;
+    right: 20px;
+    width: 12px;
+    height: 12px;
+    background-color: #182B33;
+    transform: rotate(45deg);
+    border-left: 1px solid #24414D;
+    border-top: 1px solid #24414D;
+}
+
+/* Animations */
+@keyframes fadeInDown {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.leave-only-mode {
+    background-color: rgba(239, 68, 68, 0.1);
+    border: 1px solid rgba(239, 68, 68, 0.3);
+    color: #ef4444;
+    border-radius: 8px;
+    padding: 8px 16px;
+    transition: all 0.2s ease;
+}
+
+.leave-only-mode:hover {
+    background-color: #ef4444;
+    color: white;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
+}
+
+.leave-only-mode span {
+    font-weight: 700;
+}
+
+@media (max-width: 768px) {
+    .leave-only-mode span {
+        display: none;
+    }
+}
