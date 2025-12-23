@@ -26,6 +26,10 @@ public class WatchLater {
     @JsonIgnore
     private User user;
 
+    @ManyToOne
+    @JoinColumn(name = "movie_id")
+    @JsonIgnore
+    private Movie movie;
 
     @Column(name = "movie_name", nullable = false)
     private String movieName;
