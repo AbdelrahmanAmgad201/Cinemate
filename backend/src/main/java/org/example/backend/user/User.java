@@ -77,6 +77,14 @@ public class User implements Authenticatable {
         return "ROLE_USER";
     }
 
+    @Override
+    public String getName() {
+        if (firstName != null){
+            return firstName;
+        }
+        return email;
+    }
+
     // Helper method to check if the user is an OAuth user (can change password or not)
     public boolean isOAuthUser() {
         return !"local".equals(provider);
