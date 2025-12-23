@@ -7,6 +7,7 @@ import RoleRoute from "./RoleRoute.jsx";
 import UserSignIn from "../pages/auth/SignIn.jsx";
 import UserSignUp from "../pages/auth/SignUp.jsx";
 import EmailVerification from "../pages/auth/EmailVerification.jsx";
+import ProfileCompletion from "../pages/auth/ProfileCompletion.jsx";
 import HomePage from "../pages/user/HomePage.jsx";
 import ExploreForums from "../pages/user/ExploreForums.jsx";
 import ForumPage from "../pages/user/ForumPage.jsx";
@@ -83,6 +84,11 @@ export default function AppRoutes() {
                     {/*<Route path={PATHS.MOVIE.BROWSE} element={<Browse />} />*/}
                     <Route path={PATHS.MOVIE.DETAILS()} element={<MoviePreviewPage />} />
                 </Route>
+            </Route>
+
+            {/* Profile completion route - signed up with google. */}
+            <Route element={<RoleRoute allowedRoles={[ROLES.USER]} requireProfileCompletion={false} />}>
+                <Route path={PATHS.PROFILE_COMPLETION} element={<ProfileCompletion />} />
             </Route>
 
             {/*Added here for testing*/}

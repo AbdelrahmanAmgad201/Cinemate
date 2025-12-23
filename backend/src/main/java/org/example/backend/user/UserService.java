@@ -7,6 +7,7 @@ import org.example.backend.verification.Verfication;
 import org.example.backend.verification.VerificationService;
 import lombok.RequiredArgsConstructor;
 import org.example.backend.security.CredentialsRequest;
+import org.example.backend.security.JWTProvider;
 import org.springframework.stereotype.Service;
 import org.springframework.beans.factory.annotation.Autowired;
 
@@ -22,6 +23,8 @@ public class UserService {
     private final Random random = new Random();
     @Autowired
     private VerificationService verificationService;
+    @Autowired
+    private JWTProvider jwtProvider;
 
 
     public User addUser(String email, String password) {
@@ -50,6 +53,26 @@ public class UserService {
         userRepository.save(user);
 
         return "User data updated successfully";
+    }
+
+    @Transactional
+    public String completeProfile(Long userId, ProfileCompletionDTO profileData){
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        user.setBirthDate(profileData.getBirthday());
+        try{
+            user.setGender(Gender.valueOf(profileData.getGender().toUpperCase()));
+        } 
+        catch(IllegalArgumentException e){
+            throw new IllegalArgumentException("Invalid gender value");
+        }
+        user.setProfileComplete(true);
+
+        userRepository.save(user);
+
+        return jwtProvider.generateToken(user);
+
     }
 
     @Transactional

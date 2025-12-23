@@ -5,6 +5,10 @@ public interface Authenticatable {
     String getEmail();
     // String getPassword();
     String getRole();  // "ROLE_USER", "ROLE_ADMIN", "ROLE_ORGANIZATION"
+    
+    default Boolean getProfileComplete(){
+        return true;
+    }
 
     default String getPassword(){
         return null;

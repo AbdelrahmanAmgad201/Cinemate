@@ -64,12 +64,17 @@ public class User implements Authenticatable {
     @Column(name = "provider_id")
     private String providerId;
 
+    @Column(name = "profile_complete")
+    @Builder.Default
+    private Boolean profileComplete = true;
+
     @PrePersist
     protected void onCreate() {
         createdAt = LocalDateTime.now();
         
         if(provider == null){
             provider = "local";
+            profileComplete = true;
         }
     }
 
