@@ -4,8 +4,8 @@ import lombok.RequiredArgsConstructor;
 import org.bson.types.ObjectId;
 import org.example.backend.deletion.AccessService;
 import org.example.backend.deletion.CascadeDeletionService;
-import org.example.backend.hateSpeach.HateSpeachService;
-import org.example.backend.hateSpeach.HateSpeechException;
+import org.example.backend.hateSpeech.HateSpeechService;
+import org.example.backend.hateSpeech.HateSpeechException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.mongodb.core.MongoTemplate;
@@ -22,10 +22,10 @@ public class ForumService {
     private final CascadeDeletionService deletionService;
     private final AccessService accessService;
     private final MongoTemplate mongoTemplate;
-    private final HateSpeachService hateSpeachService;
+    private final HateSpeechService hateSpeechService;
 
     public Forum createForum(ForumCreationRequest request, Long userId) {
-        if (!hateSpeachService.analyzeText(request.getName())||!hateSpeachService.analyzeText(request.getDescription())) {
+        if (!hateSpeechService.analyzeText(request.getName())||!hateSpeechService.analyzeText(request.getDescription())) {
             throw new HateSpeechException("hate speech detected");
         }
 
@@ -62,7 +62,7 @@ public class ForumService {
             throw new AccessDeniedException("User does not have permission to update this forum");
         }
 
-        if (!hateSpeachService.analyzeText(request.getName())||!hateSpeachService.analyzeText(request.getDescription())) {
+        if (!hateSpeechService.analyzeText(request.getName())||!hateSpeechService.analyzeText(request.getDescription())) {
             throw new HateSpeechException("hate speech detected");
         }
 
