@@ -53,4 +53,9 @@ public class Organization implements Authenticatable {
     public String getRole(){
         return "ROLE_ORGANIZATION";
     }
+
+    @Override
+    public String getName() {
+        return name != null ? name : email; // Fallback to email if name is null
+    }
 }
