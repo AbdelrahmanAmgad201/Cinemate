@@ -236,11 +236,21 @@ export default function UserProfile() {
 
     useEffect(() => {
         let cancelled = false;
-        if (!isOwnProfile && user && userId && /^\d+$/.test(String(userId))) {
-            isUserFollowedApi({ userId: Number(userId) })
-                .then(res => { if (!cancelled && res.success) setIsFollowing(Boolean(res.data)); })
-                .catch(() => {});
+        if (isOwnProfile) {
+            return () => { cancelled = true; };
         }
+        if (!user) {
+            return () => { cancelled = true; };
+        }
+        if (!userId) {
+            return () => { cancelled = true; };
+        }
+        if (!/^\d+$/.test(String(userId))) {
+            return () => { cancelled = true; };
+        }
+        isUserFollowedApi({ userId: Number(userId) })
+            .then(res => { if (!cancelled && res.success) setIsFollowing(Boolean(res.data)); })
+            .catch(() => {});
         return () => { cancelled = true; };
     }, [userId, isOwnProfile, user]);
 
