@@ -29,3 +29,24 @@ export async function getExploreFeedPostsApi({ page, size, sort = "hot"}) {
         return { success: false , message: err.message };
     }
 }
+
+export async function getMyPostsApi({ page = 0, size = 20 }) {
+    try {
+        const res = await api.get('/post/v1/my-posts', { params: { page, size } });
+        const data = res.data;
+        return { success: true, data: data.content || data };
+    } catch (err) {
+        return { success: false, message: err.message };
+    }
+}
+
+export async function getOtherUserPostsApi({ userId, page = 0, size = 20 }) {
+    if (!userId) return { success: false, message: 'Invalid userId' };
+    try {
+        const res = await api.get(`/post/v1/other-user-posts/${userId}`, { params: { page, size } });
+        const data = res.data;
+        return { success: true, data: data.content || data };
+    } catch (err) {
+        return { success: false, message: err?.message || 'Unknown error', status: err?.status };
+    }
+}

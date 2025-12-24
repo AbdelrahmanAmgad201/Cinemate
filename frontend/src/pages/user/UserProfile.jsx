@@ -6,9 +6,12 @@ import { FaUserPlus, FaUserCheck } from 'react-icons/fa';
 import { ToastContext } from '../../context/ToastContext.jsx';
 import { getModApi } from '../../api/forum-api.jsx';
 import { getUserProfileApi } from '../../api/user-api.jsx';
+import UserPosts from '../../components/UserPosts.jsx';
 import { formatCount } from '../../utils/formate.jsx';
+
 import './style/UserProfile.css';
 import UserProfileSidebar from '../../components/UserProfileSidebar.jsx';
+import ScrollToTop from '../../components/ScrollToTop.jsx';
 
 const TABS = [
     { key: 'posts', label: 'Posts' },
@@ -35,6 +38,7 @@ export default function UserProfile() {
     const { showToast } = useContext(ToastContext);
     const [isFollowing, setIsFollowing] = useState(false);
     const followLastToggleAtRef = useRef(0);
+
 
     const followersCount = profile?.numberOfFollowers ?? user?.followersCount ?? user?.followers ?? 0;
     const followingCount = profile?.numberOfFollowing ?? user?.followingCount ?? user?.following ?? 0;
@@ -99,6 +103,8 @@ export default function UserProfile() {
         }
     }, [visibleTabs, userId, active]);
 
+
+
     const tabListRef = useRef(null);
     const headerRef = useRef(null);
     const sidebarRef = useRef(null);
@@ -107,26 +113,7 @@ export default function UserProfile() {
     const leftBtnRef = useRef(null);
     const rightBtnRef = useRef(null);
     const [showProfileSidebar, setShowProfileSidebar] = useState(true);
-    const checkSidebarOverlap = () => {
-        const leftNav = document.querySelector('.user-left-sidebar');
-        const sidebar = sidebarRef.current;
-        if (!leftNav || !sidebar || window.innerWidth <= 768) {
-            setShowProfileSidebar(true);
-            return;
-        }
-        const leftRect = leftNav.getBoundingClientRect();
-        const sideRect = sidebar.getBoundingClientRect();
-        const minMargin = 16;
-        const minMainWidth = 520;
-        const sidebarWidthFallback = 370;
-        const sidebarWidth = sideRect.width || sidebarWidthFallback;
-        const availableBetween = (window.innerWidth - leftRect.right - sidebarWidth);
-        const visible = (availableBetween > (minMainWidth + minMargin));
-        if (typeof process !== 'undefined' && process.env && process.env.NODE_ENV === 'development') {
-            console.debug('[ProfileOverlap] leftRight=', leftRect.right, 'sideRectLeft=', sideRect.left, 'sideWidth=', sidebarWidth, 'availableBetween=', availableBetween, 'visible=', visible);
-        }
-        if (showProfileSidebar !== visible) setShowProfileSidebar(visible);
-    };
+
 
     const updateTabOverflow = () => {
         const list = tabListRef.current;
@@ -136,7 +123,6 @@ export default function UserProfile() {
         const rightBtn = rightBtnRef.current;
         if (!list || !header) return;
         const isNarrow = window.innerWidth <= 768;
-        checkSidebarOverlap();
         const sidebarWidth = (!isNarrow && sidebar && showProfileSidebar) ? Math.max(0, sidebar.getBoundingClientRect().width) : 0;
         const available = Math.max(80, header.getBoundingClientRect().width - sidebarWidth - 24);
         list.style.maxWidth = `${available}px`;
@@ -166,35 +152,26 @@ export default function UserProfile() {
 
     useEffect(() => {
         updateTabOverflow();
-        const onResize = () => { checkSidebarOverlap(); updateTabOverflow(); };
+        const onResize = () => { updateTabOverflow(); };
         window.addEventListener('resize', onResize);
         window.addEventListener('focus', onResize);
+        window.addEventListener('scroll', onResize, { passive: true });
         const leftNav = document.querySelector('.user-left-sidebar');
         let observer = null;
         if (leftNav && window.MutationObserver) {
-            observer = new MutationObserver(() => { checkSidebarOverlap(); updateTabOverflow(); });
+            observer = new MutationObserver(() => { updateTabOverflow(); });
             observer.observe(leftNav, { attributes: true, attributeFilter: ['class'] });
         }
         return () => {
             window.removeEventListener('resize', onResize);
             window.removeEventListener('focus', onResize);
+            window.removeEventListener('scroll', onResize);
             if (observer) observer.disconnect();
         };
     }, [visibleTabs]);
 
     useEffect(() => { updateTabOverflow(); }, [showProfileSidebar]);
 
-    const pollRef = useRef(null);
-    useEffect(() => {
-        if (!showProfileSidebar) {
-            if (!pollRef.current) {
-                pollRef.current = setInterval(() => { checkSidebarOverlap(); }, 300);
-            }
-        } else {
-            if (pollRef.current) { clearInterval(pollRef.current); pollRef.current = null; }
-        }
-        return () => { if (pollRef.current) { clearInterval(pollRef.current); pollRef.current = null; } };
-    }, [showProfileSidebar]);
 
     const formatAccountAge = (created) => {
         if (!created) return '—';
@@ -349,7 +326,7 @@ export default function UserProfile() {
 
                         {active === 'posts' && (
                             <div>
-                                <p className="placeholder-note">Posts authored by this user: endpoint missing. Will show paged posts when implemented.</p>
+                                <UserPosts userId={userId} isOwnProfile={isOwnProfile} active={active} />
                             </div>
                         )}
                     </div>
@@ -358,6 +335,7 @@ export default function UserProfile() {
                 <UserProfileSidebar
                     sidebarRef={sidebarRef}
                     showProfileSidebar={showProfileSidebar}
+                    setShowProfileSidebar={setShowProfileSidebar}
                     displayName={displayName}
                     user={user}
                     profile={profile}
@@ -369,6 +347,7 @@ export default function UserProfile() {
                     followingCount={followingCount}
                 />
             </div>
+            <ScrollToTop />
         </div>
     );
 }
