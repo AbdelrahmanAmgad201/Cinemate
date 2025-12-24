@@ -201,6 +201,18 @@
     color: #6b7280;
 }
 
+.user-reviews-list{
+    display:flex;
+    flex-direction:column;
+    gap:12px;
+    margin-top:8px;
+}
+
+.profile-section .review-card{
+    max-width:100%;
+    min-width:0;
+}
+
 @media (max-width: 600px){
     .profile-tabbar{ flex-wrap:wrap }
     .user-name{ font-size:22px }

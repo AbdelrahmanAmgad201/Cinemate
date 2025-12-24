@@ -6,6 +6,7 @@ import { FaUserPlus, FaUserCheck } from 'react-icons/fa';
 import { ToastContext } from '../../context/ToastContext.jsx';
 import { getModApi } from '../../api/forum-api.jsx';
 import { getUserProfileApi, followUserApi, unfollowUserApi } from '../../api/user-api.jsx';
+import UserReviews from '../../components/UserReviews.jsx';
 import { formatCount } from '../../utils/formate.jsx';
 import './style/UserProfile.css';
 import UserProfileSidebar from '../../components/UserProfileSidebar.jsx';
@@ -108,6 +109,7 @@ export default function UserProfile() {
     const leftBtnRef = useRef(null);
     const rightBtnRef = useRef(null);
     const [showProfileSidebar, setShowProfileSidebar] = useState(true);
+
     const checkSidebarOverlap = () => {
         const leftNav = document.querySelector('.user-left-sidebar');
         const sidebar = sidebarRef.current;
@@ -356,7 +358,7 @@ export default function UserProfile() {
 
                         {active === 'reviews' && (
                             <div>
-                                <p className="placeholder-note">Reviews by this user are not yet queryable via the API.</p>
+                                <UserReviews userId={userId} profile={profile} />
                             </div>
                         )}
 
