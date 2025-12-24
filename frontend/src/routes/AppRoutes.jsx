@@ -18,7 +18,6 @@ import AdminSignIn from "../pages/admin/auth/AdminSignIn.jsx";
 import OAuthRedirect from "../pages/user/auth/OAuthRedirect.jsx";
 import OrgAddMovie from "../pages/org/OrgAddMovie.jsx";
 import OrgMoviesAndAnalytics from "../pages/org/OrgMoviesAndAnalytics.jsx";
-import OrgProfile from "../pages/org/OrgProfile.jsx";
 import MoviePreviewPage from "../pages/user/MoviePreviewPage.jsx";
 import WatchPage from "../pages/user/WatchPage.jsx";
 import PostFullPage from '../pages/user/PostFullPage.jsx';
@@ -72,7 +71,6 @@ export default function AppRoutes() {
             <Route element={<RoleRoute allowedRoles={[ROLES.ORGANIZATION]} redirectTo={PATHS.ORGANIZATION.SIGN_IN} />}>
                 <Route path={PATHS.ORGANIZATION.SUBMIT_REQUEST} element={<OrgAddMovie />} />
                 <Route path={PATHS.ORGANIZATION.MOVIES_ANALYTICS} element={<OrgMoviesAndAnalytics />} />
-                <Route path={PATHS.ORGANIZATION.PROFILE()} element={<OrgProfile />} />
             </Route>
 
             <Route element={<RoleRoute allowedRoles={[ROLES.ADMIN]} redirectTo={PATHS.ADMIN.SIGN_IN} />}>

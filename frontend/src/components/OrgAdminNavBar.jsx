@@ -22,7 +22,6 @@ function NavBar(){
         return [
             {key: PATHS.ORGANIZATION.SUBMIT_REQUEST, title: "Submit Movie", to: PATHS.ORGANIZATION.SUBMIT_REQUEST},
             {key: PATHS.ORGANIZATION.MOVIES_ANALYTICS, title: "My Movies Analytics", to: PATHS.ORGANIZATION.MOVIES_ANALYTICS},
-            {key: PATHS.ORGANIZATION.PROFILE(), title: "Profile", to: PATHS.ORGANIZATION.PROFILE(user?.id)},
         ];
     })();
 

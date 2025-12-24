@@ -5,6 +5,7 @@ import { AuthContext } from '../context/AuthContext.jsx';
 import "./style/profileAvatar.css";
 
 import {PATHS, ROLES} from "../constants/constants.jsx";
+import {useNavigate} from "react-router-dom";
 
 export default function ProfileAvatar({ className="" }) {
     const [menuShow, setMenuShow] = useState(false);
@@ -19,10 +20,10 @@ export default function ProfileAvatar({ className="" }) {
         }
     }
 
-    const handleViewOrgProfile = () => {
+    const handleViewAdminProfile = () => {
         setMenuShow(false);
         if (user?.id) {
-            navigate(PATHS.ORGANIZATION.PROFILE(user.id));
+            navigate(PATHS.ADMIN.PROFILE(user.id));
         }
     }
 
@@ -40,19 +41,13 @@ export default function ProfileAvatar({ className="" }) {
                 { label: "Sign Out", onClick: handleSignOut },
             ];
         }
-
-        if (user?.role === ROLES.ADMIN){
-            return [
-                { label: "View Profile", onClick: handleViewAdminProfile },
-                { label: "Sign Out", onClick: handleSignOut }
-            ];
-        } 
-
-        if(user?.role === ROLES.ORGANIZATION){
-            return [
-                { label: "Sign Out", onClick: handleSignOut },
-            ];
+        else if(user?.role === ROLES.ORGANIZATION){
+            return [{ label: "Sign Out", onClick: signOut }];
         }
+        return [
+            { label: "Admin Profile", onClick: () => navigate(PATHS.ADMIN.PROFILE(user?.id)) },
+            { label: "Sign Out", onClick: signOut },
+        ];
     })();
 
     // Close dropdown if clicked outside
