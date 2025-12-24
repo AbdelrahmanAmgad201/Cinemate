@@ -4,6 +4,9 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.example.watchparty.dtos.UserDataDTO;
+import org.example.watchparty.dtos.WatchParty;
+import org.example.watchparty.dtos.WatchPartyResponse;
 import org.example.watchparty.redis.RedisService;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
@@ -23,6 +26,7 @@ public class WatchPartyService {
 
     private final RedisService redisService;
     private final ObjectMapper objectMapper;
+    private final PartyEventService partyEventService;
 
     private static final String PARTY_PREFIX = "party:";
     private static final String MEMBERS_SUFFIX = ":members";
@@ -35,31 +39,39 @@ public class WatchPartyService {
     public WatchParty createParty(WatchParty request) {
         validateCreateRequest(request);
 
-        // Generate party ID if not provided
         String partyId = StringUtils.hasText(request.getPartyId())
                 ? request.getPartyId()
                 : UUID.randomUUID().toString();
 
-        // Build complete party object with defaults
         WatchParty party = WatchParty.builder()
                 .partyId(partyId)
                 .movieId(request.getMovieId())
                 .movieUrl(request.getMovieUrl())
                 .hostId(request.getHostId())
                 .hostName(request.getHostName())
-                .currentParticipants(1) // Host
+                .currentParticipants(1)
                 .status("ACTIVE")
                 .createdAt(LocalDateTime.now())
                 .build();
 
-        // Store party data in Redis hash
         String partyKey = PARTY_PREFIX + partyId;
         savePartyToRedis(party, partyKey);
 
-        // Initialize empty members set with TTL
         String membersKey = partyKey + MEMBERS_SUFFIX;
         redisService.addToSet(membersKey, createMemberKey(party.getHostId()));
         redisService.expire(membersKey, PARTY_TTL_HOURS, TimeUnit.HOURS);
+
+        // Store host user data
+        String hostDataKey = partyKey + ":user:" + party.getHostId();
+        try {
+            UserDataDTO hostData = new UserDataDTO();
+            hostData.setUserId(party.getHostId());
+            hostData.setUserName(party.getHostName());
+            redisService.setValue(hostDataKey, objectMapper.writeValueAsString(hostData),
+                    PARTY_TTL_HOURS, TimeUnit.HOURS);
+        } catch (JsonProcessingException e) {
+            log.error("Failed to serialize host data", e);
+        }
 
         log.info("Created watch party: {} for movie: {} by host: {} ({})",
                 partyId, party.getMovieId(), party.getHostName(), party.getHostId());
@@ -86,10 +98,8 @@ public class WatchPartyService {
             return;
         }
 
-        // Add user to party members set
         redisService.addToSet(membersKey, memberKey);
 
-        // Store user details separately for retrieval
         String userDataKey = partyKey + ":user:" + user.getUserId();
         try {
             redisService.setValue(userDataKey, objectMapper.writeValueAsString(user),
@@ -99,11 +109,11 @@ public class WatchPartyService {
             throw new RuntimeException("Failed to join party", e);
         }
 
-        // Increment participant count - get current value, increment, and set back
         incrementParticipantCount(partyKey);
-
-        // Refresh TTL
         redisService.expire(membersKey, PARTY_TTL_HOURS, TimeUnit.HOURS);
+
+        // Notify all members about the new user
+        partyEventService.notifyUserJoined(partyId, user.getUserId(), user.getUserName());
 
         log.info("User {} ({}) joined party {}", user.getUserName(), user.getUserId(), partyId);
     }
@@ -120,25 +130,27 @@ public class WatchPartyService {
         String membersKey = partyKey + MEMBERS_SUFFIX;
         String memberKey = createMemberKey(userId);
 
-        // Check if user is in the party
         if (Boolean.FALSE.equals(redisService.isMemberOfSet(membersKey, memberKey))) {
             log.warn("User {} not in party {}", userId, partyId);
             return;
         }
 
-        // Remove user from members set
-        redisService.removeFromSet(membersKey, memberKey);
-
-        // Delete user data
+        // Get user name before removal for notification
         String userDataKey = partyKey + ":user:" + userId;
+        String userName = getUserName(userDataKey);
+
+        redisService.removeFromSet(membersKey, memberKey);
         redisService.deleteKey(userDataKey);
 
-        // Decrement participant count
         Integer newCount = decrementParticipantCount(partyKey);
 
-        // If no participants left, delete the party
+        // Notify other members that user left
+        if (newCount != null && newCount > 0) {
+            partyEventService.notifyUserLeft(partyId, userId, userName);
+        }
+
         if (newCount != null && newCount <= 0) {
-            deleteParty(partyId);
+            deletePartyInternal(partyId, "No participants remaining");
             log.info("Party {} deleted - no participants remaining", partyId);
         } else {
             log.info("User {} left party {}", userId, partyId);
@@ -178,8 +190,35 @@ public class WatchPartyService {
     }
 
     /**
-     * Retrieves all members of a party with their details
+     * Deletes a party and notifies all members
      */
+    public void deleteParty(String partyId) {
+        deletePartyInternal(partyId, "Party has been deleted by the host");
+    }
+
+    // ==================== Helper Methods ====================
+
+    private void deletePartyInternal(String partyId, String reason) {
+        // Notify all members before deleting
+        partyEventService.notifyPartyDeleted(partyId, reason);
+
+        String partyKey = PARTY_PREFIX + partyId;
+        String membersKey = partyKey + MEMBERS_SUFFIX;
+
+        Set<Object> memberKeys = redisService.getSetMembers(membersKey);
+        if (memberKeys != null) {
+            for (Object memberKeyObj : memberKeys) {
+                Long userId = extractUserIdFromMemberKey(memberKeyObj.toString());
+                redisService.deleteKey(partyKey + ":user:" + userId);
+            }
+        }
+
+        redisService.deleteKey(membersKey);
+        redisService.deleteKey(partyKey);
+
+        log.info("Deleted party: {} - Reason: {}", partyId, reason);
+    }
+
     private Set<UserDataDTO> getPartyMembers(String partyId) {
         String partyKey = PARTY_PREFIX + partyId;
         String membersKey = partyKey + MEMBERS_SUFFIX;
@@ -207,30 +246,18 @@ public class WatchPartyService {
         return members;
     }
 
-    /**
-     * Deletes a party and all associated data
-     */
-    public void deleteParty(String partyId) {
-        String partyKey = PARTY_PREFIX + partyId;
-        String membersKey = partyKey + MEMBERS_SUFFIX;
-
-        // Get all member keys to delete user data
-        Set<Object> memberKeys = redisService.getSetMembers(membersKey);
-        if (memberKeys != null) {
-            for (Object memberKeyObj : memberKeys) {
-                Long userId = extractUserIdFromMemberKey(memberKeyObj.toString());
-                redisService.deleteKey(partyKey + ":user:" + userId);
+    private String getUserName(String userDataKey) {
+        Object userData = redisService.getValue(userDataKey);
+        if (userData != null) {
+            try {
+                UserDataDTO user = objectMapper.readValue(userData.toString(), UserDataDTO.class);
+                return user.getUserName();
+            } catch (JsonProcessingException e) {
+                log.error("Failed to deserialize user data", e);
             }
         }
-
-        // Delete members set and party hash
-        redisService.deleteKey(membersKey);
-        redisService.deleteKey(partyKey);
-
-        log.info("Deleted party: {}", partyId);
+        return "Unknown User";
     }
-
-    // ==================== Helper Methods ====================
 
     private void incrementParticipantCount(String partyKey) {
         Object currentValue = redisService.getHashValue(partyKey, "currentParticipants");

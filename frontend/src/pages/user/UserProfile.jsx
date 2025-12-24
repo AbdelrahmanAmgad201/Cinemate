@@ -8,9 +8,11 @@ import { getModApi } from '../../api/forum-api.jsx';
 import { getUserProfileApi, followUserApi, unfollowUserApi } from '../../api/user-api.jsx';
 import WatchHistory from '../../components/WatchHistory.jsx';
 import { PATHS } from '../../constants/constants.jsx';
+import { getUserProfileApi, isUserFollowedApi, followUserApi, unfollowUserApi } from '../../api/user-api.jsx';
 import { formatCount } from '../../utils/formate.jsx';
 import './style/UserProfile.css';
 import UserProfileSidebar from '../../components/UserProfileSidebar.jsx';
+import PersonalData from '../../components/PersonalData.jsx';
 
 const TABS = [
     { key: 'posts', label: 'Posts' },
@@ -236,6 +238,26 @@ export default function UserProfile() {
 
 
 
+    useEffect(() => {
+        let cancelled = false;
+        if (isOwnProfile) {
+            return () => { cancelled = true; };
+        }
+        if (!user) {
+            return () => { cancelled = true; };
+        }
+        if (!userId) {
+            return () => { cancelled = true; };
+        }
+        if (!/^\d+$/.test(String(userId))) {
+            return () => { cancelled = true; };
+        }
+        isUserFollowedApi({ userId: Number(userId) })
+            .then(res => { if (!cancelled && res.success) setIsFollowing(Boolean(res.data)); })
+            .catch(() => {});
+        return () => { cancelled = true; };
+    }, [userId, isOwnProfile, user]);
+
     const applyFollowDesired = async (desired) => {
         setFollowBusy(true);
 
@@ -331,11 +353,7 @@ export default function UserProfile() {
                         <div className="section-title">{TABS.find(t => t.key === active).label}</div>
 
                         {active === 'personal' && (
-                            <div>
-                                <p><strong>Email:</strong> {user && user.email ? user.email : '-'}</p>
-                                <p><strong>Name:</strong> {(profile && (profile.firstName || profile.lastName)) ? `${profile.firstName || ''} ${profile.lastName || ''}` : (user && (user.firstName || user.lastName) ? `${user.firstName || ''} ${user.lastName || ''}` : '-')}</p>
-                                <p><strong>About:</strong> {(profile && profile.aboutMe) ? profile.aboutMe : '-'}</p>
-                            </div>
+                            <PersonalData profile={profile} user={user} />
                         )}
 
                         {active === 'history' && (

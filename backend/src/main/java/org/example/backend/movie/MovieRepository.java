@@ -82,4 +82,5 @@ public interface MovieRepository extends JpaRepository<Movie, Long>, JpaSpecific
 
 
     Long countByAdminIsNotNull();
+    Page<MovieView> findAllByAdminIsNotNullAndOrganization_Id(Long orgId, Pageable pageable);
 }

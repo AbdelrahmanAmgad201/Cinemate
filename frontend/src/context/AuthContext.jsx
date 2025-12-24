@@ -138,6 +138,7 @@ export default function AuthProvider({ children }){
                     id: userData.id,
                     email: userData.email,
                     role: userData.role.replace("ROLE_", ""),
+                    profileComplete: userData.profileComplete
                 });
             }
 
