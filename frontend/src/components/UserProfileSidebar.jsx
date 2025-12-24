@@ -94,9 +94,7 @@ function PrivacyToggle({ avatarSrc, clickableInPersonalData = false }) {
                 showToast('Failed to update visibility', res.message || 'Unknown error', 'error');
                 return false;
             }
-            if (setUser) {
-                setUser(u => u ? ({ ...u, isPublic: next }) : u);
-            }
+
             showToast('Saved', next ? 'Profile is public' : 'Profile is private', 'success');
             return true;
         } catch (err) {
