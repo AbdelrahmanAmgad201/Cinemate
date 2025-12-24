@@ -25,6 +25,7 @@ public class JWTProvider {
         Map<String, Object> claims = new HashMap<>();
         claims.put("id", account.getId());
         claims.put("email", account.getEmail());
+        claims.put("name", account.getName());
         claims.put("role", account.getRole());
 
         Date now = new Date();
@@ -53,6 +54,12 @@ public class JWTProvider {
     public Long getIdFromToken(String token) {
         Claims claims = parseToken(token);
         return claims.get("id", Long.class);
+    }
+
+    // Added method to extract name from token
+    public String getNameFromToken(String token) {
+        Claims claims = parseToken(token);
+        return claims.get("name", String.class);
     }
 
     public boolean validateToken(String token) {

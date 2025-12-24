@@ -99,7 +99,7 @@ public class DataInitializer implements CommandLineRunner {
     }
 
     private void forumFollowing(Forum forum){
-        for(int j=0;j<defaultNumberOfFollowingPosts;j++){
+        for(int j=1;j<=defaultNumberOfFollowingPosts;j++){
             followingService.follow(forum.getId(),Long.valueOf(j));
         }
     }
