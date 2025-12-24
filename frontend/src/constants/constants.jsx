@@ -44,6 +44,8 @@ export const PATHS = {
         SIGN_IN: "/user/sign-in", // Old was "/"
         SIGN_UP: "/user/sign-up", // Old was "/user-sign-up"
         PROFILE: (id = ":userId") => `/user/${id}`,
+        FOLLOWERS: (id = ":userId") => `/user/${id}/followers`,
+        FOLLOWING: (id = ":userId") => `/user/${id}/following`,
     },
 
     ADMIN : {
