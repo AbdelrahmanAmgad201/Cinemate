@@ -61,7 +61,7 @@ const Genre = ({ listGenre }) => {
 
     useEffect(() => {
         fetchMovies();
-    }, [title]);
+    }, [currPage]);
 
     const fetchMovies = async () => {
        try{

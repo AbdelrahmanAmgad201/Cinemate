@@ -27,10 +27,14 @@ function NavBar(){
 
     return(
         <div className="navigationBar">
-            {tabs.map(({key, title, to}) => (
-                <Link key={key} to={to}><h1>{title}</h1></Link>
+
+            {tabs.map(({ key, title, to }) => (
+                <Link key={key} to={to} className="nav-link">
+                    <span className="nav-item-title">{title}</span>
+                </Link>
             ))}
-            <ProfileAvatar className='org'/>
+
+            <ProfileAvatar className='org' />
         </div>
     );
 

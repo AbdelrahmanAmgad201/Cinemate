@@ -164,3 +164,38 @@ export async function addAdminApi({ name, email, password }) {
 
 
 }
+
+
+// Admin Profile
+export async function getAdminProfileApi() {
+    try {
+        const res = await api.get("/admin/v1/get-admin-profile");
+
+        return { success: true, data: res.data };
+    }catch (err){
+
+        return { success: false , message: err.message };
+    }
+}
+
+export async function updateNameApi({name}){
+    try {
+        const res = await api.put("/admin/v1/update-name", {name});
+
+        return { success: true, data: res.data };
+    }catch (err){
+
+        return { success: false , message: err.message };
+    }
+}
+
+export async function updatePasswordApi({oldPassword, newPassword}){
+    try {
+        const res = await api.put("/auth/v1/password", {oldPassword, newPassword});
+
+        return { success: true, data: res.data };
+    }catch(err){
+
+        return { success: false , message: err.message };
+    }
+}
