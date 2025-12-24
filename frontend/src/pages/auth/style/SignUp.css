@@ -61,6 +61,7 @@
     flex-direction: row;
     align-items: center;
     gap: 5px;
+    position: relative;
 }
 
 .signup-container input,
@@ -72,6 +73,11 @@
     font-size: 16px;
     color: var(--ghost-white);
     transition: background-color 0.3s ease-out;
+}
+
+.icon-input .password-toggle-icon{
+    position: absolute;
+    color: var(--ghost-white);
 }
 
 .signup-container input::placeholder,

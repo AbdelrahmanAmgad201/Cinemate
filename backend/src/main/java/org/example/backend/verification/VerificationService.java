@@ -2,7 +2,11 @@ package org.example.backend.verification;
 
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import org.example.backend.admin.Admin;
+import org.example.backend.admin.AdminRepository;
 import org.example.backend.admin.AdminService;
+import org.example.backend.organization.Organization;
+import org.example.backend.organization.OrganizationRepository;
 import org.example.backend.security.Authenticatable;
 import org.example.backend.security.JWTProvider;
 import org.springframework.context.annotation.Lazy;
@@ -18,10 +22,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
 import java.time.LocalDateTime;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 
 import lombok.Getter;
 import lombok.Setter;
@@ -57,6 +58,21 @@ public class VerificationService {
 
     private final RestTemplate restTemplate = new RestTemplate();
     private final PasswordEncoder passwordEncoder;
+    private final UserRepository userRepository;
+    private final OrganizationRepository organizationRepository;
+    private final AdminRepository adminRepository;
+    private final Random random = new Random();
+
+    @Transactional
+    public Verfication forgetPassword(String email,String role) {
+        int code = 100000 + random.nextInt(900000);
+        if(sendVerificationEmail(email, code)){
+            return addVerfication(email ,code,role);
+        }
+        else{
+            return new Verfication();
+        }
+    }
 
     @Transactional
     public Verfication addVerfication(String email, String password, int code, String role) {
@@ -70,6 +86,52 @@ public class VerificationService {
                 .role(role)
                 .build();
         return verificationRepository.save(verfication);
+    }
+
+    private Verfication addVerfication(String email, int code,String role) {
+        Optional<Verfication> oldVerification = verificationRepository.findByEmail(email);
+        oldVerification.ifPresent(verificationRepository::delete);
+        Verfication verfication = Verfication.builder()
+                .email(email)
+                .code(code)
+                .role(role)
+                .build();
+        return verificationRepository.save(verfication);
+    }
+
+    @Transactional
+    public void updatePasswordByVerificationCode(String email, UpdatePasswordWithVerificationDTO updatePasswordWithVerificationDTO,String role) {
+        int verificationCode = updatePasswordWithVerificationDTO.getCode();
+        String password = updatePasswordWithVerificationDTO.getPassword();
+        Optional<Verfication> verification =verify(email,verificationCode);
+        if(verification.isPresent()) {
+            switch (role) {
+                case "ROLE_USER" -> updateUserPassword(email,password);
+                case "ROLE_ADMIN" ->  updateOrganizationPassword(email,password);
+                case "ROLE_ORGANIZATION" ->  updateAdminPassword(email,password);
+            }
+        }
+    }
+
+    private void updateUserPassword(String email, String password) {
+        User user  = userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+        user.setPassword(passwordEncoder.encode(password));
+        userRepository.save(user);
+    }
+
+    private void updateOrganizationPassword(String email, String password) {
+        Organization organization  = organizationRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+        organization.setPassword(passwordEncoder.encode(password));
+        organizationRepository.save(organization);
+    }
+
+    private void updateAdminPassword(String email, String password) {
+        Admin admin  = adminRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+        admin.setPassword(passwordEncoder.encode(password));
+        adminRepository.save(admin);
     }
 
     private Optional<Verfication> verify(String Email, int code) {
@@ -128,6 +190,12 @@ public class VerificationService {
             e.printStackTrace();
             return false;
         }
+    }
+
+    @Transactional
+    public boolean forgetPasswordVerification(String Email, int code) {
+        Optional<Verfication> verification=verify(Email, code);
+        return verification.isPresent();
     }
 
     @Transactional

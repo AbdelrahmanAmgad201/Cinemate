@@ -31,11 +31,15 @@ public class Follows {
     @Column(name = "followed_at", nullable = false, updatable = false)
     private LocalDateTime followedAt;
 
+    @Column(name = "is_deleted")
+    private Boolean isDeleted;
+
     @PrePersist
     protected void onCreate() {
         if (followedAt == null) {
             followedAt = LocalDateTime.now();
         }
+        isDeleted = false;
     }
 
     @Override
