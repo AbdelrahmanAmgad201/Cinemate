@@ -243,8 +243,9 @@ export default function UserProfileSidebar({
                                 role="button"
                                 tabIndex={0}
                                 title="Personal data"
-                                onClick={() => { /* no-op while personal data is not implemented */ }}
-                                onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); /* no-op */ } }}
+                                onClick={() => setActive && setActive('personal')}
+                                onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setActive && setActive('personal'); } }}
+                                aria-label="Open personal data"
                             >
                                 <div className="profile-avatar-circle profile-avatar-small" aria-hidden>
                                     {avatarSrc ? <img src={avatarSrc} alt="avatar" /> : <IoIosPerson size={18} />}
