@@ -5,7 +5,7 @@ import { IoIosPerson } from 'react-icons/io';
 import { FaUserPlus, FaUserCheck } from 'react-icons/fa';
 import { ToastContext } from '../../context/ToastContext.jsx';
 import { getModApi } from '../../api/forum-api.jsx';
-import { getUserProfileApi } from '../../api/user-api.jsx';
+import { getUserProfileApi, followUserApi, unfollowUserApi } from '../../api/user-api.jsx';
 import { formatCount } from '../../utils/formate.jsx';
 import './style/UserProfile.css';
 import UserProfileSidebar from '../../components/UserProfileSidebar.jsx';
@@ -34,7 +34,8 @@ export default function UserProfile() {
     const [profile, setProfile] = useState(null);
     const { showToast } = useContext(ToastContext);
     const [isFollowing, setIsFollowing] = useState(false);
-    const followLastToggleAtRef = useRef(0);
+    const [followBusy, setFollowBusy] = useState(false);
+    const desiredFollowRef = useRef(null);
 
     const followersCount = profile?.numberOfFollowers ?? user?.followersCount ?? user?.followers ?? 0;
     const followingCount = profile?.numberOfFollowing ?? user?.followingCount ?? user?.following ?? 0;
@@ -232,21 +233,39 @@ export default function UserProfile() {
     };
 
 
+
+    const applyFollowDesired = async (desired) => {
+        setFollowBusy(true);
+
+        const idNum = Number(userId);
+        const res = desired ? await followUserApi({ userId: idNum }) : await unfollowUserApi({ userId: idNum });
+
+        if (!res?.success) {
+            showToast('Follow action failed', res?.message || 'Please try again', 'error');
+        } else {
+            setIsFollowing(desired);
+            showToast(desired ? 'Following' : 'Unfollowed', desired ? 'You are now following this user' : 'Follow removed', 'success');
+        }
+
+        const pending = desiredFollowRef.current;
+        if (pending !== null && pending !== desired) {
+            desiredFollowRef.current = null;
+            await applyFollowDesired(pending);
+            return;
+        } else {
+            desiredFollowRef.current = null;
+            const prof = await getUserProfileApi({ userId: Number(userId) });
+            if (prof?.success && prof.data) setProfile(prof.data);
+            setFollowBusy(false);
+        }
+    };
+
     const handleFollowToggle = () => {
-        const now = Date.now();
-        if (now - followLastToggleAtRef.current < 400) {
-            return;
+        const nextDesired = !isFollowing;
+        desiredFollowRef.current = nextDesired;
+        if (!followBusy) {
+            applyFollowDesired(nextDesired);
         }
-        followLastToggleAtRef.current = now;
-
-        if (!user) {
-            showToast('Sign in required', 'Please sign in to follow users.', 'info');
-            return;
-        }
-
-        const next = !isFollowing;
-        setIsFollowing(next);
-        showToast(next ? 'Following' : 'Unfollowed', next ? 'You are now following this user' : 'Follow removed', 'success');
     };
 
     if (loading) return <div>Loading...</div>;

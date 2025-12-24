@@ -84,6 +84,14 @@ public class FollowService {
         if(follow.getIsDeleted()){
             follow.setIsDeleted(false);
             follow.setFollowedAt(LocalDateTime.now());
+
+            User followingUser = follow.getFollowingUser();
+            User followedUser = follow.getFollowedUser();
+            followingUser.setNumberOfFollowing(followingUser.getNumberOfFollowing() + 1);
+            followedUser.setNumberOfFollowers(followedUser.getNumberOfFollowers() + 1);
+
+            userRepository.save(followingUser);
+            userRepository.save(followedUser);
             followsRepository.save(follow);
         }
     }
