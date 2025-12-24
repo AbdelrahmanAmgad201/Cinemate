@@ -7,11 +7,13 @@ import { ToastContext } from '../../context/ToastContext.jsx';
 import { getModApi } from '../../api/forum-api.jsx';
 import { getUserProfileApi } from '../../api/user-api.jsx';
 import UserPosts from '../../components/UserPosts.jsx';
+import { getUserProfileApi, isUserFollowedApi, followUserApi, unfollowUserApi } from '../../api/user-api.jsx';
 import { formatCount } from '../../utils/formate.jsx';
 
 import './style/UserProfile.css';
 import UserProfileSidebar from '../../components/UserProfileSidebar.jsx';
 import ScrollToTop from '../../components/ScrollToTop.jsx';
+import PersonalData from '../../components/PersonalData.jsx';
 
 const TABS = [
     { key: 'posts', label: 'Posts' },
@@ -38,7 +40,8 @@ export default function UserProfile() {
     const [isPrivateProfile, setIsPrivateProfile] = useState(false);
     const { showToast } = useContext(ToastContext);
     const [isFollowing, setIsFollowing] = useState(false);
-    const followLastToggleAtRef = useRef(0);
+    const [followBusy, setFollowBusy] = useState(false);
+    const desiredFollowRef = useRef(null);
 
 
     const followersCount = profile?.numberOfFollowers ?? user?.followersCount ?? user?.followers ?? 0;
@@ -227,21 +230,59 @@ export default function UserProfile() {
     };
 
 
-    const handleFollowToggle = () => {
-        const now = Date.now();
-        if (now - followLastToggleAtRef.current < 400) {
-            return;
-        }
-        followLastToggleAtRef.current = now;
 
+    useEffect(() => {
+        let cancelled = false;
+        if (isOwnProfile) {
+            return () => { cancelled = true; };
+        }
         if (!user) {
-            showToast('Sign in required', 'Please sign in to follow users.', 'info');
-            return;
+            return () => { cancelled = true; };
+        }
+        if (!userId) {
+            return () => { cancelled = true; };
+        }
+        if (!/^\d+$/.test(String(userId))) {
+            return () => { cancelled = true; };
+        }
+        isUserFollowedApi({ userId: Number(userId) })
+            .then(res => { if (!cancelled && res.success) setIsFollowing(Boolean(res.data)); })
+            .catch(() => {});
+        return () => { cancelled = true; };
+    }, [userId, isOwnProfile, user]);
+
+    const applyFollowDesired = async (desired) => {
+        setFollowBusy(true);
+
+        const idNum = Number(userId);
+        const res = desired ? await followUserApi({ userId: idNum }) : await unfollowUserApi({ userId: idNum });
+
+        if (!res?.success) {
+            showToast('Follow action failed', res?.message || 'Please try again', 'error');
+        } else {
+            setIsFollowing(desired);
+            showToast(desired ? 'Following' : 'Unfollowed', desired ? 'You are now following this user' : 'Follow removed', 'success');
         }
 
-        const next = !isFollowing;
-        setIsFollowing(next);
-        showToast(next ? 'Following' : 'Unfollowed', next ? 'You are now following this user' : 'Follow removed', 'success');
+        const pending = desiredFollowRef.current;
+        if (pending !== null && pending !== desired) {
+            desiredFollowRef.current = null;
+            await applyFollowDesired(pending);
+            return;
+        } else {
+            desiredFollowRef.current = null;
+            const prof = await getUserProfileApi({ userId: Number(userId) });
+            if (prof?.success && prof.data) setProfile(prof.data);
+            setFollowBusy(false);
+        }
+    };
+
+    const handleFollowToggle = () => {
+        const nextDesired = !isFollowing;
+        desiredFollowRef.current = nextDesired;
+        if (!followBusy) {
+            applyFollowDesired(nextDesired);
+        }
     };
 
     if (loading) return <div>Loading...</div>;
@@ -306,11 +347,7 @@ export default function UserProfile() {
                         <div className="section-title">{TABS.find(t => t.key === active).label}</div>
 
                         {active === 'personal' && (
-                            <div>
-                                <p><strong>Email:</strong> {user && user.email ? user.email : '-'}</p>
-                                <p><strong>Name:</strong> {(profile && (profile.firstName || profile.lastName)) ? `${profile.firstName || ''} ${profile.lastName || ''}` : (user && (user.firstName || user.lastName) ? `${user.firstName || ''} ${user.lastName || ''}` : '-')}</p>
-                                <p><strong>About:</strong> {(profile && profile.aboutMe) ? profile.aboutMe : '-'}</p>
-                            </div>
+                            <PersonalData profile={profile} user={user} />
                         )}
 
                         {active === 'history' && (

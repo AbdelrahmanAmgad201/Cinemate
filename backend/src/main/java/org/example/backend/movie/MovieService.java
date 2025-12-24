@@ -102,4 +102,8 @@ public class MovieService {
         Movie movie = movieRepository.findById(movieId).orElseThrow(() -> new RuntimeException("Movie not found"));
         return movie.getOrganization().getId().equals(orgId);
     }
+
+    public Page<MovieView> getOrganizationMovies(Long orgId, Pageable pageable){
+        return movieRepository.findAllByAdminIsNotNullAndOrganization_Id(orgId, pageable);
+    }
 }

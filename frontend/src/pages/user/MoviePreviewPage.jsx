@@ -18,8 +18,14 @@ import addIcon from "./../../assets/icons/add-white.png"
 import clockIcon from "../../assets/icons/clock-white.png";
 
 import {MAX_LENGTHS, PATHS, ROLES} from "../../constants/constants.jsx";
+import {createRoomApi} from "../../api/watch-together-api.jsx";
+import {WatchPartyContext} from "../../context/WatchPartyContext.jsx";
 
 export default function MoviePreviewPage() {
+
+    const { user } = useContext(AuthContext);
+    const { showToast } = useContext(ToastContext);
+    const { createParty } = useContext(WatchPartyContext);
 
     // Movie details
     const { movieId } = useParams();
@@ -28,7 +34,6 @@ export default function MoviePreviewPage() {
 
     const [movie, setMovie] = useState(location.state?.movie ?? null);
     const [movieLoading, setMovieLoading] = useState(false);
-    const [movieError, setMovieError] = useState(null);
 
 
     // Reviews and modal
@@ -48,9 +53,6 @@ export default function MoviePreviewPage() {
     const [formRating, setFormRating] = useState(5);
     const [formDesc, setFormDesc] = useState("");
 
-    const { user } = useContext(AuthContext);
-    const { showToast } = useContext(ToastContext);
-
     // add a new review
     const handleAdd = async (e) => {
         e.preventDefault();
@@ -63,8 +65,8 @@ export default function MoviePreviewPage() {
         // TODO: send to backend
         console.log({movieId, formDesc, formRating})
         const res = await postReviewApi({movieId, comment: formDesc, rating: Number(formRating)});
-        const review = res.data
-        // res is my review, so put it first it to the list of reviews
+
+        // res is my review, so put it first to the list of reviews
         if (res.success === true) {
             const review = res.data;
             setReviews(prev => [review, ...prev]); // show immediately
@@ -85,7 +87,6 @@ export default function MoviePreviewPage() {
 
     };
 
-    /////////////////////////////////////////////////////////// TODO /////////////////////////////////////////////////////
     const handleDelete = async (id) => {
 
         // if (!window.confirm("Delete this review?")) return;
@@ -109,8 +110,6 @@ export default function MoviePreviewPage() {
         }
         fetchingRef.current = true;
 
-        // movieId, page, size
-
         const res = await getReviewsApi({movieId, page:pageToFetch, size});
         if (res.success === false) {
             {user.role === ROLES.USER && showToast("Failed to fetch reviews", res.message || "unknown error", "error")}
@@ -121,7 +120,7 @@ export default function MoviePreviewPage() {
         }
 
         const data = res.data
-        console.log(data)
+
         const pageContent = data.content ?? data;
         setTotalPages(data.totalPages ?? Math.max(1, Math.ceil((data.totalElements ?? pageContent.length) / size)));
         setPage(pageToFetch);
@@ -140,13 +139,11 @@ export default function MoviePreviewPage() {
     }
 
     const fetchMovie = async () => {
-        setMovieError(null);
         setMovieLoading(true);
 
         const res = await getMovieApi({ movieId });
         if (!res.success){
             showToast("Failed to fetch movie", res.message || "unknown error", "error")
-            setMovieError(res.message || "Failed to load movie");
             setMovieLoading(false);
             return;
         }
@@ -176,6 +173,22 @@ export default function MoviePreviewPage() {
         }
 
         showToast("Watch later movie", "Added movie to watch later list", "success")
+    }
+
+    const handleWatchTogether = async () => {
+
+        showToast("Watch together", "Starting a new watch together room...", "info")
+
+        const res = await createParty(movieId);
+        const partyData = res.data;
+        if (res.success === false){
+            showToast("Failed to create a watch together room", res.message || "unknown error", "error")
+            return
+        }
+
+        showToast("Watch together", "Room created successfully", "success")
+
+        navigate(PATHS.MOVIE.WATCH_PARTY(partyData.partyId))
     }
 
     // Fetches reviews and maybe movie details from backend
@@ -235,9 +248,7 @@ export default function MoviePreviewPage() {
     }, [sentinelRef.current, page, totalPages, movieId]);
 
 
-    // COMMENT TO TEST
     if (movieLoading) return <div className="loader">Loading movie...</div>;
-    // if (movieError) return <div className="error">Error: {movieError}</div>;
     if (!movie) return <div className="no-movie">No movie selected.</div>;
 
     return (
@@ -255,7 +266,7 @@ export default function MoviePreviewPage() {
                     </div>
 
                     <div className="movie-preview-page-movie-details-middle-genres">
-                        {(movie.genres || []).map((g, index) => <span key={g} className="genre-tag">{g}</span>)}
+                        {(movie.genres || []).map((g) => <span key={g} className="genre-tag">{g}</span>)}
                     </div>
 
                     <div className="movie-preview-page-movie-details-middle-description">
@@ -288,7 +299,7 @@ export default function MoviePreviewPage() {
                         </button>}
 
                         {user.role === ROLES.USER && <button title="Watch-Party">
-                            <img src={watchPartyIcon} alt="Watch-Party" className="button-icon" />
+                            <img src={watchPartyIcon} alt="Watch-Party" className="button-icon" onClick={handleWatchTogether} />
                             <span className="tooltip">Start Watch-Party</span>
                         </button>}
 
@@ -333,7 +344,7 @@ export default function MoviePreviewPage() {
                         <div className="error">Error: {reviewsError}</div>)}
                     {reviews.length === 0 && (
                         <div className="no-reviews">No reviews yet. Be the first!</div>)}
-                    {(reviews.map((r, index) => (
+                    {(reviews.map((r) => (
                         <ReviewCard
                             key={r.userId}
                             avatar={r.avatar}
