@@ -2,18 +2,15 @@ package org.example.backend.security;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import org.example.backend.user.Gender;
 import org.example.backend.user.User;
 import org.example.backend.user.UserRepository;
 import org.example.backend.user.OAuthUser;
-import org.example.backend.security.JWTProvider;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.security.web.authentication.SimpleUrlAuthenticationSuccessHandler;
 import org.springframework.stereotype.Component;
 import org.springframework.web.util.UriComponentsBuilder;
-import java.util.Objects;
 
 import java.io.IOException;
 
@@ -43,30 +40,13 @@ public class OAuthSuccessHandler extends SimpleUrlAuthenticationSuccessHandler {
             .provider("google")
             .providerId(oauthUser.getGoogleId())
             .gender(null)
+            .birthDate(null)
             .password(null)
+            .profileComplete(false)
             .build();
 
             return userRepository.save(newUser);
         });
-
-        // Update user info if changed
-        if(user.getId() != null){
-            boolean needsUpdate = false;
-            
-            if(!oauthUser.getFirstName().equals(user.getFirstName())){
-                user.setFirstName(oauthUser.getFirstName());
-                needsUpdate = true;
-            }
-
-            if(!Objects.equals(oauthUser.getLastName(), user.getLastName())){
-                user.setLastName(oauthUser.getLastName());
-                needsUpdate = true;
-            }
-
-            if(needsUpdate){
-                userRepository.save(user);
-            }
-        }
 
         String token = jwtProvider.generateToken(user);
 
