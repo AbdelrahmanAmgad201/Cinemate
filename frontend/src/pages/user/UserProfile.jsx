@@ -5,7 +5,7 @@ import { IoIosPerson } from 'react-icons/io';
 import { FaUserPlus, FaUserCheck } from 'react-icons/fa';
 import { ToastContext } from '../../context/ToastContext.jsx';
 import { getModApi } from '../../api/forum-api.jsx';
-import { getUserProfileApi, followUserApi, unfollowUserApi } from '../../api/user-api.jsx';
+import { getUserProfileApi, isUserFollowedApi, followUserApi, unfollowUserApi } from '../../api/user-api.jsx';
 import { formatCount } from '../../utils/formate.jsx';
 import './style/UserProfile.css';
 import UserProfileSidebar from '../../components/UserProfileSidebar.jsx';
@@ -233,6 +233,26 @@ export default function UserProfile() {
     };
 
 
+
+    useEffect(() => {
+        let cancelled = false;
+        if (isOwnProfile) {
+            return () => { cancelled = true; };
+        }
+        if (!user) {
+            return () => { cancelled = true; };
+        }
+        if (!userId) {
+            return () => { cancelled = true; };
+        }
+        if (!/^\d+$/.test(String(userId))) {
+            return () => { cancelled = true; };
+        }
+        isUserFollowedApi({ userId: Number(userId) })
+            .then(res => { if (!cancelled && res.success) setIsFollowing(Boolean(res.data)); })
+            .catch(() => {});
+        return () => { cancelled = true; };
+    }, [userId, isOwnProfile, user]);
 
     const applyFollowDesired = async (desired) => {
         setFollowBusy(true);
