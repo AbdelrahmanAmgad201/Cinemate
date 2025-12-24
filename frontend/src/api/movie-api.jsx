@@ -120,3 +120,17 @@ export async function addToWatchHistoryApi({movieId}) {
         return { success: false , message: err.message };
     }
 };
+
+export async function getWatchHistoryApi({page = 0, size = 20} = {}) {
+    try {
+        const response = await api.get(`/watch-history/v1/watch-history`, { params: { page, size } });
+        const data = response.data;
+        const content = Array.isArray(data.content) ? data.content.map(item => ({
+            ...item,
+            watchedAt: item.watchedAt ? new Date(item.watchedAt) : null
+        })) : [];
+        return { success: true, data: { ...data, content } };
+    } catch (err) {
+        return { success: false, message: err.message };
+    }
+};
