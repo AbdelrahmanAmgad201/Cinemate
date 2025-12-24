@@ -78,22 +78,36 @@ export default function UserProfileSidebar({
                 <h2 className="sidebar-title">{displayName}</h2>
 
                 <div className="sidebar-stats-inline">
-                    <Link
-                        to={followersLink}
-                        className="stat-inline stat-inline-clickable"
-                        aria-label={`${followers} followers`}
-                    >
-                        <span className="stat-num-inline" title={String(followers)}>{formatCount(followers)}</span>
-                        <span className="stat-label-inline">followers</span>
-                    </Link>
-                    <Link
-                        to={followingLink}
-                        className="stat-inline stat-inline-clickable"
-                        aria-label={`${following} following`}
-                    >
-                        <span className="stat-num-inline" title={String(following)}>{formatCount(following)}</span>
-                        <span className="stat-label-inline">following</span>
-                    </Link>
+                    {isOwnProfile ? (
+                        <Link
+                            to={followersLink}
+                            className="stat-inline stat-inline-clickable"
+                            aria-label={`${followers} followers`}
+                        >
+                            <span className="stat-num-inline" title={String(followers)}>{formatCount(followers)}</span>
+                            <span className="stat-label-inline">followers</span>
+                        </Link>
+                    ) : (
+                        <div className="stat-inline" aria-label={`${followers} followers`}>
+                            <span className="stat-num-inline" title={String(followers)}>{formatCount(followers)}</span>
+                            <span className="stat-label-inline">followers</span>
+                        </div>
+                    )}
+                    {isOwnProfile ? (
+                        <Link
+                            to={followingLink}
+                            className="stat-inline stat-inline-clickable"
+                            aria-label={`${following} following`}
+                        >
+                            <span className="stat-num-inline" title={String(following)}>{formatCount(following)}</span>
+                            <span className="stat-label-inline">following</span>
+                        </Link>
+                    ) : (
+                        <div className="stat-inline" aria-label={`${following} following`}>
+                            <span className="stat-num-inline" title={String(following)}>{formatCount(following)}</span>
+                            <span className="stat-label-inline">following</span>
+                        </div>
+                    )}
                 </div>
 
                 <p className="sidebar-desc">{user && (user.username || '')}</p>

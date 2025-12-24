@@ -93,6 +93,13 @@
     border: none;
 }
 
+.user-profile-container .follow-btn.following:hover{
+    filter:brightness(0.92);
+    transform: translateY(-2px);
+    background-color: var(--blue-bell);
+    color: var(--ghost-white);
+}
+
 .user-meta{ color: var(--grey-text); font-size:13px }
 .profile-tabbar{
     display:block;

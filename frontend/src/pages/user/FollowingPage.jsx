@@ -1,8 +1,10 @@
 import React, { useEffect, useState, useContext } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, Link } from 'react-router-dom';
 import { AuthContext } from '../../context/AuthContext.jsx';
 import { ToastContext } from '../../context/ToastContext.jsx';
 import { getFollowingApi, followUserApi, unfollowUserApi } from '../../api/user-api.jsx';
+import { PATHS } from '../../constants/constants.jsx';
+import { IoIosPerson } from 'react-icons/io';
 import './style/FollowingPage.css';
 
 export default function FollowingPage() {
@@ -14,15 +16,38 @@ export default function FollowingPage() {
     const [loading, setLoading] = useState(true);
     const [items, setItems] = useState([]);
     const [error, setError] = useState(null);
+    const isOwnProfile = user && user.id === Number(userId);
 
     useEffect(() => {
+        if (!isOwnProfile) {
+            showToast('Access Denied', 'You can only view your own following list.', 'warning');
+            navigate(-1);
+            return;
+        }
+
         let cancelled = false;
         setLoading(true);
         setError(null);
-        getFollowingApi({ userId: Number(userId), page: 0, size: 100 }).then(res => {
+        
+        getFollowingApi({ page: 0, size: 100 }).then(res => {
             if (cancelled) return;
-            if (res.success && Array.isArray(res.data)) {
-                setItems(res.data);
+            if (res.success && res.data) {
+                const followings = res.data.content || [];
+                
+                const mappedFollowings = followings.map((following) => {
+                    const followedUser = following.followedUser;
+                    if (!followedUser) return null;
+                    
+                    return {
+                        id: followedUser.id,
+                        firstName: followedUser.firstName || '',
+                        lastName: followedUser.lastName || '',
+                        username: `${followedUser.firstName || ''} ${followedUser.lastName || ''}`.trim() || `User ${followedUser.id}`,
+                        isFollowed: true
+                    };
+                }).filter(item => item !== null);
+                
+                setItems(mappedFollowings);
             } else {
                 setError(res.message || 'Following list is not available');
             }
@@ -31,7 +56,7 @@ export default function FollowingPage() {
         }).finally(() => { if (!cancelled) setLoading(false); });
 
         return () => { cancelled = true; };
-    }, [userId]);
+    }, [userId, user, isOwnProfile, navigate, showToast]);
 
     const handleFollowToggle = async (targetId, currentlyFollowing) => {
         if (!user) {
@@ -76,17 +101,26 @@ export default function FollowingPage() {
                         <div className="followers-list">
                             {items.map(it => (
                                 <div key={it.id} className="follower-item">
-                                    <div className="follower-avatar">{it.avatar ? <img src={it.avatar} alt="avatar" /> : <span className="avatar-fallback">{(it.username||'U').charAt(0).toUpperCase()}</span>}</div>
+                                    <Link to={PATHS.USER.PROFILE(it.id)} className="follower-avatar-link">
+                                        <div className="follower-avatar">
+                                            {it.avatar ? (
+                                                <img src={it.avatar} alt={it.username} />
+                                            ) : (
+                                                <IoIosPerson className="avatar-fallback-icon" />
+                                            )}
+                                        </div>
+                                    </Link>
                                     <div className="follower-meta">
-                                        <div className="follower-name">{it.username || it.displayName || `User ${it.id}`}</div>
-                                        <div className="follower-sub">{it.bio || ''}</div>
+                                        <Link to={PATHS.USER.PROFILE(it.id)} className="follower-name-link">
+                                            <div className="follower-name">{it.username}</div>
+                                        </Link>
                                     </div>
                                     <div className="follower-actions">
                                         <button
                                             className={`btn btn-fill follow-btn ${it.isFollowed ? 'following' : ''}`}
                                             onClick={() => handleFollowToggle(it.id, Boolean(it.isFollowed))}
                                         >
-                                            {it.isFollowed ? 'Following' : 'Follow'}
+                                            {it.isFollowed ? 'Unfollow' : 'Follow'}
                                         </button>
                                     </div>
                                 </div>
