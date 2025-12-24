@@ -25,6 +25,9 @@ export const ROLES = {
     USER: "USER",
     ORGANIZATION: "ORGANIZATION",
     ADMIN: "ADMIN",
+    
+    WATCH_PARTY_HOST: "WATCH_PARTY_HOST",
+    WATCH_PARTY_GUEST: "WATCH_PARTY_GUEST",
 }
 
 export const PATHS = {
@@ -62,6 +65,7 @@ export const PATHS = {
         BROWSE: "/browse",
         GENRE: (title = ":title") => `/genre/${title}`, // "/genre/:title"
         WATCH: "/watch",
+        WATCH_PARTY: (roomId = ":roomId") => `/watch-party/${roomId}`,
 
     },
 
@@ -88,4 +92,5 @@ export const JWT = {
 
 export const SESSION_STORAGE = {
     USER_SIDE_BAR_NAME : "CINEMATE_USER_SIDE_BAR",
+    ACTIVE_PARTY_KEY: (userId) => `CINEMATE_PARTY_SESSION_USER_${userId}`,
 }
