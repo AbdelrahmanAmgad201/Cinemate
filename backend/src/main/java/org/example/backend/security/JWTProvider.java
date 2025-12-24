@@ -25,7 +25,12 @@ public class JWTProvider {
         Map<String, Object> claims = new HashMap<>();
         claims.put("id", account.getId());
         claims.put("email", account.getEmail());
+        claims.put("name", account.getName());
         claims.put("role", account.getRole());
+
+        if(account.getRole().equals("ROLE_USER")){
+            claims.put("profileComplete", account.getProfileComplete() != null ? account.getProfileComplete() : true);
+        }
 
         Date now = new Date();
         long jwtExpiration = 24 * 60 * 60 * 1000;
@@ -53,6 +58,16 @@ public class JWTProvider {
     public Long getIdFromToken(String token) {
         Claims claims = parseToken(token);
         return claims.get("id", Long.class);
+    }
+
+    public Boolean getProfileCompleteFromToken(String token) {
+        Claims claims = parseToken(token);
+        return claims.get("profileComplete", Boolean.class);
+    }
+    // Added method to extract name from token
+    public String getNameFromToken(String token) {
+        Claims claims = parseToken(token);
+        return claims.get("name", String.class);
     }
 
     public boolean validateToken(String token) {

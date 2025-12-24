@@ -44,32 +44,32 @@ services:
 
   # Hate Speech Detection API
   hate-api:
-   build:
-     context: ./hate-api
-     dockerfile: Dockerfile
-   container_name: hate-api
-   restart: unless-stopped
-   ports:
-     - "8000:8000"
-   networks:
-     - app-net
-   volumes:
-     - hate-api-models:/models
-     - hate-api-nltk:/nltk_data
+    build:
+      context: ./hate-api
+      dockerfile: Dockerfile
+    container_name: hate-api
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    networks:
+      - app-net
+    volumes:
+      - hate-api-models:/models
+      - hate-api-nltk:/nltk_data
 
-   healthcheck:
-     test: ["CMD", "curl", "-f", "http://localhost:8000/api/hate/v1/health"]
-     interval: 15s
-     timeout: 10s
-     retries: 5
-     start_period: 90s  # Model loading takes time
-   deploy:
-     resources:
-       limits:
-         cpus: '2'
-         memory: 2G
-       reservations:
-         memory: 1G
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/hate/v1/health"]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+      start_period: 90s  # Model loading takes time
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 2G
+        reservations:
+          memory: 1G
 
   # Spring Boot Backend
   backend:
@@ -84,12 +84,16 @@ services:
       - ./backend/.env.prod
     environment:
       - JAVA_OPTS=-Xmx512m -Xms256m
+      - WATCHPARTY_SERVICE_URL=http://watch-party:8081
+      - WATCHPARTY_WS_URL=ws://watch-party:8081/ws
     depends_on:
       mysql:
         condition: service_healthy
       mongodb:
         condition: service_healthy
       hate-api:
+        condition: service_healthy
+      watch-party:
         condition: service_healthy
     networks:
       - app-net
@@ -121,6 +125,49 @@ services:
       retries: 5
       start_period: 10s
 
+  redis:
+    image: redis:7
+    container_name: redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    command: redis-server --appendonly yes
+    volumes:
+      - redis-data:/data
+    networks:
+      - app-net
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  # Watch Party Microservice
+  watch-party:
+    build:
+      context: ./watch-party
+      dockerfile: Dockerfile
+    container_name: watch-party
+    restart: unless-stopped
+    ports:
+      - "8081:8081"
+    environment:
+      - SPRING_PROFILES_ACTIVE=prod
+      - SPRING_REDIS_HOST=redis
+      - SPRING_REDIS_PORT=6379
+      - JAVA_OPTS=-Xmx512m -Xms256m
+    depends_on:
+      redis:
+        condition: service_healthy
+    networks:
+      - app-net
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8081/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
 
 
 volumes:
@@ -129,7 +176,8 @@ volumes:
   mongo-data:
     driver: local
   hate-api-models:
-  
+  redis-data:
+    driver: local
   hate-api-nltk:
 
 networks:
