@@ -54,7 +54,7 @@ export default function SignIn({role = "User",
                 </div>
                 <div className = "input-elem">
                     <label htmlFor = "password">Password</label>
-                    <div className = "passwordWrapper">
+                    <div className = "passwordWrapper icon-input">
                         <input type = {showPassword ? "text" : "password"} id = "password" name = "password" maxLength={MAX_LENGTHS.INPUT} placeholder="Enter your password" required onChange = {(e) => {setPassword(e.target.value)}}/>
                         <span className="password-toggle-icon" onClick={() => setShowPassword(!showPassword)} style={{cursor: "pointer"}}>
                             {showPassword ? <LuEye /> : <LuEyeOff />}

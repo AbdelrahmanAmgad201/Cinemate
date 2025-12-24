@@ -4,7 +4,7 @@ import { AuthContext } from "../context/AuthContext.jsx";
 import LoadingFallback from "../components/LoadingFallback.jsx";
 import { ROLES, PATHS} from "../constants/constants.jsx";
 
-export default function RoleRoute({ allowedRoles = [], redirectTo = PATHS.ROOT }) {
+export default function RoleRoute({ allowedRoles = [], redirectTo = PATHS.ROOT, requireProfileCompletion = true }) {
 
     const { user, loading, isAuthenticated, pendingRestored } = useContext(AuthContext);
 
@@ -15,6 +15,10 @@ export default function RoleRoute({ allowedRoles = [], redirectTo = PATHS.ROOT }
     // if user is not authenticated, go to login page
     if (!isAuthenticated || !user) {
         return <Navigate to={redirectTo} replace />;
+    }
+
+    if (requireProfileCompletion && user.profileComplete === false) {
+        return <Navigate to={PATHS.PROFILE_COMPLETION} replace />;
     }
 
     if (allowedRoles.length > 0 && !allowedRoles.includes(user.role)) {
