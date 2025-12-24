@@ -9,6 +9,7 @@ import { getUserProfileApi, followUserApi, unfollowUserApi } from '../../api/use
 import { formatCount } from '../../utils/formate.jsx';
 import './style/UserProfile.css';
 import UserProfileSidebar from '../../components/UserProfileSidebar.jsx';
+import LikedMoviesPanel from '../../components/LikedMoviesPanel.jsx';
 
 const TABS = [
     { key: 'posts', label: 'Posts' },
@@ -350,7 +351,7 @@ export default function UserProfile() {
 
                         {active === 'liked' && (
                             <div>
-                                <p className="placeholder-note">Liked movies endpoint missing — will show movie thumbnails or titles when implemented.</p>
+                                <LikedMoviesPanel userId={Number(userId)} my={isOwnProfile} />
                             </div>
                         )}
 
