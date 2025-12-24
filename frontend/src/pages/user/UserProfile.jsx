@@ -6,9 +6,9 @@ import { FaUserPlus, FaUserCheck } from 'react-icons/fa';
 import { ToastContext } from '../../context/ToastContext.jsx';
 import { getModApi } from '../../api/forum-api.jsx';
 import { getUserProfileApi } from '../../api/user-api.jsx';
-import { getMyPostsApi, getOtherUserPostsApi } from '../../api/posts-api.jsx';
-import PostCard from '../../components/PostCard.jsx';
+import UserPosts from '../../components/UserPosts.jsx';
 import { formatCount } from '../../utils/formate.jsx';
+
 import './style/UserProfile.css';
 import UserProfileSidebar from '../../components/UserProfileSidebar.jsx';
 import ScrollToTop from '../../components/ScrollToTop.jsx';
@@ -39,20 +39,6 @@ export default function UserProfile() {
     const [isFollowing, setIsFollowing] = useState(false);
     const followLastToggleAtRef = useRef(0);
 
-    const [posts, setPosts] = useState([]);
-    const [postsLoading, setPostsLoading] = useState(false);
-    const [postsPage, setPostsPage] = useState(0);
-    const postsPageSize = 20;
-
-    const getFriendlyPostsError = (res) => {
-        if (!res) return 'Unknown error';
-        const msg = String(res.message || (res.raw?.response?.data?.message) || '');
-        if (/getIsPublic|Cannot invoke.*booleanValue|this profile is private/i.test(msg)) {
-            return 'This profile is private or unavailable.';
-        }
-        if (res.status === 401) return 'Sign in required to view this content.';
-        return msg || 'Unknown error';
-    }
 
     const followersCount = profile?.numberOfFollowers ?? user?.followersCount ?? user?.followers ?? 0;
     const followingCount = profile?.numberOfFollowing ?? user?.followingCount ?? user?.following ?? 0;
@@ -117,47 +103,7 @@ export default function UserProfile() {
         }
     }, [visibleTabs, userId, active]);
 
-    useEffect(() => {
-        if (active !== 'posts') return;
-        let ignore = false;
-        const isNumericId = typeof userId === 'string' && /^\d+$/.test(userId);
 
-        const load = async () => {
-            setPostsLoading(true);
-            try {
-                if (isOwnProfile) {
-                    const res = await getMyPostsApi({ page: 0, size: postsPageSize });
-                    if (!ignore) {
-                        if (res?.success) setPosts(res.data || []);
-                        else {
-                            console.error('[UserProfile] getMyPosts failed', res);
-                            setPosts([]);
-                            showToast('Failed to load posts', getFriendlyPostsError(res), 'error');
-                        }
-                    }
-                } else if (isNumericId) {
-                    const res = await getOtherUserPostsApi({ userId: Number(userId), page: 0, size: postsPageSize });
-                    if (!ignore) {
-                        if (res?.success) setPosts(res.data || []);
-                        else {
-                            console.error('[UserProfile] getOtherUserPosts failed', res);
-                            setPosts([]);
-                            showToast('Failed to load posts', getFriendlyPostsError(res), 'error');
-                        }
-                    }
-                } else {
-                    if (!ignore) setPosts([]);
-                }
-            } catch (err) {
-                if (!ignore) showToast('Failed to load posts', err?.message || 'Unknown error', 'error');
-            } finally {
-                if (!ignore) setPostsLoading(false);
-            }
-        };
-
-        load();
-        return () => { ignore = true; };
-    }, [active, userId, isOwnProfile]);
 
     const tabListRef = useRef(null);
     const headerRef = useRef(null);
@@ -380,19 +326,7 @@ export default function UserProfile() {
 
                         {active === 'posts' && (
                             <div>
-                                {postsLoading ? (
-                                    <div>Loading posts...</div>
-                                ) : (
-                                    posts.length === 0 ? (
-                                        <p className="placeholder-note">No posts found.</p>
-                                    ) : (
-                                        <div className="posts-list">
-                                            {posts.map(p => (
-                                                <PostCard key={p.id || p.postId} postBody={p} />
-                                            ))}
-                                        </div>
-                                    )
-                                )}
+                                <UserPosts userId={userId} isOwnProfile={isOwnProfile} active={active} />
                             </div>
                         )}
                     </div>
