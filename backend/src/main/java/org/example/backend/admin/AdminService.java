@@ -92,4 +92,25 @@ public class AdminService {
 
         return systemOverview;
     }
+
+    @Transactional
+    public AdminProfileDTO getAdminProfile(Long userId) {
+        Admin admin = adminRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("Admin not found"));
+
+        return new AdminProfileDTO(
+                admin.getName(),
+                admin.getEmail(),
+                admin.getRole()
+        );
+    }
+
+    @Transactional
+    public void updateAdminName(Long userId, String newName) {
+
+        Admin admin = adminRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("Admin not found"));
+
+        admin.setName(newName);
+    }
 }

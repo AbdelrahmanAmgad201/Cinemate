@@ -2,6 +2,9 @@ package org.example.watchparty;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.example.watchparty.dtos.UserDataDTO;
+import org.example.watchparty.dtos.WatchParty;
+import org.example.watchparty.dtos.WatchPartyResponse;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
