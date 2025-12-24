@@ -3,3 +3,5 @@ backend/env
 .vscode/
 .env
 /model-api/__pycache__
+backend/env.dev
+hate-api/__pycache__/app.cpython-312.pyc
