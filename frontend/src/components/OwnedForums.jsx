@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { getUserForumsApi } from '../api/forums-api.jsx';
 import ForumCard from './ForumCard.jsx';
 import './style/OwnedForums.css';
@@ -12,7 +12,7 @@ export default function OwnedForums({ pageSize = PAGE_SIZE }) {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  const fetchPage = async (pageToFetch = 0) => {
+  const fetchPage = useCallback(async (pageToFetch = 0) => {
     setIsLoading(true);
     setError(null);
     const res = await getUserForumsApi({ page: pageToFetch, size: pageSize });
@@ -28,22 +28,28 @@ export default function OwnedForums({ pageSize = PAGE_SIZE }) {
     }
     setError(res?.message || 'Failed to load forums');
     return { loaded: 0 };
-  };
+  }, [pageSize]);
 
   useEffect(() => {
-    let mounted = true;
     (async () => {
       await fetchPage(0);
     })();
-    return () => { mounted = false; }
-  }, [pageSize]);
+  }, [fetchPage]);
 
-  const handleShowMore = async () => {
-    if (hasMore) {
-      await fetchPage(page + 1);
-      return;
-    }
-  };
+  const sentinelRef = useRef(null);
+
+  useEffect(() => {
+    const sentinel = sentinelRef.current;
+    if (!sentinel) return;
+    const observer = new IntersectionObserver((entries) => {
+      if (entries[0].isIntersecting && hasMore && !isLoading) {
+        fetchPage(page + 1);
+      }
+    }, { root: null, rootMargin: '200px', threshold: 0.1 });
+
+    observer.observe(sentinel);
+    return () => observer.disconnect();
+  }, [hasMore, isLoading, page, fetchPage]);
 
   if (isLoading && forums.length === 0) return <div>Loading forums...</div>;
 
@@ -52,17 +58,16 @@ export default function OwnedForums({ pageSize = PAGE_SIZE }) {
 
   return (
     <div className="owned-forums">
-      <div className="owned-forums-header">My forums</div>
       <div className="owned-forums-list">
         {forums.map(f => (
           <ForumCard key={f.id} forum={f} />
         ))}
       </div>
 
-      {hasMore && (
-        <div className="owned-forums-actions">
-          <button className="show-more" onClick={handleShowMore} disabled={isLoading}>{isLoading ? 'Loading...' : 'Show more'}</button>
-        </div>
+      <div ref={sentinelRef} className="owned-forums-sentinel" />
+
+      {isLoading && forums.length > 0 && (
+        <div className="owned-forums-loading">Loading more...</div>
       )}
     </div>
   );
