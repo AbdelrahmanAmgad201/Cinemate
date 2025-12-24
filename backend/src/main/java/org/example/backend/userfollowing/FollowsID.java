@@ -11,6 +11,7 @@ import java.util.Objects;
 @AllArgsConstructor
 @Getter
 @Setter
+@Builder
 public class FollowsID implements Serializable {
     private Long followingUserId;
     private Long followedUserId;

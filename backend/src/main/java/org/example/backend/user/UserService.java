@@ -72,6 +72,10 @@ public class UserService {
 
     public String getUserNameFromObjectUserId(ObjectId objectUserId) {
         Long userId = objectIdToLong(objectUserId);
+        return getUserName(userId);
+    }
+
+    public String getUserName(Long userId) {
         Optional<User> user = userRepository.findById(userId);
         if (user.isPresent()) {
             if(user.get().getLastName()==null)
@@ -81,6 +85,19 @@ public class UserService {
         else  {
             return "Unknown user";
         }
+    }
+
+    public UserProfileResponseDTO getUserProfile(Long userId) {
+        User user =  userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+        return UserProfileResponseDTO.builder()
+                .firstName(user.getFirstName())
+                .lastName(user.getLastName())
+                .numberOfFollowers(user.getNumberOfFollowers())
+                .numberOfFollowing(user.getNumberOfFollowing())
+                .createdAt(user.getCreatedAt())
+                .aboutMe(user.getAbout())
+                .build();
     }
 
     private Long objectIdToLong(ObjectId objectId) {
