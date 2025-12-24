@@ -3,3 +3,4 @@ backend/env
 .vscode/
 .env
 /model-api/__pycache__
+backend/env.dev

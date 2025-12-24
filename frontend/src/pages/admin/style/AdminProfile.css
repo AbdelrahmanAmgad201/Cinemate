@@ -1,0 +1,144 @@
+.profile-container {
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    padding: 20px;
+}
+
+.admin-profile-form {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    max-width: 480px;
+    margin-top: 30px;
+    padding: 40px;
+
+    background-color: rgba(255, 255, 255, 0.15);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border-radius: 16px;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+}
+
+.profile-header {
+    text-align: center;
+    margin-bottom: 30px;
+}
+
+.profile-avatar-large {
+    width: 80px;
+    height: 80px;
+    background: var(--blue-bell);
+    color: white;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2rem;
+    font-weight: bold;
+    margin: 0 auto 15px;
+    box-shadow: 0 4px 15px rgba(54, 161, 243, 0.3);
+}
+
+.profile-header h2 {
+    color: var(--blue-bell);
+    font-size: 1.5rem;
+    margin: 0;
+}
+
+.view-mode-text {
+    padding: 12px 15px;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 8px;
+    font-size: 1.1rem;
+    color: var(--ghost-white);
+    border: 1px solid transparent;
+}
+
+.password-masked {
+    letter-spacing: 4px;
+    color: var(--grey-text);
+}
+.password-edit-container {
+    width: 100%;
+}
+
+.request-code-btn {
+    width: 100%;
+    padding: 10px;
+    background-color: rgba(54, 161, 243, 0.1);
+    color: var(--blue-bell);
+    border: 1px dashed var(--blue-bell);
+    border-radius: 8px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s;
+}
+
+.request-code-btn:hover {
+    background-color: rgba(54, 161, 243, 0.2);
+}
+
+.verification-flow {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    animation: fadeIn 0.4s ease-out;
+}
+
+.code-input {
+    letter-spacing: 2px;
+    font-weight: bold;
+    text-align: center;
+    border: 2px solid var(--blue-bell) !important;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(-5px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.input-field label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--blue-bell);
+
+}
+
+.profile-actions {
+    display: flex;
+    flex-direction: row; /* Ensure they stay side-by-side */
+    justify-content: center; /* Centers the button group horizontally */
+    align-items: center;
+    gap: 12px; /* Space between the two buttons */
+    width: 100%;
+    margin-top: 25px;
+}
+.primary-btn {
+    background-color: var(--blue-bell);
+    color: white;
+    padding: 12px;
+    border: none;
+    border-radius: 8px;
+    font-weight: 600;
+    font-size: 1.1rem;
+    cursor: pointer;
+    transition: all 0.3s;
+}
+
+.secondary-btn {
+    background-color: rgba(0, 0, 0, 0.3);
+    color: var(--ghost-white);
+    border: 1px solid rgba(0, 0, 0, 0.1);
+    padding: 12px;
+    border-radius: 8px;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.primary-btn:hover {
+    background-color: #2b82c9;
+    transform: translateY(-1px);
+}

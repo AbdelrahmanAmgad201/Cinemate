@@ -7,9 +7,9 @@ import RoleRoute from "./RoleRoute.jsx";
 import UserSignIn from "../pages/auth/SignIn.jsx";
 import UserSignUp from "../pages/auth/SignUp.jsx";
 import EmailVerification from "../pages/auth/EmailVerification.jsx";
+import ProfileCompletion from "../pages/auth/ProfileCompletion.jsx";
 import HomePage from "../pages/user/HomePage.jsx";
 import ExploreForums from "../pages/user/ExploreForums.jsx";
-import ForumPage from "../pages/user/ForumPage.jsx";
 import Browse from "../pages/user/Browse.jsx";
 import Genre from '../pages/user/Genre.jsx';
 import OrgSignUp from "../pages/org/auth/OrgSignUp.jsx";
@@ -36,6 +36,8 @@ import UserMainLayout from "../components/UserMainLayout.jsx";
 import SimpleLayout from "../components/SimpleLayout.jsx";
 import Forum from "../pages/user/Forum.jsx";
 import Mod from "../pages/user/Mod.jsx";
+import WatchParty from "../pages/user/WatchParty.jsx"
+import AdminProfile from "../pages/admin/AdminProfile.jsx";
 
 export default function AppRoutes() {
 
@@ -75,6 +77,7 @@ export default function AppRoutes() {
                 <Route path={PATHS.ADMIN.REVIEW_REQUESTS} element={<ReviewMovies />} />
                 <Route path={PATHS.ADMIN.SITE_ANALYTICS} element={<SiteAnalytics />} />
                 <Route path={PATHS.ADMIN.ADD_ADMIN} element={<AddAdmin />} />
+                <Route path={PATHS.ADMIN.PROFILE()} element={<AdminProfile />} />
                 {/*<Route path={PATHS.MOVIE.DETAILS()} element={<MoviePreviewPage />} />*/}
             </Route>
 
@@ -86,11 +89,18 @@ export default function AppRoutes() {
                 </Route>
             </Route>
 
+            {/* Profile completion route - signed up with google. */}
+            <Route element={<RoleRoute allowedRoles={[ROLES.USER]} requireProfileCompletion={false} />}>
+                <Route path={PATHS.PROFILE_COMPLETION} element={<ProfileCompletion />} />
+            </Route>
+
             {/*Added here for testing*/}
             {/*<Route path="/test-sand-box" element={<TestSandBox />} />*/}
+
             <Route element={<UserMainLayout />}>
                 <Route path={PATHS.FORUM.PAGE()} element={<Forum/>} />
             </Route>
+
             {/* protected routes (requires login + verified) */}
             <Route element={<RoleRoute allowedRoles={[ROLES.USER]} />}>
                 <Route element={<UserMainLayout />}> {/* Navbar + Sidebar*/}
@@ -104,15 +114,16 @@ export default function AppRoutes() {
                 <Route element={<SimpleLayout />}> {/* Navbar only */}
                     <Route path={PATHS.MOVIE.BROWSE} element={<Browse />} />
                     <Route path={PATHS.MOVIE.GENRE()} element={<Genre />} />
-                    {/*<Route path={PATHS.MOVIE.DETAILS()} element={<MoviePreviewPage />} />*/}
-                    <Route path={PATHS.MOVIE.WATCH} element={<WatchPage />} />
+                    <Route path={PATHS.MOVIE.WATCH_PARTY()} element={<WatchParty />} />
                     <Route path={PATHS.MOD.PAGE()} element={<Mod />}/>
-                    
-                </Route>                
+                </Route>
+
+                {/* No navbar or sidebar */}
+                <Route path={PATHS.MOVIE.WATCH} element={<WatchPage />} />
 
             </Route>
 
-            {/* If any unknown path is entered, it will be redirected to the UserSignIn page*/}
+            {/* If any unknown path is entered, it will be redirected to the following page*/}
             <Route path="*" element={<NotFoundPage />} />
 
         </Routes>

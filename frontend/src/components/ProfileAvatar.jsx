@@ -4,7 +4,7 @@ import { CgProfile } from "react-icons/cg";
 import { AuthContext } from '../context/AuthContext.jsx';
 import "./style/profileAvatar.css";
 
-import { PATHS, ROLES } from "../constants/constants.jsx";
+import {PATHS, ROLES } from "../constants/constants.jsx";
 
 export default function ProfileAvatar({ className="" }) {
     const [menuShow, setMenuShow] = useState(false);
@@ -16,6 +16,13 @@ export default function ProfileAvatar({ className="" }) {
         setMenuShow(false);
         if (user?.id) {
             navigate(PATHS.USER.PROFILE(user.id));
+        }
+    }
+
+    const handleViewAdminProfile = () => {
+        setMenuShow(false);
+        if (user?.id) {
+            navigate(PATHS.ADMIN.PROFILE(user.id));
         }
     }
 
@@ -34,7 +41,10 @@ export default function ProfileAvatar({ className="" }) {
             ];
         }
 
-        return [{ label: "Sign Out", onClick: handleSignOut }];
+        if (user?.role === ROLES.ADMIN) return [
+            { label: "View Profile", onClick: handleViewAdminProfile },
+            { label: "Sign Out", onClick: handleSignOut }
+        ];
     })();
 
     // Close dropdown if clicked outside

@@ -136,7 +136,7 @@ const ReplyThreadPage = () => {
                         return node;
                     };
                     const enriched = await Promise.all(top.map(enrich));
-                    const found = findCommentInTree(enriched, commentId);
+                    let found = findCommentInTree(enriched, commentId);
                     if (found) {
                         try {
                             const cached = JSON.parse(sessionStorage.getItem(`CINEMATE_LAST_COMMENT_${found.id}`) || 'null');
