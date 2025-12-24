@@ -25,8 +25,11 @@ export default function WatchParty() {
     const [roomLoading, setRoomLoading] = useState(false);
     const [roomData, setRoomData] = useState(null); // Room data, look how the data looks in the API response
 
-    const {playerRef, broadcastAction} = useWatchParty(activePartyId, userId, userName, isHost);
+    const {playerRef, broadcastAction} = useWatchParty(activePartyId, userId, userName, isHost, handleMessages);
 
+    const handleMessages = (message) => {
+
+    }
     const handleOnReady = (video) => {
 
         const adapter = createWistiaAdapter(video, broadcastAction);
@@ -37,7 +40,9 @@ export default function WatchParty() {
             broadcastAction(WatchPartyEventType.SYNC_REQUEST);
             broadcastAction(WatchPartyEventType.PLAY)
         }
-
+        broadcastAction(WatchPartyEventType.CHAT, {
+            message: `Welcome to the party, ${userName}!`,
+        })
     }
 
     useEffect(() => {

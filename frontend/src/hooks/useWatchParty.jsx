@@ -21,7 +21,7 @@ import {useNavigate} from "react-router-dom";
 
 // This is a general hook for the watch party socket methods, any specific video player / component should
 // adapt/use this hook
-export const useWatchParty = (partyId, userId, userName, isHost) => {
+export const useWatchParty = (partyId, userId, userName, isHost, handleMessages) => {
     const playerRef = useRef(null); // We set this ref to the specific video player
     const isInternalAction = useRef(false);
     const stompClientRef = useRef(null);
@@ -51,16 +51,16 @@ export const useWatchParty = (partyId, userId, userName, isHost) => {
             }),
         })
 
-        // stompClientRef.current.publish({
-        //     destination: `/app/party/${partyId}/chat`,
-        //     body: JSON.stringify({
-        //         userId,
-        //         userName,
-        //         eventType: WatchPartyEventType.CHAT,
-        //         payload: { message: "Hello everyone!" },
-        //         timestamp: new Date().toISOString(),
-        //     }),
-        // });
+        stompClientRef.current.publish({
+            destination: `/app/party/${partyId}/chat`,
+            body: JSON.stringify({
+                userId,
+                userName,
+                eventType: WatchPartyEventType.CHAT,
+                payload: { message: "Hello everyone!" },
+                timestamp: new Date().toISOString(),
+            }),
+        });
 
     }
 
@@ -110,10 +110,16 @@ export const useWatchParty = (partyId, userId, userName, isHost) => {
             case WatchPartyEventType.USER_LEFT:
                 showToast("Watch Party", data.payload || `${data.userName} left`, "info");
                 break;
-            case WatchPartyEventType.PARTY_DELETED:
+            case WatchPartyEventType.PARTY_DELETED:{
                 showToast("Party Ended", "The host has closed the room", "warning");
                 navigate(PATHS.ROOT, {replace: true});
                 break;
+            }
+
+            case WatchPartyEventType.CHAT:
+                handleMessages(data.payload.message);
+                break;
+
             default:
                 break;
         }
