@@ -3,7 +3,7 @@ import { getMyPostsApi, getOtherUserPostsApi } from '../api/posts-api.jsx';
 import PostCard from './PostCard.jsx';
 import { ToastContext } from '../context/ToastContext.jsx';
 
-export default function UserPosts({ userId, isOwnProfile, active, pageSize = 20 }) {
+export default function UserPosts({ userId, isOwnProfile, active, pageSize = 20, isPrivateProfile = false }) {
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -21,6 +21,13 @@ export default function UserPosts({ userId, isOwnProfile, active, pageSize = 20 
 
   useEffect(() => {
     if (active !== 'posts') return;
+    if (isPrivateProfile && !isOwnProfile) {
+      setPosts([]);
+      setError('This profile is private or unavailable.');
+      setLoading(false);
+      return;
+    }
+
     let ignore = false;
     const isNumericId = typeof userId === 'string' && /^\d+$/.test(userId);
 
@@ -65,7 +72,7 @@ export default function UserPosts({ userId, isOwnProfile, active, pageSize = 20 
 
     load();
     return () => { ignore = true; };
-  }, [active, userId, isOwnProfile, pageSize, showToast]);
+  }, [active, userId, isOwnProfile, pageSize, showToast, isPrivateProfile]);
 
   if (loading) return <div>Loading posts...</div>;
   if (error) return <p className="placeholder-note">Failed to load posts: {error}</p>;

@@ -35,6 +35,7 @@ export default function UserProfile() {
 
     const [fetchedName, setFetchedName] = useState(null);
     const [profile, setProfile] = useState(null);
+    const [isPrivateProfile, setIsPrivateProfile] = useState(false);
     const { showToast } = useContext(ToastContext);
     const [isFollowing, setIsFollowing] = useState(false);
     const followLastToggleAtRef = useRef(0);
@@ -75,14 +76,27 @@ export default function UserProfile() {
             getUserProfileApi({ userId: Number(userId) }).then(res => {
                 if (!ignore && res?.success && res.data) {
                     setProfile(res.data);
+                    setIsPrivateProfile(false);
                     const name = `${res.data.firstName || ''} ${res.data.lastName || ''}`.trim();
                     if (name) setFetchedName(name);
                 } else if (!ignore) {
-                    showToast('Failed to load profile', res?.message || 'Unknown error', 'error');
+                    const msg = res?.message || '';
+                    if (res?.status === 403 || /profile is private|this profile is private|getIsPublic/i.test(String(msg))) {
+                        setIsPrivateProfile(true);
+                    } else {
+                        showToast('Failed to load profile', msg || 'Unknown error', 'error');
+                    }
                 }
             }).catch(e => {
                 console.error(e);
-                if (!ignore) showToast('Failed to load profile', 'Unknown error', 'error');
+                if (!ignore) {
+                    const msg = e?.message || '';
+                    if (e?.status === 403 || /profile is private|this profile is private|getIsPublic/i.test(String(msg))) {
+                        setIsPrivateProfile(true);
+                    } else {
+                        showToast('Failed to load profile', 'Unknown error', 'error');
+                    }
+                }
             }).finally(() => { if (!ignore) setLoading(false); });
         }
         else {
@@ -102,6 +116,10 @@ export default function UserProfile() {
             setActive(visibleTabs[0]?.key || 'posts');
         }
     }, [visibleTabs, userId, active]);
+
+    const RESTRICTED_TABS = new Set(['posts','forums','liked','reviews']);
+    const isRestrictedTab = (tabKey) => RESTRICTED_TABS.has(tabKey);
+
 
 
 
@@ -240,6 +258,7 @@ export default function UserProfile() {
                     <div className="name-and-meta">
                         <div className="name-row">
                             <span className="user-name">{displayName}</span>
+                            {isPrivateProfile && !isOwnProfile && (<span className="private-badge">Private profile</span>)}
 
                             {!isOwnProfile && (
                                 <button
@@ -326,7 +345,11 @@ export default function UserProfile() {
 
                         {active === 'posts' && (
                             <div>
-                                <UserPosts userId={userId} isOwnProfile={isOwnProfile} active={active} />
+                                {isPrivateProfile && !isOwnProfile ? (
+                                    <p className="placeholder-note">This profile is private. Posts and personal info are not visible.</p>
+                                ) : (
+                                    <UserPosts userId={userId} isOwnProfile={isOwnProfile} active={active} />
+                                )}
                             </div>
                         )}
                     </div>
