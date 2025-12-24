@@ -76,3 +76,20 @@ export async function updateOrgProfile(data) {
         return { success: false , message: error.message };
     }
 }
+
+export async function fetchOrgMovies(page = 0, size = 20) {
+    try {
+        const response = await api.get("/organization/v1/my-movies", {
+            params: {
+                page: page,
+                size: size
+            }
+        });
+        return {success: true, response: response.data};
+    } catch (error) {
+        // console.error("Failed to fetch organization profile:", error);
+        // throw error;
+        return { success: false , message: error.message };
+
+    }
+}
