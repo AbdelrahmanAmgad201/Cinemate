@@ -1,18 +1,55 @@
-import React, { useState, useContext } from 'react';
+import React, { useState, useContext, useEffect } from 'react';
 import { FaPencilAlt } from 'react-icons/fa';
 import { updatePasswordApi } from '../api/admin-api.jsx';
+import { getUserProfileApi } from '../api/user-api.jsx';
 import { ToastContext } from '../context/ToastContext.jsx';
 import { MIN_LENGTHS } from '../constants/constants.jsx';
 
 export default function PersonalData({ profile, user }) {
+    const [localProfile, setLocalProfile] = useState(profile || {});
+
+    useEffect(() => { setLocalProfile(profile || {}); }, [profile]);
+
+    useEffect(() => {
+        let ignore = false;
+        const id = (user && user.id) || localProfile?.id;
+        const needGender = !localProfile || !localProfile.gender;
+        const needBirthdate = !localProfile || !localProfile.birthdate;
+        if (id && (needGender || needBirthdate)) {
+            getUserProfileApi({ userId: Number(id) })
+                .then(res => { if (!ignore && res?.success && res.data) setLocalProfile(res.data); })
+                .catch(() => {});
+        }
+        return () => { ignore = true; };
+    }, [user, localProfile?.gender, localProfile?.birthdate, localProfile?.id]);
+
     const getVal = (key) => {
-        if (key === 'email') return (profile && profile.email) || (user && user.email) || '';
-        return (profile && profile[key]) || '';
+        if (key === 'email') return (localProfile && localProfile.email) || (user && user.email) || '';
+        if (key === 'gender') return (localProfile && localProfile.gender) || (user && user.gender) || '';
+        if (key === 'birthdate') return (localProfile && (localProfile.birthdate || localProfile.birthDate)) || '';
+        return (localProfile && localProfile[key]) || '';
+    };
+
+    const formatBirthDate = (val) => {
+        if (!val) return '';
+        const d = new Date(val);
+        if (Number.isNaN(d.getTime())) return String(val);
+        return d.toLocaleDateString();
+    };
+
+    const formatGender = (val) => {
+        if (!val) return '—';
+        const s = String(val).trim().toLowerCase();
+        if (s === 'm' || s === 'male') return 'Male';
+        if (s === 'f' || s === 'female') return 'Female';
+        return '—';
     };
 
     const fields = [
         { k: 'firstName', label: 'First Name' },
         { k: 'lastName', label: 'Last Name' },
+        { k: 'birthdate', label: 'Birthdate' },
+        { k: 'gender', label: 'Gender' },
         { k: 'email', label: 'Email' },
         { k: 'aboutMe', label: 'About Me' },
     ];
@@ -67,43 +104,51 @@ export default function PersonalData({ profile, user }) {
     return (
         <div className="personal-data">
             <div className="pd-grid">
-                {fields.map(({ k, label }) => (
-                    <div key={k} className={`pd-card ${k === 'aboutMe' ? 'pd-card--tall' : ''}`}>
-                        {k !== 'email' && (
-                            <button
-                                type="button"
-                                className="pd-edit-btn"
-                                title={`Edit ${label}`}
-                                aria-label={`Edit ${label}`}
-                                onClick={() => handleEditClick(k)}
-                            >
-                                <FaPencilAlt />
-                            </button>
-                        )}
+                {fields.map(({ k, label }) => {
+                    const raw = getVal(k);
+                    let display = '';
+                    if (k === 'birthdate') display = formatBirthDate(raw) || '—';
+                    else if (k === 'gender') display = formatGender(raw) || '—';
+                    else display = raw || '—';
 
-                        <div className="pd-label">{label}</div>
-                        <div className="pd-value">
-                            {k === 'aboutMe' ? (
-                                <textarea
-                                    className="pd-textarea"
-                                    value={getVal(k)}
-                                    readOnly
-                                    rows={k === 'aboutMe' ? 6 : 3}
-                                    aria-readonly="true"
-                                />
-                            ) : (
-                                <input
-                                    className="pd-input"
-                                    type="text"
-                                    value={getVal(k)}
-                                    placeholder="—"
-                                    readOnly
-                                    aria-readonly="true"
-                                />
+                    return (
+                        <div key={k} className={`pd-card ${k === 'aboutMe' ? 'pd-card--tall' : ''}`}>
+                            {k !== 'email' && (
+                                <button
+                                    type="button"
+                                    className="pd-edit-btn"
+                                    title={`Edit ${label}`}
+                                    aria-label={`Edit ${label}`}
+                                    onClick={() => handleEditClick(k)}
+                                >
+                                    <FaPencilAlt />
+                                </button>
                             )}
+
+                            <div className="pd-label">{label}</div>
+                            <div className="pd-value">
+                                {k === 'aboutMe' ? (
+                                    <textarea
+                                        className="pd-textarea"
+                                        value={display}
+                                        readOnly
+                                        rows={k === 'aboutMe' ? 6 : 3}
+                                        aria-readonly="true"
+                                    />
+                                ) : (
+                                    <input
+                                        className="pd-input"
+                                        type={k === 'birthdate' ? 'text' : 'text'}
+                                        value={display}
+                                        placeholder="—"
+                                        readOnly
+                                        aria-readonly="true"
+                                    />
+                                )}
+                            </div>
                         </div>
-                    </div>
-                ))}
+                    );
+                })}
 
                 <div className="pd-card">
                     {!editingPassword && (
