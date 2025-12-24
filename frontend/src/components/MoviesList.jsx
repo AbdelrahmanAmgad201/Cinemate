@@ -43,7 +43,7 @@ export default function MoviesList({ list, name, page, setPage, onClick }) {
                 <div className="paging">
                     <MdNavigateBefore className={(page - 1) > -1 ? "paging-icon" : "inactive"} onClick={() => (page - 1) > -1 && setPage(page - 1)} />
                     {page + 1}
-                    <MdNavigateNext className={list.length === 6 ? "paging-icon" : "inactive"} onClick={() => list.length === 6 && setPage(page + 1)} />
+                    <MdNavigateNext className={(list.length === 6 || list.length === 20) ? "paging-icon" : "inactive"} onClick={() => (list.length === 6 || list.length === 20) && setPage(page + 1)} />
                 </div>
             )}
         </div>
