@@ -11,6 +11,7 @@ import PostCard from '../../components/PostCard.jsx';
 import { formatCount } from '../../utils/formate.jsx';
 import './style/UserProfile.css';
 import UserProfileSidebar from '../../components/UserProfileSidebar.jsx';
+import ScrollToTop from '../../components/ScrollToTop.jsx';
 
 const TABS = [
     { key: 'posts', label: 'Posts' },
@@ -412,6 +413,7 @@ export default function UserProfile() {
                     followingCount={followingCount}
                 />
             </div>
+            <ScrollToTop />
         </div>
     );
 }
