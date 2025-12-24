@@ -5,7 +5,7 @@ import { IoIosPerson } from 'react-icons/io';
 import { FaUserPlus, FaUserCheck } from 'react-icons/fa';
 import { ToastContext } from '../../context/ToastContext.jsx';
 import { getModApi } from '../../api/forum-api.jsx';
-import { getUserProfileApi, isUserFollowedApi, followUserApi, unfollowUserApi } from '../../api/user-api.jsx';
+import { getUserProfileApi, followUserApi, unfollowUserApi } from '../../api/user-api.jsx';
 import { formatCount } from '../../utils/formate.jsx';
 import './style/UserProfile.css';
 import UserProfileSidebar from '../../components/UserProfileSidebar.jsx';
@@ -232,51 +232,35 @@ export default function UserProfile() {
         setTimeout(handleTabScroll, 300);
     };
 
-    useEffect(() => {
-        let cancelled = false;
-        if (!isOwnProfile && user && userId && /^\d+$/.test(String(userId))) {
-            isUserFollowedApi({ userId: Number(userId) })
-                .then(res => { if (!cancelled && res.success) setIsFollowing(Boolean(res.data)); })
-                .catch(() => {});
-        }
-        return () => { cancelled = true; };
-    }, [userId, isOwnProfile, user]);
+
 
     const applyFollowDesired = async (desired) => {
-        if (!user) {
-            showToast('Sign in required', 'Please sign in to follow users.', 'info');
-            desiredFollowRef.current = null;
-            return;
+        setFollowBusy(true);
+
+        const idNum = Number(userId);
+        const res = desired ? await followUserApi({ userId: idNum }) : await unfollowUserApi({ userId: idNum });
+
+        if (!res?.success) {
+            showToast('Follow action failed', res?.message || 'Please try again', 'error');
+        } else {
+            setIsFollowing(desired);
+            showToast(desired ? 'Following' : 'Unfollowed', desired ? 'You are now following this user' : 'Follow removed', 'success');
         }
 
-        setFollowBusy(true);
-        try {
-            const idNum = Number(userId);
-            const res = desired ? await followUserApi({ userId: idNum }) : await unfollowUserApi({ userId: idNum });
-            if (!res.success) throw new Error(res.message || 'Follow request failed');
-            setIsFollowing(desired);
-        } catch (err) {
-            showToast('Follow action failed', err?.message || 'Please try again', 'error');
-        } finally {
-            const pending = desiredFollowRef.current;
-            if (pending !== null && pending !== desired) {
-                desiredFollowRef.current = null;
-                await applyFollowDesired(pending);
-                return;
-            } else {
-                desiredFollowRef.current = null;
-                const prof = await getUserProfileApi({ userId: Number(userId) });
-                if (prof?.success && prof.data) setProfile(prof.data);
-                setFollowBusy(false);
-            }
+        const pending = desiredFollowRef.current;
+        if (pending !== null && pending !== desired) {
+            desiredFollowRef.current = null;
+            await applyFollowDesired(pending);
+            return;
+        } else {
+            desiredFollowRef.current = null;
+            const prof = await getUserProfileApi({ userId: Number(userId) });
+            if (prof?.success && prof.data) setProfile(prof.data);
+            setFollowBusy(false);
         }
     };
 
     const handleFollowToggle = () => {
-        if (!user) {
-            showToast('Sign in required', 'Please sign in to follow users.', 'info');
-            return;
-        }
         const nextDesired = !isFollowing;
         desiredFollowRef.current = nextDesired;
         if (!followBusy) {
