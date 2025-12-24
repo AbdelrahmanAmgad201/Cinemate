@@ -113,7 +113,7 @@ export default function PersonalData({ profile, user }) {
 
                     return (
                         <div key={k} className={`pd-card ${k === 'aboutMe' ? 'pd-card--tall' : ''}`}>
-                            {k !== 'email' && (
+                            {k !== 'email' && k !== 'gender' && (
                                 <button
                                     type="button"
                                     className="pd-edit-btn"
