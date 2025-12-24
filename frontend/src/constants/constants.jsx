@@ -15,6 +15,7 @@ export const MAX_LENGTHS = {
 export const MIN_LENGTHS = {
     // These are the min lengths in chars
     PASSWORD: 8,
+    INPUT: 1,
 };
 
 export const MAX_VALUES = {
@@ -66,6 +67,7 @@ export const PATHS = {
         SIGN_UP: "/organization/sign-up", // Old was "/org-sign-up"
         SUBMIT_REQUEST: "/organization/submit-request", // Old was "/org-add-movie"
         MOVIES_ANALYTICS: "/organization/movies-analytics", // Old was "/org-movies-and-analytics"
+        PROFILE: (id = ":orgId") => `/organization/${id}`,
     },
 
     MOVIE: {

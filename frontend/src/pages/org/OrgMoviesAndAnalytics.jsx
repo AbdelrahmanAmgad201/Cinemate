@@ -3,11 +3,11 @@ import { Link } from 'react-router-dom';
 import './style/orgAnalytics.css';
 import {useContext, useEffect, useState} from 'react';
 import NavBar from "../../components/OrgAdminNavBar.jsx";
-import fetchOrgAnalytics, { fetchOrgRequests } from '../../api/org-analytics-api.jsx';
+import { fetchOrgAnalytics, fetchOrgRequests } from '../../api/org-analytics-api.jsx';
 import {AuthContext} from "../../context/AuthContext.jsx";
 import {PATHS} from "../../constants/constants.jsx";
 
-const StatCard = ({ title, value, subtitle, children }) => (
+export const StatCard = ({ title, value, subtitle, children }) => (
     <div className="stat-card">
         <div className="stat-card-header">
             <h3>{title}</h3>
@@ -181,7 +181,7 @@ const OrgMoviesAndAnalytics = () => {
             </div>
             <div className="full-width-section">
                 <StatCard title="Recent Movie Requests" value={null}>
-                    <MovieRequestsList requests={movieRequests} loading={requestsLoading} />
+                    {/* <MovieRequestsList requests={movieRequests} loading={requestsLoading} /> */}
                 </StatCard>
             </div>
         </div>
