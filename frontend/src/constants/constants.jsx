@@ -107,6 +107,8 @@ export const WatchPartyEventType = {
     PLAY: "PLAY",
     PAUSE: "PAUSE",
     SEEK: "SEEK",
+    // Client requests host to send current time so the requester can sync
+    SYNC_REQUEST: "SYNC_REQUEST",
 
     CHAT: "CHAT",
     USER_JOINED: "USER_JOINED",

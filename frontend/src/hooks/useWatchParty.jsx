@@ -65,36 +65,46 @@ export const useWatchParty = (partyId, userId, userName, isHost) => {
     }
 
     const handleIncomingAction = (data) => {
-        console.log("Incoming action:");
-        console.log(data);//TODO
+
         if (!playerRef.current) return;
 
-        isInternalAction.current = true;
-        const eventType = data.eventType; //TODO
+        const eventType = data.eventType;
         const payload = data.payload;
 
+        if ([WatchPartyEventType.PLAY, WatchPartyEventType.PAUSE, WatchPartyEventType.SEEK].includes(eventType)) {
+            isInternalAction.current = true;
+        }
+
         switch (eventType) {
-            case WatchPartyEventType.PLAY:
+            case WatchPartyEventType.PLAY:{
+                // The following is to prevent control if user didn't click play for the first time
+                if (playerRef.current.isBeforePlay()) return;
                 playerRef.current.play()
                 break
-            case WatchPartyEventType.PAUSE:
+            }
+            case WatchPartyEventType.PAUSE:{
+                if (playerRef.current.isBeforePlay()) return;
                 playerRef.current.pause();
                 break
+            }
             case WatchPartyEventType.SEEK:{
                 const serverTime = payload.time;
                 const myTime = playerRef.current.getCurrentTime();
-                // if (Math.abs(myTime - serverTime) > WATCH_PARTY.LAG_THRESHOLD) {
-                playerRef.current.seek(serverTime)
-                // }
+                // Only seek if the difference between the server time and our time is greater than the threshold
+                if (Math.abs(myTime - serverTime) > WATCH_PARTY.LAG_THRESHOLD) {
+                    if (playerRef.current.isBeforePlay()) return;
+                    playerRef.current.seek(serverTime)
+                }
+                break
+            }
+            case WatchPartyEventType.SYNC_REQUEST:{
+                if (isHost && playerRef.current){
+                    broadcastAction(WatchPartyEventType.SEEK, { time: playerRef.current.getCurrentTime() });
+                }
                 break
             }
             case WatchPartyEventType.USER_JOINED:{
                 showToast("Watch Party", data.payload || `${data.userName} joined`, "info");
-                console.log("User joined:", isHost);
-                if (isHost) {
-                    console.log("Sending seek action to host", playerRef.current.getCurrentTime());
-                    broadcastAction(WatchPartyEventType.SEEK, { time: playerRef.current.getCurrentTime() });
-                }
                 break;
             }
             case WatchPartyEventType.USER_LEFT:
@@ -110,7 +120,6 @@ export const useWatchParty = (partyId, userId, userName, isHost) => {
     }
 
     // Websocket connection
-
     useEffect(() => {
         if (!partyId) return;
 
@@ -119,33 +128,15 @@ export const useWatchParty = (partyId, userId, userName, isHost) => {
             reconnectDelay: 5000,
 
             onConnect: () => {
-                console.log("🟢 STOMP connected");
                 stompClientRef.current = client;
-                stompClientRef.current.debug = (msg) => console.log("STOMP:", msg);
 
                 client.subscribe(`/topic/party/${partyId}`, (message) => {
                     const data = JSON.parse(message.body);
-                    console.log("Incoming message from party:", data);
                     handleIncomingAction(data);
                 });
             },
 
-            onDisconnect: () => {
-                console.error("🔴 STOMP disconnected");
-                stompClientRef.current = null;
-            },
 
-            onWebSocketClose: (evt) => {
-                console.error("🔴 WS CLOSED", evt);
-            },
-
-            onWebSocketError: (evt) => {
-                console.error("❌ WS ERROR", evt);
-            },
-
-            onStompError: (frame) => {
-                console.error("❌ STOMP ERROR", frame);
-            }
         })
 
         client.activate();

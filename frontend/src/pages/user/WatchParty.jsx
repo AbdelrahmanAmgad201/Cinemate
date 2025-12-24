@@ -27,20 +27,17 @@ export default function WatchParty() {
 
     const {playerRef, broadcastAction} = useWatchParty(activePartyId, userId, userName, isHost);
 
-    // Use this to broadcast -> broadcastAction
-    const isPlayerInitialized = useRef(false);
-
     const handleOnReady = (video) => {
-        // if (isPlayerInitialized.current) return;
 
         const adapter = createWistiaAdapter(video, broadcastAction);
         adapter.init()
         playerRef.current = adapter; // Connect the player to the adapter
 
-        isPlayerInitialized.current = true;
+        if (!isHost && !adapter.isBeforePlay()) {
+            broadcastAction(WatchPartyEventType.SYNC_REQUEST);
+            broadcastAction(WatchPartyEventType.PLAY)
+        }
 
-        console.log(video);
-        console.log(video.state());
     }
 
     useEffect(() => {
@@ -69,7 +66,6 @@ export default function WatchParty() {
             const res = await getRoomApi({ partyId: roomId });
             if (res.success) {
                 setRoomData(res.data);
-                // console.log("Room data:", res.data);
             } else {
                 showToast("Watch Party", "Room no longer exists", "error");
                 leaveOrEndParty();
@@ -91,7 +87,7 @@ export default function WatchParty() {
     }, [roomId, loading])
 
     const syncInterval = useRef(null);
-    const [syncTime, setSyncTime] = useState(5000); // So if can be changed from settings
+    const [syncTime, setSyncTime] = useState(3000); // So if can be changed from settings
 
     // Auto Sync every
     useEffect(() => {
