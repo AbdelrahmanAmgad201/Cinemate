@@ -12,6 +12,7 @@ import org.mockito.Mock;
 
 import jakarta.servlet.http.HttpServletRequest;
 import org.mockito.MockitoAnnotations;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.test.context.ActiveProfiles;
 
@@ -165,5 +166,43 @@ class AdminControllerTest {
 
         assertTrue(adminRequests.getBody().isEmpty());
         assertTrue(pendingRequests.getBody().isEmpty());
+    }
+
+    @Test
+    void getAdminProfile_ShouldReturnDto() {
+        // Arrange
+        Long mockUserId = 1L;
+        AdminProfileDTO mockDto = new AdminProfileDTO("John Doe", "john@example.com", "ADMIN");
+
+        when(httpServletRequest.getAttribute("userId")).thenReturn(mockUserId);
+        when(adminService.getAdminProfile(mockUserId)).thenReturn(mockDto);
+
+        // Act
+        ResponseEntity<AdminProfileDTO> response = adminController.getAdminProfile(httpServletRequest);
+
+        // Assert
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+        assertEquals("John Doe", response.getBody().name());
+        verify(adminService, times(1)).getAdminProfile(mockUserId);
+    }
+
+    @Test
+    void updateAdminName_ShouldReturnSuccessMessage() {
+        // Arrange
+        Long mockUserId = 1L;
+        String newName = "Updated Name";
+        UpdateNameRequest nameRequest = new UpdateNameRequest();
+        nameRequest.setName(newName);
+
+        when(httpServletRequest.getAttribute("userId")).thenReturn(mockUserId);
+        // updateAdminName returns void, so we just verify the call
+
+        // Act
+        ResponseEntity<String> response = adminController.updateAdminName(httpServletRequest, nameRequest);
+
+        // Assert
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+        assertEquals("Name updated successfully", response.getBody());
+        verify(adminService, times(1)).updateAdminName(mockUserId, newName);
     }
 }

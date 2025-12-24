@@ -10,4 +10,5 @@ public interface Authenticatable {
     default String getPassword(){
         return null;
     }
+    void setPassword(String password);
 }
