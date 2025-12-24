@@ -8,7 +8,6 @@ import org.example.backend.comment.Comment;
 import org.example.backend.comment.CommentRepository;
 import org.example.backend.post.Post;
 import org.example.backend.post.PostRepository;
-import org.example.backend.userfollowing.FollowsRepository;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.aggregation.Aggregation;
 import org.springframework.data.mongodb.core.aggregation.AggregationResults;
@@ -32,7 +31,6 @@ public class CascadeDeletionService {
     private static final int BATCH_SIZE = 100;
     private final PostRepository postRepository;
     private final CommentRepository commentRepository;
-    private final FollowsRepository followsRepository;
 
     /**
      * Delete Forum - cascades to Posts, Comments, Votes
@@ -439,10 +437,5 @@ public class CascadeDeletionService {
 
         long deleted = mongoTemplate.remove(query, collection).getDeletedCount();
         log.info("Hard deleted {} old entities from {}", deleted, collection);
-    }
-
-    @Async
-    public void hardDeleteFollows(){
-        followsRepository.deleteAllByIsDeleted(true);
     }
 }
