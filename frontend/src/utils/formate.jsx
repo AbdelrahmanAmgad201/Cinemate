@@ -27,9 +27,21 @@ export function timeAgo(dateString) {
 }
 
 export const formatCount = (num) => {
-    if (!num) return 0;
-    if (num >= 1000000000) return (num / 1000000000).toFixed(1).replace(/\.0$/, '') + 'B';
-    if (num >= 1000000) return (num / 1000000).toFixed(1).replace(/\.0$/, '') + 'M';
-    if (num >= 1000) return (num / 1000).toFixed(1).replace(/\.0$/, '') + 'k';
-    return num;
+    if (num === null || num === undefined) return '0';
+    const n = Number(num);
+    if (Number.isNaN(n)) return String(num);
+    const abs = Math.abs(n);
+
+    const truncToOne = (value, divisor) => {
+        const val = value / divisor;
+        const truncated = value >= 0 ? Math.floor(val * 10) / 10 : Math.ceil(val * 10) / 10;
+        let s = String(truncated);
+        if (s.indexOf('.') >= 0) s = s.replace(/\.0$/, '');
+        return s;
+    };
+
+    if (abs >= 1_000_000_000) return truncToOne(n, 1_000_000_000) + 'B';
+    if (abs >= 1_000_000) return truncToOne(n, 1_000_000) + 'M';
+    if (abs >= 1_000) return truncToOne(n, 1_000) + 'k';
+    return String(n);
 };
