@@ -4,9 +4,10 @@ import { AuthContext } from '../../context/AuthContext.jsx';
 import { IoIosPerson } from 'react-icons/io';
 import { FaUserPlus, FaUserCheck } from 'react-icons/fa';
 import { ToastContext } from '../../context/ToastContext.jsx';
-import { getModApi } from '../../api/forum-api.jsx';
+import { getModApi, getUserForumsApi } from '../../api/forum-api.jsx';
 import { getUserProfileApi } from '../../api/user-api.jsx';
 import { formatCount } from '../../utils/formate.jsx';
+import ForumCard from '../../components/ForumCard.jsx';
 import './style/UserProfile.css';
 import UserProfileSidebar from '../../components/UserProfileSidebar.jsx';
 
@@ -32,6 +33,8 @@ export default function UserProfile() {
 
     const [fetchedName, setFetchedName] = useState(null);
     const [profile, setProfile] = useState(null);
+    const [ownedForums, setOwnedForums] = useState([]);
+    const [forumsLoading, setForumsLoading] = useState(false);
     const { showToast } = useContext(ToastContext);
     const [isFollowing, setIsFollowing] = useState(false);
     const followLastToggleAtRef = useRef(0);
@@ -98,6 +101,27 @@ export default function UserProfile() {
             setActive(visibleTabs[0]?.key || 'posts');
         }
     }, [visibleTabs, userId, active]);
+
+    useEffect(() => {
+        let ignore = false;
+        if (active !== 'forums') return;
+        if (!isOwnProfile) return;
+
+        setForumsLoading(true);
+        getUserForumsApi({ page: 0, size: 20 }).then(res => {
+            if (ignore) return;
+            if (res?.success) {
+                setOwnedForums(res.data.forums || []);
+            } else {
+                showToast('Failed to load forums', res?.message || 'Unknown error', 'error');
+            }
+        }).catch(e => {
+            console.error(e);
+            if (!ignore) showToast('Failed to load forums', 'Unknown error', 'error');
+        }).finally(() => { if (!ignore) setForumsLoading(false); });
+
+        return () => { ignore = true; };
+    }, [active, isOwnProfile, userId]);
 
     const tabListRef = useRef(null);
     const headerRef = useRef(null);
@@ -343,7 +367,23 @@ export default function UserProfile() {
 
                         {active === 'forums' && (
                             <div>
-                                <p className="placeholder-note">Forums owned by this user: endpoint missing. Will list forums with links.</p>
+                                {forumsLoading && (<p>Loading forums...</p>)}
+
+                                {!forumsLoading && ownedForums.length === 0 && isOwnProfile && (
+                                    <p className="placeholder-note">You don't own any forums yet.</p>
+                                )}
+
+                                {!forumsLoading && ownedForums.length === 0 && !isOwnProfile && (
+                                    <p className="placeholder-note">Forums owned by this user: endpoint missing. Will list forums with links.</p>
+                                )}
+
+                                {!forumsLoading && ownedForums.length > 0 && (
+                                    <div className="forums-list">
+                                        {ownedForums.map(f => (
+                                            <ForumCard key={f.id} forum={f} />
+                                        ))}
+                                    </div>
+                                )}
                             </div>
                         )}
 
