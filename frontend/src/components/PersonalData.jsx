@@ -1,9 +1,9 @@
 import React, { useState, useContext, useEffect } from 'react';
 import { FaPencilAlt } from 'react-icons/fa';
 import { updatePasswordApi } from '../api/admin-api.jsx';
-import { getUserProfileApi } from '../api/user-api.jsx';
+import { getUserProfileApi, setUserDataApi, updateAboutApi, updateBirthDateApi, updateUserNameApi } from '../api/user-api.jsx';
 import { ToastContext } from '../context/ToastContext.jsx';
-import { MIN_LENGTHS } from '../constants/constants.jsx';
+import { MIN_LENGTHS, MAX_VALUES } from '../constants/constants.jsx';
 
 export default function PersonalData({ profile, user }) {
     const [localProfile, setLocalProfile] = useState(profile || {});
@@ -61,9 +61,131 @@ export default function PersonalData({ profile, user }) {
     const [confirmPassword, setConfirmPassword] = useState('');
     const [savingPassword, setSavingPassword] = useState(false);
 
-    const handleEditClick = (key) => {
-        if (key === 'password') setEditingPassword(true);
+    const [editingKey, setEditingKey] = useState(null);
+    const [editValue, setEditValue] = useState('');
+    const [savingEdit, setSavingEdit] = useState(false);
+
+    const toIsoDate = (val) => {
+        if (!val) return '';
+        const d = new Date(val);
+        if (Number.isNaN(d.getTime())) return '';
+        const y = d.getFullYear();
+        const m = `${d.getMonth() + 1}`.padStart(2, '0');
+        const dd = `${d.getDate()}`.padStart(2, '0');
+        return `${y}-${m}-${dd}`;
     };
+
+    const handleEditClick = (key) => {
+        if (key === 'password') { setEditingPassword(true); return; }
+
+        if (key === 'firstName') {
+            setEditingKey('firstName');
+            setEditValue(getVal('firstName') || '');
+            return;
+        }
+        if (key === 'lastName') {
+            setEditingKey('lastName');
+            setEditValue(getVal('lastName') || '');
+            return;
+        }
+
+        if (key === 'birthdate') {
+            setEditingKey('birthdate');
+            setEditValue(toIsoDate(getVal('birthdate')) || '');
+            return;
+        }
+
+        if (key === 'aboutMe') {
+            setEditingKey('aboutMe');
+            setEditValue(getVal('aboutMe') || '');
+            return;
+        }
+
+        setEditingKey(key);
+        setEditValue(getVal(key) || '');
+    }; 
+
+    const resetEditing = () => { setEditingKey(null); setEditValue(''); setSavingEdit(false); };
+
+    const handleSaveEdit = async () => {
+        setSavingEdit(true);
+        try {
+            let res = null;
+
+            if (editingKey === 'firstName' || editingKey === 'lastName') {
+                const firstName = editingKey === 'firstName' ? String(editValue || '').trim() : String(localProfile?.firstName || '').trim();
+                const lastName = editingKey === 'lastName' ? String(editValue || '').trim() : String(localProfile?.lastName || '').trim();
+                if (!firstName || !lastName) {
+                    showToast('Validation error', 'First and last name are required', 'error');
+                    setSavingEdit(false);
+                    return;
+                }
+                res = await updateUserNameApi({ firstName, lastName });
+                if (res?.success) {
+                    setLocalProfile(prev => ({ ...(prev || {}), firstName, lastName }));
+                    showToast('Saved', 'Name updated', 'success');
+                }
+            } else if (editingKey === 'aboutMe') {
+                res = await updateAboutApi({ about: editValue });
+                if (res?.success) {
+                    setLocalProfile(prev => ({ ...(prev || {}), aboutMe: editValue, about: editValue }));
+                    showToast('Saved', 'About updated', 'success');
+                }
+            } else if (editingKey === 'birthdate') {
+                if (!editValue) {
+                    showToast('Validation error', 'Birthdate is required', 'error');
+                    setSavingEdit(false);
+                    return;
+                }
+                const today = new Date();
+                const todayStr = today.toISOString().split('T')[0];
+                const min = new Date();
+                min.setFullYear(min.getFullYear() - MAX_VALUES.BIRTHYEARS);
+                const minStr = min.toISOString().split('T')[0];
+                if (editValue < minStr || editValue > todayStr) {
+                    showToast('Validation error', `Birthdate must be between ${minStr} and ${todayStr}`, 'error');
+                    setSavingEdit(false);
+                    return;
+                }
+                res = await updateBirthDateApi({ birthDate: editValue });
+                if (res?.success) {
+                    setLocalProfile(prev => ({ ...(prev || {}), birthdate: editValue, birthDate: editValue }));
+                    showToast('Saved', 'Birthdate updated', 'success');
+                }
+            } else {
+                const payload = {};
+                if (editingKey === 'firstName' || editingKey === 'lastName') {
+                    payload[editingKey] = editValue;
+                } else if (editingKey === 'email') {
+                    payload.email = editValue;
+                } else if (editingKey === 'gender') {
+                    payload.gender = editValue;
+                } else if (editingKey === 'about') {
+                    payload.about = editValue;
+                }
+
+                if (Object.keys(payload).length > 0) {
+                    res = await setUserDataApi(payload);
+                    if (res?.success) {
+                        setLocalProfile(prev => ({ ...(prev || {}), ...payload }));
+                        showToast('Saved', 'Profile updated', 'success');
+                    }
+                }
+            }
+
+            if (!res?.success) {
+                showToast('Update failed', res?.message || 'Failed to update', 'error');
+            }
+
+            if (res?.success) resetEditing();
+        } catch (e) {
+            console.error(e);
+            showToast('Update failed', 'Unknown error', 'error');
+            setSavingEdit(false);
+        }
+    };
+
+    const handleCancelEdit = () => { resetEditing(); };
 
     const handlePasswordSave = async () => {
         if (newPassword !== confirmPassword) {
@@ -127,23 +249,57 @@ export default function PersonalData({ profile, user }) {
 
                             <div className="pd-label">{label}</div>
                             <div className="pd-value">
-                                {k === 'aboutMe' ? (
-                                    <textarea
-                                        className="pd-textarea"
-                                        value={display}
-                                        readOnly
-                                        rows={k === 'aboutMe' ? 6 : 3}
-                                        aria-readonly="true"
-                                    />
+                                {editingKey === 'firstName' && k === 'firstName' ? (
+                                    <div>
+                                        <input className="pd-input" value={editValue} onChange={(e) => setEditValue(e.target.value)} />
+                                        <div className="pd-actions" style={{ marginTop: 8, display: 'flex', gap: 8 }}>
+                                            <button className="btn btn-fill" type="button" onClick={handleSaveEdit} disabled={savingEdit}>{savingEdit ? 'Saving...' : 'Save'}</button>
+                                            <button className="btn btn-small" type="button" onClick={handleCancelEdit} disabled={savingEdit}>Cancel</button>
+                                        </div>
+                                    </div>
+                                ) : editingKey === 'lastName' && k === 'lastName' ? (
+                                    <div>
+                                        <input className="pd-input" value={editValue} onChange={(e) => setEditValue(e.target.value)} />
+                                        <div className="pd-actions" style={{ marginTop: 8, display: 'flex', gap: 8 }}>
+                                            <button className="btn btn-fill" type="button" onClick={handleSaveEdit} disabled={savingEdit}>{savingEdit ? 'Saving...' : 'Save'}</button>
+                                            <button className="btn btn-small" type="button" onClick={handleCancelEdit} disabled={savingEdit}>Cancel</button>
+                                        </div>
+                                    </div>
+                                ) : editingKey === 'aboutMe' && k === 'aboutMe' ? (
+                                    <div>
+                                        <textarea className="pd-textarea" value={editValue} onChange={(e) => setEditValue(e.target.value)} rows={6} />
+                                        <div className="pd-actions" style={{ display: 'flex', gap: 8, marginTop: 8 }}>
+                                            <button className="btn btn-fill" type="button" onClick={handleSaveEdit} disabled={savingEdit}>{savingEdit ? 'Saving...' : 'Save'}</button>
+                                            <button className="btn btn-small" type="button" onClick={handleCancelEdit} disabled={savingEdit}>Cancel</button>
+                                        </div>
+                                    </div>
+                                ) : editingKey === 'birthdate' && k === 'birthdate' ? (
+                                    <div>
+                                        <input className="pd-input" type="date" value={editValue} onChange={(e) => setEditValue(e.target.value)} />
+                                        <div className="pd-actions" style={{ display: 'flex', gap: 8, marginTop: 8 }}>
+                                            <button className="btn btn-fill" type="button" onClick={handleSaveEdit} disabled={savingEdit}>{savingEdit ? 'Saving...' : 'Save'}</button>
+                                            <button className="btn btn-small" type="button" onClick={handleCancelEdit} disabled={savingEdit}>Cancel</button>
+                                        </div>
+                                    </div>
                                 ) : (
-                                    <input
-                                        className="pd-input"
-                                        type={k === 'birthdate' ? 'text' : 'text'}
-                                        value={display}
-                                        placeholder="—"
-                                        readOnly
-                                        aria-readonly="true"
-                                    />
+                                    k === 'aboutMe' ? (
+                                        <textarea
+                                            className="pd-textarea"
+                                            value={display}
+                                            readOnly
+                                            rows={k === 'aboutMe' ? 6 : 3}
+                                            aria-readonly="true"
+                                        />
+                                    ) : (
+                                        <input
+                                            className="pd-input"
+                                            type={k === 'birthdate' ? 'text' : 'text'}
+                                            value={display}
+                                            placeholder="—"
+                                            readOnly
+                                            aria-readonly="true"
+                                        />
+                                    )
                                 )}
                             </div>
                         </div>
