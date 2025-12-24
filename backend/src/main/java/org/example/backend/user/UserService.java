@@ -212,6 +212,8 @@ public class UserService {
                 .numberOfFollowing(user.getNumberOfFollowing())
                 .createdAt(user.getCreatedAt())
                 .aboutMe(user.getAbout())
+                .birthDate(user.getBirthDate())
+                .gender(user.getGender())
                 .build();
     }
 
