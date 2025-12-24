@@ -82,7 +82,7 @@
 
 .signup-container input::placeholder,
 .signup-container textarea::placeholder{
-    color: var(--ghost-white);;
+    color: var(--ghost-white);
 }
 
 .signup-container input[type="date"]::-webkit-calendar-picker-indicator{

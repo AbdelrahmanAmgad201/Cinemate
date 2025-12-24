@@ -24,7 +24,7 @@ export const fetchOrgRequests = async () => {
     }
 };
 
-export const fetchRequestsOverview = async () => {
+export async function fetchRequestsOverview (){
     try {
         const response = await api.post("/organization/v1/get-requests-over-view");
         return response.data;
@@ -36,7 +36,7 @@ export const fetchRequestsOverview = async () => {
     }
 };
 
-const fetchOrgAnalytics = async () => {
+export async function fetchOrgAnalytics (){
     try {
         const [moviesOverview, requestsOverview] = await Promise.all([
             fetchMoviesOverview(),
@@ -54,4 +54,26 @@ const fetchOrgAnalytics = async () => {
     }
 };
 
-export default fetchOrgAnalytics;
+export async function fetchOrgProfile() {
+    try {
+        const response = await api.get("/organization/v1/personal-data");
+        return {success: true, response: response.data};
+    } catch (error) {
+        // console.error("Failed to fetch organization profile:", error);
+        // throw error;
+        return { success: false , message: error.message };
+
+    }
+}
+
+export async function updateOrgProfile(data) {
+    try {
+        const response = await api.post("/organization/v1/set-organization-data", data);
+        return {success: true, response: response.data};
+    } catch (error) {
+        // console.error("Failed to update organization profile:", error);
+        // throw error;
+        return { success: false , message: error.message };
+
+    }
+}
