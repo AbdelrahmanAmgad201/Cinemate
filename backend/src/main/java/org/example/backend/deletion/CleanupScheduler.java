@@ -23,6 +23,8 @@ public class CleanupScheduler {
         deletionService.hardDeleteOldEntities("posts",    30);
         deletionService.hardDeleteOldEntities("comments", 30);
         deletionService.hardDeleteOldEntities("votes",    30);
+        deletionService.hardDeleteOldEntities("following", 30);
+        deletionService.hardDeleteFollows();
 
         log.info("[Cleanup] Completed cleanup job.");
     }

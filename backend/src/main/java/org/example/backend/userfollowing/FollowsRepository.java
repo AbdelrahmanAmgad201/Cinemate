@@ -5,4 +5,5 @@ import org.springframework.stereotype.Repository;
 
 @Repository
 public interface FollowsRepository extends JpaRepository<Follows, FollowsID> {
+    void deleteAllByIsDeleted(Boolean value);
 }
