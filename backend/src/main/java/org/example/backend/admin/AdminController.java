@@ -80,4 +80,18 @@ public class AdminController {
         adminService.addAdmin(addAdminDTO);
         return ResponseEntity.ok().build();
     }
+    @GetMapping("/v1/get-admin-profile")
+    public ResponseEntity<AdminProfileDTO> getAdminProfile(HttpServletRequest request) {
+        Long userId = (Long) request.getAttribute("userId");
+
+        return ResponseEntity.ok(adminService.getAdminProfile(userId));
+    }
+
+    @PutMapping("/v1/update-name")
+    public ResponseEntity<String> updateAdminName(HttpServletRequest request, @RequestBody UpdateNameRequest nameRequest) {
+        Long adminId = (Long) request.getAttribute("userId");
+
+        adminService.updateAdminName(adminId, nameRequest.getName());
+        return ResponseEntity.ok("Name updated successfully");
+    }
 }
