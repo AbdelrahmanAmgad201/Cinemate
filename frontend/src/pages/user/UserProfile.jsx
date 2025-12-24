@@ -6,6 +6,7 @@ import { FaUserPlus, FaUserCheck } from 'react-icons/fa';
 import { ToastContext } from '../../context/ToastContext.jsx';
 import { getModApi } from '../../api/forum-api.jsx';
 import { getUserProfileApi } from '../../api/user-api.jsx';
+import OwnedForums from '../../components/OwnedForums.jsx';
 import { formatCount } from '../../utils/formate.jsx';
 import './style/UserProfile.css';
 import UserProfileSidebar from '../../components/UserProfileSidebar.jsx';
@@ -343,7 +344,11 @@ export default function UserProfile() {
 
                         {active === 'forums' && (
                             <div>
-                                <p className="placeholder-note">Forums owned by this user: endpoint missing. Will list forums with links.</p>
+                                {isOwnProfile ? (
+                                    <OwnedForums />
+                                ) : (
+                                    <p className="placeholder-note">Forums owned by this user: endpoint missing. Will list forums with links.</p>
+                                )}
                             </div>
                         )}
 
