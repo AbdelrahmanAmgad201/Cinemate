@@ -1,5 +1,4 @@
 import api from "./api-client.jsx";
-import { mapBackendForumToFrontend } from '../utils/api-mappers.jsx';
 
 // Tested
 export async function createForumApi({ name, description }) {
@@ -142,17 +141,8 @@ export async function searchForumsApi({query, page, size}) {
 
 }
 
-export async function getUserForumsApi({ page = 0, size = 20 }) {
-    try {
-        const response = await api.get(`/forum/v1/user-forums`, { params: { page, size } });
-        const data = response.data || {};
-        const raw = data.content || data.forums || [];
-        const forums = Array.isArray(raw) ? raw.map(f => mapBackendForumToFrontend(f)) : [];
-        return { success: true, data: { forums, page: data } };
-    } catch (err) {
-        return { success: false, message: err.message };
-    }
-}
+
+
 
 
 // TODO: Get followed forums
