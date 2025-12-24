@@ -63,8 +63,12 @@ public class AuthenticationController {
             @RequestBody UpdatePasswordDTO updatePasswordDTO) {
         String email = (String) request.getAttribute("userEmail");
         String role = (String) request.getAttribute("userRole");
-        authenticationService.updatePassword(email, updatePasswordDTO, role);
-        return ResponseEntity.ok("password updated successfully");
+        boolean updated = authenticationService.updatePassword(email, updatePasswordDTO, role);
+        if (updated) {
+            return ResponseEntity.ok("password updated successfully");
+        } else {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Current password is incorrect");
+        }
     }
 
 

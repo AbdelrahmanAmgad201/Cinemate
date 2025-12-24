@@ -206,7 +206,7 @@ export default function PersonalData({ profile, user }) {
                 setNewPassword('');
                 setConfirmPassword('');
             } else {
-                showToast('Update failed', res?.message || 'Failed to update password', 'error');
+                showToast('Update failed', 'Current password is incorrect', 'error');
             }
         } catch (e) {
             console.error(e);

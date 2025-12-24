@@ -175,4 +175,42 @@ class AuthenticationServiceTest {
             fail(e);
         }
     }
+
+    // -------------------------------------------------------------------------
+    // TEST: updatePassword → success
+    // -------------------------------------------------------------------------
+    @Test
+    void testUpdatePasswordSuccess() {
+        when(userRepository.findByEmail(email)).thenReturn(Optional.of(user));
+        when(passwordEncoder.matches("password", encodedPassword)).thenReturn(true);
+        when(passwordEncoder.encode("newpass")).thenReturn("encodedNew");
+
+        UpdatePasswordDTO dto = new UpdatePasswordDTO();
+        dto.setOldPassword("password");
+        dto.setNewPassword("newpass");
+
+        boolean result = authService.updatePassword(email, dto, "USER");
+
+        assertTrue(result);
+        assertEquals("encodedNew", user.getPassword());
+        verify(userRepository).save(user);
+    }
+
+    // -------------------------------------------------------------------------
+    // TEST: updatePassword → wrong current password
+    // -------------------------------------------------------------------------
+    @Test
+    void testUpdatePasswordWrongCurrent() {
+        when(userRepository.findByEmail(email)).thenReturn(Optional.of(user));
+        when(passwordEncoder.matches("password", encodedPassword)).thenReturn(false);
+
+        UpdatePasswordDTO dto = new UpdatePasswordDTO();
+        dto.setOldPassword("password");
+        dto.setNewPassword("newpass");
+
+        boolean result = authService.updatePassword(email, dto, "USER");
+
+        assertFalse(result);
+        verify(userRepository, never()).save(any());
+    }
 }
