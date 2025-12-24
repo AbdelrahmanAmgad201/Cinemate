@@ -9,6 +9,7 @@ import { getUserProfileApi, isUserFollowedApi, followUserApi, unfollowUserApi } 
 import { formatCount } from '../../utils/formate.jsx';
 import './style/UserProfile.css';
 import UserProfileSidebar from '../../components/UserProfileSidebar.jsx';
+import PersonalData from '../../components/PersonalData.jsx';
 
 const TABS = [
     { key: 'posts', label: 'Posts' },
@@ -349,11 +350,7 @@ export default function UserProfile() {
                         <div className="section-title">{TABS.find(t => t.key === active).label}</div>
 
                         {active === 'personal' && (
-                            <div>
-                                <p><strong>Email:</strong> {user && user.email ? user.email : '-'}</p>
-                                <p><strong>Name:</strong> {(profile && (profile.firstName || profile.lastName)) ? `${profile.firstName || ''} ${profile.lastName || ''}` : (user && (user.firstName || user.lastName) ? `${user.firstName || ''} ${user.lastName || ''}` : '-')}</p>
-                                <p><strong>About:</strong> {(profile && profile.aboutMe) ? profile.aboutMe : '-'}</p>
-                            </div>
+                            <PersonalData profile={profile} user={user} />
                         )}
 
                         {active === 'history' && (
