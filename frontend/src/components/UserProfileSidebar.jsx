@@ -52,6 +52,7 @@ import { formatCount } from '../utils/formate.jsx';
 export default function UserProfileSidebar({
     sidebarRef,
     showProfileSidebar,
+    setShowProfileSidebar,
     displayName,
     user,
     profile,
@@ -64,6 +65,121 @@ export default function UserProfileSidebar({
 }) {
     const followers = followersCount ?? 0;
     const following = followingCount ?? 0;
+
+    useEffect(() => {
+        const sidebarEl = sidebarRef?.current;
+        const leftNav = document.querySelector('.user-left-sidebar');
+        if (!sidebarEl || !leftNav) {
+            if (typeof setShowProfileSidebar === 'function') setShowProfileSidebar(true);
+            document.documentElement.style.removeProperty('--sidebar-top');
+            document.documentElement.style.removeProperty('--sidebar-card-margin');
+            return;
+        }
+
+        let pollId = null;
+
+        const check = () => {
+            try {
+                if (!leftNav || !sidebarEl || window.innerWidth <= 768) {
+                    if (typeof setShowProfileSidebar === 'function') setShowProfileSidebar(true);
+                    document.documentElement.style.removeProperty('--sidebar-top');
+                    document.documentElement.style.setProperty('--sidebar-card-margin', `0px`);
+                    return;
+                }
+
+                let topOffset = null;
+
+                const headerEl = document.querySelector('.user-profile-header');
+                if (headerEl) {
+                    const headerRect = headerEl.getBoundingClientRect();
+                    if (Number.isFinite(headerRect.top)) {
+                        topOffset = Math.max(8, Math.round(headerRect.top));
+                    }
+                }
+
+                if (topOffset === null) {
+                    try {
+                        const leftComputedTop = window.getComputedStyle(leftNav).top;
+                        if (leftComputedTop && leftComputedTop.endsWith('px')) {
+                            topOffset = parseInt(leftComputedTop, 10);
+                        }
+                    } catch (e) {
+                        // ignore
+                    }
+                }
+
+                const navbar = document.querySelector('.navbar');
+                if (navbar) {
+                    const navRect = navbar.getBoundingClientRect();
+                    const navBottom = Math.max(0, Math.round(navRect.bottom));
+                    const minTop = navBottom + 8;
+                    if (topOffset === null) topOffset = minTop;
+                    else topOffset = Math.max(topOffset, minTop);
+                }
+
+                if (topOffset === null) topOffset = 95;
+                document.documentElement.style.setProperty('--sidebar-top', `${topOffset}px`);
+
+                const leftRect = leftNav.getBoundingClientRect();
+                const sideRect = sidebarEl.getBoundingClientRect();
+                const minMargin = 16;
+                const minMainWidth = 520;
+                const sidebarWidthFallback = 370;
+                const sidebarWidth = sideRect.width || sidebarWidthFallback;
+                const availableBetween = (window.innerWidth - leftRect.right - sidebarWidth);
+                const visible = (availableBetween > (minMainWidth + minMargin));
+
+                const headerRect = headerEl ? headerEl.getBoundingClientRect() : null;
+                const card = sidebarEl.querySelector('.sidebar-card');
+                let cardMargin = 0;
+                if (card && headerRect) {
+                    let desired = Math.round(headerRect.top - sideRect.top);
+                    desired = Math.max(Math.min(desired, 0), -160);
+
+                    if (navbar) {
+                        const navBottom = Math.round(navbar.getBoundingClientRect().bottom) + 8;
+                        const minDesired = navBottom - sideRect.top;
+                        desired = Math.max(desired, minDesired);
+                        if (desired > 0) desired = 0;
+                    }
+
+                    cardMargin = desired;
+                }
+
+                if (window.innerWidth <= 768) {
+                    document.documentElement.style.setProperty('--sidebar-card-margin', `0px`);
+                } else {
+                    document.documentElement.style.setProperty('--sidebar-card-margin', `${cardMargin}px`);
+                }
+
+                if (typeof setShowProfileSidebar === 'function') setShowProfileSidebar(visible);
+
+            } catch (e) {
+                // ignore
+            }
+        };
+
+        check();
+
+        const onResize = () => { check(); };
+        window.addEventListener('resize', onResize);
+        window.addEventListener('focus', onResize);
+        window.addEventListener('scroll', onResize, { passive: true });
+
+        let observer = null;
+        if (leftNav && window.MutationObserver) {
+            observer = new MutationObserver(() => { check(); });
+            observer.observe(leftNav, { attributes: true, attributeFilter: ['class'] });
+        }
+
+        return () => {
+            window.removeEventListener('resize', onResize);
+            window.removeEventListener('focus', onResize);
+            window.removeEventListener('scroll', onResize);
+            if (observer) observer.disconnect();
+            if (pollId) clearInterval(pollId);
+        };
+    }, [sidebarRef, setShowProfileSidebar]);
 
     return (
         <aside ref={sidebarRef} className={`sidebar-col profile-sidebar ${!showProfileSidebar ? 'hidden-by-overlap' : ''}`} aria-hidden={!showProfileSidebar}>
