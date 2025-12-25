@@ -105,6 +105,20 @@ public class UserService {
         }
     }
 
+    public Boolean isPublic(Long userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+        return  user.getIsPublic();
+    }
+
+    public void setIsPublic(Long userId, Boolean isPublic) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+        if (user.getIsPublic() == isPublic) return;
+        user.setIsPublic(isPublic);
+        userRepository.save(user);
+    }
+
     @Transactional
     public void updateAbout(Long userId, AboutDTO aboutDTO) {
         String about = aboutDTO.getAbout();

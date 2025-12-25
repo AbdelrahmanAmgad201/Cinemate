@@ -1,8 +1,10 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useContext } from 'react';
 import { IoIosPerson } from 'react-icons/io';
 import { Link } from 'react-router-dom';
 import { PATHS } from '../constants/constants.jsx';
 import './style/UserProfileSidebar.css';
+import { getIsPublicApi, setIsPublicApi } from '../api/user-api.jsx';
+import { ToastContext } from '../context/ToastContext.jsx';
 
 function AboutBlock({ user, profile }) {
     const [aboutExpanded, setAboutExpanded] = useState(false);
@@ -51,9 +53,142 @@ function AboutBlock({ user, profile }) {
 
 import { formatCount } from '../utils/formate.jsx';
 
+
+function PrivacyToggle({ avatarSrc, clickableInPersonalData = false }) {
+    const { showToast } = useContext(ToastContext);
+    const [isPublic, setIsPublic] = useState(null);
+    const [loading, setLoading] = useState(true);
+    const [saving, setSaving] = useState(false);
+
+    useEffect(() => {
+        let mounted = true;
+        const load = async () => {
+            setLoading(true);
+            try {
+                const res = await getIsPublicApi();
+                if (!mounted) return;
+                if (res.success) setIsPublic(Boolean(res.data));
+                else showToast('Failed to load visibility', res.message || 'Unknown error', 'error');
+            } catch (err) {
+                if (!mounted) return;
+                showToast('Failed to load visibility', err?.message || 'Unknown error', 'error');
+            } finally {
+                if (mounted) setLoading(false);
+            }
+        };
+        load();
+        return () => { mounted = false; };
+    }, [showToast]);
+
+    const performToggle = async (next) => {
+        const prev = isPublic;
+        setIsPublic(next);
+        setSaving(true);
+        try {
+            const res = await setIsPublicApi({ isPublic: next });
+            if (!res.success) {
+                setIsPublic(prev);
+                showToast('Failed to update visibility', res.message || 'Unknown error', 'error');
+                return false;
+            }
+
+            showToast('Saved', next ? 'Profile is public' : 'Profile is private', 'success');
+            return true;
+        } catch (err) {
+            setIsPublic(prev);
+            showToast('Failed to update visibility', err?.message || 'Unknown error', 'error');
+            return false;
+        } finally {
+            setSaving(false);
+        }
+    };
+
+    const handleChange = async (e) => {
+        const next = !!e.target.checked;
+        await performToggle(next);
+    };
+
+    const handleClick = async () => {
+        if (loading || saving) return;
+        await performToggle(!isPublic);
+    };
+
+    const handleKey = async (e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            await handleClick();
+        }
+    };
+
+    if (clickableInPersonalData) {
+        return (
+            <div
+                className="mod-user mod-user-clickable profile-visibility-row"
+                role="button"
+                tabIndex={0}
+                onClick={handleClick}
+                onKeyDown={handleKey}
+                aria-disabled={loading || saving}
+                style={{display:'flex',alignItems:'center',gap:12,marginTop:8}}
+            >
+                <div className="profile-avatar-circle profile-avatar-small" aria-hidden>
+                    {avatarSrc ? <img src={avatarSrc} alt="avatar" /> : <IoIosPerson size={18} />}
+                </div>
+
+                <div className="mod-text-wrap" style={{flex:1}}>
+                    <div className="mod-text">Profile visibility</div>
+                    <div className="mod-sub">
+                        {isPublic ? 'Anyone can view your profile' : 'Only you can view your profile'}
+                    </div>
+                </div>
+
+                <div style={{display:'flex',alignItems:'center',gap:8}}>
+                    <input
+                        type="checkbox"
+                        className="visibility-checkbox"
+                        checked={!!isPublic}
+                        disabled={loading || saving}
+                        readOnly
+                        aria-label="Toggle profile visibility"
+                    />
+                </div>
+            </div>
+        );
+    }
+
+    return (
+        <div className="mod-user mod-user-clickable" style={{display:'flex',alignItems:'center',gap:12}}>
+            <div className="profile-avatar-circle profile-avatar-small" aria-hidden>
+                {avatarSrc ? <img src={avatarSrc} alt="avatar" /> : <IoIosPerson size={18} />}
+            </div>
+
+            <div className="mod-text-wrap" style={{flex:1}}>
+                <div className="mod-text">Profile visibility</div>
+                <div className="mod-sub">
+                    {loading ? 'loading...' : (isPublic ? 'Anyone can view your profile' : 'Only you can view your profile')}
+                </div>
+            </div>
+
+            <div style={{display:'flex',alignItems:'center',gap:8}}>
+                <label style={{display:'flex',alignItems:'center',gap:8}}>
+                    <input
+                        type="checkbox"
+                        className="visibility-checkbox"
+                        checked={!!isPublic}
+                        disabled={loading || saving}
+                        onChange={handleChange}
+                        aria-label="Toggle profile visibility"
+                    />
+                </label>
+            </div>
+        </div>
+    );
+}
+
 export default function UserProfileSidebar({
     sidebarRef,
     showProfileSidebar,
+    setShowProfileSidebar,
     displayName,
     user,
     profile,
@@ -70,6 +205,121 @@ export default function UserProfileSidebar({
 
     const followersLink = PATHS.USER.FOLLOWERS(userId);
     const followingLink = PATHS.USER.FOLLOWING(userId);
+
+    useEffect(() => {
+        const sidebarEl = sidebarRef?.current;
+        const leftNav = document.querySelector('.user-left-sidebar');
+        if (!sidebarEl || !leftNav) {
+            if (typeof setShowProfileSidebar === 'function') setShowProfileSidebar(true);
+            document.documentElement.style.removeProperty('--sidebar-top');
+            document.documentElement.style.removeProperty('--sidebar-card-margin');
+            return;
+        }
+
+        let pollId = null;
+
+        const check = () => {
+            try {
+                if (!leftNav || !sidebarEl || window.innerWidth <= 768) {
+                    if (typeof setShowProfileSidebar === 'function') setShowProfileSidebar(true);
+                    document.documentElement.style.removeProperty('--sidebar-top');
+                    document.documentElement.style.setProperty('--sidebar-card-margin', `0px`);
+                    return;
+                }
+
+                let topOffset = null;
+
+                const headerEl = document.querySelector('.user-profile-header');
+                if (headerEl) {
+                    const headerRect = headerEl.getBoundingClientRect();
+                    if (Number.isFinite(headerRect.top)) {
+                        topOffset = Math.max(8, Math.round(headerRect.top));
+                    }
+                }
+
+                if (topOffset === null) {
+                    try {
+                        const leftComputedTop = window.getComputedStyle(leftNav).top;
+                        if (leftComputedTop && leftComputedTop.endsWith('px')) {
+                            topOffset = parseInt(leftComputedTop, 10);
+                        }
+                    } catch (e) {
+                        // ignore
+                    }
+                }
+
+                const navbar = document.querySelector('.navbar');
+                if (navbar) {
+                    const navRect = navbar.getBoundingClientRect();
+                    const navBottom = Math.max(0, Math.round(navRect.bottom));
+                    const minTop = navBottom + 8;
+                    if (topOffset === null) topOffset = minTop;
+                    else topOffset = Math.max(topOffset, minTop);
+                }
+
+                if (topOffset === null) topOffset = 95;
+                document.documentElement.style.setProperty('--sidebar-top', `${topOffset}px`);
+
+                const leftRect = leftNav.getBoundingClientRect();
+                const sideRect = sidebarEl.getBoundingClientRect();
+                const minMargin = 16;
+                const minMainWidth = 520;
+                const sidebarWidthFallback = 370;
+                const sidebarWidth = sideRect.width || sidebarWidthFallback;
+                const availableBetween = (window.innerWidth - leftRect.right - sidebarWidth);
+                const visible = (availableBetween > (minMainWidth + minMargin));
+
+                const headerRect = headerEl ? headerEl.getBoundingClientRect() : null;
+                const card = sidebarEl.querySelector('.sidebar-card');
+                let cardMargin = 0;
+                if (card && headerRect) {
+                    let desired = Math.round(headerRect.top - sideRect.top);
+                    desired = Math.max(Math.min(desired, 0), -160);
+
+                    if (navbar) {
+                        const navBottom = Math.round(navbar.getBoundingClientRect().bottom) + 8;
+                        const minDesired = navBottom - sideRect.top;
+                        desired = Math.max(desired, minDesired);
+                        if (desired > 0) desired = 0;
+                    }
+
+                    cardMargin = desired;
+                }
+
+                if (window.innerWidth <= 768) {
+                    document.documentElement.style.setProperty('--sidebar-card-margin', `0px`);
+                } else {
+                    document.documentElement.style.setProperty('--sidebar-card-margin', `${cardMargin}px`);
+                }
+
+                if (typeof setShowProfileSidebar === 'function') setShowProfileSidebar(visible);
+
+            } catch (e) {
+                // ignore
+            }
+        };
+
+        check();
+
+        const onResize = () => { check(); };
+        window.addEventListener('resize', onResize);
+        window.addEventListener('focus', onResize);
+        window.addEventListener('scroll', onResize, { passive: true });
+
+        let observer = null;
+        if (leftNav && window.MutationObserver) {
+            observer = new MutationObserver(() => { check(); });
+            observer.observe(leftNav, { attributes: true, attributeFilter: ['class'] });
+        }
+
+        return () => {
+            window.removeEventListener('resize', onResize);
+            window.removeEventListener('focus', onResize);
+            window.removeEventListener('scroll', onResize);
+            if (observer) observer.disconnect();
+            if (pollId) clearInterval(pollId);
+        };
+    }, [sidebarRef, setShowProfileSidebar]);
 
     return (
         <aside ref={sidebarRef} className={`sidebar-col profile-sidebar ${!showProfileSidebar ? 'hidden-by-overlap' : ''}`} aria-hidden={!showProfileSidebar}>
@@ -130,22 +380,27 @@ export default function UserProfileSidebar({
                 {isOwnProfile && (
                     <div className="sidebar-mods">
                         <h3>Settings</h3>
-                        <div
-                            className="mod-user mod-user-clickable"
-                            role="button"
-                            tabIndex={0}
-                            title="Personal data"
-                            onClick={() => setActive && setActive('personal')}
-                            onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setActive && setActive('personal'); } }}
-                            aria-label="Open personal data"
-                        >
-                            <div className="profile-avatar-circle profile-avatar-small" aria-hidden>
-                                {avatarSrc ? <img src={avatarSrc} alt="avatar" /> : <IoIosPerson size={18} />}
+
+                        <div className="mod-user mod-user-group" role="group" aria-label="Personal data">
+                            <div
+                                className="mod-user mod-user-clickable"
+                                role="button"
+                                tabIndex={0}
+                                title="Personal data"
+                                onClick={() => setActive && setActive('personal')}
+                                onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setActive && setActive('personal'); } }}
+                                aria-label="Open personal data"
+                            >
+                                <div className="profile-avatar-circle profile-avatar-small" aria-hidden>
+                                    {avatarSrc ? <img src={avatarSrc} alt="avatar" /> : <IoIosPerson size={18} />}
+                                </div>
+                                <div className="mod-text-wrap">
+                                    <div className="mod-text">personal data</div>
+                                    <div className="mod-sub">View/Update personal data</div>
+                                </div>
                             </div>
-                            <div className="mod-text-wrap">
-                                <div className="mod-text">personal data</div>
-                                <div className="mod-sub">View/Update personal data</div>
-                            </div>
+
+                            <PrivacyToggle avatarSrc={avatarSrc} clickableInPersonalData />
                         </div>
                     </div>
                 )}

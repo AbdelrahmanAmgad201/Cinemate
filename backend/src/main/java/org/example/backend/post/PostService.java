@@ -8,8 +8,11 @@ import org.example.backend.deletion.CascadeDeletionService;
 import org.example.backend.forum.Forum;
 import org.example.backend.forum.ForumRepository;
 import org.example.backend.forumfollowing.FollowingRepository;
-import org.example.backend.hateSpeech.HateSpeechService;
-import org.example.backend.hateSpeech.HateSpeechException;
+import org.example.backend.hateSpeach.HateSpeachService;
+import org.example.backend.hateSpeach.HateSpeechException;
+import org.example.backend.user.PrivateProfileException;
+import org.example.backend.user.User;
+import org.example.backend.user.UserRepository;
 import org.example.backend.user.UserService;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -37,6 +40,7 @@ public class PostService {
     private final AccessService accessService;
     private final HateSpeechService hateSpeechService;
     private final UserService userService;
+    private final UserRepository userRepository;
 
     @Transactional
     public Post addPost(AddPostDto addPostDto, Long userId) {
@@ -126,6 +130,26 @@ public class PostService {
                 .toList();
         ;
         return postRepository.findByIsDeletedFalseAndForumIdIn(forumIds, pageable);
+    }
+
+    @Transactional
+    public Page<PostView> getMyPosts(Long userId, Pageable pageable) {
+        ObjectId objectUserId = longToObjectId(userId);
+        return getPostsByUserId(objectUserId, pageable);
+    }
+
+    @Transactional
+    public Page<PostView> getOtherUserPosts(Long userId, Pageable pageable) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new AccessDeniedException("User not found with id: " + userId));
+        if(user.getIsPublic())
+            return getPostsByUserId(longToObjectId(userId), pageable);
+
+        throw new PrivateProfileException("this profile is private");
+    }
+
+    private Page<PostView> getPostsByUserId(ObjectId userId, Pageable pageable) {
+        return postRepository.findAllByOwnerIdAndIsDeletedFalse(userId,pageable);
     }
 
     private ObjectId longToObjectId(Long value) {
