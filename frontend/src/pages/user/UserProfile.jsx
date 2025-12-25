@@ -358,7 +358,7 @@ export default function UserProfile() {
 
                         {active === 'reviews' && (
                             <div>
-                                <UserReviews userId={userId} profile={profile} />
+                                <UserReviews userId={userId} profile={profile} isOwnProfile={isOwnProfile} />
                             </div>
                         )}
 

@@ -1,10 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import PropTypes from 'prop-types';
 import ReviewCard from './ReviewCard.jsx';
-import { getUserReviewsApi } from '../api/movie-api.jsx';
+import { getUserReviewsApi, getMyReviewsApi } from '../api/movie-api.jsx';
 import '../pages/user/style/UserProfile.css';
 
-export default function UserReviews({ userId, profile }) {
+export default function UserReviews({ userId, profile, isOwnProfile = false }) {
     const [reviews, setReviews] = useState([]);
     const [loading, setLoading] = useState(false);
     const [page, setPage] = useState(0);
@@ -13,12 +13,16 @@ export default function UserReviews({ userId, profile }) {
     useEffect(() => {
         setReviews([]);
         setPage(0);
-    }, [userId]);
+    }, [userId, isOwnProfile]);
 
     useEffect(() => {
         let ignore = false;
         setLoading(true);
-        getUserReviewsApi({ userId: Number(userId), page, size: 10 })
+        const apiCall = isOwnProfile
+            ? getMyReviewsApi({ page, size: 10 })
+            : getUserReviewsApi({ userId: Number(userId), page, size: 10 });
+
+        Promise.resolve(apiCall)
             .then(res => {
                 if (ignore) return;
                 if (res?.success && res.data) {
@@ -33,7 +37,7 @@ export default function UserReviews({ userId, profile }) {
             .finally(() => { if (!ignore) setLoading(false); });
 
         return () => { ignore = true; };
-    }, [userId, page]);
+    }, [userId, page, isOwnProfile]);
 
     return (
         <div>
@@ -48,6 +52,7 @@ export default function UserReviews({ userId, profile }) {
                             <ReviewCard
                                 key={r.id}
                                 id={r.id}
+                                movieId={r.movieId}
                                 userId={r.reviewerId ?? Number(userId)}
                                 name={r.name}
                                 date={r.date}
