@@ -1,13 +1,10 @@
 import axios from "axios";
 import  signOutApi from "./sign-out-api.jsx";
-import {JWT} from "../constants/constants.jsx";
-
-
-const BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:8080";
+import {BACKEND_URL, JWT} from "../constants/constants.jsx";
 
 // Some defaults and base urls / properties to an axios inctance
 const api = axios.create({
-    baseURL: `${BASE_URL}/api`,
+    baseURL: `${BACKEND_URL.BASE_URL}/api`,
 });
 
 api.interceptors.request.use(config => {

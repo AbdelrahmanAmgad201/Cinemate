@@ -45,7 +45,7 @@ public interface MovieRepository extends JpaRepository<Movie, Long>, JpaSpecific
                 (SELECT COUNT(mr) FROM MovieReview mr WHERE mr.movie.movieID = :movieId),
                 (SELECT COUNT(mr) FROM MovieReview mr WHERE mr.movie.movieID = :movieId),
                 (SELECT COALESCE(AVG(mr.rating),0) FROM MovieReview mr WHERE mr.movie.movieID = :movieId),
-                (SELECT COUNT(wl) FROM WatchLater wl WHERE wl.movie.movieID = :movieId)
+                (SELECT COUNT(wl) FROM WatchLater wl WHERE wl.watchLaterID.movieId = :movieId)
             )
             """)
     OneMovieOverView getMovieOverview(@Param("movieId") Long movieId);

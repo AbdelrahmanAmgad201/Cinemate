@@ -36,6 +36,7 @@ export default function WistiaEmbed({ wistiaId, className = "", onReady }) {
             className={`wistia_embed wistia_async_${wistiaId} ${className}`}
             style={{ width: "100%", height: "100%" }}
             aria-label="video player"
+            data-video-options='{"autoplay": false}'
         />
 
     )

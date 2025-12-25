@@ -94,6 +94,14 @@
 }
 
 .user-meta{ color: var(--grey-text); font-size:13px; }
+.user-profile-container .follow-btn.following:hover{
+    filter:brightness(0.92);
+    transform: translateY(-2px);
+    background-color: var(--blue-bell);
+    color: var(--ghost-white);
+}
+
+.user-meta{ color: var(--grey-text); font-size:13px }
 .profile-tabbar{
     display:block;
     background: transparent;
@@ -267,7 +275,8 @@
 
     .profile-sidebar .sidebar-card{
         margin-top: -160px;
-        z-index: 2;
+        position: relative;
+        z-index: 30;
     }
 }
 
@@ -408,6 +417,77 @@
 @media (max-width: 600px){
     .about-text{ font-size:13px; line-height:1.45 }
 }
+
+.watchlater-inner .movie-list{
+    width: 100%;
+    box-sizing: border-box;
+}
+.watchlater-inner .watchlater-inner .list-container,
+.watchlater-inner .list-container{
+    justify-content: flex-start;
+    gap: 24px;
+    padding: 20px;
+    max-width: 100%;
+    overflow: hidden;
+    box-sizing: border-box;
+}
+.watchlater-inner .list-container img{
+    width: 160px;
+    height: 240px;
+    object-fit: cover;
+}
+.watchlater-inner .movie-item{
+    flex: 0 0 160px;
+}
+@media (max-width: 600px){
+    .watchlater-inner .list-container{ justify-content: center; gap: 16px; padding: 12px }
+    .watchlater-inner .movie-item{ flex: 0 0 140px }
+    .watchlater-inner .list-container img{ width: 140px; height: 210px }
+}
+
+/* Pager for WatchLater inside profile page */
+.watchlater-pager{
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    gap:12px;
+    margin-top: 12px;
+}
+.watchlater-arrow{
+    width:40px;
+    height:40px;
+    border-radius:20px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(255,255,255,0.04);
+    color: var(--ghost-white);
+    cursor: pointer;
+}
+.watchlater-arrow.disabled{ opacity:0.35; cursor: default }
+.watchlater-page-indicator{ color: var(--grey-text); font-weight:700 }
+
+/* Loading overlay so the panel doesn't change height during loads */
+.watchlater-inner { position: relative }
+.watchlater-loading-overlay{
+    position: absolute;
+    inset: 0 0 48px 0; /* leave pager visible */
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    background: linear-gradient(rgba(1,17,22,0.0), rgba(1,17,22,0.35));
+    z-index: 40;
+}
+.watchlater-spinner{
+    width:40px;
+    height:40px;
+    border-radius:50%;
+    border: 3px solid rgba(255,255,255,0.12);
+    border-top-color: rgba(255,255,255,0.8);
+    animation: spin 0.9s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg) } }
 
 .sidebar-divider{ border:none; height:1px; background: rgba(255,255,255,0.04); margin:8px 0 }
 

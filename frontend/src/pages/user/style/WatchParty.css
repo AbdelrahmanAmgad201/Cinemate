@@ -8,8 +8,21 @@
 .watch-party-main {
     display: flex;
     flex-direction: column;
+    flex-grow: 1;
+    padding: 20px;
 }
 
+
+.watch-party-video-player {
+    position: relative;
+    width: 100%;
+    max-width: 1200px;
+    margin: 0 auto; /* Centers the player */
+    aspect-ratio: 16 / 9;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+}
 
 .watch-party-sidebar {
     background: var(--faded-black);
