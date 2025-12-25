@@ -208,7 +208,7 @@ const OrgMoviesAndAnalytics = () => {
             </div>
             <div className="full-width-section">
                 <StatCard title="Recent Movie Requests" value={null}>
-                    {/* <MovieRequestsList requests={movieRequests} loading={requestsLoading} /> */}
+                    <MovieRequestsList requests={movieRequests} loading={requestsLoading} />
                 </StatCard>
             </div>
             <div className="full-width-section">

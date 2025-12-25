@@ -59,6 +59,7 @@ public class OrganizationService {
     public PersonalData getPersonalData(Long userId) {
         return organizationRepository.findProjectedById(userId)
                 .orElseThrow(() -> new RuntimeException("Organization not found"));
+    }
     public void updateAbout(Long userId, AboutDTO aboutDTO) {
         String about = aboutDTO.getAbout();
         Organization organization = organizationRepository.findById(userId)
