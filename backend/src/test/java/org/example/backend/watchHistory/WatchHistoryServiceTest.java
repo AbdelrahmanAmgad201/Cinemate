@@ -87,7 +87,8 @@ class WatchHistoryServiceTest {
 
         WatchHistory savedWatchHistory = new WatchHistory();
         savedWatchHistory.setUser(user);
-        savedWatchHistory.setMovie(movie);
+        savedWatchHistory.setMovieId(movie.getMovieID());
+        savedWatchHistory.setMovieName(movie.getName());
 
         when(watchHistoryRepository.save(any(WatchHistory.class)))
                 .thenReturn(savedWatchHistory);
@@ -96,7 +97,8 @@ class WatchHistoryServiceTest {
 
         assertNotNull(result);
         assertEquals(user, result.getUser());
-        assertEquals(movie, result.getMovie());
+        assertEquals(movie.getMovieID(), result.getMovieId());
+        assertEquals(movie.getName(), result.getMovieName());
 
         verify(watchHistoryRepository, times(1)).save(any(WatchHistory.class));
     }

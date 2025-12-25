@@ -144,6 +144,15 @@ export async function getMyLikedMoviesApi({ page = 0, size = 8 } = {}) {
             content: (data.content || []).map(item => ({ id: item.likedMoviesID_MovieId, title: item.movieName }))
         };
         return { success: true, data: mapped };
+export async function getWatchHistoryApi({page = 0, size = 20} = {}) {
+    try {
+        const response = await api.get(`/watch-history/v1/watch-history`, { params: { page, size } });
+        const data = response.data;
+        const content = Array.isArray(data.content) ? data.content.map(item => ({
+            ...item,
+            watchedAt: item.watchedAt ? new Date(item.watchedAt) : null
+        })) : [];
+        return { success: true, data: { ...data, content } };
     } catch (err) {
         return { success: false, message: err.message };
     }
@@ -156,8 +165,8 @@ export async function getWatchLaterApi({ page = 0, size = 20 } = {}) {
         const mapped = {
             ...data,
             content: (data.content || []).map(item => ({
-                id: item.watchLaterID_MovieId,
-                movieName: item.movieName,
+                id: item?.watchLaterID?.movieId ?? item?.watchLaterID_MovieId ?? item?.id ?? (item.movie?.movieID ?? item.movieId),
+                movieName: item.movieName ?? item.movie?.name ?? ''
             }))
         };
         return { success: true, data: mapped };

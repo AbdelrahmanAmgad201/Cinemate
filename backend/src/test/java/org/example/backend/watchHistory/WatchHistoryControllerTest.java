@@ -38,7 +38,8 @@ class WatchHistoryControllerTest {
         watchHistory = new WatchHistory();
         watchHistory.setId(1L);
         watchHistory.setUser(null);  // can set a user object if needed
-        watchHistory.setMovie(null); // can set a movie object if needed
+        watchHistory.setMovieId(null); // can set a movie object if needed
+        watchHistory.setMovieName(null);
     }
 
     // -------------------------------------------------------------------------
