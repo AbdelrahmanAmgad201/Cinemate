@@ -51,13 +51,12 @@ public class AuthenticationService {
         String oldPassword = updatePasswordDTO.getOldPassword();
         String newPassword = updatePasswordDTO.getNewPassword();
         Optional<Authenticatable> account = authenticate(email, oldPassword, role);
-        if (account.isPresent()) {
-            account.get().setPassword(passwordEncoder.encode(newPassword));
-            switch (role) {
-                case "ROLE_USER" -> userRepository.save((User)account.get());
-                case "ROLE_ADMIN" ->  adminRepository.save((Admin)account.get());
-                case "ROLE_ORGANIZATION" ->  organizationRepository.save((Organization)account.get());
-            }
+        if (account.isEmpty())  throw new WrongPasswordException("Invalid email or password");
+        account.get().setPassword(passwordEncoder.encode(newPassword));
+        switch (role) {
+            case "ROLE_USER" -> userRepository.save((User)account.get());
+            case "ROLE_ADMIN" ->  adminRepository.save((Admin)account.get());
+            case "ROLE_ORGANIZATION" ->  organizationRepository.save((Organization)account.get());
         }
     }
 
