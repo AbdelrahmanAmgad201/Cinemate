@@ -2,6 +2,8 @@ package org.example.backend.dataInitializer;
 
 import lombok.RequiredArgsConstructor;
 import org.apache.tomcat.util.bcel.Const;
+import org.example.backend.admin.AddAdminDTO;
+import org.example.backend.admin.Admin;
 import org.example.backend.admin.AdminService;
 import org.example.backend.comment.AddCommentDTO;
 import org.example.backend.comment.CommentService;
@@ -9,7 +11,8 @@ import org.example.backend.forum.Forum;
 import org.example.backend.forum.ForumCreationRequest;
 import org.example.backend.forum.ForumService;
 import org.example.backend.forumfollowing.FollowingService;
-import org.example.backend.movie.MovieService;
+import org.example.backend.movie.*;
+import org.example.backend.organization.Organization;
 import org.example.backend.organization.OrganizationService;
 import org.example.backend.post.AddPostDto;
 import org.example.backend.post.Post;
@@ -31,6 +34,8 @@ import org.springframework.stereotype.Component;
 import java.nio.file.WatchService;
 import java.time.LocalDate;
 
+import static org.example.backend.movie.Genre.ANIMATION;
+
 
 @Component
 @Profile("dev") // IMPORTANT: only runs in dev profile
@@ -42,6 +47,8 @@ public class DataInitializer implements CommandLineRunner {
     private final int defaultNumberOfVotesPerPost = 10;     //make sure it is smaller than number of users
     private final int defaultNumberOfCommentsPerPost = 10;  //make sure it is smaller than number of users
     private final int defaultNumberOfFollowingPosts = 10;   //make sure it is smaller than number of users
+    private final int defaultNumberOfOrganizations=10;
+    private final int defaultNumberOfMoviesPerOrganization=5;
 
     private final UserService userService;
     private final CommentService commentService;
@@ -55,6 +62,7 @@ public class DataInitializer implements CommandLineRunner {
     private final WatchHistoryService watchHistoryService;
     private final WatchLaterService watchLaterService;
     private final MovieService movieService;
+    private final MovieRepository movieRepository;
 
 
     @Value("${app.data-init.enabled:false}")
@@ -73,6 +81,14 @@ public class DataInitializer implements CommandLineRunner {
             for(int j=1;j<=defaultNumberOfPostsPerUser;j++){
                 initializePostWithVotesAndComments(i,j,forum,user);
             }
+        }
+        AddAdminDTO addAdminDTO = new AddAdminDTO();
+        addAdminDTO.setPassword(defaultPass);
+        addAdminDTO.setName("testAdmin");
+        addAdminDTO.setEmail("testAdmin@example.com");
+        Admin admin= adminService.addAdmin(addAdminDTO);
+        for(int i=1;i<=defaultNumberOfOrganizations;i++){
+            initializeOrganization(Long.valueOf(i),admin);
         }
     }
 
@@ -134,5 +150,23 @@ public class DataInitializer implements CommandLineRunner {
             commentService.addComment(Long.valueOf(k),addCommentDTO);
         }
     }
+
+    private void initializeOrganization(Long orgId, Admin admin){
+        String email = "testOrg"+orgId+"@example.com";
+        String hashedPassword = passwordEncoder.encode(defaultPass);
+        Organization organization=organizationService.addOrganization(email,hashedPassword);
+        for (int i =1 ;i<=defaultNumberOfMoviesPerOrganization;i++){
+            Movie movie = Movie.builder()
+                    .organization(organization)
+                    .name("movie "+i+ " for org "+orgId)
+                    .description( "movie only for test")
+                    .thumbnailUrl("https://th.bing.com/th/id/R.29c4ad8d766033e15f7a9e8e8ec0e204?rik=i10dQJcgOoPmyw&pid=ImgRaw&r=0")
+                    .duration(300)
+                    .genre(ANIMATION)
+                    .admin(admin)
+                    .build();
+            movieRepository.save(movie);
+            }
+        }
 
 }

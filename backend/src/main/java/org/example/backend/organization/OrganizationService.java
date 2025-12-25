@@ -69,6 +69,9 @@ public class OrganizationService {
                 .orElseThrow(() -> new RuntimeException("Organization not found"));
         organization.setName(newName);
         organizationRepository.save(organization);
+    public PersonalData getPersonalData(Long userId) {
+        return organizationRepository.findProjectedById(userId)
+                .orElseThrow(() -> new RuntimeException("Organization not found"));
     }
 
 }

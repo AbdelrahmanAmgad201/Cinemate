@@ -1,13 +1,13 @@
 package org.example.backend.organization;
 
 import jakarta.servlet.http.HttpServletRequest;
-import org.example.backend.movie.Movie;
-import org.example.backend.movie.MovieAddDTO;
-import org.example.backend.movie.MovieService;
-import org.example.backend.movie.OneMovieOverView;
+import org.example.backend.movie.*;
 import org.example.backend.requests.Requests;
 import org.example.backend.requests.RequestsService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -124,4 +124,17 @@ public class OrganizationController {
         return  ResponseEntity.ok("name updated successfully");
     }
     
+    @GetMapping("/v1/my-movies")
+    public ResponseEntity<Page<MovieView>> getMyMovies(
+            HttpServletRequest request,
+            @PageableDefault(size = 20) Pageable pageable) {
+        Long orgId = (Long) request.getAttribute("userId");
+        return  ResponseEntity.ok(movieService.getOrganizationMovies(orgId, pageable));
+    }
+
+    @GetMapping("/v1/personal-data")
+    public ResponseEntity<PersonalData> getPersonalData(HttpServletRequest request) {
+        Long userId = (Long) request.getAttribute("userId");
+        return ResponseEntity.ok(organizationService.getPersonalData(userId));
+    }
 }

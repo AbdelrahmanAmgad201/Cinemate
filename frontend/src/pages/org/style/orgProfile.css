@@ -1,0 +1,129 @@
+.org-profile-container{
+    margin-top: 70px;
+    padding: 0 2%;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+}
+
+.org-profile-container .view-mode .stat-card:first-child{
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    min-width: 500px;
+}
+
+.org-profile-container .view-mode .stat-card{
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    justify-content: center;
+    min-width: 500px;
+}
+
+.org-profile-container .stat-card p{
+    font-size: 22px;
+}
+
+.org-profile-container .stat-card button{
+    margin: 0;
+    height: 30px;
+    width: 150px;
+    font-size: 18px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 8px;
+}
+
+.org-profile-container .org-data{
+    margin-left: 20px;
+}
+
+.org-profile-container .stat-card{
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-width: 500px;
+}
+
+.org-profile-container label{
+    font-size: 16px;
+    color: var(--ghost-white);
+    margin-bottom: 3px;
+    margin-right: 25px;
+}
+
+.org-profile-container .icon-input{
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 5px;
+    position: relative;
+}
+
+.org-profile-container input,
+.org-profile-container textarea{
+    height: 39px;
+    min-height: 39px;
+    min-width: 430px;
+    max-width: 430px;
+    background: transparent;
+    border: none;
+    font-size: 16px;
+    color: var(--ghost-white);
+    transition: background-color 0.3s ease-out;
+}
+
+.org-profile-container textarea{
+    padding-top: 22px;
+}
+
+.org-profile-container input::placeholder,
+.org-profile-container textarea::placeholder{
+    color: var(--ghost-white);;
+}
+
+.org-profile-container input:focus,
+.org-profile-container textarea:focus{
+    background-color: #fafaff11;
+    color: var(--ghost-white);
+    outline: none;
+}
+
+.org-profile-container .form-buttons{
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+    align-items: center;
+    gap: 20px;
+}
+
+.org-profile-container button{
+    background-color: #36A1F3;
+    color: var(--ghost-white);
+    font-size: 21px;
+    border: none;
+    border-radius: 32px;
+    width: 200px;
+    height: 44px;
+    margin: 0 auto;
+    margin-top: 40px;
+    cursor: pointer;
+    transition: background-color 0.2s ease-out;
+}
+
+.org-profile-container button[type=button]{
+    background-color: #be2626;
+}
+
+.org-profile-container button:hover{
+    background-color: #2580e0;
+}
+
+.org-profile-container button[type=button]:hover{
+    background-color: #a61c1c;
+}
