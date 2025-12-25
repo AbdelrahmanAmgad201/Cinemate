@@ -5,7 +5,6 @@ import { IoIosPerson } from 'react-icons/io';
 import { FaUserPlus, FaUserCheck } from 'react-icons/fa';
 import { ToastContext } from '../../context/ToastContext.jsx';
 import { getModApi } from '../../api/forum-api.jsx';
-import { getUserProfileApi, isUserFollowedApi, followUserApi, unfollowUserApi } from '../../api/user-api.jsx';
 import OwnedForums from '../../components/OwnedForums.jsx';
 import WatchHistory from '../../components/WatchHistory.jsx';
 import { PATHS } from '../../constants/constants.jsx';
