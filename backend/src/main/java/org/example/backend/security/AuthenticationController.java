@@ -66,6 +66,4 @@ public class AuthenticationController {
         authenticationService.updatePassword(email, updatePasswordDTO, role);
         return ResponseEntity.ok("password updated successfully");
     }
-
-
 }

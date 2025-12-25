@@ -195,7 +195,7 @@ export async function updatePasswordApi({oldPassword, newPassword}){
 
         return { success: true, data: res.data };
     }catch(err){
-
-        return { success: false , message: err.message };
+        const serverMessage = err?.response?.data?.message ?? err?.response?.data ?? err?.message;
+        return { success: false , message: serverMessage };
     }
 }

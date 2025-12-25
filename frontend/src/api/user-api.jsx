@@ -36,6 +36,42 @@ export async function unfollowUserApi({ userId }) {
     }
 }
 
+export async function setUserDataApi(details) {
+    try {
+        const response = await api.post('/user/v1/set-user-data', details);
+        return { success: true, data: response.data };
+    } catch (err) {
+        return { success: false, message: err.message };
+    }
+}
+
+export async function updateAboutApi({ about }) {
+    try {
+        const response = await api.put('/user/v1/user-about', { about });
+        return { success: true, data: response.data };
+    } catch (err) {
+        return { success: false, message: err.message };
+    }
+}
+
+export async function updateBirthDateApi({ birthDate }) {
+    try {
+        const response = await api.put('/user/v1/user-birth-date', { birthDate });
+        return { success: true, data: response.data };
+    } catch (err) {
+        return { success: false, message: err.message };
+    }
+}
+
+export async function updateUserNameApi({ firstName, lastName }) {
+    try {
+        const response = await api.put('/user/v1/user-name', { firstName, lastName });
+        return { success: true, data: response.data };
+    } catch (err) {
+        return { success: false, message: err.message };
+    }
+}
+
 export async function getFollowersApi({ page = 0, size = 25 }) {
     try {
         const response = await api.get(`/follow/v1/followers?page=${page}&size=${size}`);
