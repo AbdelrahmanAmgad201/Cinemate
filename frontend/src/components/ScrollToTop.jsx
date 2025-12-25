@@ -2,14 +2,20 @@ import React, { useEffect, useState } from 'react';
 import { AiOutlineArrowUp } from 'react-icons/ai';
 import './style/ScrollToTop.css';
 
+const SCROLL_THRESHOLD = 300;
+const DEFAULT_RIGHT_OFFSET = 20;
+const MIN_RIGHT_OFFSET = 12;
+const DESKTOP_BREAKPOINT = 768;
+const GAP_PADDING = 12;
+
 export default function ScrollToTop() {
     const [visible, setVisible] = useState(false);
-    const [rightOffset, setRightOffset] = useState(20);
+    const [rightOffset, setRightOffset] = useState(DEFAULT_RIGHT_OFFSET);
 
     useEffect(() => {
         const updateVisibility = () => {
             try {
-                setVisible(window.scrollY > 300);
+                setVisible(window.scrollY > SCROLL_THRESHOLD);
             } catch (e) {
                 // ignore
             }
@@ -17,17 +23,17 @@ export default function ScrollToTop() {
 
         const updateOffset = () => {
             try {
-                let offset = 20;
+                let offset = DEFAULT_RIGHT_OFFSET;
                 const sidebar = document.querySelector('.profile-sidebar');
-                if (sidebar && window.innerWidth > 768) {
+                if (sidebar && window.innerWidth > DESKTOP_BREAKPOINT) {
                     const rect = sidebar.getBoundingClientRect();
                     const dist = Math.max(0, Math.round(window.innerWidth - rect.left));
-                    offset = dist + 12;
+                    offset = dist + GAP_PADDING;
                 }
-                if (window.innerWidth <= 768) offset = 12;
+                if (window.innerWidth <= DESKTOP_BREAKPOINT) offset = MIN_RIGHT_OFFSET;
                 setRightOffset(offset);
             } catch (e) {
-                setRightOffset(20);
+                setRightOffset(DEFAULT_RIGHT_OFFSET);
             }
         };
 
@@ -63,6 +69,8 @@ export default function ScrollToTop() {
 
     if (!visible) return null;
 
+    const cssVars = { ['--scroll-top-offset']: `${rightOffset}px` };
+
     return (
         <button
             type="button"
@@ -70,7 +78,7 @@ export default function ScrollToTop() {
             onClick={handleClick}
             aria-label="Scroll to top"
             title="Scroll to top"
-            style={{ right: `${rightOffset}px` }}
+            style={cssVars}
         >
             <AiOutlineArrowUp size={20} />
         </button>
