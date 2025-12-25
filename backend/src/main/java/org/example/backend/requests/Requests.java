@@ -40,6 +40,7 @@ public class Requests {
     private Organization organization;
     @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "movie_id", nullable = true)
+    @JsonIgnore
     private Movie movie;
     @PrePersist
     protected void onCreate() {
