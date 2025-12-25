@@ -2,7 +2,7 @@ import { useState, useContext, useEffect } from 'react';
 import NavBar from '../../components/OrgAdminNavBar';
 import { ToastContext } from '../../context/ToastContext';
 import { StatCard } from './OrgMoviesAndAnalytics';
-import { fetchOrgProfile, updateOrgProfile } from '../../api/org-analytics-api';
+import { fetchOrgProfile, updateOrgProfile, updateOrgPassword} from '../../api/org-analytics-api';
 import './style/orgProfile.css';
 import LoadingFallback from '../../components/LoadingFallback';
 import { GoOrganization } from "react-icons/go";
@@ -23,6 +23,9 @@ export default function OrgProfile() {
 
     const [loading, setLoading] = useState(false);
     const [editMode, setEditMode] = useState(false);
+    const [oldPassword, setOldPassword] = useState("");
+    const [showOldPassword, setShowOldPassword] = useState(false);
+    const [password, setPassword] = useState("");
     const [showPassword, setShowPassword] = useState(false);
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
     const [confirmPassword, setConfirmPassword] = useState("");
@@ -70,8 +73,12 @@ export default function OrgProfile() {
     const handleSubmit = async (e) => {
         e.preventDefault();
 
-        if(editData.password || confirmPassword) {
-            if(editData.password !== confirmPassword){
+        if(password || confirmPassword || oldPassword) {
+            if(!oldPassword) {
+                return showToast("Failed to save", "Please enter your old password.", "error");
+            }
+            
+            if(password !== confirmPassword){
                 return showToast("Failed to save", "Passwords do not match.", "error");
             }
         }
@@ -87,18 +94,31 @@ export default function OrgProfile() {
         }
         try{
             setLoading(true);
-            const result = await updateOrgProfile(editData);
-            if(result.success){
+            const profileResult = await updateOrgProfile({
+                name: editData.name,
+                about: editData.about
+            });
+            
+            let passwordResult = {success: true};
+            if (password && password.trim()) {
+                passwordResult = await updateOrgPassword(oldPassword, password);
+            }
+            
+            if (profileResult.success && passwordResult.success) {
                 showToast("success", "Profile updated successfully.");
                 getOrgData();
-            }
-            else{
-                showToast("error", "Failed to update profile.");
+            } else if (!passwordResult.success) {
+                showToast("warning", "Profile updated successfully, without changing password.");
+                getOrgData();
+            } else if (!profileResult.success && passwordResult.success) {
+                showToast("warning", `Password updated, but profile failed: ${profileResult.message}`);
+            } else {
+                showToast("error", "Failed to update both profile and password.");
             }
             setLoading(false);
         }
         catch(error){
-            showToast("error", "An error occurred while updating profile.");
+            showToast("error",error || "An error occurred while updating profile.");
         }
         setOrgData(editData);
         setEditMode(false);
@@ -160,11 +180,24 @@ export default function OrgProfile() {
 
                             </StatCard>
                         <StatCard title="Change Password">
+
+                            <div className="input-elem">
+                                <label htmlFor="password">Old Password</label>
+                                <div className="icon-input">
+                                    <HiOutlineLockClosed />
+                                    <input type={showOldPassword ? "text" : "password"} id="oldPassword" name="password" minLength={MIN_LENGTHS.PASSWORD} maxLength={MAX_LENGTHS.INPUT} placeholder="Enter your Password" onChange={(e) => setOldPassword(e.target.value)}/>
+                                    <span className="password-toggle-icon" onClick={() => setShowOldPassword(!showOldPassword)} style={{cursor: "pointer"}}>
+                                        {showOldPassword ? <LuEye /> : <LuEyeOff />}
+                                    </span>
+                                </div>
+                            </div>
+
+
                              <div className="input-elem">
                                 <label htmlFor="password">New Password</label>
                                 <div className="icon-input">
                                     <HiOutlineLockClosed />
-                                    <input type={showPassword ? "text" : "password"} id="password" name="password" minLength={MIN_LENGTHS.PASSWORD} maxLength={MAX_LENGTHS.INPUT} placeholder="Enter your Password" onChange={(e) => setEditData({...editData, password: e.target.value})}/>
+                                    <input type={showPassword ? "text" : "password"} id="password" name="password" minLength={MIN_LENGTHS.PASSWORD} maxLength={MAX_LENGTHS.INPUT} placeholder="Enter your Password" onChange={(e) => setPassword(e.target.value)}/>
                                     <span className="password-toggle-icon" onClick={() => setShowPassword(!showPassword)} style={{cursor: "pointer"}}>
                                         {showPassword ? <LuEye /> : <LuEyeOff />}
                                     </span>
