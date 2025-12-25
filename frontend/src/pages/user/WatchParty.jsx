@@ -1,6 +1,6 @@
 import {useLocation, useNavigate, useParams} from "react-router-dom";
 import "./style/WatchParty.css"
-import {useContext, useEffect, useRef, useState} from "react";
+import {useCallback, useContext, useEffect, useRef, useState} from "react";
 import {WatchPartyContext} from "../../context/WatchPartyContext.jsx";
 import {PATHS, ROLES, WATCH_PARTY, WatchPartyEventType} from "../../constants/constants.jsx";
 import {ToastContext} from "../../context/ToastContext.jsx";
@@ -29,18 +29,18 @@ export default function WatchParty() {
     const [roomData, setRoomData] = useState(null); // Room data, look how the data looks in the API response
     const [messages, setMessages] = useState([]);
 
-    const handleChatMessage = (message) => {
+
+    const handleChatMessage = useCallback((message) => {
         setMessages(prevMessages => [...prevMessages, message]);
-    };
+    }, []);
 
     const {playerRef, broadcastAction} = useWatchParty(activePartyId, userId, userName, isHost, handleChatMessage);
 
-    
-
-    const handleSendMessage = (messageContent) => {
+    const onChatMessage = (messageContent) => {
         if(!messageContent.trim()) return;
         broadcastAction(WatchPartyEventType.CHAT, { message: messageContent });
     };
+
 
     const handleOnReady = (video) => {
 
@@ -137,7 +137,7 @@ export default function WatchParty() {
 
             {/*  right part -> chat, not scrollable  */}
             <aside className="watch-party-sidebar">
-                <LiveChat messages={messages} onSendMessage={handleSendMessage} currentUserColor={userColor} />
+                <LiveChat messages={messages} onSendMessage={onChatMessage} currentUserColor={userColor} />
             </aside>
         </div>
     )

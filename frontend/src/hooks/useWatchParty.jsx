@@ -22,7 +22,7 @@ import {generateColorFromUserId} from "../utils/generate-color.jsx";
 
 // This is a general hook for the watch party socket methods, any specific video player / component should
 // adapt/use this hook
-export const useWatchParty = (partyId, userId, userName, isHost) => {
+export const useWatchParty = (partyId, userId, userName, isHost, onIncomingChat) => {
     const playerRef = useRef(null); // We set this ref to the specific video player
     const isInternalAction = useRef(false);
     const stompClientRef = useRef(null);
@@ -30,12 +30,20 @@ export const useWatchParty = (partyId, userId, userName, isHost) => {
     const navigate = useNavigate();
     const {showToast} = useContext(ToastContext);
 
+    const onChatRef = useRef(onIncomingChat);
+
+    useEffect(() => {
+        onChatRef.current = onIncomingChat;
+    }, [onIncomingChat]);
+
     const broadcastAction = (eventType, payload = {}) => {
         // To prevent infinite loops (person does an action, sent to backend,
         // replied with an action, this reply should NOT call the backend again)
-        if (isInternalAction.current) {
-            isInternalAction.current = false;
-            return;
+        if (eventType !== WatchPartyEventType.CHAT &&
+            [WatchPartyEventType.PLAY, WatchPartyEventType.PAUSE, WatchPartyEventType.SEEK].includes(eventType)) {
+            if (isInternalAction.current) {
+                return; // Don't reset here, let handleIncomingAction reset it
+            }
         }
 
         if (!stompClientRef.current?.connected) return;
@@ -68,8 +76,8 @@ export const useWatchParty = (partyId, userId, userName, isHost) => {
     }
 
     const handleChat = (content, type = "system", senderName= "System", color = null) => {
-        if(onChatMessage){
-            onChatMessage({
+        if(onChatRef.current){
+            onChatRef.current({
                 id: Date.now().toString() + Math.random(),
                 sender: senderName,
                 type: type,
@@ -93,22 +101,22 @@ export const useWatchParty = (partyId, userId, userName, isHost) => {
 
         if (!playerRef.current) return;
 
-        if ([WatchPartyEventType.PLAY, WatchPartyEventType.PAUSE, WatchPartyEventType.SEEK].includes(eventType)) {
-            isInternalAction.current = true;
-        }
+        // if ([WatchPartyEventType.PLAY, WatchPartyEventType.PAUSE, WatchPartyEventType.SEEK].includes(eventType)) {
+        //     isInternalAction.current = true;
+        // }
 
         switch (eventType) {
             case WatchPartyEventType.PLAY:{
                 // The following is to prevent control if user didn't click play for the first time
                 if (playerRef.current.isBeforePlay()) return;
                 playerRef.current.play()
-                handleChat(`${data.userName} resumed the video`, "system", "System", "#FF4444");
+                // handleChat(`${data.userName} resumed the video`, "system", "System", "#FF4444");
                 break
             }
             case WatchPartyEventType.PAUSE:{
                 if (playerRef.current.isBeforePlay()) return;
                 playerRef.current.pause();
-                handleChat(`${data.userName} paused the video`, "system", "System", "#FF4444");
+                // handleChat(`${data.userName} paused the video`, "system", "System", "#FF4444");
                 break
             }
             case WatchPartyEventType.SEEK:{
@@ -144,6 +152,12 @@ export const useWatchParty = (partyId, userId, userName, isHost) => {
             default:
                 break;
         }
+
+        // if ([WatchPartyEventType.PLAY, WatchPartyEventType.PAUSE, WatchPartyEventType.SEEK].includes(eventType)) {
+        //     setTimeout(() => {
+        //         isInternalAction.current = false;
+        //     }, 100);
+        // }
     }
 
     // Websocket connection
