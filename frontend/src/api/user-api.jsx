@@ -5,7 +5,7 @@ export async function getUserProfileApi({ userId }) {
         const response = await api.get(`/user/v1/profile/${userId}`);
         return { success: true, data: response.data };
     } catch (err) {
-        return { success: false, message: err.message };
+        return { success: false, message: err.message || (err?.raw?.response?.data?.message) || '', status: err?.status || err?.raw?.response?.status };
     }
 }
 

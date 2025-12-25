@@ -21,4 +21,5 @@ public interface PostRepository extends MongoRepository<Post, ObjectId> {
 
     Page<Post> findByIsDeletedFalseAndForumIdIn(List<ObjectId> forumIds, Pageable pageable);
     Page<Post> findByIsDeletedFalseAndForumId(ObjectId forumId, Pageable pageable);
+    Page<PostView> findAllByOwnerIdAndIsDeletedFalse(ObjectId userId,Pageable pageable);
 }
