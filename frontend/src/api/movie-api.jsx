@@ -134,3 +134,20 @@ export async function getWatchHistoryApi({page = 0, size = 20} = {}) {
         return { success: false, message: err.message };
     }
 };
+
+export async function getWatchLaterApi({ page = 0, size = 20 } = {}) {
+    try {
+        const response = await api.get(`/watch-later/v1/watch-later`, { params: { page, size } });
+        const data = response.data;
+        const mapped = {
+            ...data,
+            content: (data.content || []).map(item => ({
+                id: item?.watchLaterID?.movieId ?? item?.watchLaterID_MovieId ?? item?.id ?? (item.movie?.movieID ?? item.movieId),
+                movieName: item.movieName ?? item.movie?.name ?? ''
+            }))
+        };
+        return { success: true, data: mapped };
+    } catch (err) {
+        return { success: false, message: err.message };
+    }
+};
