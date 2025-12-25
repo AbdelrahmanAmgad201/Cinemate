@@ -1,4 +1,4 @@
-package org.example.watchparty;
+package org.example.watchparty.health;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;

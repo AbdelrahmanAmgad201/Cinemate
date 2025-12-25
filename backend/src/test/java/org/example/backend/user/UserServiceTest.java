@@ -10,6 +10,7 @@ import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.transaction.annotation.Transactional;
@@ -36,9 +37,9 @@ class UserServiceTest {
     @BeforeEach
     void setUp() {
         userRepository = mock(UserRepository.class);
+        MongoTemplate mongoTemplate = mock(MongoTemplate.class);
         verificationService = mock(VerificationService.class);
-
-        userService = new UserService(userRepository); // only 1 arg
+        userService = new UserService(userRepository,mongoTemplate); // only 1 arg
         // manually inject
         ReflectionTestUtils.setField(userService, "verificationService", verificationService);
     }
