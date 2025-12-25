@@ -32,8 +32,15 @@ public class LikedMovie {
     @JsonIgnore
     private Movie movie;
 
+    @Column(name = "movie_name")
+    private String movieName;
+
     @Column(name = "date")
     private LocalDateTime dateLiked;
+
+    @Column(name = "is_deleted")
+    @Builder.Default
+    private Boolean isDeleted=false;
 
     @PrePersist
     protected void onCreate() {

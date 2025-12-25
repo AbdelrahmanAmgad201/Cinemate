@@ -40,6 +40,7 @@ public class Requests {
     private Organization organization;
     @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "movie_id", nullable = true)
+    @JsonIgnore
     private Movie movie;
     @PrePersist
     protected void onCreate() {
@@ -47,10 +48,17 @@ public class Requests {
             createdAt = LocalDateTime.now();
         }
     }
+
     @JsonProperty("organization")
     public String getOrganizationName() {
         return organization != null ? organization.getName() : null;
     }
+
+    @JsonProperty("movieId")
+    public Long getMovieId() {
+        return movie != null ? movie.getMovieID() : null;
+    }
+    
     @JsonProperty("admin")
     public String getAdminName() {
         return admin != null ? admin.getName() : null;

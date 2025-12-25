@@ -11,7 +11,8 @@ export async function getRequestsHistoryApi() {
             state: req.state,
             createdAt: req.createdAt,
             stateUpdatedAt: req.stateUpdatedAt,
-            movie: req.movie,
+            // movie: req.movie,
+            movie: { movieID: req.movieId, name: req.movieName},
             admin: req.admin,
             organizationName: req.organization,
         }));
@@ -76,9 +77,9 @@ export async function getPendingRequestsApi() {
             state: req.state,
             createdAt: req.createdAt,
             stateUpdatedAt: req.stateUpdatedAt,
-            movie: req.movie,
+            // movie: req.movie,
             admin: req.admin,
-            organizationName: req.movie.organization,
+            organizationName: req.organization,
         }));
 
         // console.log(pendingRequestsArray);

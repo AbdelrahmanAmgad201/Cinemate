@@ -6,8 +6,8 @@ import org.example.backend.deletion.AccessService;
 import org.example.backend.deletion.CascadeDeletionService;
 import org.example.backend.forum.Forum;
 import org.example.backend.forum.ForumRepository;
-import org.example.backend.hateSpeach.HateSpeachService;
-import org.example.backend.hateSpeach.HateSpeechException;
+import org.example.backend.hateSpeech.HateSpeechService;
+import org.example.backend.hateSpeech.HateSpeechException;
 import org.example.backend.user.UserService;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
@@ -31,7 +31,7 @@ class PostServiceTest extends AbstractMongoIntegrationTest {
     private PostService postService;
 
     @Autowired
-    private HateSpeachService hateSpeachService;
+    private HateSpeechService hateSpeechService;
 
     @Autowired
     private PostRepository postRepository;
@@ -158,7 +158,7 @@ class PostServiceTest extends AbstractMongoIntegrationTest {
         when(restTemplate.postForEntity(eq(url), any(HttpEntity.class), eq(Boolean.class)))
                 .thenReturn(aiResponse);
 
-        boolean result = hateSpeachService.analyzeText(text);
+        boolean result = hateSpeechService.analyzeText(text);
 
         assertThat(result).isTrue();
 

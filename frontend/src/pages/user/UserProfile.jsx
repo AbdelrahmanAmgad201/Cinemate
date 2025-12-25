@@ -1,4 +1,4 @@
-import { useParams } from 'react-router-dom';
+import { useParams, Link } from 'react-router-dom';
 import { useEffect, useState, useContext, useRef } from 'react';
 import { AuthContext } from '../../context/AuthContext.jsx';
 import { IoIosPerson } from 'react-icons/io';
@@ -6,6 +6,8 @@ import { FaUserPlus, FaUserCheck } from 'react-icons/fa';
 import { ToastContext } from '../../context/ToastContext.jsx';
 import { getModApi } from '../../api/forum-api.jsx';
 import UserReviews from '../../components/UserReviews.jsx';
+import WatchHistory from '../../components/WatchHistory.jsx';
+import { PATHS } from '../../constants/constants.jsx';
 import UserPosts from '../../components/UserPosts.jsx';
 import { getUserProfileApi, getUserIsPublicApi, isUserFollowedApi, followUserApi, unfollowUserApi } from '../../api/user-api.jsx';
 import WatchLaterPanel from '../../components/WatchLaterPanel.jsx';
@@ -13,6 +15,7 @@ import { formatCount } from '../../utils/formate.jsx';
 
 import './style/UserProfile.css';
 import UserProfileSidebar from '../../components/UserProfileSidebar.jsx';
+import LikedMoviesPanel from '../../components/LikedMoviesPanel.jsx';
 import ScrollToTop from '../../components/ScrollToTop.jsx';
 import PersonalData from '../../components/PersonalData.jsx';
 
@@ -372,9 +375,7 @@ export default function UserProfile() {
                         )}
 
                         {active === 'history' && (
-                            <div>
-                                <p className="placeholder-note">Watch history endpoint missing — will display a paged list of movies when implemented.</p>
-                            </div>
+                            <WatchHistory active={active} isOwnProfile={isOwnProfile} />
                         )}
 
                         {active === 'watchlater' && (
@@ -383,7 +384,7 @@ export default function UserProfile() {
 
                         {active === 'liked' && (
                             <div>
-                                <p className="placeholder-note">Liked movies endpoint missing — will show movie thumbnails or titles when implemented.</p>
+                                <LikedMoviesPanel userId={Number(userId)} my={isOwnProfile} />
                             </div>
                         )}
 
