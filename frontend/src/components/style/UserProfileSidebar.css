@@ -4,6 +4,9 @@
     .profile-sidebar .sidebar-card{
         margin-top: var(--sidebar-card-margin, 0px);
         z-index: 2;
+        margin-top: -160px;
+        position: relative;
+        z-index: 30;
     }
 
     .profile-sidebar{
@@ -141,6 +144,37 @@
     margin-bottom:4px;
 }
 .stat-inline{ display:flex; gap:8px; align-items:center }
+.stat-inline-clickable{
+    position: relative;
+    z-index: 31;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    padding: 4px 8px;
+    border-radius: 0;
+    transition: color 150ms ease, text-decoration 150ms ease;
+    text-decoration: none;
+    color: var(--blue-bell);
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+}
+.stat-inline-clickable:hover{
+    text-decoration: none;
+    background: transparent;
+    transform: none;
+    opacity: 0.95;
+    color: var(--ghost-white);
+}
+.stat-inline-clickable:active{
+    opacity: 0.9;
+    transform: none;
+}
+.stat-inline-clickable:focus-visible{
+    outline: 2px solid rgba(54,161,243,0.28);
+    outline-offset: 2px;
+    border-radius: 2px;
+}
 .stat-num-inline{ font-weight:700; color:var(--ghost-white); font-size:14px }
 .stat-label-inline{ color:var(--grey-text); font-size:13px }
 

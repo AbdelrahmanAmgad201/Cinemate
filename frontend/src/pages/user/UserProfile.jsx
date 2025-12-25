@@ -7,6 +7,7 @@ import { ToastContext } from '../../context/ToastContext.jsx';
 import { getModApi } from '../../api/forum-api.jsx';
 import UserPosts from '../../components/UserPosts.jsx';
 import { getUserProfileApi, isUserFollowedApi, followUserApi, unfollowUserApi } from '../../api/user-api.jsx';
+import WatchLaterPanel from '../../components/WatchLaterPanel.jsx';
 import { formatCount } from '../../utils/formate.jsx';
 
 import './style/UserProfile.css';
@@ -356,9 +357,7 @@ export default function UserProfile() {
                         )}
 
                         {active === 'watchlater' && (
-                            <div>
-                                <p className="placeholder-note">Watch later endpoint missing — will list saved movies when implemented.</p>
-                            </div>
+                            <WatchLaterPanel />
                         )}
 
                         {active === 'liked' && (

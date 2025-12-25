@@ -1,5 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { IoIosPerson } from 'react-icons/io';
+import { Link } from 'react-router-dom';
+import { PATHS } from '../constants/constants.jsx';
 import './style/UserProfileSidebar.css';
 
 function AboutBlock({ user, profile }) {
@@ -65,6 +67,10 @@ export default function UserProfileSidebar({
 }) {
     const followers = followersCount ?? 0;
     const following = followingCount ?? 0;
+    const userId = user?.id || profile?.id;
+
+    const followersLink = PATHS.USER.FOLLOWERS(userId);
+    const followingLink = PATHS.USER.FOLLOWING(userId);
 
     useEffect(() => {
         const sidebarEl = sidebarRef?.current;
@@ -188,14 +194,36 @@ export default function UserProfileSidebar({
                 <h2 className="sidebar-title">{displayName}</h2>
 
                 <div className="sidebar-stats-inline">
-                    <div className="stat-inline">
-                        <span className="stat-num-inline" title={String(followers)}>{formatCount(followers)}</span>
-                        <span className="stat-label-inline">followers</span>
-                    </div>
-                    <div className="stat-inline">
-                        <span className="stat-num-inline" title={String(following)}>{formatCount(following)}</span>
-                        <span className="stat-label-inline">following</span>
-                    </div>
+                    {isOwnProfile ? (
+                        <Link
+                            to={followersLink}
+                            className="stat-inline stat-inline-clickable"
+                            aria-label={`${followers} followers`}
+                        >
+                            <span className="stat-num-inline" title={String(followers)}>{formatCount(followers)}</span>
+                            <span className="stat-label-inline">followers</span>
+                        </Link>
+                    ) : (
+                        <div className="stat-inline" aria-label={`${followers} followers`}>
+                            <span className="stat-num-inline" title={String(followers)}>{formatCount(followers)}</span>
+                            <span className="stat-label-inline">followers</span>
+                        </div>
+                    )}
+                    {isOwnProfile ? (
+                        <Link
+                            to={followingLink}
+                            className="stat-inline stat-inline-clickable"
+                            aria-label={`${following} following`}
+                        >
+                            <span className="stat-num-inline" title={String(following)}>{formatCount(following)}</span>
+                            <span className="stat-label-inline">following</span>
+                        </Link>
+                    ) : (
+                        <div className="stat-inline" aria-label={`${following} following`}>
+                            <span className="stat-num-inline" title={String(following)}>{formatCount(following)}</span>
+                            <span className="stat-label-inline">following</span>
+                        </div>
+                    )}
                 </div>
 
                 <p className="sidebar-desc">{user && (user.username || '')}</p>
