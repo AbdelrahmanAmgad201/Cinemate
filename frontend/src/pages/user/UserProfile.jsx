@@ -6,7 +6,6 @@ import { FaUserPlus, FaUserCheck } from 'react-icons/fa';
 import { ToastContext } from '../../context/ToastContext.jsx';
 import { getModApi } from '../../api/forum-api.jsx';
 import { getUserProfileApi, getUserIsPublicApi, isUserFollowedApi, followUserApi, unfollowUserApi } from '../../api/user-api.jsx';
-import { getUserProfileApi, isUserFollowedApi, followUserApi, unfollowUserApi } from '../../api/user-api.jsx';
 import WatchLaterPanel from '../../components/WatchLaterPanel.jsx';
 import { formatCount } from '../../utils/formate.jsx';
 import './style/UserProfile.css';
