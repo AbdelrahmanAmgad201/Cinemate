@@ -2,9 +2,21 @@
 
 @media (min-width: 769px){
     .profile-sidebar .sidebar-card{
-        margin-top: -160px;
+        margin-top: var(--sidebar-card-margin, 0px);
         position: relative;
         z-index: 30;
+    }
+
+    .profile-sidebar{
+        position: sticky;
+        top: var(--sidebar-top, 95px);
+        align-self: flex-start;
+        max-height: calc(100vh - var(--sidebar-top, 95px) - 16px);
+    }
+
+    .profile-sidebar .sidebar-card{
+        overflow-y: auto;
+        max-height: 100%;
     }
 }
 

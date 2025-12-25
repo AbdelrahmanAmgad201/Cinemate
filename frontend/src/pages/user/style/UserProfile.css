@@ -59,6 +59,14 @@
 
 .name-and-meta{ display:flex; flex-direction:column }
 .name-row{ display:flex; gap:10px; align-items:center }
+.private-badge {
+    background: rgba(255,255,255,0.04);
+    color: var(--grey-text);
+    padding: 4px 8px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 700;
+}
 .follow-btn{
     display:inline-flex;
     align-items:center;
