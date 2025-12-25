@@ -1,4 +1,4 @@
-import React, { createContext, useState } from "react";
+import React, { createContext, useState, useCallback, useMemo } from "react";
 import Alert from "@mui/material/Alert";
 import AlertTitle from "@mui/material/AlertTitle";
 import IconButton from "@mui/material/IconButton";
@@ -17,20 +17,22 @@ export const ToastProvider = ({ children }) => {
     // "warning"
     // "info"
 
-    const showToast = (title = "", message = "", severity = "info", ttl = 5000) => {
+    const removeToast = useCallback((id) => {
+        setToasts((prev) => prev.filter((t) => t.id !== id));
+    }, []);
+
+    const showToast = useCallback((title = "", message = "", severity = "info", ttl = 5000) => {
         const id = uuidv4();
         setToasts((prev) => [...prev, { id, title, message, severity }]);
         if (ttl){
             setTimeout(() => removeToast(id), ttl);
         }
-    };
+    }, [removeToast]);
 
-    const removeToast = (id) => {
-        setToasts((prev) => prev.filter((t) => t.id !== id));
-    };
+    const contextValue = useMemo(() => ({ showToast }), [showToast]);
 
     return (
-        <ToastContext.Provider value={{ showToast }}>
+        <ToastContext.Provider value={contextValue}>
             {children}
 
             {/* Toast container */}

@@ -8,13 +8,15 @@ import org.example.backend.deletion.CascadeDeletionService;
 import org.example.backend.forum.Forum;
 import org.example.backend.forum.ForumRepository;
 import org.example.backend.forumfollowing.FollowingRepository;
-import org.example.backend.hateSpeach.HateSpeachService;
-import org.example.backend.hateSpeach.HateSpeechException;
+import org.example.backend.hateSpeech.HateSpeechService;
+import org.example.backend.hateSpeech.HateSpeechException;
+import org.example.backend.user.PrivateProfileException;
+import org.example.backend.user.User;
+import org.example.backend.user.UserRepository;
 import org.example.backend.user.UserService;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.*;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.security.access.AccessDeniedException;
@@ -36,8 +38,9 @@ public class PostService {
     private final MongoTemplate mongoTemplate;
     private final CascadeDeletionService deletionService;
     private final AccessService accessService;
-    private final HateSpeachService hateSpeachService;
+    private final HateSpeechService hateSpeechService;
     private final UserService userService;
+    private final UserRepository userRepository;
 
     @Transactional
     public Post addPost(AddPostDto addPostDto, Long userId) {
@@ -48,7 +51,7 @@ public class PostService {
         if(forum.getIsDeleted()){
             throw new IllegalStateException("Forum has been deleted");
         }
-        if (!hateSpeachService.analyzeText(addPostDto.getContent())||!hateSpeachService.analyzeText(addPostDto.getTitle())) {
+        if (!hateSpeechService.analyzeText(addPostDto.getContent())||!hateSpeechService.analyzeText(addPostDto.getTitle())) {
             throw new HateSpeechException("hate speech detected");
         }
         ObjectId ObjectUserId = longToObjectId(userId);
@@ -70,7 +73,7 @@ public class PostService {
 
     @Transactional
     public Post updatePost(ObjectId postId, AddPostDto addPostDto, Long userId) {
-        if (!hateSpeachService.analyzeText(addPostDto.getContent())||!hateSpeachService.analyzeText(addPostDto.getTitle())) {
+        if (!hateSpeechService.analyzeText(addPostDto.getContent())||!hateSpeechService.analyzeText(addPostDto.getTitle())) {
             throw new HateSpeechException("hate speech detected");
         }
         Post post = mongoTemplate.findById(postId, Post.class);
@@ -127,6 +130,26 @@ public class PostService {
                 .toList();
         ;
         return postRepository.findByIsDeletedFalseAndForumIdIn(forumIds, pageable);
+    }
+
+    @Transactional
+    public Page<PostView> getMyPosts(Long userId, Pageable pageable) {
+        ObjectId objectUserId = longToObjectId(userId);
+        return getPostsByUserId(objectUserId, pageable);
+    }
+
+    @Transactional
+    public Page<PostView> getOtherUserPosts(Long userId, Pageable pageable) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new AccessDeniedException("User not found with id: " + userId));
+        if(user.getIsPublic())
+            return getPostsByUserId(longToObjectId(userId), pageable);
+
+        throw new PrivateProfileException("this profile is private");
+    }
+
+    private Page<PostView> getPostsByUserId(ObjectId userId, Pageable pageable) {
+        return postRepository.findAllByOwnerIdAndIsDeletedFalse(userId,pageable);
     }
 
     private ObjectId longToObjectId(Long value) {

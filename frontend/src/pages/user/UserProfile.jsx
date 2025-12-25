@@ -1,15 +1,21 @@
-import { useParams } from 'react-router-dom';
+import { useParams, Link } from 'react-router-dom';
 import { useEffect, useState, useContext, useRef } from 'react';
 import { AuthContext } from '../../context/AuthContext.jsx';
 import { IoIosPerson } from 'react-icons/io';
 import { FaUserPlus, FaUserCheck } from 'react-icons/fa';
 import { ToastContext } from '../../context/ToastContext.jsx';
 import { getModApi } from '../../api/forum-api.jsx';
-import { getUserProfileApi, isUserFollowedApi, followUserApi, unfollowUserApi } from '../../api/user-api.jsx';
+import WatchHistory from '../../components/WatchHistory.jsx';
+import { PATHS } from '../../constants/constants.jsx';
+import UserPosts from '../../components/UserPosts.jsx';
+import { getUserProfileApi, getUserIsPublicApi, isUserFollowedApi, followUserApi, unfollowUserApi } from '../../api/user-api.jsx';
 import WatchLaterPanel from '../../components/WatchLaterPanel.jsx';
 import { formatCount } from '../../utils/formate.jsx';
+
 import './style/UserProfile.css';
 import UserProfileSidebar from '../../components/UserProfileSidebar.jsx';
+import LikedMoviesPanel from '../../components/LikedMoviesPanel.jsx';
+import ScrollToTop from '../../components/ScrollToTop.jsx';
 import PersonalData from '../../components/PersonalData.jsx';
 
 const TABS = [
@@ -34,10 +40,12 @@ export default function UserProfile() {
 
     const [fetchedName, setFetchedName] = useState(null);
     const [profile, setProfile] = useState(null);
+    const [isPrivateProfile, setIsPrivateProfile] = useState(false);
     const { showToast } = useContext(ToastContext);
     const [isFollowing, setIsFollowing] = useState(false);
     const [followBusy, setFollowBusy] = useState(false);
     const desiredFollowRef = useRef(null);
+
 
     const followersCount = profile?.numberOfFollowers ?? user?.followersCount ?? user?.followers ?? 0;
     const followingCount = profile?.numberOfFollowing ?? user?.followingCount ?? user?.following ?? 0;
@@ -74,14 +82,27 @@ export default function UserProfile() {
             getUserProfileApi({ userId: Number(userId) }).then(res => {
                 if (!ignore && res?.success && res.data) {
                     setProfile(res.data);
+                    setIsPrivateProfile(false);
                     const name = `${res.data.firstName || ''} ${res.data.lastName || ''}`.trim();
                     if (name) setFetchedName(name);
                 } else if (!ignore) {
-                    showToast('Failed to load profile', res?.message || 'Unknown error', 'error');
+                    const msg = res?.message || '';
+                    if (res?.status === 403 || /profile is private|this profile is private|getIsPublic/i.test(String(msg))) {
+                        setIsPrivateProfile(true);
+                    } else {
+                        showToast('Failed to load profile', msg || 'Unknown error', 'error');
+                    }
                 }
             }).catch(e => {
                 console.error(e);
-                if (!ignore) showToast('Failed to load profile', 'Unknown error', 'error');
+                if (!ignore) {
+                    const msg = e?.message || '';
+                    if (e?.status === 403 || /profile is private|this profile is private|getIsPublic/i.test(String(msg))) {
+                        setIsPrivateProfile(true);
+                    } else {
+                        showToast('Failed to load profile', 'Unknown error', 'error');
+                    }
+                }
             }).finally(() => { if (!ignore) setLoading(false); });
         }
         else {
@@ -102,6 +123,10 @@ export default function UserProfile() {
         }
     }, [visibleTabs, userId, active]);
 
+    const RESTRICTED_TABS = new Set(['posts','forums','liked','reviews']);
+    const isRestrictedTab = (tabKey) => RESTRICTED_TABS.has(tabKey);
+
+
 
 
     const tabListRef = useRef(null);
@@ -112,26 +137,7 @@ export default function UserProfile() {
     const leftBtnRef = useRef(null);
     const rightBtnRef = useRef(null);
     const [showProfileSidebar, setShowProfileSidebar] = useState(true);
-    const checkSidebarOverlap = () => {
-        const leftNav = document.querySelector('.user-left-sidebar');
-        const sidebar = sidebarRef.current;
-        if (!leftNav || !sidebar || window.innerWidth <= 768) {
-            setShowProfileSidebar(true);
-            return;
-        }
-        const leftRect = leftNav.getBoundingClientRect();
-        const sideRect = sidebar.getBoundingClientRect();
-        const minMargin = 16;
-        const minMainWidth = 520;
-        const sidebarWidthFallback = 370;
-        const sidebarWidth = sideRect.width || sidebarWidthFallback;
-        const availableBetween = (window.innerWidth - leftRect.right - sidebarWidth);
-        const visible = (availableBetween > (minMainWidth + minMargin));
-        if (typeof process !== 'undefined' && process.env && process.env.NODE_ENV === 'development') {
-            console.debug('[ProfileOverlap] leftRight=', leftRect.right, 'sideRectLeft=', sideRect.left, 'sideWidth=', sidebarWidth, 'availableBetween=', availableBetween, 'visible=', visible);
-        }
-        if (showProfileSidebar !== visible) setShowProfileSidebar(visible);
-    };
+
 
     const updateTabOverflow = () => {
         const list = tabListRef.current;
@@ -141,7 +147,6 @@ export default function UserProfile() {
         const rightBtn = rightBtnRef.current;
         if (!list || !header) return;
         const isNarrow = window.innerWidth <= 768;
-        checkSidebarOverlap();
         const sidebarWidth = (!isNarrow && sidebar && showProfileSidebar) ? Math.max(0, sidebar.getBoundingClientRect().width) : 0;
         const available = Math.max(80, header.getBoundingClientRect().width - sidebarWidth - 24);
         list.style.maxWidth = `${available}px`;
@@ -171,35 +176,26 @@ export default function UserProfile() {
 
     useEffect(() => {
         updateTabOverflow();
-        const onResize = () => { checkSidebarOverlap(); updateTabOverflow(); };
+        const onResize = () => { updateTabOverflow(); };
         window.addEventListener('resize', onResize);
         window.addEventListener('focus', onResize);
+        window.addEventListener('scroll', onResize, { passive: true });
         const leftNav = document.querySelector('.user-left-sidebar');
         let observer = null;
         if (leftNav && window.MutationObserver) {
-            observer = new MutationObserver(() => { checkSidebarOverlap(); updateTabOverflow(); });
+            observer = new MutationObserver(() => { updateTabOverflow(); });
             observer.observe(leftNav, { attributes: true, attributeFilter: ['class'] });
         }
         return () => {
             window.removeEventListener('resize', onResize);
             window.removeEventListener('focus', onResize);
+            window.removeEventListener('scroll', onResize);
             if (observer) observer.disconnect();
         };
     }, [visibleTabs]);
 
     useEffect(() => { updateTabOverflow(); }, [showProfileSidebar]);
 
-    const pollRef = useRef(null);
-    useEffect(() => {
-        if (!showProfileSidebar) {
-            if (!pollRef.current) {
-                pollRef.current = setInterval(() => { checkSidebarOverlap(); }, 300);
-            }
-        } else {
-            if (pollRef.current) { clearInterval(pollRef.current); pollRef.current = null; }
-        }
-        return () => { if (pollRef.current) { clearInterval(pollRef.current); pollRef.current = null; } };
-    }, [showProfileSidebar]);
 
     const formatAccountAge = (created) => {
         if (!created) return '—';
@@ -306,6 +302,7 @@ export default function UserProfile() {
                     <div className="name-and-meta">
                         <div className="name-row">
                             <span className="user-name">{displayName}</span>
+                            {isPrivateProfile && !isOwnProfile && (<span className="private-badge">Private profile</span>)}
 
                             {!isOwnProfile && (
                                 <button
@@ -357,9 +354,7 @@ export default function UserProfile() {
                         )}
 
                         {active === 'history' && (
-                            <div>
-                                <p className="placeholder-note">Watch history endpoint missing — will display a paged list of movies when implemented.</p>
-                            </div>
+                            <WatchHistory active={active} isOwnProfile={isOwnProfile} />
                         )}
 
                         {active === 'watchlater' && (
@@ -368,7 +363,7 @@ export default function UserProfile() {
 
                         {active === 'liked' && (
                             <div>
-                                <p className="placeholder-note">Liked movies endpoint missing — will show movie thumbnails or titles when implemented.</p>
+                                <LikedMoviesPanel userId={Number(userId)} my={isOwnProfile} />
                             </div>
                         )}
 
@@ -386,7 +381,11 @@ export default function UserProfile() {
 
                         {active === 'posts' && (
                             <div>
-                                <p className="placeholder-note">Posts authored by this user: endpoint missing. Will show paged posts when implemented.</p>
+                                {isPrivateProfile && !isOwnProfile ? (
+                                    <p className="placeholder-note">This profile is private. Posts and personal info are not visible.</p>
+                                ) : (
+                                    <UserPosts userId={userId} isOwnProfile={isOwnProfile} active={active} />
+                                )}
                             </div>
                         )}
                     </div>
@@ -395,6 +394,7 @@ export default function UserProfile() {
                 <UserProfileSidebar
                     sidebarRef={sidebarRef}
                     showProfileSidebar={showProfileSidebar}
+                    setShowProfileSidebar={setShowProfileSidebar}
                     displayName={displayName}
                     user={user}
                     profile={profile}
@@ -406,6 +406,7 @@ export default function UserProfile() {
                     followingCount={followingCount}
                 />
             </div>
+            <ScrollToTop />
         </div>
     );
 }

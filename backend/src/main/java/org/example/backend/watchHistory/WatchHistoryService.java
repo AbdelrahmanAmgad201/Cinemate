@@ -6,6 +6,8 @@ import org.example.backend.movie.MovieRepository;
 import org.example.backend.user.User;
 import org.example.backend.user.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -29,8 +31,24 @@ public class WatchHistoryService {
 
         WatchHistory watchHistory = new WatchHistory();
         watchHistory.setUser(user);
-        watchHistory.setMovie(movie);
+        watchHistory.setMovieId(movieID);
+        watchHistory.setMovieName(movie.getName());
         return  watchHistoryRepository.save(watchHistory);
+    }
+
+    @Transactional
+    public void removeFromWatchHistory(Long watchHistoryID){
+        WatchHistory watchHistory = watchHistoryRepository.findById(watchHistoryID)
+                .orElseThrow(() -> new RuntimeException("WatchHistory not found"));
+
+        if(watchHistory.getIsDeleted())     return;
+        watchHistory.setIsDeleted(true);
+        watchHistoryRepository.save(watchHistory);
+    }
+
+    @Transactional
+    public Page<WatchHistoryViewDTO> getWatcherWatchHistory(Long watcherId, Pageable pageable) {
+        return watchHistoryRepository.findAllByUserIdAndIsDeletedFalse(watcherId, pageable);
     }
 }
 
