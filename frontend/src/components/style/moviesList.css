@@ -27,6 +27,9 @@
 .list-container img{
     width: 174px;
     height: 258px;
+    object-fit: cover;
+    display: block;
+    background: rgba(0,0,0,0.06);
 }
 
 .movie-item{

@@ -5,6 +5,8 @@ public enum PartyEventType {
     PLAY,
     PAUSE,
     SEEK,
+    // Clients can request the host to send the current time for resynchronization
+    SYNC_REQUEST,
 
     // Chat event
     CHAT,
@@ -14,4 +16,3 @@ public enum PartyEventType {
     USER_LEFT,
     PARTY_DELETED
 }
-
