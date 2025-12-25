@@ -144,6 +144,11 @@ public class ForumService {
         return buildSearchResult(forumsPage);
     }
 
+    public Page<ForumDisplayDTO> findUserForums(Long userId,Pageable pageable) {
+        ObjectId ownerId = longToObjectId(userId);
+        return forumRepository.findAllByOwnerIdAndIsDeletedFalse(ownerId,pageable);
+    }
+
     public Forum getForumById(ObjectId forumId) {
         Forum forum =mongoTemplate.findById(forumId, Forum.class);
         if (forum.getIsDeleted()) {

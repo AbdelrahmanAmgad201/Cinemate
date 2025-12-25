@@ -68,6 +68,7 @@ export function mapBackendForumToFrontend(f) {
         description: f.description,
         ownerId: f.ownerId,
         memberCount: f.followerCount,
+        followerCount: f.followerCount,
         postCount: f.postCount,
         createdAt: f.createdAt,
         time: f.createdAt ? new Date(f.createdAt).toLocaleString() : null,

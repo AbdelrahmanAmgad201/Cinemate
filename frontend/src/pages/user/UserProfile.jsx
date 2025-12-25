@@ -6,6 +6,7 @@ import { FaUserPlus, FaUserCheck } from 'react-icons/fa';
 import { ToastContext } from '../../context/ToastContext.jsx';
 import { getModApi } from '../../api/forum-api.jsx';
 import UserReviews from '../../components/UserReviews.jsx';
+import OwnedForums from '../../components/OwnedForums.jsx';
 import WatchHistory from '../../components/WatchHistory.jsx';
 import { PATHS } from '../../constants/constants.jsx';
 import UserPosts from '../../components/UserPosts.jsx';
@@ -115,7 +116,7 @@ export default function UserProfile() {
     const isOwnProfile = user && (String(user.id) === String(userId));
     const visibleTabs = isOwnProfile
         ? TABS.filter(t => t.key !== 'personal')
-        : TABS.filter(t => ['posts','forums','liked','reviews'].includes(t.key));
+        : TABS.filter(t => ['posts','liked','reviews'].includes(t.key));
 
     useEffect(() => {
         if (active === 'personal') return;
@@ -396,7 +397,11 @@ export default function UserProfile() {
 
                         {active === 'forums' && (
                             <div>
-                                <p className="placeholder-note">Forums owned by this user: endpoint missing. Will list forums with links.</p>
+                                {isOwnProfile ? (
+                                    <OwnedForums />
+                                ) : (
+                                    <p className="placeholder-note">Forums owned by this user: endpoint missing. Will list forums with links.</p>
+                                )}
                             </div>
                         )}
 
