@@ -1,14 +1,23 @@
 import {useLocation, useNavigate, useParams} from "react-router-dom";
 import "./style/WatchParty.css"
-import {useContext, useEffect, useState} from "react";
+import {useContext, useEffect, useRef, useState} from "react";
 import {WatchPartyContext} from "../../context/WatchPartyContext.jsx";
-import {PATHS, ROLES} from "../../constants/constants.jsx";
+import {PATHS, ROLES, WATCH_PARTY, WatchPartyEventType} from "../../constants/constants.jsx";
 import {ToastContext} from "../../context/ToastContext.jsx";
 import {getRoomApi} from "../../api/watch-together-api.jsx";
+import WistiaEmbed from "../../components/WistiaEmbed.jsx";
+import {useWatchParty} from "../../hooks/useWatchParty.jsx";
+import {createWistiaAdapter} from "../../utils/video-player-adapters.jsx";
+import {AuthContext} from "../../context/AuthContext.jsx";
+import {getModApi} from "../../api/forum-api.jsx";
 
 export default function WatchParty() {
     const { activeParty, activePartyId, role, joinParty, leaveOrEndParty, loading} = useContext(WatchPartyContext);
     const { showToast } = useContext(ToastContext)
+    const { user, loading: authLoading } = useContext(AuthContext);
+    const [userId, setUserId] = useState(user?.id || null);
+    const [userName, setUserName] = useState( "");
+    const isHost = role === ROLES.WATCH_PARTY_HOST;
 
     const { roomId } = useParams();
     const navigate = useNavigate();
@@ -16,9 +25,24 @@ export default function WatchParty() {
     const [roomLoading, setRoomLoading] = useState(false);
     const [roomData, setRoomData] = useState(null); // Room data, look how the data looks in the API response
 
+    const {playerRef, broadcastAction} = useWatchParty(activePartyId, userId, userName, isHost);
+
+    const handleOnReady = (video) => {
+
+        const adapter = createWistiaAdapter(video, broadcastAction);
+        adapter.init()
+        playerRef.current = adapter; // Connect the player to the adapter
+
+        if (!isHost && !adapter.isBeforePlay()) {
+            broadcastAction(WatchPartyEventType.SYNC_REQUEST);
+            broadcastAction(WatchPartyEventType.PLAY)
+        }
+
+    }
+
     useEffect(() => {
 
-        if (loading) return; // Wait till all states in the context are initialized
+        if (loading || authLoading) return; // Wait till all states in the context are initialized
 
         const initializeRoom = async () => {
             setRoomLoading(true);
@@ -48,11 +72,38 @@ export default function WatchParty() {
                 navigate(PATHS.ROOT);
             }
 
+            // Fetch user data
+            setUserId(user.id);
+
+            const hexId = user.id.toString(16).padStart(24, '0');
+            const response = await getModApi({ userId:hexId });
+            const userName = response.data;
+            setUserName(userName);
+
             setRoomLoading(false);
         }
 
         initializeRoom();
     }, [roomId, loading])
+
+    const syncInterval = useRef(null);
+    const [syncTime, setSyncTime] = useState(3000); // So if can be changed from settings
+
+    // Auto Sync every
+    useEffect(() => {
+        if (!isHost || !playerRef.current) return;
+
+        // Send host time every syncTime seconds
+        syncInterval.current = setInterval(() => {
+
+            if (playerRef.current.isPaused() || playerRef.current.isBeforePlay()) return;
+
+            const currentTime = playerRef.current.getCurrentTime();
+            broadcastAction(WatchPartyEventType.SEEK, { time: currentTime });
+        }, syncTime);
+
+        return () => clearInterval(syncInterval.current);
+    }, [isHost, playerRef, broadcastAction]);
 
     if (roomLoading || loading) {
         return <div className="loading-container">Connecting to Party...</div>;
@@ -63,6 +114,9 @@ export default function WatchParty() {
             {/*  left part -> video player and maybe some stuff beneath it, so it's better to be scrollable  */}
             <main className="watch-party-main">
                 {/* Components */}
+                <div className="watch-party-video-player" >
+                    <WistiaEmbed className="wistia_full" wistiaId={roomData?.movieUrl} onReady={handleOnReady}/>
+                </div>
             </main>
 
             {/*  right part -> chat, not scrollable  */}

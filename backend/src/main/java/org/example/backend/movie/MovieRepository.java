@@ -42,15 +42,15 @@ public interface MovieRepository extends JpaRepository<Movie, Long>, JpaSpecific
     List<Movie> findByAdminIsNotNullAndOrganization_Id(Long orgId);
 
     @Query("""
-        SELECT new org.example.backend.movie.OneMovieOverView(
-            (SELECT COUNT(wh) FROM WatchHistory wh WHERE wh.movieId = :movieId AND (wh.isDeleted = false OR wh.isDeleted IS NULL)),
-            (SELECT COUNT(DISTINCT wh.user.id) FROM WatchHistory wh WHERE wh.movieId = :movieId AND (wh.isDeleted = false OR wh.isDeleted IS NULL)),
-            (SELECT COUNT(mr) FROM MovieReview mr WHERE mr.movie.movieID = :movieId),
-            (SELECT COUNT(mr) FROM MovieReview mr WHERE mr.movie.movieID = :movieId),
-            (SELECT COALESCE(AVG(mr.rating),0) FROM MovieReview mr WHERE mr.movie.movieID = :movieId),
-            (SELECT COUNT(wl) FROM WatchLater wl WHERE wl.movie.movieID = :movieId)
-        )
-        """)
+            SELECT new org.example.backend.movie.OneMovieOverView(
+                (SELECT COUNT(wh) FROM WatchHistory wh WHERE wh.movie.movieID = :movieId),
+                (SELECT COUNT(DISTINCT wh.user.id) FROM WatchHistory wh WHERE wh.movie.movieID = :movieId),
+                (SELECT COUNT(mr) FROM MovieReview mr WHERE mr.movie.movieID = :movieId),
+                (SELECT COUNT(mr) FROM MovieReview mr WHERE mr.movie.movieID = :movieId),
+                (SELECT COALESCE(AVG(mr.rating),0) FROM MovieReview mr WHERE mr.movie.movieID = :movieId),
+                (SELECT COUNT(wl) FROM WatchLater wl WHERE wl.watchLaterID.movieId = :movieId)
+            )
+            """)
     OneMovieOverView getMovieOverview(@Param("movieId") Long movieId);
 
     @Query("""

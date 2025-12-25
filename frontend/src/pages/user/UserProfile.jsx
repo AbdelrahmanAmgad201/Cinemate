@@ -8,6 +8,7 @@ import { getModApi } from '../../api/forum-api.jsx';
 import WatchHistory from '../../components/WatchHistory.jsx';
 import { PATHS } from '../../constants/constants.jsx';
 import { getUserProfileApi, isUserFollowedApi, followUserApi, unfollowUserApi } from '../../api/user-api.jsx';
+import WatchLaterPanel from '../../components/WatchLaterPanel.jsx';
 import { formatCount } from '../../utils/formate.jsx';
 import './style/UserProfile.css';
 import UserProfileSidebar from '../../components/UserProfileSidebar.jsx';
@@ -102,6 +103,8 @@ export default function UserProfile() {
             setActive(visibleTabs[0]?.key || 'posts');
         }
     }, [visibleTabs, userId, active]);
+
+
 
     const tabListRef = useRef(null);
     const headerRef = useRef(null);
@@ -360,9 +363,7 @@ export default function UserProfile() {
                         )}
 
                         {active === 'watchlater' && (
-                            <div>
-                                <p className="placeholder-note">Watch later endpoint missing — will list saved movies when implemented.</p>
-                            </div>
+                            <WatchLaterPanel />
                         )}
 
                         {active === 'liked' && (
