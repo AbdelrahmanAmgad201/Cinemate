@@ -344,18 +344,20 @@ export default function MoviePreviewPage() {
                         <div className="error">Error: {reviewsError}</div>)}
                     {reviews.length === 0 && (
                         <div className="no-reviews">No reviews yet. Be the first!</div>)}
-                    {(reviews.map((r) => (
+                    {reviews.map((r) => (
                         <ReviewCard
-                            key={r.userId}
+                            key={r.id ?? r.userId}
+                            id={r.id ?? r.userId}
+                            movieId={r.movieId}
                             avatar={r.avatar}
-                            userId={r.userId}
+                            userId={r.reviewerId ?? r.userId}
                             name={r.name}
                             date={r.date}
                             rating={r.rating}
                             description={r.description}
-                            onDelete={r.userId === user?.id ? handleDelete : undefined} // only allow delete for own review
+                            onDelete={r.reviewerId === user?.id ? handleDelete : undefined}
                         />
-                    )))}
+                    ))}
                     {/* sentinel for infinite scroll */}
                     <div ref={sentinelRef} style={{ height: 1 }} aria-hidden="true" />
                 </div>

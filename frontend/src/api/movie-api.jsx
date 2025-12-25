@@ -34,6 +34,43 @@ export async function getReviewsApi({movieId, page, size}) {
     }
 };
 
+export async function getUserReviewsApi({userId, page, size}) {
+    try{
+        const response = await api.get(`/movie-review/v1/other-user-movie-review/${userId}`, {
+            params: { page, size }})
+
+        const data = response.data;
+        return {
+            success: true,
+            data: {
+                ...data,
+                content: mapBackendReviews(data)
+            }
+        };
+
+    }catch(err){
+        return { success: false , message: err.message };
+    }
+};
+
+export async function getMyReviewsApi({page, size}) {
+    try{
+        const response = await api.get(`/movie-review/v1/my-movie-review`, {
+            params: { page, size }
+        });
+        const data = response.data;
+        return {
+            success: true,
+            data: {
+                ...data,
+                content: mapBackendReviews(data)
+            }
+        };
+    }catch(err){
+        return { success: false, message: err.message };
+    }
+};
+
 export async function postReviewApi({movieId, comment, rating}) {
     // private Long movieId;
     // private String comment;

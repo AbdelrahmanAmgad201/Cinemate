@@ -12,4 +12,5 @@ public interface MovieReviewRepository extends JpaRepository<MovieReview, MovieR
 
     boolean existsByMovieReviewID_MovieIdAndMovieReviewID_ReviewerId(Long movieId, Long reviewerId);
     Page<MovieReview> findByMovie_MovieID(Long movieId, Pageable pageable);
+    Page<MovieReview> findAllByReviewer_Id(Long reviewerId, Pageable pageable);
 }

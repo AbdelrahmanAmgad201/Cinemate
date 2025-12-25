@@ -42,6 +42,11 @@ public class MovieReview {
                 reviewer.getLastName()
         );
     }
+    @JsonProperty("movie")
+    public String getMovieName() {
+        if (movie == null) return null;
+        return movie.getName();
+    }
 
     @Column(name = "rating", nullable = false)
     private Integer rating;

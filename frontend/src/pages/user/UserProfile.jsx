@@ -5,6 +5,7 @@ import { IoIosPerson } from 'react-icons/io';
 import { FaUserPlus, FaUserCheck } from 'react-icons/fa';
 import { ToastContext } from '../../context/ToastContext.jsx';
 import { getModApi } from '../../api/forum-api.jsx';
+import UserReviews from '../../components/UserReviews.jsx';
 import OwnedForums from '../../components/OwnedForums.jsx';
 import WatchHistory from '../../components/WatchHistory.jsx';
 import { PATHS } from '../../constants/constants.jsx';
@@ -139,6 +140,26 @@ export default function UserProfile() {
     const rightBtnRef = useRef(null);
     const [showProfileSidebar, setShowProfileSidebar] = useState(true);
 
+    const checkSidebarOverlap = () => {
+        const leftNav = document.querySelector('.user-left-sidebar');
+        const sidebar = sidebarRef.current;
+        if (!leftNav || !sidebar || window.innerWidth <= 768) {
+            setShowProfileSidebar(true);
+            return;
+        }
+        const leftRect = leftNav.getBoundingClientRect();
+        const sideRect = sidebar.getBoundingClientRect();
+        const minMargin = 16;
+        const minMainWidth = 520;
+        const sidebarWidthFallback = 370;
+        const sidebarWidth = sideRect.width || sidebarWidthFallback;
+        const availableBetween = (window.innerWidth - leftRect.right - sidebarWidth);
+        const visible = (availableBetween > (minMainWidth + minMargin));
+        if (typeof process !== 'undefined' && process.env && process.env.NODE_ENV === 'development') {
+            console.debug('[ProfileOverlap] leftRight=', leftRect.right, 'sideRectLeft=', sideRect.left, 'sideWidth=', sidebarWidth, 'availableBetween=', availableBetween, 'visible=', visible);
+        }
+        if (showProfileSidebar !== visible) setShowProfileSidebar(visible);
+    };
 
     const updateTabOverflow = () => {
         const list = tabListRef.current;
@@ -370,7 +391,7 @@ export default function UserProfile() {
 
                         {active === 'reviews' && (
                             <div>
-                                <p className="placeholder-note">Reviews by this user are not yet queryable via the API.</p>
+                                <UserReviews userId={userId} profile={profile} isOwnProfile={isOwnProfile} />
                             </div>
                         )}
 
