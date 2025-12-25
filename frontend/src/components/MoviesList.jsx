@@ -5,7 +5,7 @@ import { MdNavigateNext } from "react-icons/md";
 import { MdNavigateBefore } from "react-icons/md";
 
 
-export default function MoviesList({ list, name, page, setPage, onClick }) {
+function MoviesList({ list, name, page, setPage, onClick }) {
 
     return (
         <div className="movie-list">
@@ -18,8 +18,8 @@ export default function MoviesList({ list, name, page, setPage, onClick }) {
                 )
                 :
                 list.map((movie, index) => (
-                    <div key={index} className="movie-item" onClick={() => onClick && onClick(movie.id != null ? movie.id : movie.title)}>
-                        <img src={movie.poster} alt={movie.title} className="movie-poster" />
+                    <div key={movie.id ?? movie.title ?? index} className="movie-item" onClick={() => onClick && onClick(movie.id != null ? movie.id : movie.title)}>
+                        <img src={movie.poster} alt={movie.title} className="movie-poster" width="174" height="258" loading="lazy" />
                         <h3 className="movie-title">{movie.title}</h3>
                         {movie.duration && movie.rating && (
                             <div className="movie-details">
@@ -50,3 +50,5 @@ export default function MoviesList({ list, name, page, setPage, onClick }) {
         
     );
 };
+
+export default React.memo(MoviesList);
