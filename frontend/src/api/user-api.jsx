@@ -36,6 +36,33 @@ export async function unfollowUserApi({ userId }) {
     }
 }
 
+export async function getIsPublicApi() {
+    try {
+        const response = await api.get(`/user/v1/is-public`);
+        return { success: true, data: response.data };
+    } catch (err) {
+        return { success: false, message: err.message };
+    }
+}
+
+export async function setIsPublicApi({ isPublic }) {
+    try {
+        const response = await api.put(`/user/v1/is-public/${isPublic}`);
+        return { success: true, data: response.data };
+    } catch (err) {
+        return { success: false, message: err.message };
+    }
+}
+
+export async function getUserIsPublicApi({ userId }) {
+    try {
+        const response = await api.post(`/user/v1/is-public/${userId}`);
+        return { success: true, data: response.data };
+    } catch (err) {
+        return { success: false, message: err.message };
+    }
+}
+
 export async function getFollowersApi({ page = 0, size = 25 }) {
     try {
         const response = await api.get(`/follow/v1/followers?page=${page}&size=${size}`);
