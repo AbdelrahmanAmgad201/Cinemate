@@ -56,4 +56,23 @@ public class OrganizationService {
         return savedMovie.getMovieID();
     }
 
+    public PersonalData getPersonalData(Long userId) {
+        return organizationRepository.findProjectedById(userId)
+                .orElseThrow(() -> new RuntimeException("Organization not found"));
+    }
+    public void updateAbout(Long userId, AboutDTO aboutDTO) {
+        String about = aboutDTO.getAbout();
+        Organization organization = organizationRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("Organization not found"));
+        organization.setAbout(about);
+        organizationRepository.save(organization);
+    }
+
+    public void updateName(Long userId, String newName) {
+        Organization organization = organizationRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("Organization not found"));
+        organization.setName(newName);
+        organizationRepository.save(organization);
+    }
+
 }

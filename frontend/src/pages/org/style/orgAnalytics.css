@@ -298,3 +298,23 @@
         font-size: 36px;
     }
 }
+
+
+.full-width-section .movie-list .stat-card{
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    max-width: 1200px;
+}
+
+.full-width-section .movie-list .stat-card .stat-card-header{
+    position: absolute;
+    top: 30px;
+    left: 30px;
+}
+
+
+.full-width-section .list-container{
+    background: transparent;
+    margin-top: 40px;
+}

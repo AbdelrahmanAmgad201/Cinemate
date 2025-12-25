@@ -1,13 +1,15 @@
 import '../auth/style/SignUp.css';
 import { Link } from 'react-router-dom';
 import './style/orgAnalytics.css';
-import {useContext, useEffect, useState} from 'react';
+import {use, useContext, useEffect, useState} from 'react';
 import NavBar from "../../components/OrgAdminNavBar.jsx";
-import fetchOrgAnalytics, { fetchOrgRequests } from '../../api/org-analytics-api.jsx';
+import { fetchOrgAnalytics, fetchOrgRequests, fetchOrgMovies } from '../../api/org-analytics-api.jsx';
 import {AuthContext} from "../../context/AuthContext.jsx";
 import {PATHS} from "../../constants/constants.jsx";
+import MoviesList from '../../components/MoviesList.jsx';
+import { MdOutlineStar, MdNavigateNext, MdNavigateBefore } from "react-icons/md";
 
-const StatCard = ({ title, value, subtitle, children }) => (
+export const StatCard = ({ title, value, subtitle, children }) => (
     <div className="stat-card">
         <div className="stat-card-header">
             <h3>{title}</h3>
@@ -113,7 +115,10 @@ const OrgMoviesAndAnalytics = () => {
     const [loading, setLoading] = useState(true);
     const [analytics, setAnalytics] = useState(null);
     const [movieRequests, setMovieRequests] = useState([]);
+    const [myMovies, setMyMovies] = useState([]);
     const [requestsLoading, setRequestsLoading] = useState(true);
+    const [page, setPage] = useState(0);
+    const [totalPages, setTotalPages] = useState(0);
     const [error, setError] = useState(null);
 
     useEffect(() => {
@@ -151,9 +156,31 @@ const OrgMoviesAndAnalytics = () => {
             }
         };
 
+        
+        
         loadAnalytics();
         loadRequests();
     }, []);
+
+    
+    useEffect(() => {
+        const fetchMovies = async () => {
+            try {
+                setLoading(true);
+                const result = await fetchOrgMovies(page, 6);
+                if(result.success){
+                    setMyMovies(result.response.content);
+                    setTotalPages(result.response.totalPages);
+                }
+                console.log("Fetched movies:", result.response);
+            } catch (err) {
+                console.error("Error fetching movies:", err);
+            } finally {
+                setLoading(false);
+            }
+        }
+        fetchMovies();
+    }, [page]);
 
     const data = analytics || {};
 
@@ -183,6 +210,43 @@ const OrgMoviesAndAnalytics = () => {
                 <StatCard title="Recent Movie Requests" value={null}>
                     <MovieRequestsList requests={movieRequests} loading={requestsLoading} />
                 </StatCard>
+            </div>
+            <div className="full-width-section">
+                <div className="movie-list">
+                <StatCard title="Movies Approved">
+                <div className="list-container">
+                    {
+                    myMovies.length === 0 ? (
+                        <div style={{marginTop: "100px"}}>
+                            <p style={{fontSize: "30px"}}>Nothing Here...</p>
+                        </div>
+                    ) : (
+                        <>
+                        {myMovies.map((movie, index) => (
+                            <div key={index} className="movie-item">
+                                <img src={movie.thumbnailUrl} alt={movie.name} className="movie-poster" />
+                                <div className="movie-info">
+                                <h3 className="movie-title">{movie.name}</h3>
+                                <div className="movie-details">
+                                    <div style={{marginBottom: "10px"}} className="duration">{Math.floor(movie.duration/60)}h {movie.duration%60}min</div>
+                                    <div className="rating" style={{display: "flex",alignItems: "center", gap: "6px"}}><MdOutlineStar style={{color: "#ffc107"}}/> {movie.averageRating}/10</div>
+                                </div>
+                                </div>
+                            </div>
+                            ))}
+                        {totalPages > 1 &&(
+                            <div className="paging">
+                                <MdNavigateBefore className={page > 0 ? "paging-icon" : "inactive"} onClick={() => page > 0 && setPage(page - 1)} />
+                                {page + 1}
+                                <MdNavigateNext className={page < totalPages - 1 ? "paging-icon" : "inactive"} onClick={() => page < totalPages - 1  && setPage(page + 1)} />
+                            </div>
+                        )}
+                        </>
+                    )
+                    }
+                    </div>
+                </StatCard>
+                </div>
             </div>
         </div>
     );
