@@ -12,6 +12,7 @@ import org.springframework.test.context.ActiveProfiles;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
@@ -118,5 +119,46 @@ class AdminServiceTest {
         assertNull(overview.getMostPopularOrganization());
         assertNull(overview.getMostRatedMovie());
         assertEquals(77L, overview.getMostLikedMovie());
+    }
+
+    @Test
+    void getAdminProfile_ShouldReturnDto_WhenAdminExists() {
+        // Arrange
+        Admin admin = new Admin();
+        admin.setId(1L);
+        admin.setName("John Doe");
+        admin.setEmail("john@example.com");
+        when(adminRepository.findById(1L)).thenReturn(Optional.of(admin));
+
+        // Act
+        AdminProfileDTO result = adminService.getAdminProfile(1L);
+
+        // Assert
+        assertEquals("John Doe", result.name());
+        assertEquals("john@example.com", result.email());
+        verify(adminRepository, times(1)).findById(1L);
+    }
+
+    @Test
+    void updateAdminName_ShouldUpdate_WhenAdminExists() {
+        // Arrange
+        Admin admin = new Admin();
+        admin.setId(1L);
+        admin.setName("Old Name");
+        admin.setEmail("test@test.com");
+        when(adminRepository.findById(1L)).thenReturn(Optional.of(admin));
+
+        // Act
+        adminService.updateAdminName(1L, "New Name");
+
+        // Assert
+        assertEquals("New Name", admin.getName());
+    }
+
+    @Test
+    void getAdminProfile_ShouldThrowException_WhenNotFound() {
+        when(adminRepository.findById(99L)).thenReturn(Optional.empty());
+
+        assertThrows(RuntimeException.class, () -> adminService.getAdminProfile(99L));
     }
 }
