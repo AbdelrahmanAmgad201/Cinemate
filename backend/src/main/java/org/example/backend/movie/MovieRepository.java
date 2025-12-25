@@ -54,9 +54,9 @@ public interface MovieRepository extends JpaRepository<Movie, Long>, JpaSpecific
     OneMovieOverView getMovieOverview(@Param("movieId") Long movieId);
 
     @Query("""
-       SELECT lm.movie.movieID
+       SELECT lm.likedMoviesID.movieId
        FROM LikedMovie lm
-       GROUP BY lm.movie.movieID
+       GROUP BY lm.likedMoviesID.movieId
        ORDER BY COUNT(lm) DESC
        """)
     List<Long> getMostLikedMovie(Pageable pageable);

@@ -121,6 +121,29 @@ export async function addToWatchHistoryApi({movieId}) {
     }
 };
 
+export async function getOtherUserLikedMoviesApi({ userId, page = 0, size = 8 } = {}) {
+    try {
+        const response = await api.get(`/liked-movie/v1/other-user-liked-movies/${userId}`, { params: { page, size } });
+        const data = response.data;
+        const mapped = {
+            ...data,
+            content: (data.content || []).map(item => ({ id: item.likedMoviesID_MovieId, title: item.movieName }))
+        };
+        return { success: true, data: mapped };
+    } catch (err) {
+        return { success: false, message: err.message };
+    }
+};
+
+export async function getMyLikedMoviesApi({ page = 0, size = 8 } = {}) {
+    try {
+        const response = await api.get(`/liked-movie/v1/my-liked-movies`, { params: { page, size } });
+        const data = response.data;
+        const mapped = {
+            ...data,
+            content: (data.content || []).map(item => ({ id: item.likedMoviesID_MovieId, title: item.movieName }))
+        };
+        return { success: true, data: mapped };
 export async function getWatchHistoryApi({page = 0, size = 20} = {}) {
     try {
         const response = await api.get(`/watch-history/v1/watch-history`, { params: { page, size } });
