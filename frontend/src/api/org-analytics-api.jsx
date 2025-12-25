@@ -93,3 +93,18 @@ export async function fetchOrgMovies(page = 0, size = 20) {
 
     }
 }
+
+export async function updateOrgPassword(oldPassword, newPassword) {
+    try {
+        const response = await api.put("/auth/v1/password", {
+            oldPassword: oldPassword,
+            newPassword: newPassword
+        });
+        return {success: true, response: response.data};
+    } catch (error) {
+        // console.error("Failed to fetch organization profile:", error);
+        // throw error;
+        return { success: false , message: error.message };
+
+    }
+}
