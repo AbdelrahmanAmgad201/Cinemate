@@ -3,8 +3,6 @@
 @media (min-width: 769px){
     .profile-sidebar .sidebar-card{
         margin-top: var(--sidebar-card-margin, 0px);
-        z-index: 2;
-        margin-top: -160px;
         position: relative;
         z-index: 30;
     }
