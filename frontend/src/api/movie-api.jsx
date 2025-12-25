@@ -142,6 +142,13 @@ export async function getMyLikedMoviesApi({ page = 0, size = 8 } = {}) {
         const mapped = {
             ...data,
             content: (data.content || []).map(item => ({ id: item.likedMoviesID_MovieId, title: item.movieName }))
+        };
+        return { success: true, data: mapped };
+    } catch (err) {
+        return { success: false, message: err.message };
+    }
+};
+
 export async function getWatchLaterApi({ page = 0, size = 20 } = {}) {
     try {
         const response = await api.get(`/watch-later/v1/watch-later`, { params: { page, size } });
