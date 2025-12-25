@@ -39,6 +39,12 @@ export async function unfollowUserApi({ userId }) {
 export async function setUserDataApi(details) {
     try {
         const response = await api.post('/user/v1/set-user-data', details);
+        return { success: true, data: response.data };
+    } catch (err) {
+        return { success: false, message: err.message };
+    }
+}
+
 export async function getIsPublicApi() {
     try {
         const response = await api.get(`/user/v1/is-public`);
@@ -46,11 +52,17 @@ export async function getIsPublicApi() {
     } catch (err) {
         return { success: false, message: err.message };
     }
-}
+} 
 
 export async function updateAboutApi({ about }) {
     try {
         const response = await api.put('/user/v1/user-about', { about });
+        return { success: true, data: response.data };
+    } catch (err) {
+        return { success: false, message: err.message };
+    }
+}
+
 export async function setIsPublicApi({ isPublic }) {
     try {
         const response = await api.put(`/user/v1/is-public/${isPublic}`);
@@ -58,7 +70,7 @@ export async function setIsPublicApi({ isPublic }) {
     } catch (err) {
         return { success: false, message: err.message };
     }
-}
+} 
 
 export async function updateBirthDateApi({ birthDate }) {
     try {
@@ -72,6 +84,12 @@ export async function updateBirthDateApi({ birthDate }) {
 export async function updateUserNameApi({ firstName, lastName }) {
     try {
         const response = await api.put('/user/v1/user-name', { firstName, lastName });
+        return { success: true, data: response.data };
+    } catch (err) {
+        return { success: false, message: err.message };
+    }
+}
+
 export async function getUserIsPublicApi({ userId }) {
     try {
         const response = await api.post(`/user/v1/is-public/${userId}`);
