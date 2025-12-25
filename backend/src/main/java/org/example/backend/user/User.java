@@ -53,7 +53,7 @@ public class User implements Authenticatable {
 
     @Column(name = "is_public")
     @Builder.Default
-    private Boolean isPublic=true;
+    private Boolean isPublic = true;
 
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
