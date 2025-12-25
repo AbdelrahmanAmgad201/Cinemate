@@ -5,186 +5,27 @@ import { FaCircleArrowDown } from "react-icons/fa6";
 import { Tooltip } from 'react-tooltip';
 import "./style/LiveChat.css";
 
-export default function LiveChat({ fullScreen = false }){
+export default function LiveChat({ fullScreen = false, messages = [], onSendMessage, currentUserColor = "#52B788" }) {  
     
     const [autoScroll, setAutoScroll] = useState(true);
     const [newMsg, setNewMsg] = useState('');
     const [isMinimized, setIsMinimized] = useState(false);
     const chatContainerRef = useRef(null);
 
-    const [messages, setMessages] = useState([
-        {
-          id: "1",
-          sender: "NightOwl",
-          type: "text",
-          content: "This scene is lowkey emotional 😭",
-          timestamp: "19:03",
-          color: "#52B788"
-        },
-        {
-          id: "2",
-          sender: "MovieBuff",
-          type: "text",
-          content: "Wait till the plot twist 😏",
-          spoiler: true,
-          timestamp: "19:03",
-          color: "#BB8FCE"
-        },
-        {
-          id: "3",
-          sender: "System",
-          type: "system",
-          content: "Host paused the movie",
-          timestamp: "19:04",
-          color: "#85C1E2"
-        },
-        {
-          id: "4",
-          sender: "SpoilerFree",
-          type: "text",
-          content: "Why is everyone quiet?",
-          timestamp: "19:04",
-          color: "#F8B739"
-        },
-        {
-            id: "5",
-            sender: "NightOwl",
-            type: "text",
-            content: "This scene is lowkey emotional 😭",
-            timestamp: "19:03",
-          color: "#52B788"
-          },
-          {
-            id: "6",
-            sender: "MovieBuff",
-            type: "text",
-            content: "Wait till the plot twist 😏",
-            spoiler: true,
-            timestamp: "19:03",
-            color: "#BB8FCE"
-          },
-          {
-            id: "7",
-            sender: "System",
-            type: "system",
-            content: "Host paused the movie",
-            timestamp: "19:04",
-            color: "#85C1E2"
-          },
-          {
-            id: "8",
-            sender: "SpoilerFree",
-            type: "text",
-            content: "Why is everyone quiet?",
-            timestamp: "19:04",
-            color: "#F8B739"
-          },
-          {
-            id: "9",
-            sender: "NightOwl",
-            type: "text",
-            content: "This scene is lowkey emotional 😭",
-            timestamp: "19:03",
-          color: "#52B788"
-          },
-          {
-            id: "10",
-            sender: "MovieBuff",
-            type: "text",
-            content: "Wait till the plot twist 😏",
-            spoiler: true,
-            timestamp: "19:03",
-            color: "#BB8FCE"
-          },
-          {
-            id: "11",
-            sender: "System",
-            type: "system",
-            content: "Host paused the movie",
-            timestamp: "19:04",
-            color: "#85C1E2"
-          },
-          {
-            id: "12",
-            sender: "SpoilerFree",
-            type: "text",
-            content: "Why is everyone quiet?",
-            timestamp: "19:04",
-            color: "#F8B739"
-          },
-          {
-            id: "13",
-            sender: "NightOwl",
-            type: "text",
-            content: "This scene is lowkey emotional 😭",
-            timestamp: "19:03",
-          color: "#52B788"
-          },
-          {
-            id: "14",
-            sender: "MovieBuff",
-            type: "text",
-            content: "Wait till the plot twist 😏",
-            spoiler: true,
-            timestamp: "19:03",
-            color: "#BB8FCE"
-          },
-          {
-            id: "15",
-            sender: "System",
-            type: "system",
-            content: "Host paused the movie",
-            timestamp: "19:04",
-            color: "#85C1E2"
-          },
-          {
-            id: "16",
-            sender: "SpoilerFree",
-            type: "text",
-            content: "Why is everyone quiet?",
-            timestamp: "19:04",
-            color: "#F8B739"
-          },
-          {
-            id: "17",
-            sender: "NightOwl",
-            type: "text",
-            content: "This scene is lowkey emotional 😭",
-            timestamp: "19:03",
-          color: "#52B788"
-          },
-          {
-            id: "18",
-            sender: "MovieBuff",
-            type: "text",
-            content: "Wait till the plot twist 😏",
-            spoiler: true,
-            timestamp: "19:03",
-            color: "#BB8FCE"
-          },
-          {
-            id: "19",
-            sender: "System",
-            type: "system",
-            content: "Host paused the movie",
-            timestamp: "19:04",
-            color: "#85C1E2"
-          },
-          {
-            id: "20",
-            sender: "SpoilerFree",
-            type: "text",
-            content: "Why is everyone quiet?",
-            timestamp: "19:04",
-            color: "#F8B739"
-          }
-      ]);
-
+    
     const handleSendMessage = () => {
-        // TODO
-        console.log("msg sent", newMsg);
+        if (!newMsg.trim() || !onSendMessage) return;
+        onSendMessage(newMsg);
+        // console.log("msg sent", newMsg);
         setNewMsg("");
     }
+
+    const handleKeyPress = (e) => {
+      if (e.key === 'Enter' && !e.shiftKey) {
+          e.preventDefault();
+          handleSendMessage();
+      }
+    };
 
     const handleMinimize = () => {
         setIsMinimized(!isMinimized);
@@ -243,7 +84,7 @@ export default function LiveChat({ fullScreen = false }){
                     {messages.map(msg => (
                         msg.type === 'system' ?(
                             <div key={msg.id} className="system-message">
-                                <span className="system">{msg.sender}: </span>
+                                <span className="system" style={{color: msg.color || "#ff4444"}}>{msg.sender}: </span>
                                 <span className="system-content">{msg.content}</span>
                             </div>
                         ) : (
@@ -265,7 +106,7 @@ export default function LiveChat({ fullScreen = false }){
             
             <div className="send-message">
                 <div className="input-container">
-                    <input type="text" placeholder="Send a message" value={newMsg} onChange={(e) => setNewMsg(e.target.value)} minLength={1} maxLength={100}></input>
+                    <input type="text" placeholder="Send a message" onKeyPress={handleKeyPress} value={newMsg} onChange={(e) => setNewMsg(e.target.value)} minLength={1} maxLength={100}></input>
                     <LuSendHorizontal onClick={handleSendMessage} disabled={!newMsg.trim()} />
                 </div>
                 
@@ -279,21 +120,3 @@ export default function LiveChat({ fullScreen = false }){
         </div>
     );
 };
-
-// USAGE 
-// <div style={{height: "500px", display: "flex"}}>
-//     <div style={{width: "900px", height: "500px", backgroundColor: "black"}}></div>
-//     <LiveChat />
-// </div>
-
-// IN FULL SCREEN
-/* .parent-container { 
-    position: relative;
-    width: 100%;
-    height: 100%;
-} */
-
-// <div className="parent-container">
-//     <video />
-//     <LiveChat fullScreen={true} />
-// </div> 
