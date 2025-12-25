@@ -72,4 +72,21 @@ export async function updateUserNameApi({ firstName, lastName }) {
     }
 }
 
+export async function getFollowersApi({ page = 0, size = 25 }) {
+    try {
+        const response = await api.get(`/follow/v1/followers?page=${page}&size=${size}`);
+        return { success: true, data: response.data };
+    } catch (err) {
+        return { success: false, message: err?.response?.data?.message || err?.message || 'Failed to fetch followers' };
+    }
+}
+
+export async function getFollowingApi({ page = 0, size = 25 }) {
+    try {
+        const response = await api.get(`/follow/v1/followings?page=${page}&size=${size}`);
+        return { success: true, data: response.data };
+    } catch (err) {
+        return { success: false, message: err?.response?.data?.message || err?.message || 'Failed to fetch following' };
+    }
+}
 

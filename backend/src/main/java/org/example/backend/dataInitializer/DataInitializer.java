@@ -161,7 +161,9 @@ public class DataInitializer implements CommandLineRunner {
                     .name("movie "+i+ " for org "+orgId)
                     .description( "movie only for test")
                     .thumbnailUrl("https://th.bing.com/th/id/R.29c4ad8d766033e15f7a9e8e8ec0e204?rik=i10dQJcgOoPmyw&pid=ImgRaw&r=0")
-                    .duration(300)
+                    .duration(74)
+                    .movieUrl("f6hqeoz7kv")
+                    .trailerUrl("0gh0jqtgb0")
                     .genre(ANIMATION)
                     .admin(admin)
                     .build();
