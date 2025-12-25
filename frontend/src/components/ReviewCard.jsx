@@ -9,6 +9,7 @@ import {PATHS} from "../constants/constants.jsx";
 export default function ReviewCard({
                                        id,
                                        movieId,
+                                       movieTitle,
                                        avatar,
                                        userId,
                                        name,
@@ -55,23 +56,39 @@ export default function ReviewCard({
                         <div className="review-card-header-left-name">
                             <Link to={PATHS.USER.PROFILE(userId)} onClick={(e) => e.stopPropagation()}>{name}</Link>
                         </div>
-                        <div className="review-card-header-left-date">
-                            {timeAgo(date)}
+                        <div className="review-card-header-left-sub">
+                            <div className="review-card-header-left-date">
+                                {timeAgo(date)}
+                            </div>
                         </div>
                     </div>
                 </div>
 
-                {/* Rating (5 starts) and x/10, together at far right*/}
+                {/* Movie title above rating on the right */}
                 <div className="review-card-header-right">
-                    <div className="review-card-header-right-stars">
-                        {stars.map(s => (
-                            <span key={s} className={`rc-star ${s <= Math.round((rating/10) * 5) ? 'filled' : ''}`}>★</span>
-                        ))}
+                    {movieTitle && (
+                        <div className="review-card-header-right-movie">
+                            <button
+                                className="movie-link-right"
+                                onClick={(e) => { e.stopPropagation(); navigate(PATHS.MOVIE.DETAILS(movieId)); }}
+                                aria-label={`Go to movie ${movieTitle}`}
+                            >
+                                {movieTitle}
+                            </button>
+                        </div>
+                    )}
+
+                    <div className="review-card-header-right-row">
+                        <div className="review-card-header-right-stars">
+                            {stars.map(s => (
+                                <span key={s} className={`rc-star ${s <= Math.round((rating/10) * 5) ? 'filled' : ''}`}>★</span>
+                            ))}
+                        </div>
+                        {(rating !== null && rating !== undefined)  &&
+                            <div className="review-card-header-right-rating" aria-label={`Rating ${rating} out of 10`}>
+                                {rating}/10
+                            </div>}
                     </div>
-                    {(rating !== null && rating !== undefined)  &&
-                        <div className="review-card-header-right-rating" aria-label={`Rating ${rating} out of 10`}>
-                            {rating}/10
-                        </div>}
                 </div>
             </header>
 
@@ -112,6 +129,7 @@ export default function ReviewCard({
 ReviewCard.propTypes = {
     id: PropTypes.oneOfType([PropTypes.number, PropTypes.string]).isRequired,
     movieId: PropTypes.oneOfType([PropTypes.number, PropTypes.string]),
+    movieTitle: PropTypes.string,
     avatar: PropTypes.string,
     userId: PropTypes.oneOfType([PropTypes.number, PropTypes.string]).isRequired,
     name: PropTypes.string,
@@ -125,6 +143,7 @@ ReviewCard.propTypes = {
 
 ReviewCard.defaultProps = {
     avatar: '',
+    movieTitle: null,
     name: 'Anonymous',
     date: 'Unknown',
     rating: null,

@@ -8,6 +8,7 @@ export function mapBackendReviews(data) {
         return {
             id: `${movieId ?? 'm'}-${reviewerId ?? Math.random()}`,
             movieId: movieId,
+            movieTitle: item.movie || null,
             reviewerId: reviewerId,
             rating: item.rating,
             description: item.comment,

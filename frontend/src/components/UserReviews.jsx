@@ -53,6 +53,7 @@ export default function UserReviews({ userId, profile, isOwnProfile = false }) {
                                 key={r.id}
                                 id={r.id}
                                 movieId={r.movieId}
+                                movieTitle={r.movieTitle}
                                 userId={r.reviewerId ?? Number(userId)}
                                 name={r.name}
                                 date={r.date}
