@@ -1,6 +1,6 @@
 import {useLocation, useNavigate, useParams} from "react-router-dom";
 import "./style/WatchParty.css"
-import {useContext, useEffect, useRef, useState} from "react";
+import {useCallback, useContext, useEffect, useRef, useState} from "react";
 import {WatchPartyContext} from "../../context/WatchPartyContext.jsx";
 import {PATHS, ROLES, WATCH_PARTY, WatchPartyEventType} from "../../constants/constants.jsx";
 import {ToastContext} from "../../context/ToastContext.jsx";
@@ -10,6 +10,8 @@ import {useWatchParty} from "../../hooks/useWatchParty.jsx";
 import {createWistiaAdapter} from "../../utils/video-player-adapters.jsx";
 import {AuthContext} from "../../context/AuthContext.jsx";
 import {getModApi} from "../../api/forum-api.jsx";
+import LiveChat from "../../components/watch-party/LiveChat.jsx";
+import {generateColorFromUserId} from "../../utils/generate-color.jsx";
 
 export default function WatchParty() {
     const { activeParty, activePartyId, role, joinParty, leaveOrEndParty, loading} = useContext(WatchPartyContext);
@@ -17,6 +19,7 @@ export default function WatchParty() {
     const { user, loading: authLoading } = useContext(AuthContext);
     const [userId, setUserId] = useState(user?.id || null);
     const [userName, setUserName] = useState( "");
+    const [userColor, setUserColor] = useState("");
     const isHost = role === ROLES.WATCH_PARTY_HOST;
 
     const { roomId } = useParams();
@@ -24,8 +27,20 @@ export default function WatchParty() {
 
     const [roomLoading, setRoomLoading] = useState(false);
     const [roomData, setRoomData] = useState(null); // Room data, look how the data looks in the API response
+    const [messages, setMessages] = useState([]);
 
-    const {playerRef, broadcastAction} = useWatchParty(activePartyId, userId, userName, isHost);
+
+    const handleChatMessage = useCallback((message) => {
+        setMessages(prevMessages => [...prevMessages, message]);
+    }, []);
+
+    const {playerRef, broadcastAction} = useWatchParty(activePartyId, userId, userName, isHost, handleChatMessage);
+
+    const onChatMessage = (messageContent) => {
+        if(!messageContent.trim()) return;
+        broadcastAction(WatchPartyEventType.CHAT, { message: messageContent });
+    };
+
 
     const handleOnReady = (video) => {
 
@@ -79,6 +94,7 @@ export default function WatchParty() {
             const response = await getModApi({ userId:hexId });
             const userName = response.data;
             setUserName(userName);
+            setUserColor(generateColorFromUserId(user.id));
 
             setRoomLoading(false);
         }
@@ -121,9 +137,8 @@ export default function WatchParty() {
 
             {/*  right part -> chat, not scrollable  */}
             <aside className="watch-party-sidebar">
-                {/* Components */}
+                <LiveChat messages={messages} onSendMessage={onChatMessage} currentUserColor={userColor} />
             </aside>
-
         </div>
     )
 }

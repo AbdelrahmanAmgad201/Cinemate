@@ -6,6 +6,7 @@ import {getExploreFeedPostsApi, getMainFeedPostsApi} from '../../api/posts-api.j
 import mockPosts from '../../data/mock-posts.jsx';
 import "./style/HomePage.css";
 import {ToastContext} from "../../context/ToastContext.jsx";
+import LiveChat from '../../components/watch-party/LiveChat.jsx';
 
 const HomePage = () => {
 
@@ -94,7 +95,16 @@ const HomePage = () => {
 
     return (
         <div>
-            {/* <NavBar /> */}
+
+            {/* <div style={{height: "100vh", position: "relative"}}>
+                <div style={{width: "100vw", height: "100%", backgroundColor: "black"}}></div>
+                <LiveChat fullScreen={true}/>
+            </div> */}
+            {/* <div style={{height: "500px", display: "flex"}}>
+                <div style={{width: "900px", height: "500px", backgroundColor: "black"}}></div>
+                <LiveChat />
+            </div> */}
+            
             <div className="posts-list">
                 {loading && <LoadingFallback />}
                 {posts.map((post, index) => (

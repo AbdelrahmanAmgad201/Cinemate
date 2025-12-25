@@ -1,0 +1,230 @@
+.chat-container{
+    width: 284px;
+    height: auto;
+    box-sizing: border-box;
+    background-color: #222C2C;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+}
+
+.chat-header{
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-bottom: 1px solid #fafaff77;
+    padding: 10px 0;
+    color: #fafaff;
+}
+
+.chat-header .minimize-icon{
+    padding-left: 10px;
+    cursor: pointer;
+    transition: color 0.3 ease;
+}
+
+.chat-header .minimize-icon:hover{
+    color: var(--blue-bell);
+}
+
+.chat-header h2{
+    margin: 0 auto;
+    font-size: 20px;
+    font-weight: lighter;
+    padding-right: 20px;
+    letter-spacing: 0.5px;
+}
+
+.messages-container{
+    flex: 1;
+    overflow: hidden;
+    position: relative;
+}
+
+.message{
+    height: 100%;
+    padding: 10px 0;
+    overflow-y: auto;
+}
+
+.messages-container .message::-webkit-scrollbar {
+    width: 8px;
+}
+
+.messages-container .message::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.messages-container .message::-webkit-scrollbar-thumb {
+    background: #3a3a3d;
+    border-radius: 4px;
+}
+
+.messages-container .message::-webkit-scrollbar-thumb:hover {
+    background: #4a4a4d;
+}
+
+.messages-container .system-message{
+    background-color: #01161eb6;
+    padding: 10px;
+    margin-bottom: 10px;
+}
+
+.messages-container .system-message .system{
+    color: red;
+}
+
+.messages-container .user-message{
+    padding: 0 10px;
+    line-height: 1.5;
+    margin-bottom: 10px;
+}
+
+.auto-scroll{
+    position: absolute;
+    bottom: 16px;
+    left: 50%;
+    transform: translate(-50%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    margin: 0 auto;
+    color: var(--blue-bell);
+    font-size: 16px;
+    cursor: pointer;
+    z-index: 10;
+    transition: all 0.3 ease;
+}
+
+.auto-scroll:hover{
+    transform: translate(-50%, -4px);
+}
+
+.send-message{
+    width: 100%;
+    padding: 10px 0;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+    border-top: 1px solid #fafaff77;
+    margin-top: 10px;
+}
+
+
+.send-message .input-container{
+    width:256px;
+    height: 34px;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    background-color: #a8a8a834;
+    color: var(--blue-bell);
+}
+
+.send-message input{
+    width: 84%;
+    background: transparent;
+    border: none;
+    font-size: 16px;
+    padding: 4px;
+    margin-right: 10px;
+    color: #fafaff;
+    outline: none;
+}
+
+.send-message input::placeholder{
+    color: #eaeaeab0;
+}
+
+.send-message .input-container svg{
+    cursor: pointer;
+}
+
+
+/* FULL SCREEN MODE */
+
+.full-chat-container{
+    width: 350px;
+    height: 480px;
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    position: absolute;
+    left: 40px;
+    bottom: 20px;
+}
+
+.full-chat-container .messages-container{
+    width: 100%;
+}
+
+.full-chat-container .messages-container .system-message{
+    background-color: #eaeaea2c;
+}
+
+.full-chat-container .messages-container .message::-webkit-scrollbar{
+    display: none;
+}
+
+.full-chat-container .send-message{
+    border: none;
+}
+
+.full-chat-container .send-message .input-container{
+    width: 100%;
+}
+
+.full-chat-container .minimize-icon{
+    position: absolute;
+    left: -30px;
+    cursor: pointer;
+    transition: color 0.3 ease;
+}
+
+.full-chat-container .minimize-icon:hover{
+    color: var(--blue-bell);
+}
+
+/* MINIMIZED CHAT */
+
+.chat-minimized{
+    width: 30px;
+    height: auto;
+    box-sizing: border-box;
+    background-color: #222C2C;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+}
+
+.chat-minimized .minimize-icon,
+.full-chat-minimized .minimize-icon{
+    margin: 0 auto;
+    padding-top: 10px;
+    cursor: pointer;
+    transition: color 0.3 ease;
+}
+
+.chat-minimized .minimize-icon:hover,
+.full-chat-minimized .minimize-icon:hover{
+    color: var(--blue-bell);
+}
+
+.full-chat-minimized{
+    width: 30px;
+    height: 30px;
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    position: absolute;
+    left: 5px;
+    bottom: 25px;
+}
+
+
