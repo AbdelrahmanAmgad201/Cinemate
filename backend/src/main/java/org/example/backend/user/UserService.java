@@ -8,6 +8,7 @@ import org.example.backend.verification.Verfication;
 import org.example.backend.verification.VerificationService;
 import lombok.RequiredArgsConstructor;
 import org.example.backend.security.CredentialsRequest;
+import org.example.backend.security.JWTProvider;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
@@ -32,6 +33,9 @@ public class UserService {
     private final Random random = new Random();
     @Autowired
     private VerificationService verificationService;
+    @Autowired
+    private JWTProvider jwtProvider;
+
     private final MongoTemplate mongoTemplate;
     private static final int BATCH_SIZE = 100;
 
@@ -64,6 +68,26 @@ public class UserService {
     }
 
     @Transactional
+    public String completeProfile(Long userId, ProfileCompletionDTO profileData){
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        user.setBirthDate(profileData.getBirthday());
+        try{
+            user.setGender(Gender.valueOf(profileData.getGender().toUpperCase()));
+        } 
+        catch(IllegalArgumentException e){
+            throw new IllegalArgumentException("Invalid gender value");
+        }
+        user.setProfileComplete(true);
+
+        userRepository.save(user);
+
+        return jwtProvider.generateToken(user);
+
+    }
+
+    @Transactional
     public Verfication signUp(CredentialsRequest credentialsRequest) {
         String email = credentialsRequest.getEmail();
         String password = credentialsRequest.getPassword();
@@ -79,6 +103,20 @@ public class UserService {
         else{
             return new Verfication();
         }
+    }
+
+    public Boolean isPublic(Long userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+        return  user.getIsPublic();
+    }
+
+    public void setIsPublic(Long userId, Boolean isPublic) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+        if (user.getIsPublic() == isPublic) return;
+        user.setIsPublic(isPublic);
+        userRepository.save(user);
     }
 
     @Transactional
@@ -188,6 +226,8 @@ public class UserService {
                 .numberOfFollowing(user.getNumberOfFollowing())
                 .createdAt(user.getCreatedAt())
                 .aboutMe(user.getAbout())
+                .birthDate(user.getBirthDate())
+                .gender(user.getGender())
                 .build();
     }
 

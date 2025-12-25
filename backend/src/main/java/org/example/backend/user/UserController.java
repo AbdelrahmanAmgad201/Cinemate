@@ -48,6 +48,30 @@ public class UserController {
         return  ResponseEntity.ok(userService.getUserNameFromObjectUserId(userId));
     }
 
+    @GetMapping("/v1/is-public")
+    public ResponseEntity<Boolean> getIsPublic(HttpServletRequest request) {
+        Long userId = (Long) request.getAttribute("userId");
+        return ResponseEntity.ok(userService.isPublic(userId));
+    }
+
+    @PutMapping("/v1/is-public/{isPublic}")
+    public ResponseEntity<?> isPublic(HttpServletRequest request,
+                                      @PathVariable Boolean isPublic) {
+        Long userId = (Long) request.getAttribute("userId");
+        userService.setIsPublic(userId, isPublic);
+        return ResponseEntity.ok("User has been updated successfully");
+    }
+    @PatchMapping("/v1/complete-profile")
+    @PreAuthorize("hasRole('USER')")
+    public ResponseEntity<?> completeProfile(
+        @RequestBody ProfileCompletionDTO request,
+        HttpServletRequest httpRequest){
+
+        Long userId = (Long) httpRequest.getAttribute("userId");
+        return ResponseEntity.ok(userService.completeProfile(userId, request));
+    }
+
+
     @GetMapping("/test")
     public ResponseEntity<String> testUser() {
         return ResponseEntity.ok("USER OK");

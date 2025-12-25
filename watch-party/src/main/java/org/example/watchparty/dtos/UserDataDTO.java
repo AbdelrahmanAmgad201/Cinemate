@@ -1,4 +1,4 @@
-package org.example.watchparty;
+package org.example.watchparty.dtos;
 
 import lombok.Data;
 

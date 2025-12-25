@@ -1,6 +1,9 @@
 package org.example.backend.userfollowing;
 
 import jakarta.servlet.http.HttpServletRequest;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -41,5 +44,23 @@ public class FollowController {
     ){
         Long followingUserId = (Long) request.getAttribute("userId");
         return  ResponseEntity.ok(followService.isFollowed(followingUserId,followedUserId));
+    }
+
+    @GetMapping("/v1/followers")
+    public ResponseEntity<Page<FollowerView>> getFollowers(
+            HttpServletRequest request,
+            @PageableDefault(size = 20) Pageable pageable
+    ){
+        Long followedUserId = (Long) request.getAttribute("userId");
+        return ResponseEntity.ok(followService.getUserFollowers(followedUserId,pageable));
+    }
+
+    @GetMapping("/v1/followings")
+    public ResponseEntity<Page<FollowingView>> getFollowings(
+            HttpServletRequest request,
+            @PageableDefault(size = 20) Pageable pageable
+    ){
+        Long followingUserId = (Long) request.getAttribute("userId");
+        return ResponseEntity.ok(followService.getUserFollowings(followingUserId,pageable));
     }
 }

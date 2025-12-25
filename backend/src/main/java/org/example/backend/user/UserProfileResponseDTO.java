@@ -3,6 +3,7 @@ package org.example.backend.user;
 import lombok.Builder;
 import lombok.Data;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.Date;
 
@@ -15,4 +16,6 @@ public class UserProfileResponseDTO {
     private Integer numberOfFollowers;
     private LocalDateTime createdAt;
     private String aboutMe;
+    private LocalDate birthDate;
+    private Gender gender;
 }

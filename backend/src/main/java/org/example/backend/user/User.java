@@ -53,7 +53,7 @@ public class User implements Authenticatable {
 
     @Column(name = "is_public")
     @Builder.Default
-    private Boolean isPublic=true;
+    private Boolean isPublic = true;
 
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
@@ -65,6 +65,9 @@ public class User implements Authenticatable {
     @Column(name = "provider_id")
     private String providerId;
 
+    @Column(name = "profile_complete")
+    @Builder.Default
+    private Boolean profileComplete = true;
     @Column(name = "number_of_followers")
     private Integer numberOfFollowers;
 
@@ -77,6 +80,7 @@ public class User implements Authenticatable {
 
         if(provider == null){
             provider = "local";
+            profileComplete = true;
         }
         if(numberOfFollowers == null){
             numberOfFollowers = 0;
