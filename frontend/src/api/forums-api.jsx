@@ -13,3 +13,15 @@ export async function getFollowedForumsApi({ page, size }) {
         return { success: false, message: err.message };
     }
 }
+
+export async function getUserForumsApi({ page, size }) {
+    try {
+        const res = await api.get(`/forum/v1/user-forums`, { params: { page, size } });
+        const data = res.data || {};
+        const content = Array.isArray(data.content) ? data.content.map(mapBackendForumToFrontend) : [];
+        const out = { ...data, content };
+        return { success: true, data: out };
+    } catch (err) {
+        return { success: false, message: err.message };
+    }
+}
