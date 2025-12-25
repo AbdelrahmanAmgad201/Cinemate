@@ -13,4 +13,5 @@ public interface ForumRepository extends MongoRepository<Forum, ObjectId> {
     List<Forum> findByOwnerId(ObjectId ownerId);
     Page<Forum> findByNameContainingIgnoreCaseAndIsDeletedFalse(String name, Pageable pageable);
     Page<Forum> findAllByIsDeletedFalse(Pageable pageable);
+    Page<ForumDisplayDTO> findAllByOwnerIdAndIsDeletedFalse(ObjectId ownerId, Pageable pageable);
 }

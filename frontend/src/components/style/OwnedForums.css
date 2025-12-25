@@ -1,0 +1,12 @@
+.owned-forums { margin-top: 12px; }
+.owned-forums-header { font-weight: 600; margin-bottom: 8px; }
+.owned-forums-list { display: flex; flex-direction: column; gap: 12px; align-items: center; }
+.owned-forums-list .forum-card { width: 100%; max-width: 760px; }
+.owned-forums-empty { color: #666; }
+.owned-forums-actions { margin-top: 12px; }
+.show-more { padding: 8px 12px; border: 1px solid #ccc; background: white; cursor: pointer; }
+
+@media (max-width: 900px) {
+  .owned-forums-list { align-items: stretch; }
+  .owned-forums-list .forum-card { max-width: 100%; }
+}
