@@ -47,21 +47,18 @@ public class AuthenticationService {
     }
 
     @Transactional
-    public boolean updatePassword(String email,UpdatePasswordDTO updatePasswordDTO,String role) {
+    public void updatePassword(String email,UpdatePasswordDTO updatePasswordDTO,String role) {
         String oldPassword = updatePasswordDTO.getOldPassword();
         String newPassword = updatePasswordDTO.getNewPassword();
         Optional<Authenticatable> account = authenticate(email, oldPassword, role);
         if (account.isPresent()) {
             account.get().setPassword(passwordEncoder.encode(newPassword));
-            String normalizedRole = normalizeRole(role);
-            switch (normalizedRole) {
+            switch (role) {
                 case "ROLE_USER" -> userRepository.save((User)account.get());
                 case "ROLE_ADMIN" ->  adminRepository.save((Admin)account.get());
                 case "ROLE_ORGANIZATION" ->  organizationRepository.save((Organization)account.get());
             }
-            return true;
         }
-        return false;
     }
 
 
