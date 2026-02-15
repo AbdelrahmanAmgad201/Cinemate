@@ -175,27 +175,27 @@ Screenshots & diagrams
 
 - User Login 
 
-![](frontend\assets\screenshots\sign-in.png)
+![](frontend/assets/screenshots/sign-in.png)
 
 
 - Movies Homepage
 
-![](frontend\assets\screenshots\home-page.png)
+![](frontend/assets/screenshots/home-page.png)
 
 
 - Posts Feed & Searching
 
-![](frontend\assets\screenshots\posts-search.png)
+![](frontend/assets/screenshots/posts-search.png)
 
 
 - Forums & Posts
 
-![](frontend\assets\screenshots\forums-posts.png)
+![](frontend/assets/screenshots/forums-posts.png)
 
 
 - Explore Forums
 
-![](frontend\assets\screenshots\explore-forums.png)
+![](frontend/assets/screenshots/explore-forums.png)
 
 
 - Watch‑party host + guest view 
