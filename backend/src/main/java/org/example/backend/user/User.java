@@ -2,7 +2,7 @@ package org.example.backend.user;
 
 import jakarta.persistence.*;
 import lombok.*;
-import org.example.backend.following.Follows;
+import org.example.backend.userfollowing.Follows;
 import org.example.backend.likedMovie.LikedMovie;
 import org.example.backend.movieReview.MovieReview;
 import org.example.backend.security.Authenticatable;
@@ -52,7 +52,8 @@ public class User implements Authenticatable {
     private String about;
 
     @Column(name = "is_public")
-    private Boolean isPublic;
+    @Builder.Default
+    private Boolean isPublic = true;
 
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
@@ -64,17 +65,41 @@ public class User implements Authenticatable {
     @Column(name = "provider_id")
     private String providerId;
 
+    @Column(name = "profile_complete")
+    @Builder.Default
+    private Boolean profileComplete = true;
+    @Column(name = "number_of_followers")
+    private Integer numberOfFollowers;
+
+    @Column(name = "number_of_following")
+    private Integer numberOfFollowing;
+
     @PrePersist
     protected void onCreate() {
         createdAt = LocalDateTime.now();
-        
+
         if(provider == null){
             provider = "local";
+            profileComplete = true;
+        }
+        if(numberOfFollowers == null){
+            numberOfFollowers = 0;
+        }
+        if(numberOfFollowing == null){
+            numberOfFollowing = 0;
         }
     }
 
     public String getRole(){
         return "ROLE_USER";
+    }
+
+    @Override
+    public String getName() {
+        if (firstName != null){
+            return firstName;
+        }
+        return email;
     }
 
     // Helper method to check if the user is an OAuth user (can change password or not)

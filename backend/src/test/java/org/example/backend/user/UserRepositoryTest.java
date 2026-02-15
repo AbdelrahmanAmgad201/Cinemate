@@ -12,7 +12,7 @@ import java.time.LocalDateTime;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @DataJpaTest
-@ActiveProfiles("test") // <--- make sure this matches your test properties
+@ActiveProfiles("test")
 @EntityScan(basePackages = "org.example.backend")
 @EnableJpaRepositories(basePackages = "org.example.backend")
 class UserRepositoryTest {

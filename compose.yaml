@@ -1,0 +1,185 @@
+services:
+  # MySQL Database
+  mysql:
+    image: mysql:8.0
+    container_name: mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: Cinemate
+      MYSQL_ROOT_PASSWORD: 123456
+      MYSQL_ROOT_HOST: "%"
+    volumes:
+      - mysql-data:/var/lib/mysql
+    ports:
+      - "3307:3306"  # Changed to avoid conflict with local MySQL
+    networks:
+      - app-net
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-p123456"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 40s
+    command: --default-authentication-plugin=mysql_native_password
+
+  # MongoDB Database
+  mongodb:
+    image: mongo:6
+    container_name: mongodb
+    restart: unless-stopped
+    environment:
+      MONGO_INITDB_DATABASE: Cinemate2
+    volumes:
+      - mongo-data:/data/db
+    ports:
+      - "27018:27017"  # Changed to avoid conflict with local MongoDB
+    networks:
+      - app-net
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
+  # Hate Speech Detection API
+  hate-api:
+    build:
+      context: ./hate-api
+      dockerfile: Dockerfile
+    container_name: hate-api
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    networks:
+      - app-net
+    volumes:
+      - hate-api-models:/models
+      - hate-api-nltk:/nltk_data
+
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/hate/v1/health"]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+      start_period: 90s  # Model loading takes time
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 2G
+        reservations:
+          memory: 1G
+
+  # Spring Boot Backend
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: backend
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    env_file:
+      - ./backend/.env.prod
+    environment:
+      - JAVA_OPTS=-Xmx512m -Xms256m
+      - WATCHPARTY_SERVICE_URL=http://watch-party:8081
+      - WATCHPARTY_WS_URL=ws://watch-party:8081/ws
+    depends_on:
+      mysql:
+        condition: service_healthy
+      mongodb:
+        condition: service_healthy
+      hate-api:
+        condition: service_healthy
+      watch-party:
+        condition: service_healthy
+    networks:
+      - app-net
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+
+  # React Frontend
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: frontend
+    restart: unless-stopped
+    ports:
+      - "5173:80"
+    networks:
+      - app-net
+    depends_on:
+      - backend
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost/ || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  redis:
+    image: redis:7
+    container_name: redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    command: redis-server --appendonly yes
+    volumes:
+      - redis-data:/data
+    networks:
+      - app-net
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  # Watch Party Microservice
+  watch-party:
+    build:
+      context: ./watch-party
+      dockerfile: Dockerfile
+    container_name: watch-party
+    restart: unless-stopped
+    ports:
+      - "8081:8081"
+    environment:
+      - SPRING_PROFILES_ACTIVE=prod
+      - SPRING_REDIS_HOST=redis
+      - SPRING_REDIS_PORT=6379
+      - JAVA_OPTS=-Xmx512m -Xms256m
+    depends_on:
+      redis:
+        condition: service_healthy
+    networks:
+      - app-net
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8081/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+
+
+volumes:
+  mysql-data:
+    driver: local
+  mongo-data:
+    driver: local
+  hate-api-models:
+  redis-data:
+    driver: local
+  hate-api-nltk:
+
+networks:
+  app-net:
+    driver: bridge

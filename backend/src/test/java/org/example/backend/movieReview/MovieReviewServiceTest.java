@@ -11,6 +11,7 @@ import org.mockito.*;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.test.context.ActiveProfiles;
 
 import java.util.Optional;
 
@@ -18,6 +19,7 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
+@ActiveProfiles("test")
 class MovieReviewServiceTest {
 
     @Mock

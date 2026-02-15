@@ -24,13 +24,18 @@
             rgba(30, 57, 66, 0.7) 100%
     );
     --tooltip-background-color: rgba(250, 250, 255, 0.5);
+    --faded-black: #01161E80;
 
 }
 
 body {
     min-height: 100vh;
     font-family: 'Roboto', sans-serif;
-    background: var(--background-gradient-dark-blue);
+    background-color: #01161E;
+    background-image: var(--background-gradient-dark-blue);
+    background-repeat: no-repeat;
+    background-attachment: fixed;
+    background-size: cover;
     color: var(--ghost-white);
 }
 

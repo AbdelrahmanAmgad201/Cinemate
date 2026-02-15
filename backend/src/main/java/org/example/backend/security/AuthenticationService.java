@@ -1,8 +1,12 @@
 package org.example.backend.security;
 
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import org.example.backend.admin.Admin;
 import org.example.backend.admin.AdminRepository;
+import org.example.backend.organization.Organization;
 import org.example.backend.organization.OrganizationRepository;
+import org.example.backend.user.User;
 import org.example.backend.user.UserRepository;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -41,6 +45,21 @@ public class AuthenticationService {
 
         return Optional.empty();
     }
+
+    @Transactional
+    public void updatePassword(String email,UpdatePasswordDTO updatePasswordDTO,String role) {
+        String oldPassword = updatePasswordDTO.getOldPassword();
+        String newPassword = updatePasswordDTO.getNewPassword();
+        Optional<Authenticatable> account = authenticate(email, oldPassword, role);
+        if (account.isEmpty())  throw new WrongPasswordException("Invalid email or password");
+        account.get().setPassword(passwordEncoder.encode(newPassword));
+        switch (role) {
+            case "ROLE_USER" -> userRepository.save((User)account.get());
+            case "ROLE_ADMIN" ->  adminRepository.save((Admin)account.get());
+            case "ROLE_ORGANIZATION" ->  organizationRepository.save((Organization)account.get());
+        }
+    }
+
 
     private String normalizeRole(String role) {
         if (role == null) return null;

@@ -3,12 +3,14 @@ package org.example.backend.movie;
 import org.example.backend.admin.Admin;
 import org.example.backend.organization.Organization;
 import org.junit.jupiter.api.Test;
+import org.springframework.test.context.ActiveProfiles;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+@ActiveProfiles("test")
 class MovieEntityTest {
 
     @Test

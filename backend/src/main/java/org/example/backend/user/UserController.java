@@ -1,11 +1,14 @@
 package org.example.backend.user;
 
 import jakarta.servlet.http.HttpServletRequest;
+import org.bson.types.ObjectId;
 import org.example.backend.security.CredentialsRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+
+import java.time.LocalDate;
 
 @RestController
 @RequestMapping("/api/user")
@@ -15,7 +18,6 @@ public class UserController {
     private UserService userService;
 
     @GetMapping("/v1/profile")
-    @PreAuthorize("hasRole('USER')")
     public ResponseEntity<?> getProfile(HttpServletRequest request) {
         Long userId = (Long) request.getAttribute("userId");
         String email = (String) request.getAttribute("userEmail");
@@ -23,9 +25,12 @@ public class UserController {
         return ResponseEntity.ok("User profile for ID: " + userId + ", Email: " + email);
     }
 
+    @GetMapping("/v1/profile/{userId}")
+    public ResponseEntity<UserProfileResponseDTO> getProfile(@PathVariable Long userId) {
+        return ResponseEntity.ok(userService.getUserProfile(userId));
+    }
 
     @PostMapping("/v1/set-user-data")
-    @PreAuthorize("hasRole('USER')")
     public ResponseEntity<String> setPersonalData(
             HttpServletRequest request,
             @RequestBody UserDataDTO userDataDTO) {
@@ -35,8 +40,64 @@ public class UserController {
 
         return ResponseEntity.ok(message);
     }
+
+    @GetMapping("/v1/user-name-from-object-user-id/{userId}")
+    public ResponseEntity<String> getUserNameFromObjectUserId(
+            HttpServletRequest request,
+            @PathVariable ObjectId userId) {
+        return  ResponseEntity.ok(userService.getUserNameFromObjectUserId(userId));
+    }
+
+    @GetMapping("/v1/is-public")
+    public ResponseEntity<Boolean> getIsPublic(HttpServletRequest request) {
+        Long userId = (Long) request.getAttribute("userId");
+        return ResponseEntity.ok(userService.isPublic(userId));
+    }
+
+    @PutMapping("/v1/is-public/{isPublic}")
+    public ResponseEntity<?> isPublic(HttpServletRequest request,
+                                      @PathVariable Boolean isPublic) {
+        Long userId = (Long) request.getAttribute("userId");
+        userService.setIsPublic(userId, isPublic);
+        return ResponseEntity.ok("User has been updated successfully");
+    }
+    @PatchMapping("/v1/complete-profile")
+    @PreAuthorize("hasRole('USER')")
+    public ResponseEntity<?> completeProfile(
+        @RequestBody ProfileCompletionDTO request,
+        HttpServletRequest httpRequest){
+
+        Long userId = (Long) httpRequest.getAttribute("userId");
+        return ResponseEntity.ok(userService.completeProfile(userId, request));
+    }
+
+
     @GetMapping("/test")
     public ResponseEntity<String> testUser() {
         return ResponseEntity.ok("USER OK");
+    }
+
+    @PutMapping("/v1/user-about")
+    public ResponseEntity<String> updateAboutUser(HttpServletRequest request,
+                                            @RequestBody AboutDTO about) {
+        Long userId = (Long) request.getAttribute("userId");
+        userService.updateAbout(userId, about);
+        return ResponseEntity.ok("about is updated successfully");
+    }
+
+    @PutMapping("/v1/user-birth-date")
+    public ResponseEntity<String> updateBirthDate(HttpServletRequest request,
+                                                  @RequestBody BirthDateDTO birthDate){
+        Long userId = (Long) request.getAttribute("userId");
+        userService.updateBirthDate(userId, birthDate);
+        return ResponseEntity.ok("Birth Date is updated successfully");
+    }
+
+    @PutMapping("/v1/user-name")
+    public ResponseEntity<String> updateUserName(HttpServletRequest request,
+                                                 @RequestBody UserName userName) {
+        Long userId = (Long) request.getAttribute("userId");
+        userService.updateName(userId,userName);
+        return ResponseEntity.ok("User name is updated successfully");
     }
 }

@@ -10,6 +10,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.test.context.ActiveProfiles;
 
 import java.util.Optional;
 
@@ -17,6 +18,7 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
+@ActiveProfiles("test")
 class WatchHistoryServiceTest {
 
     @Mock
@@ -85,7 +87,8 @@ class WatchHistoryServiceTest {
 
         WatchHistory savedWatchHistory = new WatchHistory();
         savedWatchHistory.setUser(user);
-        savedWatchHistory.setMovie(movie);
+        savedWatchHistory.setMovieId(movie.getMovieID());
+        savedWatchHistory.setMovieName(movie.getName());
 
         when(watchHistoryRepository.save(any(WatchHistory.class)))
                 .thenReturn(savedWatchHistory);
@@ -94,7 +97,8 @@ class WatchHistoryServiceTest {
 
         assertNotNull(result);
         assertEquals(user, result.getUser());
-        assertEquals(movie, result.getMovie());
+        assertEquals(movie.getMovieID(), result.getMovieId());
+        assertEquals(movie.getName(), result.getMovieName());
 
         verify(watchHistoryRepository, times(1)).save(any(WatchHistory.class));
     }
