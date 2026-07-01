@@ -69,9 +69,10 @@ public class MovieReviewService {
     }
 
     @Transactional
-    public Page<MovieReview> getMyMovieReviews(Long movieId, Pageable pageable) {
-        return reviewRepository.findAllByReviewer_Id(movieId, pageable);
+    public Page<MovieReview> getMyMovieReviews(Long userId, Pageable pageable) {
+        return reviewRepository.findAllByReviewer_Id(userId, pageable);
     }
+
 
     @Transactional
     public Page<MovieReview> getOtherUserMovieReviews(Long userId, Pageable pageable) {

@@ -45,8 +45,10 @@ EOF
 FROM python:3.10-slim
 
 ENV PYTHONUNBUFFERED=1 \
+    HF_HUB_CACHE=/models \
     TRANSFORMERS_CACHE=/models \
     TRANSFORMERS_OFFLINE=1 \
+    HF_HUB_OFFLINE=1 \
     NLTK_DATA=/nltk_data
 
 WORKDIR /app

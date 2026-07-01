@@ -226,16 +226,19 @@ class HateSpeechServiceTest {
 
     // =============== Response Handling Tests ===============
     @Test
-    void testAnalyzeText_NullResponseBody_ThrowsNullPointerException() {
+    void testAnalyzeText_NullResponseBody_ReturnsTrueFailOpen() {
+        // HIGH-04 fix: null body from hate-api is treated as fail-open (allow content)
         String text = "Test message";
         ResponseEntity<Boolean> mockResponse = new ResponseEntity<>(null, HttpStatus.OK);
 
         when(restTemplate.postForEntity(eq(TEST_URL), any(HttpEntity.class), eq(Boolean.class)))
                 .thenReturn(mockResponse);
 
-        // The service will throw NullPointerException when trying to unbox null Boolean
-        assertThrows(NullPointerException.class, () -> hateSpeechService.analyzeText(text));
+        // Boolean.TRUE.equals(null) == false, so content is NOT flagged as hate speech
+        boolean result = hateSpeechService.analyzeText(text);
+        assertFalse(result);
     }
+
 
     @Test
     void testAnalyzeText_DifferentHttpStatus() {
@@ -252,34 +255,43 @@ class HateSpeechServiceTest {
 
     // =============== Exception Handling Tests ===============
     @Test
-    void testAnalyzeText_RestClientException() {
+    void testAnalyzeText_RestClientException_FailsOpen() {
+        // HIGH-04 fix: service must NOT propagate RestClientException — it fails open instead
         String text = "Test message";
 
         when(restTemplate.postForEntity(eq(TEST_URL), any(HttpEntity.class), eq(Boolean.class)))
                 .thenThrow(new RestClientException("Connection failed"));
 
-        assertThrows(RestClientException.class, () -> hateSpeechService.analyzeText(text));
+        boolean result = hateSpeechService.analyzeText(text);
+        assertTrue(result, "When hate-api is unreachable, content should be allowed (fail-open)");
     }
 
+
     @Test
-    void testAnalyzeText_NetworkTimeout() {
+    void testAnalyzeText_NetworkTimeout_FailsOpen() {
+        // HIGH-04 fix: timeout is a RestClientException — service fails open
         String text = "Test message";
 
         when(restTemplate.postForEntity(eq(TEST_URL), any(HttpEntity.class), eq(Boolean.class)))
                 .thenThrow(new RestClientException("Timeout"));
 
-        assertThrows(RestClientException.class, () -> hateSpeechService.analyzeText(text));
+        boolean result = hateSpeechService.analyzeText(text);
+        assertTrue(result, "On timeout, content should be allowed (fail-open)");
     }
 
+
     @Test
-    void testAnalyzeText_ServerError() {
+    void testAnalyzeText_ServerError_FailsOpen() {
+        // HIGH-04 fix: 5xx responses are wrapped as RestClientException — service fails open
         String text = "Test message";
 
         when(restTemplate.postForEntity(eq(TEST_URL), any(HttpEntity.class), eq(Boolean.class)))
                 .thenThrow(new RestClientException("500 Internal Server Error"));
 
-        assertThrows(RestClientException.class, () -> hateSpeechService.analyzeText(text));
+        boolean result = hateSpeechService.analyzeText(text);
+        assertTrue(result, "On server error, content should be allowed (fail-open)");
     }
+
 
     // =============== URL Configuration Tests ===============
     @Test

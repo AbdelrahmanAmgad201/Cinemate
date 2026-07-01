@@ -21,7 +21,6 @@ import org.springframework.data.domain.*;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
-import org.springframework.web.client.RestTemplate;
 
 import java.util.List;
 
@@ -30,7 +29,6 @@ import java.time.Instant;
 @Service
 @RequiredArgsConstructor
 public class PostService {
-    private final RestTemplate restTemplate;
     private final ForumRepository forumRepository;
     private final FollowingRepository followingRepository;
 

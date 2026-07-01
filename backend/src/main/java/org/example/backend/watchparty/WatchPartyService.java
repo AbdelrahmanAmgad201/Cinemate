@@ -208,7 +208,8 @@ public class WatchPartyService {
             if (!response.getStatusCode().is2xxSuccessful() || response.getBody() == null) {
                 throw new IllegalStateException("Failed to get watch party details from microservice");
             }
-            System.out.println(response.getBody());
+            log.debug("Watch party details response: {}", response.getBody());
+
             return response.getBody();
         } catch (Exception e) {
             log.error("Error calling microservice to get party details", e);
@@ -288,7 +289,7 @@ public class WatchPartyService {
     private HttpHeaders createHeaders() {
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
-//        headers.set("X-Internal-API-Key", apiKey);
+        headers.set("X-Internal-API-Key", apiKey);
         return headers;
     }
 }

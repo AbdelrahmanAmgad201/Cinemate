@@ -29,19 +29,18 @@ public class CommentService {
     private final AccessService accessService;
 
     @Transactional
-    public Comment addComment(Long ownerId,AddCommentDTO addCommentDTO) {
+    public Comment addComment(Long ownerId, AddCommentDTO addCommentDTO) {
         ObjectId postId = addCommentDTO.getPostId();
         canComment(postId);
         Comment parentComment = getParentComment(addCommentDTO.getParentId());
-        ObjectId parentId = (parentComment != null ) ? parentComment.getId() : null;
-        Comment comment = defaultCommentBuilder(ownerId,postId,parentId,addCommentDTO);
-        if (parentComment == null)
-                    comment.setDepth(0);
-        else {
-            int depth = parentComment.getDepth() + 1;
-            comment.setDepth(depth);
+        ObjectId parentId = (parentComment != null) ? parentComment.getId() : null;
+        Comment comment = defaultCommentBuilder(ownerId, postId, parentId, addCommentDTO);
+        if (parentComment == null) {
+            comment.setDepth(0);
+        } else {
+            comment.setDepth(parentComment.getDepth() + 1);
             parentComment.setNumberOfReplies(parentComment.getNumberOfReplies() + 1);
-            commentRepository.save(comment);
+            commentRepository.save(parentComment); // persist the reply-count increment
         }
         Post post = mongoTemplate.findById(postId, Post.class);
         post.setCommentCount(post.getCommentCount() + 1);
@@ -49,6 +48,7 @@ public class CommentService {
         postRepository.save(post);
         return commentRepository.save(comment);
     }
+
 
     @Transactional
     public void deleteComment(ObjectId commentId, Long userId) {

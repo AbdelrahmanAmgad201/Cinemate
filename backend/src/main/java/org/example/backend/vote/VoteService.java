@@ -2,7 +2,7 @@ package org.example.backend.vote;
 
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
-import org.apache.el.parser.BooleanNode;
+
 import org.bson.types.ObjectId;
 import org.example.backend.comment.Comment;
 import org.example.backend.comment.CommentRepository;

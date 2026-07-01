@@ -102,8 +102,9 @@ public class FeedService {
             unless = "#result == null || #result.forums.isEmpty()"
     )
     public ForumPageResponse getExploreForums(int page, int size, String sortBy) {
-        log.info("Cache MISS - Fetching explore feed from DB: page={}, size={}, sortBy={}",
+        log.info("Cache MISS - Fetching explore forums from DB: page={}, size={}, sortBy={}",
                 page, size, sortBy);
+
 
         Sort sort = buildSortForum(sortBy);
         Pageable pageable = PageRequest.of(page, size, sort);

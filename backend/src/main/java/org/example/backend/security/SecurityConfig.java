@@ -3,6 +3,7 @@ package org.example.backend.security;
 import lombok.RequiredArgsConstructor;
 import org.example.backend.errorHandler.CustomAccessDeniedHandler;
 import org.example.backend.errorHandler.CustomAuthEntryPoint;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -19,6 +20,7 @@ import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import org.springframework.context.annotation.Lazy;
 
+import java.util.Arrays;
 import java.util.List;
 
 @Configuration
@@ -32,6 +34,14 @@ public class SecurityConfig {
     private final JWTProvider jwtProvider;
     @Lazy
     private final OAuthSuccessHandler oAuthSuccessHandler;
+
+    /**
+     * Comma-separated list of allowed CORS origins.
+     * Set via CORS_ALLOWED_ORIGINS env var.
+     * Example: http://localhost:5173,https://cinemate.example.com
+     */
+    @Value("${app.cors.allowed-origins}")
+    private String corsAllowedOrigins;
 
     @Bean
     public JWTAuthenticationFilter jwtAuthenticationFilter() {
@@ -90,7 +100,13 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOrigins(List.of("http://localhost:5173" , "http://localhost:3000"));
+        // Origins come from CORS_ALLOWED_ORIGINS env var (comma-separated).
+        // Example: http://localhost:5173,https://cinemate.example.com
+        List<String> origins = Arrays.stream(corsAllowedOrigins.split(","))
+                .map(String::trim)
+                .filter(s -> !s.isEmpty())
+                .toList();
+        configuration.setAllowedOrigins(origins);
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"));
         configuration.setAllowedHeaders(List.of("*"));
         configuration.setAllowCredentials(true);

@@ -56,7 +56,8 @@ public class VerificationService {
     private String fromEmail;
 
 
-    private final RestTemplate restTemplate = new RestTemplate();
+    @Autowired
+    private RestTemplate restTemplate; // injected from AppConfig (has configured timeouts)
     private final PasswordEncoder passwordEncoder;
     private final UserRepository userRepository;
     private final OrganizationRepository organizationRepository;
@@ -106,10 +107,11 @@ public class VerificationService {
         Optional<Verfication> verification =verify(email,verificationCode);
         if(verification.isPresent()) {
             switch (role) {
-                case "ROLE_USER" -> updateUserPassword(email,password);
-                case "ROLE_ADMIN" ->  updateOrganizationPassword(email,password);
-                case "ROLE_ORGANIZATION" ->  updateAdminPassword(email,password);
+                case "ROLE_USER" ->         updateUserPassword(email, password);
+                case "ROLE_ADMIN" ->        updateAdminPassword(email, password);
+                case "ROLE_ORGANIZATION" -> updateOrganizationPassword(email, password);
             }
+
         }
     }
 

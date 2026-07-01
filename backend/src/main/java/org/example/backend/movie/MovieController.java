@@ -1,11 +1,13 @@
 package org.example.backend.movie;
 
 import jakarta.servlet.http.HttpServletRequest;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+@Slf4j
 @RestController
 @RequestMapping("/api/movie")
 public class MovieController {
@@ -27,7 +29,8 @@ public class MovieController {
             @PathVariable Long movieId){
 
         Movie movie = movieService.getMovie(movieId);
-        System.out.println(movie.getName());
+        log.debug("Fetched movie: {}", movie.getName());
+
         return ResponseEntity.ok(movie);
     }
 

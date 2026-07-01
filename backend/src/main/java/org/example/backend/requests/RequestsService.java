@@ -2,6 +2,7 @@ package org.example.backend.requests;
 
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.example.backend.movie.Movie;
 import org.example.backend.organization.RequestsOverView;
 import org.springframework.stereotype.Service;
@@ -9,6 +10,7 @@ import org.springframework.stereotype.Service;
 import java.time.LocalDateTime;
 import java.util.List;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class RequestsService {
@@ -18,7 +20,8 @@ public class RequestsService {
     public void deleteOldRequests() {
         LocalDateTime cutoff = LocalDateTime.now().minusDays(10);
         requestsRepository.deleteOldNonPending(cutoff);
-        System.out.println("Old decline mails cleanup executed");
+        log.info("Old declined requests cleanup executed — removed entries before {}", cutoff);
+
     }
     @Transactional
     public Requests addRequest(Movie movie) {

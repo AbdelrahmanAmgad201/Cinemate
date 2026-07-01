@@ -29,7 +29,8 @@ public class WatchPartyController {
                 .userId((Long) request.getAttribute("userId"))
                 .build();
 
-        System.out.println(dto);
+        log.debug("Creating watch party for user: {}", dto);
+
         WatchParty response = watchPartyService.create(dto, movieId);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }

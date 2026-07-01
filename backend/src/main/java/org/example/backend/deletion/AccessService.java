@@ -37,11 +37,9 @@ public class AccessService {
         if (!hasAccess) {
             log.warn("User {} does not have permission to delete forum {}", userId, forumId);
         }
-{
-            log.warn("User {} does not have permission to delete forum {}", userId, forumId);
-        }
         return hasAccess;
     }
+
 
     public boolean canDeletePost(ObjectId userId, ObjectId postId) {
         Post post = mongoTemplate.findById(postId, Post.class);

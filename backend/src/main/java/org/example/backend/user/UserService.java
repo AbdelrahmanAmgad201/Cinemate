@@ -97,13 +97,14 @@ public class UserService {
             throw new UserAlreadyExistsException(email);
         }
         int code = 100000 + random.nextInt(900000);
-        if(verificationService.sendVerificationEmail(email, code)){
-            return verificationService.addVerfication(email, password,code,role);
-        }
-        else{
-            return new Verfication();
+        if (verificationService.sendVerificationEmail(email, code)) {
+            return verificationService.addVerfication(email, password, code, role);
+        } else {
+            throw new RuntimeException(
+                "Failed to send verification email to " + email + ". Please try again later.");
         }
     }
+
 
     public Boolean isPublic(Long userId) {
         User user = userRepository.findById(userId)

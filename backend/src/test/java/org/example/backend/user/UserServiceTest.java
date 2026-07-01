@@ -97,6 +97,7 @@ class UserServiceTest {
 
     @Test
     void testSignUp_EmailSendingFails() {
+        // HIGH-05 fix: signUp must throw when email delivery fails, not silently return empty Verfication
         CredentialsRequest request = new CredentialsRequest("test@example.com", "pass123", "USER");
 
         when(userRepository.findByEmail("test@example.com"))
@@ -104,12 +105,15 @@ class UserServiceTest {
         when(verificationService.sendVerificationEmail(eq("test@example.com"), anyInt()))
                 .thenReturn(false);
 
-        Verfication result = userService.signUp(request);
+        RuntimeException ex = assertThrows(RuntimeException.class,
+                () -> userService.signUp(request));
 
-        assertNotNull(result);
+        assertTrue(ex.getMessage().contains("Failed to send verification email"),
+                "Exception message should indicate email failure");
         verify(verificationService).sendVerificationEmail(eq("test@example.com"), anyInt());
         verify(verificationService, never()).addVerfication(any(), any(), anyInt(), any());
     }
+
 
     // =============== AddUser Tests ===============
     @Test
