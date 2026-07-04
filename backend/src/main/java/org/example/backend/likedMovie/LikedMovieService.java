@@ -1,7 +1,8 @@
 package org.example.backend.likedMovie;
 
-import jakarta.transaction.Transactional;
+import org.springframework.transaction.annotation.Transactional;
 import lombok.RequiredArgsConstructor;
+import org.example.backend.errorHandler.ResourceNotFoundException;
 import org.example.backend.movie.Movie;
 import org.example.backend.movie.MovieRepository;
 import org.example.backend.movieReview.MovieReviewID;
@@ -25,10 +26,10 @@ public class LikedMovieService {
     @Transactional
     public LikedMovie likeMovie(Long userId, Long movieId) {
         Movie movie = movieRepository.findById(movieId)
-                .orElseThrow(() -> new RuntimeException("Movie not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Movie not found"));
 
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
         LikedMoviesID id = new LikedMoviesID(userId, movieId);
 
@@ -61,22 +62,22 @@ public class LikedMovieService {
         }
     }
 
-    @Transactional
+    @Transactional(readOnly = true)
     public Page<LikedMovieView> getMyLikedMovies(Long userId, Pageable pageable) {
         return getLikedMovies(userId, pageable);
     }
 
-    @Transactional
+    @Transactional(readOnly = true)
     public Page<LikedMovieView> getOtherUserLikedMovies(Long userId, Pageable pageable) {
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
         if(user.getIsPublic()){
             return getLikedMovies(userId, pageable);
         }
         throw new PrivateProfileException("this profile is private");
     }
 
-    @Transactional
+    @Transactional(readOnly = true)
     public Boolean isLiked(Long userId,Long movieId){
         LikedMoviesID id = new LikedMoviesID(userId, movieId);
         Optional<LikedMovie> existingLike = likedMovieRepository.findById(id);

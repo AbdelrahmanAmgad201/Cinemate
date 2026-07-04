@@ -1,46 +1,39 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback } from 'react';
+import { Compass } from 'lucide-react';
 import ForumCard from '../../components/ForumCard.jsx';
 import '../../components/style/forumCard.css';
 import './style/exploreForums.css';
 
-import { getExploreForumsApi } from '../../api/explore-api.jsx';
+import { getExploreForumsApi } from '../../api/explore-api.js';
+import Button from '../../components/ui/Button.jsx';
+import EmptyState from '../../components/ui/EmptyState.jsx';
+import Skeleton from '../../components/ui/Skeleton.jsx';
 
 const SORT_OPTIONS = [
-    { label: "Newest", value: "new" },
-    { label: "Most Followed", value: "followers" },
-    { label: "Most Active", value: "posts" },
+    { label: 'Newest', value: 'new' },
+    { label: 'Most followed', value: 'followers' },
+    { label: 'Most active', value: 'posts' },
 ];
+
+const PAGE_SIZE = 12;
 
 export default function ExploreForums() {
     const [forums, setForums] = useState([]);
     const [loading, setLoading] = useState(false);
-    const [currentSort, setCurrentSort] = useState("new");
+    const [currentSort, setCurrentSort] = useState('new');
 
-    // Pagination State
     const [page, setPage] = useState(0);
     const [hasMore, setHasMore] = useState(true);
 
     const fetchForums = useCallback(async (pageToFetch, shouldAppend = false) => {
         setLoading(true);
 
-        const res = await getExploreForumsApi({
-            page: pageToFetch,
-            size: 5,
-            sort: currentSort
-        });
+        const res = await getExploreForumsApi({ page: pageToFetch, size: PAGE_SIZE, sort: currentSort });
 
         if (res.success) {
             const newForums = res.data || [];
-
-            setForums(prev => {
-                return shouldAppend ? [...prev, ...newForums] : newForums;
-            });
-
-            if (newForums.length < 5) {
-                setHasMore(false);
-            } else {
-                setHasMore(true);
-            }
+            setForums((prev) => (shouldAppend ? [...prev, ...newForums] : newForums));
+            setHasMore(newForums.length >= PAGE_SIZE);
         } else {
             console.error(res.message);
         }
@@ -63,12 +56,13 @@ export default function ExploreForums() {
         <main className="explore-page">
             <div className="explore-container">
                 <div className="explore-header">
-                    <h1 className="explore-title">Explore Forums</h1>
+                    <h1 className="explore-title">Explore forums</h1>
 
                     <div className="explore-sort-buttons">
                         {SORT_OPTIONS.map((option) => (
                             <button
                                 key={option.value}
+                                type="button"
                                 className={`sort-btn ${currentSort === option.value ? 'active' : ''}`}
                                 onClick={() => setCurrentSort(option.value)}
                             >
@@ -78,36 +72,30 @@ export default function ExploreForums() {
                     </div>
                 </div>
 
-                <div className="forums-grid">
-                    {forums.map(forum => (
-                        <ForumCard key={forum.id} forum={forum} />
-                    ))}
-                </div>
+                {loading && forums.length === 0 && (
+                    <div className="forums-grid">
+                        {Array.from({ length: 6 }).map((_, i) => <Skeleton key={i} variant="rect" height={88} />)}
+                    </div>
+                )}
 
                 {!loading && forums.length === 0 && (
-                    <p style={{ textAlign: 'center', color: '#888', marginTop: 40 }}>
-                        No forums found.
-                    </p>
+                    <EmptyState icon={<Compass size={28} />} title="No forums found" description="Try a different sort order, or check back later." />
                 )}
 
-                {loading && (
-                    <p style={{ textAlign: 'center', color: '#888', marginTop: 20 }}>
-                        Loading...
-                    </p>
+                {forums.length > 0 && (
+                    <div className="forums-grid">
+                        {forums.map((forum) => <ForumCard key={forum.id} forum={forum} />)}
+                    </div>
                 )}
 
-                {!loading && hasMore && forums.length > 0 && (
+                {hasMore && forums.length > 0 && (
                     <div className="load-more-container">
-                        <button className="load-more-btn" onClick={handleLoadMore}>
-                            Load More Forums
-                        </button>
+                        <Button variant="secondary" onClick={handleLoadMore} loading={loading}>Load more forums</Button>
                     </div>
                 )}
 
                 {!loading && !hasMore && forums.length > 0 && (
-                    <p style={{ textAlign: 'center', color: '#555', margin: '30px 0' }}>
-                        ~ end of results ~
-                    </p>
+                    <p className="explore-end-of-results">You've reached the end</p>
                 )}
             </div>
         </main>

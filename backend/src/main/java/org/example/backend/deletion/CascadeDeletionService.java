@@ -5,6 +5,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.bson.Document;
 import org.bson.types.ObjectId;
 import org.example.backend.comment.Comment;
+import org.example.backend.errorHandler.ResourceNotFoundException;
 import org.example.backend.comment.CommentRepository;
 import org.example.backend.post.Post;
 import org.example.backend.post.PostRepository;
@@ -71,7 +72,7 @@ public class CascadeDeletionService {
         Instant deletedAt = Instant.now();
 
         Comment comment = commentRepository.findById(commentId)
-                .orElseThrow(() -> new RuntimeException("Comment not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Comment not found"));
         ObjectId postId = comment.getPostId();
         cascadeDeleteCommentAsync(commentId, deletedAt,postId,comment.getParentId());
     }
@@ -133,7 +134,7 @@ public class CascadeDeletionService {
                 ObjectId.class
         );
 
-        log.info("Found {} posts to delete for forum {}", ids.size(), criteria);
+        log.info("Found {} matching documents in {} for criteria {}", ids.size(), collection, criteria);
         return ids;
     }
     // ==================== ASYNC CASCADE METHODS ====================
@@ -175,16 +176,16 @@ public class CascadeDeletionService {
         try {
             // Get all following IDs for this forum
             List<ObjectId> followingIds = getIds("following", Criteria.where("forumId").is(forumId));
-            log.info("Found {} posts to delete for forum {}", followingIds.size(), forumId);
+            log.info("Found {} followings to delete for forum {}", followingIds.size(), forumId);
 
             if (followingIds.isEmpty()) {
-                log.info("No posts to delete for forum {}", forumId);
+                log.info("No followings to delete for forum {}", forumId);
                 return;
             }
 
             // Soft delete followings in batches
-            int totalPosts = softDeleteFollowingsBatch(followingIds, deletedAt);
-            log.info("Soft deleted {} posts for forum {}", totalPosts, forumId);
+            int totalFollowings = softDeleteFollowingsBatch(followingIds, deletedAt);
+            log.info("Soft deleted {} followings for forum {}", totalFollowings, forumId);
 
         } catch (Exception e) {
             log.error("Error during forum cascade deletion: {}", forumId, e);
@@ -411,13 +412,15 @@ public class CascadeDeletionService {
         // Delete votes on comments
         cascadeDeleteCommentsVotesBatch(allIds, deletedAt);
         Post post = postRepository.findById(postId)
-                .orElseThrow(() -> new RuntimeException("Post not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Post not found"));
         post.setCommentCount(post.getCommentCount() - totalComments);
         postRepository.save(post);
         if(parentId != null) {
             Comment parent = commentRepository.findById(parentId)
-                    .orElseThrow(() -> new RuntimeException("Comment not found"));
-            parent.setNumberOfReplies(parent.getNumberOfReplies() - totalComments);
+                    .orElseThrow(() -> new ResourceNotFoundException("Comment not found"));
+            // The parent lost exactly one direct child, not the whole deleted subtree
+            // (totalComments includes all descendants) — see REL-07.
+            parent.setNumberOfReplies(parent.getNumberOfReplies() - 1);
             commentRepository.save(parent);
         }
     }

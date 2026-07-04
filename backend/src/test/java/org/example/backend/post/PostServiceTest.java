@@ -70,7 +70,7 @@ class PostServiceTest extends AbstractMongoIntegrationTest {
                 .build();
         forumRepository.save(forum);
 
-        AddPostDto dto = new AddPostDto(forumId, "Test Title", "Normal content");
+        AddPostDTO dto = new AddPostDTO(forumId, "Test Title", "Normal content");
         Long userId = 5L;
 
         // Mock UserService
@@ -110,7 +110,7 @@ class PostServiceTest extends AbstractMongoIntegrationTest {
                 .build();
         forumRepository.save(forum);
 
-        AddPostDto dto = new AddPostDto(forumId, "Test Title", "Normal content");
+        AddPostDTO dto = new AddPostDTO(forumId, "Test Title", "Normal content");
         Long userId = 5L;
 
         assertThatThrownBy(() -> postService.addPost(dto, userId))
@@ -134,7 +134,7 @@ class PostServiceTest extends AbstractMongoIntegrationTest {
                 .build();
         forumRepository.save(forum);
 
-        AddPostDto dto = new AddPostDto(forumId, "Bad Title", "Some hateful text");
+        AddPostDTO dto = new AddPostDTO(forumId, "Bad Title", "Some hateful text");
         Long userId = 5L;
 
         ResponseEntity<Boolean> aiResponse = new ResponseEntity<>(false, HttpStatus.OK);
@@ -185,7 +185,7 @@ class PostServiceTest extends AbstractMongoIntegrationTest {
                 .build();
         postRepository.save(existingPost);
 
-        AddPostDto dto = new AddPostDto(null, "New Title", "New Content");
+        AddPostDTO dto = new AddPostDTO(null, "New Title", "New Content");
 
         ResponseEntity<Boolean> aiResponse = new ResponseEntity<>(true, HttpStatus.OK);
         when(restTemplate.postForEntity(eq(url), any(HttpEntity.class), eq(Boolean.class)))
@@ -214,7 +214,7 @@ class PostServiceTest extends AbstractMongoIntegrationTest {
                 .build();
         postRepository.save(existingPost);
 
-        AddPostDto dto = new AddPostDto(null, "Bad Title", "Hateful Content");
+        AddPostDTO dto = new AddPostDTO(null, "Bad Title", "Hateful Content");
 
         ResponseEntity<Boolean> aiResponse = new ResponseEntity<>(false, HttpStatus.OK);
         when(restTemplate.postForEntity(eq(url), any(HttpEntity.class), eq(Boolean.class)))
@@ -242,7 +242,7 @@ class PostServiceTest extends AbstractMongoIntegrationTest {
                 .build();
         postRepository.save(existingPost);
 
-        AddPostDto dto = new AddPostDto(null, "New Title", "New Content");
+        AddPostDTO dto = new AddPostDTO(null, "New Title", "New Content");
 
         // Mock hate speech check (happens before deleted check)
         ResponseEntity<Boolean> aiResponse = new ResponseEntity<>(true, HttpStatus.OK);
@@ -268,7 +268,7 @@ class PostServiceTest extends AbstractMongoIntegrationTest {
                 .build();
         postRepository.save(existingPost);
 
-        AddPostDto dto = new AddPostDto(null, "New Title", "New Content");
+        AddPostDTO dto = new AddPostDTO(null, "New Title", "New Content");
 
         // Mock hate speech check (happens before owner check)
         ResponseEntity<Boolean> aiResponse = new ResponseEntity<>(true, HttpStatus.OK);
@@ -410,7 +410,7 @@ class PostServiceTest extends AbstractMongoIntegrationTest {
         dto.setPageSize(10);
         dto.setForumId(forumId);
 
-        Page<Post> page = postService.getForumPosts(dto);
+        Page<PostView> page = postService.getForumPosts(dto);
 
         assertThat(page.getContent()).hasSize(3);
         assertThat(page.getContent().get(0).getTitle()).isEqualTo("new");
@@ -440,7 +440,7 @@ class PostServiceTest extends AbstractMongoIntegrationTest {
         dto.setForumId(forumId);
         dto.setSortBy("old");
 
-        Page<Post> page = postService.getForumPosts(dto);
+        Page<PostView> page = postService.getForumPosts(dto);
 
         assertThat(page.getContent()).hasSize(3);
         assertThat(page.getContent().get(0).getTitle()).isEqualTo("old");
@@ -470,7 +470,7 @@ class PostServiceTest extends AbstractMongoIntegrationTest {
         dto.setForumId(forumId);
         dto.setSortBy("top");
 
-        Page<Post> page = postService.getForumPosts(dto);
+        Page<PostView> page = postService.getForumPosts(dto);
 
         assertThat(page.getContent()).hasSize(3);
         // Expect p2 (id 2) first, then p1 (id 1), then p3

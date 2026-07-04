@@ -1,9 +1,11 @@
 package org.example.backend.post;
 
-import jakarta.transaction.Transactional;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.transaction.annotation.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.bson.types.ObjectId;
 import org.example.backend.deletion.AccessService;
+import org.example.backend.errorHandler.ResourceNotFoundException;
 import org.example.backend.deletion.CascadeDeletionService;
 import org.example.backend.forum.Forum;
 import org.example.backend.forum.ForumRepository;
@@ -26,6 +28,8 @@ import java.util.List;
 
 import java.time.Instant;
 
+import static org.example.backend.util.IdConverter.longToObjectId;
+
 @Service
 @RequiredArgsConstructor
 public class PostService {
@@ -40,16 +44,25 @@ public class PostService {
     private final UserService userService;
     private final UserRepository userRepository;
 
-    @Transactional
-    public Post addPost(AddPostDto addPostDto, Long userId) {
+    // No @Transactional here: this method operates on MongoDB documents (Forum, Post),
+    // and Spring's @Transactional only covers the JPA/MySQL datasource — the annotation
+    // had no real effect except implying atomicity that was never provided, while also
+    // needlessly extending a MySQL connection's lifetime across the analyzeText() HTTP
+    // call earlier in this method (HS-02).
+    @CacheEvict(value = "exploreFeed", allEntries = true)
+    public Post addPost(AddPostDTO addPostDto, Long userId) {
         Forum forum = mongoTemplate.findById(addPostDto.getForumId(), Forum.class);
         if (forum == null) {
-            throw new RuntimeException("Forum not found");
+            throw new ResourceNotFoundException("Forum not found");
         }
         if(forum.getIsDeleted()){
             throw new IllegalStateException("Forum has been deleted");
         }
-        if (!hateSpeechService.analyzeText(addPostDto.getContent())||!hateSpeechService.analyzeText(addPostDto.getTitle())) {
+        // Single combined call (HS-03/HS-07) instead of one per field: hate-api already
+        // sentence-tokenizes internally, so title+content in one request has identical
+        // detection coverage for half the HTTP round-trips, and removes the short-circuit
+        // `||` ambiguity around partial-failure fail-open behavior the two-call version had.
+        if (!hateSpeechService.analyzeText(addPostDto.getTitle() + "\n" + addPostDto.getContent())) {
             throw new HateSpeechException("hate speech detected");
         }
         ObjectId ObjectUserId = longToObjectId(userId);
@@ -70,8 +83,9 @@ public class PostService {
     }
 
     @Transactional
-    public Post updatePost(ObjectId postId, AddPostDto addPostDto, Long userId) {
-        if (!hateSpeechService.analyzeText(addPostDto.getContent())||!hateSpeechService.analyzeText(addPostDto.getTitle())) {
+    @CacheEvict(value = "exploreFeed", allEntries = true)
+    public Post updatePost(ObjectId postId, AddPostDTO addPostDto, Long userId) {
+        if (!hateSpeechService.analyzeText(addPostDto.getTitle() + "\n" + addPostDto.getContent())) {
             throw new HateSpeechException("hate speech detected");
         }
         Post post = mongoTemplate.findById(postId, Post.class);
@@ -81,8 +95,8 @@ public class PostService {
         return (postRepository.save(post));
     }
 
-    @Transactional
-    public Page<Post> getForumPosts(ForumPostsRequestDTO forumPostsRequestDTO) {
+    @Transactional(readOnly = true)
+    public Page<PostView> getForumPosts(ForumPostsRequestDTO forumPostsRequestDTO) {
         Sort sort = PostUtils.getSort(forumPostsRequestDTO.getSortBy());
 
         Pageable pageable = PageRequest.of(
@@ -105,6 +119,7 @@ public class PostService {
     }
 
     @Transactional
+    @CacheEvict(value = "exploreFeed", allEntries = true)
     public void deletePost(ObjectId postId, Long userId) {
         if (!accessService.canDeletePost(longToObjectId(userId), postId)) {
             throw new AccessDeniedException("User " + " cannot delete this post");
@@ -114,12 +129,15 @@ public class PostService {
             throw new IllegalArgumentException("Post not found with id: " + postId);
         }
         Forum forum = mongoTemplate.findById(post.getForumId(), Forum.class);
+        if (forum == null) {
+            throw new ResourceNotFoundException("Forum not found with id: " + post.getForumId());
+        }
         forum.setPostCount(forum.getPostCount() - 1);
         forumRepository.save(forum);
         deletionService.deletePost(postId);
     }
 
-    public Page<Post> getUserPosts(Long userId, MainFeedRequestDTO mainFeedRequestDTO) {
+    public Page<PostView> getUserPosts(Long userId, MainFeedRequestDTO mainFeedRequestDTO) {
         Pageable pageable = PageRequest.of(
                 mainFeedRequestDTO.getPage(),
                 mainFeedRequestDTO.getPageSize());
@@ -130,13 +148,13 @@ public class PostService {
         return postRepository.findByIsDeletedFalseAndForumIdIn(forumIds, pageable);
     }
 
-    @Transactional
+    @Transactional(readOnly = true)
     public Page<PostView> getMyPosts(Long userId, Pageable pageable) {
         ObjectId objectUserId = longToObjectId(userId);
         return getPostsByUserId(objectUserId, pageable);
     }
 
-    @Transactional
+    @Transactional(readOnly = true)
     public Page<PostView> getOtherUserPosts(Long userId, Pageable pageable) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new AccessDeniedException("User not found with id: " + userId));
@@ -150,11 +168,9 @@ public class PostService {
         return postRepository.findAllByOwnerIdAndIsDeletedFalse(userId,pageable);
     }
 
-    private ObjectId longToObjectId(Long value) {
-        return new ObjectId(String.format("%024x", value));
-    }
-
-    public Post getPostById(ObjectId postId) {
-        return mongoTemplate.findById(postId, Post.class);
+    @Transactional(readOnly = true)
+    public PostView getPostById(ObjectId postId) {
+        return postRepository.findByIdAndIsDeletedFalse(postId)
+                .orElseThrow(() -> new ResourceNotFoundException("Post not found with id: " + postId));
     }
 }

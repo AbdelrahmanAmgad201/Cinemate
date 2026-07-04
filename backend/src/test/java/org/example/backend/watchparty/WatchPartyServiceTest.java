@@ -4,6 +4,7 @@ import org.example.backend.movie.Movie;
 import org.example.backend.movie.MovieRepository;
 import org.example.backend.user.User;
 import org.example.backend.user.UserRepository;
+import org.example.backend.watchparty.DTOs.WatchPartyCreatedResponse;
 import org.example.backend.watchparty.DTOs.WatchPartyDetailsResponse;
 import org.example.backend.watchparty.DTOs.WatchPartyUserDTO;
 import org.junit.jupiter.api.BeforeEach;
@@ -93,13 +94,13 @@ class WatchPartyServiceTest {
                 eq(Map.class)
         )).thenReturn(new ResponseEntity<>(Map.of(), HttpStatus.OK));
 
-        WatchParty result = watchPartyService.create(testUserDTO, 1L);
+        WatchPartyCreatedResponse result = watchPartyService.create(testUserDTO, 1L);
 
         assertThat(result).isNotNull();
         assertThat(result.getPartyId()).isNotNull();
-        assertThat(result.getMovie()).isEqualTo(testMovie);
-        assertThat(result.getUser()).isEqualTo(testUser);
-        assertThat(result.getStatus()).isEqualTo(WatchPartyStatus.ACTIVE);
+        assertThat(result.getMovieId()).isEqualTo(testMovie.getMovieID());
+        assertThat(result.getUserId()).isEqualTo(testUser.getId());
+        assertThat(result.getStatus()).isEqualTo(WatchPartyStatus.ACTIVE.name());
 
         verify(movieRepository).findById(1L);
         verify(userRepository).findById(1L);
@@ -139,6 +140,7 @@ class WatchPartyServiceTest {
         // Arrange
         when(movieRepository.findById(1L)).thenReturn(Optional.of(testMovie));
         when(userRepository.findById(1L)).thenReturn(Optional.of(testUser));
+        when(watchPartyRepository.save(any(WatchParty.class))).thenAnswer(invocation -> invocation.getArgument(0));
         when(restTemplate.exchange(
                 anyString(),
                 eq(HttpMethod.POST),
@@ -150,7 +152,11 @@ class WatchPartyServiceTest {
                 .isInstanceOf(RuntimeException.class)
                 .hasMessage("Failed to initialize watch party");
 
-        verify(watchPartyRepository, never()).save(any());
+        // REL-02: the row is written first (outside any transaction spanning the HTTP
+        // call), then the microservice call fails, so the compensating action deletes
+        // the now-orphaned row instead of leaving it stuck ACTIVE with no Redis state.
+        verify(watchPartyRepository).save(any(WatchParty.class));
+        verify(watchPartyRepository).delete(any(WatchParty.class));
     }
 
     @Test

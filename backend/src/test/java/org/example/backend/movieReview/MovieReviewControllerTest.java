@@ -31,7 +31,7 @@ class MovieReviewControllerTest {
     private Long userId;
     private MovieReviewDTO dto;
     private MovieReviewID reviewID;
-    private MovieReview review;
+    private MovieReviewDetailsDTO review;
 
     @BeforeEach
     void setup() {
@@ -44,7 +44,7 @@ class MovieReviewControllerTest {
 
         reviewID = new MovieReviewID(dto.getMovieId(), userId);
 
-        review = MovieReview.builder()
+        review = MovieReviewDetailsDTO.builder()
                 .movieReviewID(reviewID)
                 .rating(dto.getRating())
                 .comment(dto.getComment())
@@ -89,7 +89,7 @@ class MovieReviewControllerTest {
         when(request.getAttribute("userId")).thenReturn(userId);
         when(movieReviewService.addOrUpdateReview(userId, dto)).thenReturn(review);
 
-        ResponseEntity<MovieReview> response =
+        ResponseEntity<MovieReviewDetailsDTO> response =
                 movieReviewController.addOrUpdateReview(request, dto);
 
         assertEquals(200, response.getStatusCodeValue());
@@ -102,11 +102,11 @@ class MovieReviewControllerTest {
     @Test
     void testGetMovieReviewsSuccess() {
         Pageable pageable = PageRequest.of(0, 10);
-        Page<MovieReview> page = new PageImpl<>(List.of(review), pageable, 1);
+        Page<MovieReviewDetailsDTO> page = new PageImpl<>(List.of(review), pageable, 1);
 
         when(movieReviewService.getMovieReviews(dto.getMovieId(), pageable)).thenReturn(page);
 
-        ResponseEntity<Page<MovieReview>> response =
+        ResponseEntity<Page<MovieReviewDetailsDTO>> response =
                 movieReviewController.getMovieReviews(dto.getMovieId(), pageable);
 
         assertEquals(200, response.getStatusCodeValue());

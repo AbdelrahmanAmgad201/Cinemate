@@ -1,8 +1,9 @@
 package org.example.backend.watchLater;
 
 
-import jakarta.transaction.Transactional;
+import org.springframework.transaction.annotation.Transactional;
 import lombok.AllArgsConstructor;
+import org.example.backend.errorHandler.ResourceNotFoundException;
 import org.example.backend.likedMovie.LikedMovieRepository;
 import org.example.backend.likedMovie.LikedMoviesID;
 import org.example.backend.movie.Movie;
@@ -27,10 +28,10 @@ public class WatchLaterService {
     @Transactional
     public WatchLater addMovie(Long userId, Long movieId) {
         Movie movie = movieRepository.findById(movieId)
-                .orElseThrow(() -> new RuntimeException("Movie not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Movie not found"));
 
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
         WatchLaterID id = new WatchLaterID(userId, movieId);
 
@@ -53,7 +54,7 @@ public class WatchLaterService {
 
     }
 
-    @Transactional
+    @Transactional(readOnly = true)
     public Page<WatchLaterView> getWatchLaters(Long userId, Pageable pageable) {
         return watchLaterRepository.findAllByUserIdAndIsDeletedFalse(userId, pageable);
     }

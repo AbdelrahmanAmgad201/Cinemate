@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import PropTypes from 'prop-types';
 import ReviewCard from './ReviewCard.jsx';
-import { getUserReviewsApi, getMyReviewsApi } from '../api/movie-api.jsx';
+import { getUserReviewsApi, getMyReviewsApi } from '../api/movie-api.js';
 import '../pages/user/style/UserProfile.css';
 
 export default function UserReviews({ userId, profile, isOwnProfile = false }) {

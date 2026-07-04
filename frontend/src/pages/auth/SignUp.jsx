@@ -1,174 +1,200 @@
-import './style/SignUp.css';
+import './style/AuthForm.css';
 import { useState, useContext } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Link } from "react-router-dom";
+import { useNavigate, Link } from 'react-router-dom';
 
-// Icons
-import { FcGoogle } from "react-icons/fc";
-import { HiOutlineMail, HiOutlineLockClosed } from "react-icons/hi";
-import { AiOutlineUser } from "react-icons/ai";
-import { CiCalendar } from "react-icons/ci";
-import { LuEyeOff, LuEye } from "react-icons/lu";
+import { FcGoogle } from 'react-icons/fc';
+import { Eye, EyeOff, Mail, Lock, Calendar, Building2, User } from 'lucide-react';
 
-import oauthSignIn from '../../api/oauth-sign-in-api.jsx';
-import { AuthContext } from "../../context/AuthContext.jsx";
-import { ToastContext } from "../../context/ToastContext.jsx";
-import {MAX_LENGTHS, MAX_VALUES, MIN_LENGTHS, PATHS, ROLES} from "../../constants/constants.jsx";
+import oauthSignIn from '../../api/oauth-sign-in-api.js';
+import { AuthContext } from '../../context/AuthContext.jsx';
+import { ToastContext } from '../../context/ToastContext.jsx';
+import { MAX_LENGTHS, MAX_VALUES, MIN_LENGTHS, PATHS, ROLES } from '../../constants/constants.jsx';
+import AuthLayout from './AuthLayout.jsx';
+import Input from '../../components/ui/Input.jsx';
+import Textarea from '../../components/ui/Textarea.jsx';
+import Button from '../../components/ui/Button.jsx';
 
-export default function UserSignUp ({role = "User", show = true, link = PATHS.ROOT}) {
+const MIN_BIRTHDATE = new Date(new Date().setFullYear(new Date().getFullYear() - MAX_VALUES.BIRTHYEARS)).toISOString().split('T')[0];
+const MAX_BIRTHDATE = new Date().toISOString().split('T')[0];
 
+export default function UserSignUp({ role = 'User', show = true, link = PATHS.ROOT }) {
     const navigate = useNavigate();
 
-    const [orgName, setOrgName] = useState("");
-    const [firstName, setFirstName] = useState("");
-    const [lastName, setLastName] = useState("");
-    const [birthDate, setBirthDate] = useState("");
-    const [gender, setGender] = useState("");
-    const [email, setEmail] = useState("");
-    const [password, setPassword] = useState("");
-    const [confirmPassword, setConfirmPassword] = useState("");
-    const [about, setAbout] = useState("");
+    const [orgName, setOrgName] = useState('');
+    const [firstName, setFirstName] = useState('');
+    const [lastName, setLastName] = useState('');
+    const [birthDate, setBirthDate] = useState('');
+    const [gender, setGender] = useState('');
+    const [email, setEmail] = useState('');
+    const [password, setPassword] = useState('');
+    const [confirmPassword, setConfirmPassword] = useState('');
+    const [about, setAbout] = useState('');
     const [errors, setErrors] = useState({});
     const [showPassword, setShowPassword] = useState(false);
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+    const [submitting, setSubmitting] = useState(false);
 
     const { signUp } = useContext(AuthContext);
     const { showToast } = useContext(ToastContext);
 
-    function buildRequestBody(role) {
-        if (role === ROLES.USER) {
-            return {
-                firstName,
-                lastName,
-                birthday: birthDate,
-                gender: gender.toUpperCase(),
-                about,
-            };
+    function buildRequestBody(currentRole) {
+        if (currentRole === ROLES.USER) {
+            return { firstName, lastName, birthday: birthDate, gender: gender.toUpperCase(), about };
         }
-
-        if (role === ROLES.ORGANIZATION) {
-            return {
-                name: orgName,
-                about,
-            };
+        if (currentRole === ROLES.ORGANIZATION) {
+            return { name: orgName, about };
         }
+        return undefined;
     }
 
     const handleSubmit = async (e) => {
         e.preventDefault();
 
         if (password !== confirmPassword) {
-            setErrors({password: "Passwords do not match"}); 
-            setPassword("");
-            setConfirmPassword("");   
-            console.log("Passwords do not match");
+            setErrors({ password: 'Passwords do not match' });
+            setPassword('');
+            setConfirmPassword('');
             return;
         }
 
         setErrors({});
-
+        setSubmitting(true);
         const signUpResult = await signUp(email, password, role.toUpperCase(), buildRequestBody(role.toUpperCase()));
+        setSubmitting(false);
 
-        if (signUpResult.success === true){
+        if (signUpResult.success) {
             navigate(PATHS.EMAIL_VERIFICATION);
+        } else {
+            showToast('Sign up failed.', signUpResult.message || 'Sign up failed. Please try again.', 'error');
         }
-        else{
-            console.log(signUpResult.message);
-            showToast("Sign up failed.", signUpResult.message || "Sign up failed. Please try again.", "error");
-        }
-    }
+    };
 
     return (
-        <div className="signup-container">
-            <form onSubmit={handleSubmit}>
-                <h1>
-                    {role} Sign Up
-                </h1>
-                <p>If you already have an account registered<br />You can <Link to={link}>Login here!</Link></p>
-                {!show && <div className="input-elem">
-                    <label htmlFor="orgName">Organization Name</label>
-                    <input type="text" id="orgName" name="orgName" maxLength={MAX_LENGTHS.INPUT} required placeholder = "Enter your organization name" onChange={(e) => {setOrgName(e.target.value)}} />
-                </div>}
-                {show && <div className="name">
-                    <div className="input-elem">
-                    <label htmlFor="firstName">First Name</label>
-                    <input type="text" id="firstName" name="firstName" maxLength={MAX_LENGTHS.INPUT} required style={{width: "200px"}} onChange={(e) => {setFirstName(e.target.value)}} />
-                    </div>
-                    
-                    <div className="input-elem">
-                    <label htmlFor="lastName">Last Name</label>
-                    <input type="text" id="lastName" name="lastName" maxLength={MAX_LENGTHS.INPUT} required style={{width: "200px"}} onChange={(e) => {setLastName(e.target.value)}} />
-                    </div>
-                </div>}
+        <AuthLayout>
+            <form className="auth-form" onSubmit={handleSubmit}>
+                <h1>{role} sign up</h1>
+                <p className="auth-form__subtitle">
+                    Already have an account? <Link to={link}>Sign in</Link>
+                </p>
 
-                {show && <div className="date-gender">
-                    <div className="input-elem">
-                        <label htmlFor="birthDate">Date of Birth</label><br />
-                        <div className="icon-input">
-                            <CiCalendar />
-                            <input type="date" id="birthDate" name="birthDate" required style={{width: "200px"}}
-                                   onChange={(e) => setBirthDate(e.target.value)}
-                                   min={new Date(new Date().setFullYear(new Date().getFullYear() - MAX_VALUES.BIRTHYEARS))
-                                       .toISOString()
-                                       .split("T")[0]}
-                                   max={new Date().toISOString().split("T")[0]}
-                            />
+                {!show && (
+                    <Input
+                        label="Organization name"
+                        maxLength={MAX_LENGTHS.INPUT}
+                        placeholder="Enter your organization name"
+                        required
+                        icon={<Building2 size={16} />}
+                        onChange={(e) => setOrgName(e.target.value)}
+                    />
+                )}
+
+                {show && (
+                    <div className="auth-form__row">
+                        <Input
+                            label="First name"
+                            maxLength={MAX_LENGTHS.INPUT}
+                            required
+                            icon={<User size={16} />}
+                            onChange={(e) => setFirstName(e.target.value)}
+                        />
+                        <Input
+                            label="Last name"
+                            maxLength={MAX_LENGTHS.INPUT}
+                            required
+                            icon={<User size={16} />}
+                            onChange={(e) => setLastName(e.target.value)}
+                        />
+                    </div>
+                )}
+
+                {show && (
+                    <div className="auth-form__row">
+                        <Input
+                            label="Date of birth"
+                            type="date"
+                            required
+                            icon={<Calendar size={16} />}
+                            min={MIN_BIRTHDATE}
+                            max={MAX_BIRTHDATE}
+                            onChange={(e) => setBirthDate(e.target.value)}
+                        />
+                        <div className="auth-form__gender">
+                            <span className="field__label">Gender</span>
+                            <div className="auth-form__gender-options">
+                                {['MALE', 'FEMALE'].map((option) => (
+                                    <button
+                                        type="button"
+                                        key={option}
+                                        className={`auth-form__gender-option ${gender === option ? 'auth-form__gender-option--selected' : ''}`}
+                                        onClick={() => setGender(option)}
+                                        aria-pressed={gender === option}
+                                    >
+                                        {option === 'MALE' ? 'Male' : 'Female'}
+                                    </button>
+                                ))}
+                            </div>
                         </div>
                     </div>
+                )}
 
-                    <div className="input-elem" style={{borderBottom: "none"}}>
-                        <label htmlFor="gender" style={{marginBottom: "23px"}}>Gender</label>
-                        <div className="gender-options">
-                            <input type="radio" id="male" name="gender" value="MALE" required onChange={(e) => {setGender(e.target.value)}} />
-                            <label htmlFor="male">Male</label>
-                            <input type="radio" id="female" name="gender" value="FEMALE" required onChange={(e) => {setGender(e.target.value)}} />
-                            <label htmlFor="female">Female</label>
-                        </div>
-                    </div>
-                </div>}
+                <Input
+                    label="Email"
+                    type="email"
+                    maxLength={MAX_LENGTHS.INPUT}
+                    placeholder="Enter your email address"
+                    required
+                    icon={<Mail size={16} />}
+                    onChange={(e) => setEmail(e.target.value)}
+                />
 
-                <div className="input-elem">
-                    <label htmlFor="email">Email</label>
-                    <div className="icon-input">
-                        <HiOutlineMail />
-                        <input type="email" id="email" name="email" maxLength={MAX_LENGTHS.INPUT} placeholder="Enter your email address" required onChange={(e) => {setEmail(e.target.value)}} />
-                    </div>
-                </div>
+                <Input
+                    label="Password"
+                    type={showPassword ? 'text' : 'password'}
+                    minLength={MIN_LENGTHS.PASSWORD}
+                    maxLength={MAX_LENGTHS.INPUT}
+                    placeholder="Enter your password"
+                    required
+                    value={password}
+                    icon={<Lock size={16} />}
+                    onChange={(e) => setPassword(e.target.value)}
+                    rightIcon={showPassword ? <Eye size={16} /> : <EyeOff size={16} />}
+                    onRightIconClick={() => setShowPassword((s) => !s)}
+                    rightIconLabel={showPassword ? 'Hide password' : 'Show password'}
+                    error={errors.password}
+                />
 
-                <div className="input-elem">
-                    <label htmlFor="password">Password</label>
-                    <div className="icon-input">
-                        <HiOutlineLockClosed />
-                        <input type={showPassword ? "text" : "password"} id="password" name="password" minLength={MIN_LENGTHS.PASSWORD} maxLength={MAX_LENGTHS.INPUT} placeholder="Enter your Password" required onChange={(e) => {setPassword(e.target.value)}} value={password} />
-                        <span className="password-toggle-icon" onClick={() => setShowPassword(!showPassword)} style={{cursor: "pointer"}}>
-                            {showPassword ? <LuEye /> : <LuEyeOff />}
-                        </span>
-                    </div>
-                </div>
-                {errors.password && <span className="error-message" style={{color: "#ff6b6b", marginTop: "0"}}>{errors.password}</span>}
+                <Input
+                    label="Confirm password"
+                    type={showConfirmPassword ? 'text' : 'password'}
+                    minLength={MIN_LENGTHS.PASSWORD}
+                    maxLength={MAX_LENGTHS.INPUT}
+                    placeholder="Confirm your password"
+                    required
+                    value={confirmPassword}
+                    icon={<Lock size={16} />}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    rightIcon={showConfirmPassword ? <Eye size={16} /> : <EyeOff size={16} />}
+                    onRightIconClick={() => setShowConfirmPassword((s) => !s)}
+                    rightIconLabel={showConfirmPassword ? 'Hide password' : 'Show password'}
+                />
 
-                <div className="input-elem">
-                    <label htmlFor="confirmPassword">Confirm Password</label>
-                    <div className="icon-input">
-                        <HiOutlineLockClosed />
-                        <input type={showConfirmPassword ? "text" : "password"} id="confirmPassword" name="confirmPassword" minLength={MIN_LENGTHS.PASSWORD} maxLength={MAX_LENGTHS.INPUT} placeholder="Confirm your Password" required onChange={(e) => {setConfirmPassword(e.target.value)}} value={confirmPassword} />
-                        <span className="password-toggle-icon" onClick={() => setShowConfirmPassword(!showConfirmPassword)} style={{cursor: "pointer"}}>
-                            {showConfirmPassword ? <LuEye /> : <LuEyeOff />}
-                        </span>
-                    </div>
-                   
-                </div>
-                {errors.password && <span className="error-message" style={{color: "#ff6b6b", marginTop: "0"}}>{errors.password}</span>}
-                {!show && <div className="input-elem">
-                    <label htmlFor="about">About</label>
-                    <textarea id="about" name="about" required placeholder = "About your organization" onChange={(e) => {setAbout(e.target.value)}} />
-                </div>}
+                {!show && (
+                    <Textarea
+                        label="About"
+                        required
+                        placeholder="About your organization"
+                        value={about}
+                        onChange={(e) => setAbout(e.target.value)}
+                    />
+                )}
 
-                <button type="submit">Create Account</button><br />
-                <div className="google-button" style={{width: "289px", margin: "30px auto"}}>
-                <button type="button" onClick={oauthSignIn}><FcGoogle />Sign in using Google</button>
-                </div>
+                <Button type="submit" fullWidth size="lg" loading={submitting}>Create account</Button>
+
+                <div className="auth-form__divider"><span>or</span></div>
+                <Button variant="secondary" fullWidth size="lg" icon={<FcGoogle size={18} />} onClick={oauthSignIn}>
+                    Sign up with Google
+                </Button>
             </form>
-        </div>
+        </AuthLayout>
     );
-};
+}

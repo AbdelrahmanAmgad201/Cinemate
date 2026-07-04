@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { AiOutlineArrowUp } from 'react-icons/ai';
+import { ArrowUp } from 'lucide-react';
 import './style/ScrollToTop.css';
 
 const SCROLL_THRESHOLD = 300;
@@ -16,7 +16,7 @@ export default function ScrollToTop() {
         const updateVisibility = () => {
             try {
                 setVisible(window.scrollY > SCROLL_THRESHOLD);
-            } catch (e) {
+            } catch {
                 // ignore
             }
         };
@@ -32,7 +32,7 @@ export default function ScrollToTop() {
                 }
                 if (window.innerWidth <= DESKTOP_BREAKPOINT) offset = MIN_RIGHT_OFFSET;
                 setRightOffset(offset);
-            } catch (e) {
+            } catch {
                 setRightOffset(DEFAULT_RIGHT_OFFSET);
             }
         };
@@ -62,7 +62,7 @@ export default function ScrollToTop() {
     const handleClick = () => {
         try {
             window.scrollTo({ top: 0, behavior: 'smooth' });
-        } catch (e) {
+        } catch {
             window.scrollTo(0, 0);
         }
     };
@@ -80,7 +80,7 @@ export default function ScrollToTop() {
             title="Scroll to top"
             style={cssVars}
         >
-            <AiOutlineArrowUp size={20} />
+            <ArrowUp size={20} />
         </button>
     );
 }

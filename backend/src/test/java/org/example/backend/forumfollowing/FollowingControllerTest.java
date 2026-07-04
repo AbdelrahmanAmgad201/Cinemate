@@ -63,7 +63,7 @@ class FollowingControllerTest {
 
 
     @Test
-    void followForum_ServiceThrowsIllegalStateException_Returns500() throws Exception {
+    void followForum_ServiceThrowsIllegalStateException_Returns409() throws Exception {
         doThrow(new IllegalStateException("Cannot follow deleted forum"))
                 .when(followingService).follow(any(ObjectId.class), anyLong());
 
@@ -71,7 +71,7 @@ class FollowingControllerTest {
                         .with(csrf())
                         .requestAttr("userId", userId)
                         .contentType(MediaType.APPLICATION_JSON))
-                .andExpect(status().is5xxServerError());
+                .andExpect(status().isConflict());
     }
 
     @Test

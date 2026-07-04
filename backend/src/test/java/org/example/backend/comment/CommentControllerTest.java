@@ -60,7 +60,10 @@ class CommentControllerTest {
 
 
     @Test
-    void createComment_DeletedPost_Returns500() throws Exception {
+    void createComment_DeletedPost_Returns409() throws Exception {
+        // IllegalStateException maps to 409 now that GlobalExceptionHandler has a
+        // dedicated handler for it (CQ-NEW-01) instead of falling through to the
+        // generic 500 handler.
         when(commentService.addComment(anyLong(), any(AddCommentDTO.class)))
                 .thenThrow(new IllegalStateException("this post is deleted"));
 
@@ -69,21 +72,23 @@ class CommentControllerTest {
                         .requestAttr("userId", userId)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(addCommentDTO)))
-                .andExpect(status().is5xxServerError());
+                .andExpect(status().isConflict());
     }
 
     @Test
-    void createComment_EmptyContent_Success() throws Exception {
+    void createComment_EmptyContent_Returns400() throws Exception {
+        // AddCommentDTO.content is now @NotBlank (ARCH-NEW-01) — empty content is
+        // rejected before the request ever reaches the service.
         addCommentDTO.setContent("");
-        when(commentService.addComment(anyLong(), any(AddCommentDTO.class)))
-                .thenReturn(testComment);
 
         mockMvc.perform(post("/api/comment/v1/create-comment")
                         .with(csrf())
                         .requestAttr("userId", userId)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(addCommentDTO)))
-                .andExpect(status().isOk());
+                .andExpect(status().isBadRequest());
+
+        verify(commentService, never()).addComment(anyLong(), any(AddCommentDTO.class));
     }
 
     @Test
@@ -114,14 +119,14 @@ class CommentControllerTest {
     }
 
     @Test
-    void deleteComment_Unauthorized_Returns500() throws Exception {
+    void deleteComment_Unauthorized_Returns403() throws Exception {
         doThrow(new AccessDeniedException("User cannot delete this post"))
                 .when(commentService).deleteComment(any(ObjectId.class), anyLong());
 
         mockMvc.perform(delete("/api/comment/v1/delete-comment/{commentId}", commentId.toHexString())
                         .with(csrf())
                         .requestAttr("userId", userId))
-                .andExpect(status().is5xxServerError());
+                .andExpect(status().isForbidden());
     }
 
 

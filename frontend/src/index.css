@@ -1,42 +1,194 @@
-:root {
-    --background-gradient-dark-blue:linear-gradient(to bottom, #01161E 0%, #0C3849 100%);
-    --ghost-white: #FAFAFF; /* for text */
-    --ink-black: #01161E; /* button */
-    --ink-black-border: #0C3849;
-    --ink-black-hover: #022237;
-    --ink-black-disabled: gray;
-    --line-separator-faded-grey: #DFDCDC59;
-    --dark-teal: #124559;
-    --lighter-dark-teal: #1A3039;
-    --grey-text: #AAAAAA;
-    --button-hover-color: #FAFAFF opacity 50%;
-    --blue-bell: #36A1F3;
-    --faded-blue-bell: rgba(54, 161, 243, 0.7);
-    --dark-blue-bell: #3f5c87;
-    --review-card-gradient-color: linear-gradient(
-            to bottom right,
-            #24414D 0%,
-            #1E3942 100%
-    );
-    --review-card-gradient-color-faded: linear-gradient(
-            to bottom right,
-            rgba(36, 65, 77, 0.7) 0%,
-            rgba(30, 57, 66, 0.7) 100%
-    );
-    --tooltip-background-color: rgba(250, 250, 255, 0.5);
-    --faded-black: #01161E80;
+/* =========================================================================
+   Cinemate Design System — tokens
+   Single source of truth for color, type, spacing, radius, shadow, motion.
+   Dark-only theme (confirmed): all effort goes into one refined palette
+   rather than splitting across light/dark variants.
 
+   Breakpoint convention used across every component stylesheet:
+     mobile:  max-width: 639px
+     tablet:  640px - 1023px
+     desktop: min-width: 1024px
+   ========================================================================= */
+
+:root {
+    /* ---- Brand & accent ---- */
+    --color-accent: #36A1F3;
+    --color-accent-hover: #5AB2F5;
+    --color-accent-active: #2580D0;
+    --color-accent-muted: rgba(54, 161, 243, 0.14);
+    --color-accent-border: rgba(54, 161, 243, 0.4);
+    --color-accent-contrast: #01161E;
+
+    /* ---- Surfaces (elevation via lightness, not shadow alone) ---- */
+    --surface-canvas: #01161E;
+    --surface-0: #071D26;
+    --surface-1: #0E2731;
+    --surface-2: #17333E;
+    --surface-3: #1F3E4A;
+    --surface-overlay: #12303B;
+    --background-gradient-dark-blue: linear-gradient(to bottom, #01161E 0%, #0C3849 100%);
+
+    /* ---- Text ---- */
+    --text-primary: #F5F8FA;
+    --text-secondary: #ABBAC2;
+    --text-tertiary: #7E8F98;
+    --text-disabled: #4C5C64;
+    --text-on-accent: #01161E;
+    --text-link: var(--color-accent);
+
+    /* ---- Borders ---- */
+    --border-subtle: rgba(245, 248, 250, 0.08);
+    --border-default: rgba(245, 248, 250, 0.14);
+    --border-strong: rgba(245, 248, 250, 0.24);
+    --border-focus: var(--color-accent);
+
+    /* ---- Semantic ---- */
+    --color-success: #3DD68C;
+    --color-success-bg: rgba(61, 214, 140, 0.14);
+    --color-error: #F0554F;
+    --color-error-bg: rgba(240, 85, 79, 0.14);
+    --color-warning: #F2B84B;
+    --color-warning-bg: rgba(242, 184, 75, 0.14);
+    --color-info: var(--color-accent);
+    --color-info-bg: var(--color-accent-muted);
+
+    /* ---- Typography ---- */
+    --font-family-base: 'Roboto', 'Segoe UI', system-ui, -apple-system, sans-serif;
+    --font-size-display: 3rem;      /* 48px */
+    --font-size-h1: 2.25rem;        /* 36px */
+    --font-size-h2: 1.75rem;        /* 28px */
+    --font-size-h3: 1.375rem;       /* 22px */
+    --font-size-h4: 1.125rem;       /* 18px */
+    --font-size-body-lg: 1rem;      /* 16px */
+    --font-size-body: 0.875rem;     /* 14px */
+    --font-size-body-sm: 0.8125rem; /* 13px */
+    --font-size-caption: 0.75rem;   /* 12px */
+    --font-weight-regular: 400;
+    --font-weight-medium: 500;
+    --font-weight-semibold: 600;
+    --font-weight-bold: 700;
+    --line-height-tight: 1.2;
+    --line-height-base: 1.5;
+    --line-height-relaxed: 1.7;
+
+    /* ---- Spacing (4px base unit) ---- */
+    --space-1: 4px;
+    --space-2: 8px;
+    --space-3: 12px;
+    --space-4: 16px;
+    --space-5: 20px;
+    --space-6: 24px;
+    --space-8: 32px;
+    --space-10: 40px;
+    --space-12: 48px;
+    --space-16: 64px;
+
+    /* ---- Radius ---- */
+    --radius-sm: 6px;
+    --radius-md: 10px;
+    --radius-lg: 16px;
+    --radius-xl: 24px;
+    --radius-pill: 999px;
+
+    /* ---- Shadow / elevation (dark theme: mostly deep + soft, minimal glow on focus) ---- */
+    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
+    --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.35);
+    --shadow-lg: 0 12px 32px rgba(0, 0, 0, 0.45);
+    --shadow-modal: 0 24px 64px rgba(0, 0, 0, 0.55);
+    --shadow-focus: 0 0 0 3px var(--color-accent-muted);
+
+    /* ---- Motion ---- */
+    --duration-fast: 120ms;
+    --duration-base: 200ms;
+    --duration-slow: 320ms;
+    --ease-standard: cubic-bezier(0.4, 0, 0.2, 1);
+    --ease-emphasized: cubic-bezier(0.2, 0, 0, 1);
+
+    /* ---- Layout ---- */
+    --container-max: 1280px;
+    --page-padding-inline: clamp(16px, 4vw, 48px);
+
+    /* ---- Z-index scale ---- */
+    --z-dropdown: 100;
+    --z-sticky: 200;
+    --z-overlay: 300;
+    --z-modal: 400;
+    --z-toast: 500;
+}
+
+*,
+*::before,
+*::after {
+    box-sizing: border-box;
+}
+
+html {
+    color-scheme: dark;
 }
 
 body {
     min-height: 100vh;
-    font-family: 'Roboto', sans-serif;
-    background-color: #01161E;
+    margin: 0;
+    font-family: var(--font-family-base);
+    font-size: var(--font-size-body-lg);
+    line-height: var(--line-height-base);
+    background-color: var(--surface-canvas);
     background-image: var(--background-gradient-dark-blue);
     background-repeat: no-repeat;
     background-attachment: fixed;
     background-size: cover;
-    color: var(--ghost-white);
+    color: var(--text-primary);
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+}
+
+h1, h2, h3, h4, h5, h6 {
+    margin: 0;
+    font-weight: var(--font-weight-semibold);
+    line-height: var(--line-height-tight);
+}
+
+p {
+    margin: 0;
+}
+
+a {
+    color: var(--text-link);
+}
+
+button {
+    font-family: inherit;
+}
+
+/* Consistent, visible keyboard focus everywhere — replaces browser default
+   outline with a design-system ring, but only for keyboard users. */
+:focus-visible {
+    outline: none;
+    box-shadow: var(--shadow-focus);
+    border-radius: var(--radius-sm);
+}
+
+/* Slim, dark-themed scrollbar (WebKit) to match the rest of the UI instead
+   of the default light OS scrollbar bleeding through the dark chrome. */
+::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+}
+
+::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+    background-color: var(--surface-3);
+    border-radius: var(--radius-pill);
+    border: 2px solid transparent;
+    background-clip: content-box;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background-color: var(--text-tertiary);
+    background-clip: content-box;
 }
 
 /* to add a tooltip, add a div with class "tooltip" to the button
@@ -44,18 +196,27 @@ EX: <span className="tooltip">Play movie</span>  */
 .tooltip {
     position: absolute;
     background-color: var(--tooltip-background-color);
-    color: var(--ink-black);
-    padding: 6px 10px;
-    border-radius: 8px;
-    font-size: 12px;
+    color: var(--surface-canvas);
+    padding: var(--space-2) var(--space-3);
+    border-radius: var(--radius-sm);
+    font-size: var(--font-size-caption);
+    font-weight: var(--font-weight-medium);
     white-space: nowrap;
-    z-index: 10;
+    z-index: var(--z-dropdown);
     opacity: 0;
-    transition: opacity 0.2s ease-in-out, transform 0.2s ease-in-out;
-
+    transition: opacity var(--duration-base) var(--ease-standard), transform var(--duration-base) var(--ease-standard);
 }
 
 button:hover .tooltip {
     opacity: 1;
-    transform: translateY(-50px); /* appear higher when visible */
+    transform: translateY(-50px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+    }
 }

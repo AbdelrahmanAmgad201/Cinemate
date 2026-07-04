@@ -21,6 +21,14 @@ services:
       retries: 10
       start_period: 40s
     command: --default-authentication-plugin=mysql_native_password
+    # §11.4: previously only hate-api had a resource ceiling — a runaway query or
+    # unbounded aggregation on any of the databases could otherwise consume unbounded
+    # host memory with nothing to stop it.
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 1G
 
   # MongoDB Database
   mongodb:
@@ -41,6 +49,11 @@ services:
       timeout: 5s
       retries: 5
       start_period: 20s
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 1G
 
   # Hate Speech Detection API
   hate-api:
@@ -49,8 +62,12 @@ services:
       dockerfile: Dockerfile
     container_name: hate-api
     restart: unless-stopped
-    ports:
-      - "8000:8000"
+    # Internal service: not exposed on the host. Only reachable within app-net.
+    # Remove the comment below and add "- 8000:8000" under 'ports:' only when debugging locally.
+    expose:
+      - "8000"
+    environment:
+      - HATE_API_KEY=${HATE_API_KEY}
     networks:
       - app-net
     volumes:
@@ -92,12 +109,18 @@ services:
       - BASE_URL=${BASE_URL}
       # DB_PASSWORD must match MYSQL_ROOT_PASSWORD — source from root .env to keep them in sync
       - DB_PASSWORD=${MYSQL_ROOT_PASSWORD}
+      # Dedicated cache instance (ARC-06) — deliberately NOT the `redis` service
+      # watch-party uses, see the comments on both services above.
+      - REDIS_CACHE_HOST=redis-cache
+      - REDIS_CACHE_PORT=6379
     depends_on:
       mysql:
         condition: service_healthy
       mongodb:
         condition: service_healthy
       watch-party:
+        condition: service_healthy
+      redis-cache:
         condition: service_healthy
       # hate-api intentionally excluded: backend degrades gracefully when moderation is unavailable.
       # See HateSpeechService for the fail-open fallback.
@@ -109,7 +132,13 @@ services:
       timeout: 10s
       retries: 3
       start_period: 60s
-
+    # §11.4: container-level ceiling above the -Xmx512m JVM heap — off-heap growth
+    # (direct buffers, native library memory) had no ceiling of its own before this.
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 1G
 
   # React Frontend
   frontend:
@@ -120,24 +149,50 @@ services:
     restart: unless-stopped
     ports:
       - "5173:80"
+    environment:
+      # Runtime config (FE-02) — generated into config.js at container start by
+      # docker-entrypoint.sh, so this image doesn't need rebuilding to point at a
+      # different backend. API_BASE_URL is reachable directly since the backend is
+      # published on the host; WATCH_PARTY_BASE_URL is left empty so the frontend
+      # uses this same origin, which nginx proxies to the internal watch-party
+      # service at /ws (FE-03).
+      - API_BASE_URL=${BASE_URL:-http://localhost:8080}
+      - WATCH_PARTY_BASE_URL=
     networks:
       - app-net
     depends_on:
-      - backend
+      backend:
+        condition: service_started
+      watch-party:
+        condition: service_healthy
     healthcheck:
       test: ["CMD-SHELL", "curl -f http://localhost/ || exit 1"]
       interval: 10s
       timeout: 5s
       retries: 5
       start_period: 10s
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 256M
 
+  # Watch-party's main store of live party state — not a cache, must not lose data.
+  # Internal only (no host port, same pattern as watch-party/hate-api): an
+  # unauthenticated Redis exposed on the host is itself a data-loss vector.
   redis:
     image: redis:7
     container_name: redis
     restart: unless-stopped
-    ports:
-      - "6379:6379"
-    command: redis-server --appendonly yes
+    expose:
+      - "6379"
+    # appendonly: durable AOF log (this is source-of-truth data, not disposable).
+    # appendfsync everysec: fsync once a second — bounds worst-case data loss on a
+    # crash to ~1s of writes, the standard durability/throughput tradeoff for AOF.
+    # maxmemory-policy noeviction: explicit rather than relying on the Redis default,
+    # so this store can never silently evict a key to make room — it should fail
+    # loudly (OOM error on write) instead of quietly dropping party state.
+    command: redis-server --appendonly yes --appendfsync everysec --maxmemory-policy noeviction
     volumes:
       - redis-data:/data
     networks:
@@ -147,6 +202,43 @@ services:
       interval: 5s
       timeout: 3s
       retries: 5
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 512M
+
+  # Backend's response cache (explore feed/forums) — pure cache, not a source of
+  # truth. Separate instance from `redis` above on purpose: a cache wants eviction
+  # under memory pressure and doesn't need durability; watch-party's store wants
+  # the opposite. Sharing one instance risks a cache eviction storm quietly
+  # discarding live party state, or an AOF fsync tax on every cache write for
+  # data that doesn't need it.
+  redis-cache:
+    image: redis:7
+    container_name: redis-cache
+    restart: unless-stopped
+    expose:
+      - "6379"
+    # No persistence (--save "" disables RDB, appendonly no disables AOF) and a
+    # capped, evictable memory budget — losing every cached entry on restart is a
+    # cold-cache blip, not an incident. maxmemory-policy allkeys-lru evicts the
+    # least-recently-used entries once the cap is hit instead of erroring.
+    command: redis-server --maxmemory 256mb --maxmemory-policy allkeys-lru --save "" --appendonly no
+    networks:
+      - app-net
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    # Slightly above the in-process --maxmemory 256mb cap to leave headroom for
+    # Redis's own process overhead.
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 384M
 
   # Watch Party Microservice
   watch-party:
@@ -165,6 +257,9 @@ services:
       - SPRING_REDIS_PORT=6379
       - JAVA_OPTS=-Xmx512m -Xms256m
       - WATCHPARTY_KEY=${WATCHPARTY_KEY}
+      # Restricts which origins may open the /ws WebSocket (SEC-NEW-02) — same value
+      # the backend uses for its own CORS config.
+      - CORS_ALLOWED_ORIGINS=${CORS_ALLOWED_ORIGINS}
     depends_on:
       redis:
         condition: service_healthy
@@ -176,8 +271,11 @@ services:
       timeout: 10s
       retries: 3
       start_period: 60s
-
-
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 768M
 
 
 volumes:

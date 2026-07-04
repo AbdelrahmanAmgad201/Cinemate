@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useContext } from 'react';
 import MoviesList from './MoviesList.jsx';
-import { getWatchLaterApi, getMovieApi } from '../api/movie-api.jsx';
+import { getWatchLaterApi, getMovieApi } from '../api/movie-api.js';
 import { useNavigate } from 'react-router-dom';
 import { ToastContext } from '../context/ToastContext.jsx';
 import { MdNavigateNext, MdNavigateBefore } from 'react-icons/md';

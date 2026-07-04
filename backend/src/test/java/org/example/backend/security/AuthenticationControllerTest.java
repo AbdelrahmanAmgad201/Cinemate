@@ -3,7 +3,7 @@ package org.example.backend.security;
 import org.example.backend.user.User;
 import org.example.backend.user.UserAlreadyExistsException;
 import org.example.backend.user.UserService;
-import org.example.backend.verification.Verfication;
+import org.example.backend.verification.Verification;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
@@ -94,7 +94,7 @@ class AuthenticationControllerTest {
     void testSignUpSuccess() throws UserAlreadyExistsException {
         CredentialsRequest request = new CredentialsRequest("new@example.com", "password", "USER");
 
-        Verfication mockVerification = new Verfication();
+        Verification mockVerification = new Verification();
 
         when(userService.signUp(request)).thenReturn(mockVerification);
 

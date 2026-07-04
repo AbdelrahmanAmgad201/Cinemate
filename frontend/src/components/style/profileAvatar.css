@@ -1,38 +1,70 @@
 .profile-avatar {
     position: fixed;
-    right: 50px;
-    top: 40px;
-    z-index: 1000;
-    cursor: pointer;
+    right: var(--page-padding-inline);
+    top: 0;
+    height: 72px;
+    display: flex;
+    align-items: center;
+    z-index: var(--z-sticky);
 }
 
-.profile-avatar.org{
-    top: 15px;
+.profile-avatar.org {
+    height: 60px;
+}
+
+.profile-avatar__trigger {
+    display: flex;
+    border: none;
+    background: transparent;
+    padding: 0;
+    cursor: pointer;
+    border-radius: 50%;
+    transition: box-shadow var(--duration-base) var(--ease-standard);
+}
+
+.profile-avatar__trigger:hover {
+    box-shadow: 0 0 0 2px var(--color-accent-border);
 }
 
 .profile-menu {
     position: absolute;
-    right: 0px;
-    top: 50px;
-    background-color: #182B33;
-    color: var(--ghost-white);
+    right: 0;
+    top: calc(100% + var(--space-2));
+    display: flex;
+    flex-direction: column;
+    min-width: 180px;
+    background-color: var(--surface-2);
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-lg);
+    padding: var(--space-2);
+    animation: profile-menu-in var(--duration-base) var(--ease-emphasized);
+}
+
+.profile-menu button {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    padding: var(--space-3);
+    border: none;
+    background: transparent;
+    color: var(--text-primary);
+    font-size: var(--font-size-body-sm);
+    text-align: left;
+    border-radius: var(--radius-sm);
     cursor: pointer;
-    min-width: 120px;
-    z-index: 1;
+    transition: background-color var(--duration-base) var(--ease-standard);
 }
 
-.profile-menu ul {
-    list-style: none;
-    margin: 0;
-    padding: 0;
+.profile-menu button:hover {
+    background-color: var(--surface-3);
 }
 
-.profile-menu li {
-    padding: 10px;
-    height: 100%;
-    border-bottom: 1px solid #24414D;
+@keyframes profile-menu-in {
+    from { opacity: 0; transform: translateY(-4px); }
+    to { opacity: 1; transform: translateY(0); }
 }
 
-.profile-menu li:hover {
-    background-color: #24414D;
+@media (max-width: 639px) {
+    .profile-avatar { height: 64px; }
 }

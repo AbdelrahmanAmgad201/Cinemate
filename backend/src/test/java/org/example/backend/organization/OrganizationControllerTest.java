@@ -130,11 +130,10 @@ class OrganizationControllerTest {
         when(organizationService.requestMovie(1L, movieAddDTO))
                 .thenThrow(new RuntimeException("Error!!"));
 
-        ResponseEntity<?> res = organizationController.addMovie(request, movieAddDTO);
-
-        assertEquals(HttpStatus.BAD_REQUEST, res.getStatusCode());
-        Map<String, Object> body = (Map<String, Object>) res.getBody();
-        assertEquals(false, body.get("success"));
+        // No manual try/catch in the controller anymore (API-NEW-03) — the exception
+        // propagates to GlobalExceptionHandler instead of being caught here.
+        assertThrows(RuntimeException.class,
+                () -> organizationController.addMovie(request, movieAddDTO));
     }
 
     // -------------------------------------------------------------------------
@@ -163,20 +162,6 @@ class OrganizationControllerTest {
 
         assertEquals(200, res.getStatusCodeValue());
         assertEquals(moviesOverview, res.getBody());
-    }
-
-    // -------------------------------------------------------------------------
-    // TEST: /get-organization-movies
-    // -------------------------------------------------------------------------
-    @Test
-    void testGetOrganizationMovies() {
-        when(request.getAttribute("userId")).thenReturn(1L);
-        when(movieService.getOrganizationMovies(1L))
-                .thenReturn(List.of(movie1, movie2));
-
-        ResponseEntity<List<Movie>> res = organizationController.getOrganizationMovies(request);
-
-        assertEquals(2, res.getBody().size());
     }
 
     // -------------------------------------------------------------------------

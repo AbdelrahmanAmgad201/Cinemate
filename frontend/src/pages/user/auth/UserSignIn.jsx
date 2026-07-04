@@ -1,10 +1,7 @@
-import SignIn from "../../auth/SignIn.jsx";
-import { useNavigate } from 'react-router-dom';
+import SignIn from '../../auth/SignIn.jsx';
 
 const UserSignIn = () => {
-    return (
-        <SignIn/>
-    );
-}
+    return <SignIn />;
+};
 
 export default UserSignIn;

@@ -2,15 +2,12 @@ import { useState, useEffect, useContext } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { AuthContext } from '../../context/AuthContext';
 import { ToastContext } from '../../context/ToastContext.jsx';
-import Swal from 'sweetalert2';
 import EditPost from '../../components/EditPost';
-import { updatePostApi, deletePostApi, isVotedPostApi, getPostApi } from '../../api/post-api';
-import PostMain from '../../components/PostMain';
+import { updatePostApi, getPostApi } from '../../api/post-api';
 import PostComments from '../../components/PostComments';
-import { PATHS } from '../../constants/constants';
 import "../../components/style/postCard.css";
-import "./style/postFullPage.css";
-import { IoClose } from "react-icons/io5";
+import "../../components/style/postThread.css";
+import { X } from 'lucide-react';
 import PostCard from '../../components/PostCard';
 
 const PostFullPage = () => {
@@ -36,7 +33,6 @@ const PostFullPage = () => {
         upvoteCount: 0
     });
     const [editMode, setEditMode] = useState(false);
-    const [userVote, setUserVote] = useState(0);
     const [openImage, setOpenImage] = useState(false);
 
 
@@ -44,7 +40,7 @@ const PostFullPage = () => {
         setEditMode(false);
     };
 
-    const saveEdit = async (updatedPost, mediaFile) => {
+    const saveEdit = async (updatedPost) => {
         try {
             const result = await updatePostApi({
                 postId: post.id, 
@@ -72,28 +68,6 @@ const PostFullPage = () => {
     };
 
     useEffect(() => {
-        const checkVote = async () => {
-            if (!postId || !user?.id) {
-                return;
-            }
-
-            try {
-                const result = await isVotedPostApi({ targetId: postId });
-                
-                if (result.success) {
-                    const voteValue = typeof result.data === 'number' ? result.data : 0;
-                    setUserVote(voteValue);
-                } else {
-                    showToast('Failed to check vote', result.message || 'unknown error', 'error');
-                    setUserVote(0);
-                }
-            } 
-            catch(error){
-                showToast('Failed to check vote', error || 'unknown error', 'error');
-                setUserVote(0);
-            }
-        }
-
         const fetchPost = async () =>{
             if (!postId || !user?.id) {
                 showToast('Failed to fetch post', 'Invalid postId / userId', 'error');
@@ -115,7 +89,6 @@ const PostFullPage = () => {
             }
         }
 
-        checkVote();
         fetchPost();
     }, [postId]);
 
@@ -126,21 +99,15 @@ const PostFullPage = () => {
         }
     }, [postId, location.state?.editMode, location.pathname, navigate]);
 
-    const [postLoadError, setPostLoadError] = useState(null);
-
     useEffect(() => {
         try {
             const cached = sessionStorage.getItem(`CINEMATE_LAST_POST_${postId}`);
             if (cached) {
-                const parsed = JSON.parse(cached);
-                setPost(parsed);
-                setPostLoadError(null);
-                return;
+                setPost(JSON.parse(cached));
             }
-        } catch (e) {
+        } catch {
             // ignore storage errors
         }
-        setPostLoadError(null);
     }, [postId]);
 
     useEffect(() => {
@@ -194,7 +161,7 @@ const PostFullPage = () => {
                 {openImage && (
                     <div className="view-image-container" onClick={() => setOpenImage(false)}>
                         <div className="view-image">
-                            <IoClose className="close-button" onClick={() => setOpenImage(false)} />
+                            <X className="close-button" onClick={() => setOpenImage(false)} />
                             <img src={post.media} alt={post.title || "Post content"} onClick={(e) => e.stopPropagation()} />
                         </div>
                     </div>

@@ -22,9 +22,9 @@ class VerificationRepositoryTest {
 
     @Test
     void testSaveVerification() {
-        Verfication v = new Verfication();
+        Verification v = new Verification();
         v.setEmail("user@example.com");
-        v.setCode(123456);
+        v.setCode("$2a$10$hashedVerificationCodePlaceholder");
         v.setRole("USER");
         v.setCreatedAt(LocalDateTime.now());
 
@@ -33,6 +33,6 @@ class VerificationRepositoryTest {
         var found = verificationRepository.findByEmail("user@example.com");
 
         assertThat(found).isPresent();
-        assertThat(found.get().getCode()).isEqualTo(123456);
+        assertThat(found.get().getCode()).isEqualTo("$2a$10$hashedVerificationCodePlaceholder");
     }
 }

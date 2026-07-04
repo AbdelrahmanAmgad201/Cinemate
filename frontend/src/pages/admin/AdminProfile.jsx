@@ -1,201 +1,139 @@
-import React, {useContext, useEffect, useState} from "react";
-import { AuthContext } from "../../context/AuthContext.jsx";
-import NavBar from "../../components/OrgAdminNavBar.jsx";
-import { LuEye, LuEyeOff, LuUser, LuMail, LuLock } from "react-icons/lu";
-import "./style/AdminProfile.css";
-import {ToastContext} from "../../context/ToastContext.jsx";
-import {MAX_LENGTHS} from "../../constants/constants.jsx";
-import {getAdminProfileApi, updateNameApi, updatePasswordApi} from "../../api/admin-api.jsx";
+import { useContext, useEffect, useState } from 'react';
+import { AuthContext } from '../../context/AuthContext.jsx';
+import NavBar from '../../components/OrgAdminNavBar.jsx';
+import { Eye, EyeOff, User, Mail, Lock } from 'lucide-react';
+import './style/AdminProfile.css';
+import { ToastContext } from '../../context/ToastContext.jsx';
+import { MAX_LENGTHS } from '../../constants/constants.jsx';
+import { getAdminProfileApi, updateNameApi, updatePasswordApi } from '../../api/admin-api.js';
+import Avatar from '../../components/ui/Avatar.jsx';
+import Input from '../../components/ui/Input.jsx';
+import Button from '../../components/ui/Button.jsx';
 
 export default function AdminProfile() {
     const { user } = useContext(AuthContext);
     const [isEditable, setIsEditable] = useState(false);
+    const [saving, setSaving] = useState(false);
 
-    // Form States
-    const [newName, setNewName] = useState(user?.name || "");
-    const [name, setName] = useState(user?.name || "");
-    const [newEmail, setNewEmail] = useState(user?.email || "");
-    const [newPassword, setNewPassword] = useState("");
+    const [newName, setNewName] = useState(user?.name || '');
+    const [name, setName] = useState(user?.name || '');
+    const [newPassword, setNewPassword] = useState('');
     const [showPassword, setShowPassword] = useState(false);
-    const [oldPassword, setOldPassword] = useState("");
+    const [oldPassword, setOldPassword] = useState('');
     const [showOldPassword, setShowOldPassword] = useState(false);
+    const [showPasswordFields, setShowPasswordFields] = useState(false);
 
-    const [showCodeInput, setShowCodeInput] = useState(false);
-    const [verificationCode, setVerificationCode] = useState("");
-
-    const {showToast} = useContext(ToastContext);
+    const { showToast } = useContext(ToastContext);
 
     const handleCancel = () => {
         setNewName(name);
-        setNewEmail(user?.email || "");
         setIsEditable(false);
-    };
-
-    const handleRequestCode = async () => {
-        setShowCodeInput(true);
+        setShowPasswordFields(false);
+        setOldPassword('');
+        setNewPassword('');
     };
 
     const handleSave = async () => {
+        setSaving(true);
         const promises = [];
-        let profileChanged = newName !== user.name;
-        let passwordChanged = oldPassword && newPassword && oldPassword !== newPassword;
+        const profileChanged = newName !== name;
+        const passwordChanged = oldPassword && newPassword;
 
-        if (profileChanged) {
-            const profileData = { name: newName };
-            promises.push(updateNameApi(profileData));
-        }
-
-        if (passwordChanged) {
-            const passwordData = {
-                oldPassword,
-                newPassword,
-            };
-            promises.push(updatePasswordApi(passwordData));
-        }
+        if (profileChanged) promises.push(updateNameApi({ name: newName }));
+        if (passwordChanged) promises.push(updatePasswordApi({ oldPassword, newPassword }));
 
         if (promises.length === 0) {
             setIsEditable(false);
+            setSaving(false);
             return;
         }
 
-            // Execute all necessary APIs at once
-            const results = await Promise.all(promises);
+        const results = await Promise.all(promises);
+        const allSuccess = results.every((res) => res.success);
 
-            // Check if all succeeded
-            const allSuccess = results.every(res => res.success);
-
-            if (allSuccess) {
-                showToast("Success", "Account updated successfully", "success");
-                setIsEditable(false);
-                setShowCodeInput(false);
-                setName(newName);
-            } else {
-                showToast("Error", "One or more updates failed", "error");
-            }
+        if (allSuccess) {
+            showToast('Success', 'Account updated successfully', 'success');
+            setIsEditable(false);
+            setShowPasswordFields(false);
+            setName(newName);
+        } else {
+            showToast('Error', 'One or more updates failed', 'error');
+        }
+        setSaving(false);
     };
 
     useEffect(() => {
-        const fetchAdminData = async () => {
-            const res = await getAdminProfileApi(); // Should return Admin
-
+        getAdminProfileApi().then((res) => {
             if (res.success) {
                 setName(res.data.name);
-                // Also sync our "editing" states
                 setNewName(res.data.name);
-                setNewEmail(res.data.email);
             }
-        };
-
-        fetchAdminData();
+        });
     }, []);
 
     return (
-        <div className="add-admin-page"> {/* Reusing the page container class */}
+        <div className="admin-profile-page">
             <NavBar />
 
             <div className="profile-container">
                 <div className="admin-profile-form">
                     <div className="profile-header">
-                        <div className="profile-avatar-large">
-                            {name.charAt(0) || "A"}
-                        </div>
-                        <h2>Admin Details</h2>
+                        <Avatar name={name} size="xl" />
+                        <h2>Admin details</h2>
                     </div>
 
-                    {/* Name Field */}
-                    <div className="input-field">
-                        <label><LuUser size={14} /> Full Name</label>
-                        {isEditable ? (
-                            <input
-                                type="text"
-                                value={newName}
-                                onChange={(e) => setNewName(e.target.value)}
-                                maxLength={MAX_LENGTHS.INPUT}
-                            />
-                        ) : (
+                    {isEditable ? (
+                        <Input label="Full name" icon={<User size={16} />} value={newName} onChange={(e) => setNewName(e.target.value)} maxLength={MAX_LENGTHS.INPUT} />
+                    ) : (
+                        <div className="input-field">
+                            <label><User size={14} /> Full name</label>
                             <div className="view-mode-text">{name}</div>
-                        )}
-                    </div>
+                        </div>
+                    )}
 
-                    {/* Email Field */}
                     <div className="input-field">
-                        <label><LuMail size={14} /> Email Address</label>
-                        {/* The following is commented out because we don't want to allow editing the email address yet. */}
-                        {/*{isEditable ? (*/}
-                        {/*    <input*/}
-                        {/*        type="email"*/}
-                        {/*        value={newEmail}*/}
-                        {/*        onChange={(e) => setNewEmail(e.target.value)}*/}
-                        {/*        maxLength={MAX_LENGTHS.INPUT}*/}
-
-                        {/*    />*/}
-                        {/*) : (*/}
-                            <div className="view-mode-text">{user?.email}</div>
-                        {/*)}*/}
+                        <label><Mail size={14} /> Email address</label>
+                        <div className="view-mode-text">{user?.email}</div>
                     </div>
 
-                    {/* Password Field */}
-                    <div className="input-field password-section">
-                        <label><LuLock size={14} /> Password</label>
-
+                    <div className="input-field">
+                        <label><Lock size={14} /> Password</label>
                         {!isEditable ? (
                             <div className="view-mode-text password-masked">••••••••••••</div>
+                        ) : !showPasswordFields ? (
+                            <button type="button" className="request-code-btn" onClick={() => setShowPasswordFields(true)}>
+                                Change password
+                            </button>
                         ) : (
                             <div className="password-edit-container">
-                                {!showCodeInput ? (
-                                    <button
-                                        type="button"
-                                        className="request-code-btn"
-                                        onClick={handleRequestCode}
-                                    >
-                                        Change Password
-                                    </button>
-                                ) : (
-                                    <div className="verification-flow">
-                                        <div className="verification-flow">
-
-                                            <div className="password-wrapper">
-                                                <input
-                                                    type={showOldPassword ? "text" : "password"}
-                                                    placeholder="Enter current password"
-                                                    onChange={(e) => setOldPassword(e.target.value)}
-                                                    maxLength={MAX_LENGTHS.INPUT}
-                                                />
-                                                <span className="password-toggle-icon" onClick={() => setShowOldPassword(!showOldPassword)}>
-                                                {showOldPassword ? <LuEye/> : <LuEyeOff/>}
-                                            </span>
-                                            </div>
-                                        </div>
-                                        <div className="password-wrapper">
-                                            <input
-                                                type={showPassword ? "text" : "password"}
-                                                placeholder="Enter new password"
-                                                onChange={(e) => setNewPassword(e.target.value)}
-                                                maxLength={MAX_LENGTHS.INPUT}
-                                                minLength={8}
-                                            />
-                                            <span className="password-toggle-icon" onClick={() => setShowPassword(!showPassword)}>
-                                                {showPassword ? <LuEye/> : <LuEyeOff/>}
-                                            </span>
-                                        </div>
-                                    </div>
-                                )}
+                                <Input
+                                    type={showOldPassword ? 'text' : 'password'}
+                                    placeholder="Current password"
+                                    onChange={(e) => setOldPassword(e.target.value)}
+                                    maxLength={MAX_LENGTHS.INPUT}
+                                    rightIcon={showOldPassword ? <Eye size={16} /> : <EyeOff size={16} />}
+                                    onRightIconClick={() => setShowOldPassword((s) => !s)}
+                                />
+                                <Input
+                                    type={showPassword ? 'text' : 'password'}
+                                    placeholder="New password"
+                                    onChange={(e) => setNewPassword(e.target.value)}
+                                    maxLength={MAX_LENGTHS.INPUT}
+                                    minLength={8}
+                                    rightIcon={showPassword ? <Eye size={16} /> : <EyeOff size={16} />}
+                                    onRightIconClick={() => setShowPassword((s) => !s)}
+                                />
                             </div>
                         )}
                     </div>
 
                     <div className="profile-actions">
                         {!isEditable ? (
-                            <button className="primary-btn" onClick={() => setIsEditable(true)}>
-                                Edit Profile
-                            </button>
+                            <Button onClick={() => setIsEditable(true)}>Edit profile</Button>
                         ) : (
                             <>
-                                <button className="secondary-btn" onClick={handleCancel}>Cancel</button>
-                                <button className="primary-btn" onClick={async () => {
-                                    await handleSave()
-                                    setIsEditable(false)
-                                }}>Save Changes</button>
+                                <Button variant="secondary" onClick={handleCancel}>Cancel</Button>
+                                <Button onClick={handleSave} loading={saving}>Save changes</Button>
                             </>
                         )}
                     </div>

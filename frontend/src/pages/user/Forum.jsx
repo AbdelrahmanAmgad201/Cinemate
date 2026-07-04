@@ -1,32 +1,34 @@
-import "./style/Forum.css";
-import '../../style/CommonModal.css';
-import calendar from "../../assets/icons/calendar.png";
-import React, { useCallback, useContext, useEffect, useState } from "react";
-import { PATHS, MAX_LENGTHS, PAGE_SIZE } from "../../constants/constants.jsx";
-import { formatCount } from "../../utils/formate.jsx";
-import { Link, useNavigate, useParams } from "react-router-dom";
-import {checkFollowApi, followForumApi, unfollowForumApi, getForumPostsApi, getForumApi, getModApi} from "../../api/forum-api.jsx";
-import PostsFeed from "../../components/PostsFeed.jsx";
-import  {addPostApi} from "../../api/post-api.jsx";
+import './style/Forum.css';
+import { Calendar, Plus } from 'lucide-react';
+import { useCallback, useContext, useEffect, useState } from 'react';
+import { PATHS, MAX_LENGTHS, PAGE_SIZE } from '../../constants/constants.jsx';
+import { formatCount } from '../../utils/formate.jsx';
+import { Link, useNavigate, useParams } from 'react-router-dom';
+import { checkFollowApi, followForumApi, unfollowForumApi, getForumPostsApi, getForumApi, getModApi } from '../../api/forum-api.js';
+import PostsFeed from '../../components/PostsFeed.jsx';
+import { addPostApi } from '../../api/post-api.js';
 
-import {AuthContext} from "../../context/AuthContext.jsx";
-import {ToastContext} from "../../context/ToastContext.jsx";
-import SortSelector from "../../components/SortSelector.jsx";
+import { AuthContext } from '../../context/AuthContext.jsx';
+import { ToastContext } from '../../context/ToastContext.jsx';
+import SortSelector from '../../components/SortSelector.jsx';
+import Avatar from '../../components/ui/Avatar.jsx';
+import Button from '../../components/ui/Button.jsx';
+import Modal from '../../components/ui/Modal.jsx';
+import Textarea from '../../components/ui/Textarea.jsx';
+import EmptyState from '../../components/ui/EmptyState.jsx';
 
-import {SORT_OPTIONS} from "../../constants/uiConstants.jsx";
+import { SORT_OPTIONS } from '../../constants/uiConstants.jsx';
 
 export default function Forum() {
-
     const { showToast } = useContext(ToastContext);
     const { user } = useContext(AuthContext);
     const { forumId } = useParams();
     const navigate = useNavigate();
 
-
     const [posts, setPosts] = useState([]);
     const [page, setPage] = useState(0);
     const [loading, setLoading] = useState(false);
-    const [hasMore, setHasMore] = useState(true); // if there are no more posts
+    const [hasMore, setHasMore] = useState(true);
     const [error, setError] = useState();
 
     const [forumName, setForumName] = useState();
@@ -35,157 +37,123 @@ export default function Forum() {
     const [followersCount, setFollowersCount] = useState();
     const [postsCount, setPostsCount] = useState();
 
-    const [moderators, setModerators] = useState([])
-
-
-    // determine if current user is a moderator by checking their id in the moderators list
+    const [moderators, setModerators] = useState([]);
     const isMod = !!(user && moderators.some((m) => m.id === user.id));
-
-    // TODO: handle this properly
-    const [isJoined, setIsJoined] = useState( false);
-
-    // TODO: handle MOD
-
+    const [isJoined, setIsJoined] = useState(false);
 
     useEffect(() => {
-
         const fetchForumDetails = async () => {
-            const res = await getForumApi({forumId})
-            const data = res.data;
-            // console.log(data)
+            const res = await getForumApi({ forumId });
 
             if (!res.success) {
-                showToast("Failed to fetch forum details", res.message || "unknown error", "error")
-                setError(res.message)
+                showToast('Failed to fetch forum details', res.message || 'unknown error', 'error');
+                setError(res.message);
                 navigate(PATHS.HOME);
                 return;
             }
 
-            setError(null)
-            setForumName(data.name)
-            setForumDescription(data.description)
-            setForumCreationDate(new Date(data.createdAt).toDateString())
-            setFollowersCount(data.followerCount)
-            setPostsCount(data.postCount)
-            const res2 = await getModApi({userId: data.ownerId24Bit})
-            setModerators([{id: data.ownerId, username: res2.data, avatar:null}])
-        }
+            const data = res.data;
+            setError(null);
+            setForumName(data.name);
+            setForumDescription(data.description);
+            setForumCreationDate(new Date(data.createdAt).toDateString());
+            setFollowersCount(data.followerCount);
+            setPostsCount(data.postCount);
+            const res2 = await getModApi({ userId: data.ownerId24Bit });
+            setModerators([{ id: data.ownerId, username: res2.data, avatar: null }]);
+        };
 
         const checkStatus = async () => {
             try {
                 const res = await checkFollowApi({ forumId });
-                const joined = res.data;
-                // console.log(res)
-
-                if (res && joined) {
-                    setIsJoined(true);
-                }
+                if (res && res.data) setIsJoined(true);
             } catch (error) {
-                console.error("Failed to check join status", error);
+                console.error('Failed to check join status', error);
             }
         };
+
         if (forumId) {
             fetchForumDetails();
             checkStatus();
         }
-    }, [forumId, showToast]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [forumId]);
 
-    const handleJoin = async () => { // TODO: handle this properly
-        // Tested the connection
-
+    const handleJoin = async () => {
         if (isJoined) {
-            // Tested the connection
-            const res = await unfollowForumApi({forumId});
-            console.log(res)
-            if (res.success === true) {
-                showToast("Success", "You have left the forum.", "success")
-                setIsJoined(!isJoined)
+            const res = await unfollowForumApi({ forumId });
+            if (res.success) {
+                showToast('Success', 'You have left the forum.', 'success');
+                setIsJoined(false);
                 return;
             }
-
-            showToast("Failed to leave forum", res.message || "unknown error", "error")
-            return
-        }
-
-        // Tested the connection
-
-        const res = await followForumApi({forumId});
-        console.log(res)
-        if (res.success === true) {
-            showToast("Success", "You have joined the forum.", "success")
-            setIsJoined(!isJoined)
+            showToast('Failed to leave forum', res.message || 'unknown error', 'error');
             return;
         }
 
-        showToast("Failed to join forum", res.message || "unknown error", "error")
-    }
+        const res = await followForumApi({ forumId });
+        if (res.success) {
+            showToast('Success', 'You have joined the forum.', 'success');
+            setIsJoined(true);
+            return;
+        }
+        showToast('Failed to join forum', res.message || 'unknown error', 'error');
+    };
 
     const [activeSort, setActiveSort] = useState(SORT_OPTIONS[0]);
-    const [isSortOpen, setIsSortOpen] = useState(false);
 
     const [showForm, setShowForm] = useState(false);
     const [submitting, setSubmitting] = useState(false);
-    const [postTitle, setPostTitle] = useState("");
-    const [postText, setPostText] = useState("");
-    const [postMedia, setPostMedia] = useState("");
+    const [postTitle, setPostTitle] = useState('');
+    const [postText, setPostText] = useState('');
 
-    // TODO: Test
-    const handleAddPost = async (e) => {
-        e.preventDefault();
-
-        setSubmitting(true);
-
-        const res = await addPostApi({forumId, title: postTitle, content: postText})
-
-        if (res.success === true) {
-            showToast("Success", "Your post has been submitted.", "success")
-            setPostTitle("");
-            setPostText("");
-            setPostMedia("");
-            setShowForm(false);
-
-            // Refresh ->
-            setPage(0);
-            setHasMore(true);
-            setPosts([]);
-            await fetchPosts(0, activeSort.value);
-        }
-        else {
-            showToast("Failed to submit review", res.message || "unknown error", "error")
-        }
-
-        setSubmitting(false);
-    }
-
-    // we use useCallback to memoize the fetchPosts function so that it doesn't re-render on every render cycle.
     const fetchPosts = useCallback(async (pageNum, sort) => {
         setLoading(true);
 
-        const res = await getForumPostsApi({forumId, page:pageNum, size: PAGE_SIZE.FORUM, sort: sort});
+        const res = await getForumPostsApi({ forumId, page: pageNum, size: PAGE_SIZE.FORUM, sort });
 
-        const newPosts = res.data.posts;
-        if (!res.success){
+        if (!res.success) {
             setHasMore(false);
+            setLoading(false);
             return;
         }
 
-        setPosts(prevPosts => {
-            if (pageNum === 0) return newPosts;
-            return [...prevPosts, ...newPosts];
-        });
-
+        const newPosts = res.data.posts;
+        setPosts((prevPosts) => (pageNum === 0 ? newPosts : [...prevPosts, ...newPosts]));
         if (newPosts.length < PAGE_SIZE.FORUM) setHasMore(false);
 
         setLoading(false);
     }, [forumId]);
 
-    // Reload page
+    const handleAddPost = async (e) => {
+        e.preventDefault();
+        setSubmitting(true);
+
+        const res = await addPostApi({ forumId, title: postTitle, content: postText });
+
+        if (res.success) {
+            showToast('Success', 'Your post has been submitted.', 'success');
+            setPostTitle('');
+            setPostText('');
+            setShowForm(false);
+
+            setPage(0);
+            setHasMore(true);
+            setPosts([]);
+            await fetchPosts(0, activeSort.value);
+        } else {
+            showToast('Failed to submit post', res.message || 'unknown error', 'error');
+        }
+
+        setSubmitting(false);
+    };
+
     useEffect(() => {
-        setPosts([])
+        setPosts([]);
         setPage(0);
         setHasMore(true);
         fetchPosts(0, activeSort.value);
-    }, [forumId, activeSort, fetchPosts])
+    }, [forumId, activeSort, fetchPosts]);
 
     const handleLoadMore = () => {
         const nextPage = page + 1;
@@ -193,100 +161,69 @@ export default function Forum() {
         fetchPosts(nextPage, activeSort.value);
     };
 
-    const handleChangeSort = (sort) => {
-        if (activeSort.value !== sort.value) {
-            setActiveSort(sort);
-        }
-        setIsSortOpen(false);
+    if (error != null) {
+        return (
+            <EmptyState
+                title="Forum not found"
+                description="This forum may have been removed or the link is incorrect."
+                actionLabel="Back to home"
+                onAction={() => navigate(PATHS.HOME)}
+            />
+        );
     }
-
-    if (error != null) return (
-        <div className="forum-container" style={{display: "flex", justifyContent: "center"}}>
-            <div className="error-message">No forum exists</div>
-        </div>
-    )
 
     return (
         <div className="forum-container">
+            <Modal
+                open={showForm}
+                onClose={() => setShowForm(false)}
+                title={`Create post in ${forumName || ''}`}
+                footer={
+                    <>
+                        <Button variant="ghost" onClick={() => setShowForm(false)} disabled={submitting}>Cancel</Button>
+                        <Button onClick={handleAddPost} loading={submitting} disabled={!postTitle.trim()}>Add post</Button>
+                    </>
+                }
+            >
+                <form className="create-post-form" onSubmit={handleAddPost}>
+                    <Textarea
+                        label="Title"
+                        rows={2}
+                        value={postTitle}
+                        onChange={(e) => setPostTitle(e.target.value.slice(0, MAX_LENGTHS.TEXTAREA))}
+                        placeholder={`Title (max ${MAX_LENGTHS.TEXTAREA} characters)`}
+                        maxLength={MAX_LENGTHS.TEXTAREA}
+                        required
+                    />
+                    <Textarea
+                        label="Body"
+                        rows={5}
+                        value={postText}
+                        onChange={(e) => setPostText(e.target.value.slice(0, MAX_LENGTHS.TEXTAREA))}
+                        placeholder={`Body text (max ${MAX_LENGTHS.TEXTAREA} characters)`}
+                        maxLength={MAX_LENGTHS.TEXTAREA}
+                    />
+                </form>
+            </Modal>
 
-            {/* Create post form */}
-            {showForm && (
-                <div className="modal-overlay" onMouseDown={() => setShowForm(false)}>
-                    <div className="modal" onMouseDown={(e) => e.stopPropagation()}>
-                        <h3>Create post</h3>
-                        <div className="header-left" style={{alignItems: "center", marginBottom: "10px"}}>
-                            <div className="forum-icon-placeholder" style={{width: "50px", height: "50px"}}></div>
-                            <h1 style={{fontSize: "16px"}}>{forumName}</h1>
-                        </div>
-                        <form onSubmit={handleAddPost}>
-
-                            <label>
-                                Title
-                                <textarea
-                                    rows="3"
-                                    value={postTitle} onChange={e => {
-                                    const inputValue = e.target.value;
-                                    if (inputValue.length <= MAX_LENGTHS.TEXTAREA) {
-                                        setPostTitle(inputValue);
-                                    }
-                                }}
-                                    placeholder={`Title (max ${MAX_LENGTHS.TEXTAREA} characters)`}
-                                    maxLength={MAX_LENGTHS.TEXTAREA}
-                                    required
-                                />
-                                <small>{postTitle.length} / {MAX_LENGTHS.TEXTAREA} characters</small>
-                            </label>
-
-                            <label>
-                                Body
-                                <textarea
-                                    rows="5"
-                                    value={postText} onChange={e => {
-                                    const inputValue = e.target.value;
-                                    if (inputValue.length <= MAX_LENGTHS.TEXTAREA) {
-                                        setPostText(inputValue);
-                                    }
-                                }}
-                                    placeholder={`Body text (max ${MAX_LENGTHS.TEXTAREA} characters)`}
-                                    maxLength={MAX_LENGTHS.TEXTAREA}
-                                />
-                                <small>{postText.length} / {MAX_LENGTHS.TEXTAREA} characters</small>
-                            </label>
-
-                            <div className="modal-actions">
-                                <button type="button" className="modal-btn-cancel" onClick={() => setShowForm(false)}>Cancel</button>
-                                <button type="submit" className="modal-btn-submit" disabled={submitting}>{submitting ? "Adding..." : "Add Post"}</button>
-                            </div>
-                        </form>
-                    </div>
-                </div>
-            )}
-
-
-            {/* Header*/}
-            <div className="forum-banner"></div>
+            <div className="forum-banner" />
             <div className="forum-header">
                 <div className="header-left">
-                    <div className="forum-icon-placeholder"></div>
+                    <Avatar name={forumName} size="xl" />
                     <h1>{forumName}</h1>
                 </div>
 
                 <div className="header-right">
-                    <button className="btn btn-outline" onClick={() => setShowForm(true)}>+  Create Post</button>
-                    {!isMod ? <button className="btn btn-fill" onClick={handleJoin}>{isJoined ? "Leave" : "Join"}</button>
-                        : <button className="btn btn-fill" onClick={() => navigate(PATHS.MOD.PAGE(forumId))}>Mod Tools</button>}
+                    <Button variant="secondary" icon={<Plus size={16} />} onClick={() => setShowForm(true)}>Create post</Button>
+                    {!isMod
+                        ? <Button variant={isJoined ? 'secondary' : 'primary'} onClick={handleJoin}>{isJoined ? 'Leave' : 'Join'}</Button>
+                        : <Button onClick={() => navigate(PATHS.MOD.PAGE(forumId))}>Mod tools</Button>}
                 </div>
             </div>
 
-            {/* Main Grid -> 2 Cols*/}
             <div className="forum-main-grid">
                 <main className="feed-col">
-
-                    <SortSelector
-                        currentSort = {activeSort}
-                        options = {SORT_OPTIONS}
-                        onSortChange = {handleChangeSort}
-                    />
+                    <SortSelector currentSort={activeSort} options={SORT_OPTIONS} onSortChange={setActiveSort} />
 
                     <PostsFeed
                         posts={posts}
@@ -295,7 +232,6 @@ export default function Forum() {
                         onLoadMore={handleLoadMore}
                         emptyMessage="No posts here yet."
                     />
-
                 </main>
 
                 <aside className="sidebar-col">
@@ -304,11 +240,11 @@ export default function Forum() {
                         <p className="sidebar-desc">{forumDescription}</p>
 
                         <span className="sidebar-meta">
-                            <img src={calendar} alt="calendar" className="sidebar-meta-icon"/>
+                            <Calendar size={15} />
                             Created {forumCreationDate}
                         </span>
 
-                        <hr className="sidebar-divider"/>
+                        <hr className="sidebar-divider" />
 
                         <div className="sidebar-stats row">
                             <div className="stat-box">
@@ -321,18 +257,14 @@ export default function Forum() {
                             </div>
                         </div>
 
-                        <hr className="sidebar-divider"/>
+                        <hr className="sidebar-divider" />
 
                         <div className="sidebar-mods">
-                            <h3>MODERATORS</h3>
-                            {moderators.map(({ id, username, avatar }) => (
+                            <h3>Moderators</h3>
+                            {moderators.map(({ id, username }) => (
                                 <div className="mod-user" key={id}>
                                     <Link to={PATHS.USER.PROFILE(id)}>
-                                        <img className="mod-icon-small"
-                                             src={avatar}
-                                             alt={``}
-                                             loading="lazy"
-                                        />
+                                        <Avatar name={username} size="xs" />
                                     </Link>
                                     <span>
                                         <Link to={PATHS.USER.PROFILE(id)}>{username}</Link>
@@ -341,11 +273,9 @@ export default function Forum() {
                                 </div>
                             ))}
                         </div>
-
                     </div>
                 </aside>
             </div>
-
         </div>
-    )
+    );
 }

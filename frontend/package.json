@@ -25,10 +25,8 @@
     "react-dom": "^19.2.0",
     "react-icons": "^5.5.0",
     "react-router-dom": "^7.9.6",
-    "react-slick": "^0.31.0",
     "react-tooltip": "^5.30.0",
     "sockjs-client": "^1.6.1",
-    "sweetalert2": "^11.26.3",
     "swiper": "^12.0.3",
     "uuid": "^13.0.0"
   },

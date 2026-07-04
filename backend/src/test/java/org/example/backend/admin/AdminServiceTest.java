@@ -1,6 +1,8 @@
 package org.example.backend.admin;
 
+import org.example.backend.errorHandler.ResourceNotFoundException;
 import org.example.backend.movie.Movie;
+import org.example.backend.movie.MovieDetailsDTO;
 import org.example.backend.movie.MovieRepository;
 import org.example.backend.organization.Organization;
 import org.example.backend.requests.Requests;
@@ -58,7 +60,7 @@ class AdminServiceTest {
 
         when(requestsRepository.findById(requestId)).thenReturn(Optional.of(request));
 
-        Movie result = adminService.getRequestedMovie(requestId);
+        MovieDetailsDTO result = adminService.getRequestedMovie(requestId);
 
         assertNotNull(result);
         assertEquals(100L, result.getMovieID());
@@ -144,10 +146,10 @@ class AdminServiceTest {
         when(adminRepository.findById(adminId)).thenReturn(Optional.of(admin));
         when(requestsRepository.findById(requestId)).thenReturn(Optional.empty());
 
-        RuntimeException exception = assertThrows(RuntimeException.class,
+        ResourceNotFoundException exception = assertThrows(ResourceNotFoundException.class,
                 () -> adminService.acceptRequests(adminId, requestId));
 
-        assertEquals("Movie not found", exception.getMessage());
+        assertEquals("Request not found", exception.getMessage());
         verify(requestsRepository).findById(requestId);
         verify(movieRepository, never()).save(any());
     }
@@ -219,10 +221,10 @@ class AdminServiceTest {
 
         when(requestsRepository.findById(requestId)).thenReturn(Optional.empty());
 
-        RuntimeException exception = assertThrows(RuntimeException.class,
+        ResourceNotFoundException exception = assertThrows(ResourceNotFoundException.class,
                 () -> adminService.declineRequest(adminId, requestId));
 
-        assertEquals("Movie not found", exception.getMessage());
+        assertEquals("Request not found", exception.getMessage());
         verify(requestsRepository).findById(requestId);
         verifyNoInteractions(adminRepository);
         verifyNoInteractions(movieRepository);

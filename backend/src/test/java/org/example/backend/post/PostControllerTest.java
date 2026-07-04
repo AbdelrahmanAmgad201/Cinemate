@@ -50,14 +50,14 @@ class PostControllerTest {
     // -------------------
     @Test
     void testAddPost_success() throws Exception {
-        AddPostDto dto = AddPostDto.builder()
+        AddPostDTO dto = AddPostDTO.builder()
                 .title("Hello")
                 .content("Clean content here")
                 .forumId(null)
                 .build();
 
         Post mockPost = Post.builder().id(new ObjectId()).build();
-        when(postService.addPost(any(AddPostDto.class), eq(10L))).thenReturn(mockPost);
+        when(postService.addPost(any(AddPostDTO.class), eq(10L))).thenReturn(mockPost);
 
         mockMvc.perform(post("/api/post/v1/post")
                         .requestAttr("userId", 10L)
@@ -69,14 +69,14 @@ class PostControllerTest {
 
     @Test
     void testAddPost_hateSpeech() throws Exception {
-        AddPostDto dto = AddPostDto.builder()
+        AddPostDTO dto = AddPostDTO.builder()
                 .title("Bad")
                 .content("Hate speech content")
                 .forumId(null)
                 .build();
 
         doThrow(new HateSpeechException("hate speech detected"))
-                .when(postService).addPost(any(AddPostDto.class), eq(10L));
+                .when(postService).addPost(any(AddPostDTO.class), eq(10L));
 
         mockMvc.perform(post("/api/post/v1/post")
                         .requestAttr("userId", 10L)
@@ -88,14 +88,14 @@ class PostControllerTest {
 
     @Test
     void testAddPost_internalServerError() throws Exception {
-        AddPostDto dto = AddPostDto.builder()
+        AddPostDTO dto = AddPostDTO.builder()
                 .title("Title")
                 .content("Some content")
                 .forumId(null)
                 .build();
 
         doThrow(new RuntimeException("unexpected failure"))
-                .when(postService).addPost(any(AddPostDto.class), eq(10L));
+                .when(postService).addPost(any(AddPostDTO.class), eq(10L));
 
         mockMvc.perform(post("/api/post/v1/post")
                         .requestAttr("userId", 10L)
@@ -111,7 +111,7 @@ class PostControllerTest {
     @Test
     void testUpdatePost_success() throws Exception {
         // Prepare the DTO for updating the post
-        AddPostDto dto = AddPostDto.builder()
+        AddPostDTO dto = AddPostDTO.builder()
                 .title("Updated Title")
                 .content("Updated content here")
                 .forumId(null) // Optional for update
@@ -122,7 +122,7 @@ class PostControllerTest {
 
         // Mock the service to return a Post object (or do nothing if your service returns void)
         Post updatedPost = Post.builder().id(postId).build();
-        when(postService.updatePost(eq(postId), any(AddPostDto.class), eq(10L)))
+        when(postService.updatePost(eq(postId), any(AddPostDTO.class), eq(10L)))
                 .thenReturn(updatedPost);
 
         // Perform PUT request
@@ -140,14 +140,14 @@ class PostControllerTest {
 
         ObjectId postId = new ObjectId();
 
-        AddPostDto dto = AddPostDto.builder()
+        AddPostDTO dto = AddPostDTO.builder()
                 .title("Bad update")
                 .content("Hate speech content")
                 .forumId(null)
                 .build();
 
         doThrow(new HateSpeechException("hate speech detected"))
-                .when(postService).updatePost(eq(postId), any(AddPostDto.class), eq(10L));
+                .when(postService).updatePost(eq(postId), any(AddPostDTO.class), eq(10L));
 
         mockMvc.perform(put("/api/post/v1/post/{postId}", postId)
                         .requestAttr("userId", 10L)
@@ -159,7 +159,7 @@ class PostControllerTest {
 
     @Test
     void testUpdatePost_internalServerError() throws Exception {
-        AddPostDto dto = AddPostDto.builder()
+        AddPostDTO dto = AddPostDTO.builder()
                 .title("Title")
                 .content("Some content")
                 .forumId(null)
@@ -168,7 +168,7 @@ class PostControllerTest {
         ObjectId postId = new ObjectId();
 
         doThrow(new RuntimeException("unexpected failure"))
-                .when(postService).updatePost(eq(postId), any(AddPostDto.class), eq(10L));
+                .when(postService).updatePost(eq(postId), any(AddPostDTO.class), eq(10L));
 
         mockMvc.perform(put("/api/post/v1/post/{postId}", postId)  // <-- use path variable
                         .requestAttr("userId", 10L)

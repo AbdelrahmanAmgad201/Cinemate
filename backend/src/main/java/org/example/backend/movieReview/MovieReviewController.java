@@ -1,6 +1,7 @@
 package org.example.backend.movieReview;
 
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -16,9 +17,9 @@ public class MovieReviewController {
     private MovieReviewService movieReviewService;
 
     @PostMapping("/v1/add-review")
-    public ResponseEntity<MovieReview> addOrUpdateReview(
+    public ResponseEntity<MovieReviewDetailsDTO> addOrUpdateReview(
             HttpServletRequest request,
-            @RequestBody MovieReviewDTO movieReviewDTO) {
+            @Valid @RequestBody MovieReviewDTO movieReviewDTO) {
 
         Long userId = (Long) request.getAttribute("userId");
 
@@ -27,7 +28,7 @@ public class MovieReviewController {
         );
     }
     @GetMapping("/v1/get-movie-reviews/{movieId}")
-    public ResponseEntity<Page<MovieReview>> getMovieReviews(
+    public ResponseEntity<Page<MovieReviewDetailsDTO>> getMovieReviews(
             @PathVariable Long movieId,
             Pageable pageable) {
 
@@ -37,7 +38,7 @@ public class MovieReviewController {
     }
 
     @GetMapping("/v1/my-movie-review")
-    public ResponseEntity<Page<MovieReview>> getMyMovieReviews(
+    public ResponseEntity<Page<MovieReviewDetailsDTO>> getMyMovieReviews(
             HttpServletRequest request,
             @PageableDefault Pageable pageable
     ){
@@ -46,7 +47,7 @@ public class MovieReviewController {
     }
 
     @GetMapping("/v1/other-user-movie-review/{userId}")
-    public ResponseEntity<Page<MovieReview>> getOtherUserMovieReviews(
+    public ResponseEntity<Page<MovieReviewDetailsDTO>> getOtherUserMovieReviews(
             @PathVariable Long userId,
             Pageable pageable
     ){

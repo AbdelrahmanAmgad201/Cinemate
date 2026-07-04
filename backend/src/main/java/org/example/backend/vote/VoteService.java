@@ -1,21 +1,23 @@
 package org.example.backend.vote;
 
-import jakarta.transaction.Transactional;
+import org.springframework.transaction.annotation.Transactional;
 import lombok.RequiredArgsConstructor;
 
 import org.bson.types.ObjectId;
 import org.example.backend.comment.Comment;
-import org.example.backend.comment.CommentRepository;
 import org.example.backend.deletion.AccessService;
 import org.example.backend.deletion.CascadeDeletionService;
 import org.example.backend.post.Post;
-import org.example.backend.post.PostRepository;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.mongodb.core.MongoTemplate;
+import org.springframework.data.mongodb.core.query.Criteria;
+import org.springframework.data.mongodb.core.query.Query;
+import org.springframework.data.mongodb.core.query.Update;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 
-import java.util.List;
+import static org.example.backend.util.IdConverter.longToObjectId;
+
+import java.time.Instant;
 
 @Service
 @RequiredArgsConstructor
@@ -24,8 +26,6 @@ public class VoteService {
     private final MongoTemplate mongoTemplate;
     private final CascadeDeletionService deletionService;
     private final AccessService accessService;
-    private final PostRepository postRepository;
-    private final CommentRepository commentRepository;
 
     @Transactional
     public void vote(VoteDTO voteDTO,Boolean isPost,Long userId) {
@@ -61,7 +61,7 @@ public class VoteService {
         voteRepository.save(vote);
     }
 
-    @Transactional
+    @Transactional(readOnly = true)
     public Integer isVote(ObjectId targetId,Long userId) {
         ObjectId objectUserId = longToObjectId(userId);
         Vote vote = voteRepository.findByIsDeletedIsFalseAndUserIdAndTargetId(objectUserId,targetId);
@@ -109,7 +109,7 @@ public class VoteService {
         Comment comment = mongoTemplate.findById(commentId, Comment.class);
 
         if (comment == null) {
-            throw new IllegalArgumentException("Post not found with id: " + commentId);
+            throw new IllegalArgumentException("Comment not found with id: " + commentId);
         }
 
         if (comment.getIsDeleted()) {
@@ -118,57 +118,37 @@ public class VoteService {
         return comment;
     }
 
-    private void incrementVote(Votable target,Boolean upVote) {
-        if(upVote) {
-            target.incrementUpvote();
-        }
-        else {
-            target.incrementDownvote();
-        }
-        target.updateScore();
-        if(target instanceof Post post) {
-            postRepository.save(post);
-        }
-        if(target instanceof Comment comment) {
-            commentRepository.save(comment);
+    // Applies vote-count changes atomically via MongoDB's $inc rather than
+    // load-mutate-save, which loses concurrent updates under any real load
+    // (REL-01: two simultaneous votes both read count=5, both write count=6).
+    private void incrementVote(Votable target, Boolean upVote) {
+        applyVoteDelta(target, upVote ? 1 : 0, upVote ? 0 : 1);
+    }
+
+    private void decrementVote(Votable target, Boolean upVote) {
+        applyVoteDelta(target, upVote ? -1 : 0, upVote ? 0 : -1);
+    }
+
+    private void updateIncrement(Votable target, Boolean upVote) {
+        applyVoteDelta(target, upVote ? 1 : -1, upVote ? -1 : 1);
+    }
+
+    private void applyVoteDelta(Votable target, int upvoteDelta, int downvoteDelta) {
+        int scoreDelta = upvoteDelta - downvoteDelta;
+        if (target instanceof Post post) {
+            Update update = new Update()
+                    .inc("upvoteCount", upvoteDelta)
+                    .inc("downvoteCount", downvoteDelta)
+                    .inc("score", scoreDelta)
+                    .set("lastActivityAt", Instant.now());
+            mongoTemplate.updateFirst(Query.query(Criteria.where("_id").is(post.getId())), update, Post.class);
+        } else if (target instanceof Comment comment) {
+            Update update = new Update()
+                    .inc("upvoteCount", upvoteDelta)
+                    .inc("downvoteCount", downvoteDelta)
+                    .inc("score", scoreDelta);
+            mongoTemplate.updateFirst(Query.query(Criteria.where("_id").is(comment.getId())), update, Comment.class);
         }
     }
 
-    private void decrementVote(Votable target,Boolean upVote) {
-        if(upVote) {
-            target.decrementUpvote();
-        }
-        else {
-            target.decrementDownvote();
-        }
-        target.updateScore();
-        if(target instanceof Post post) {
-            postRepository.save(post);
-        }
-        if(target instanceof Comment comment) {
-            commentRepository.save(comment);
-        }
-    }
-
-    private void updateIncrement(Votable target,Boolean upVote){
-        if(upVote) {
-            target.incrementUpvote();
-            target.decrementDownvote();
-        }
-        else {
-            target.incrementDownvote();
-            target.decrementUpvote();
-        }
-        target.updateScore();
-        if(target instanceof Post post) {
-            postRepository.save(post);
-        }
-        if(target instanceof Comment comment) {
-            commentRepository.save(comment);
-        }
-    }
-
-    private ObjectId longToObjectId(Long value) {
-        return new ObjectId(String.format("%024x", value));
-    }
 }

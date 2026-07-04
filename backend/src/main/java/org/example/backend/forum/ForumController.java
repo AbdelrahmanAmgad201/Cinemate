@@ -19,17 +19,17 @@ public class ForumController {
     private ForumService forumService;
 
     @PostMapping("/v1/create")
-    public ResponseEntity<Forum> createForum(
+    public ResponseEntity<ForumDetailsDTO> createForum(
             HttpServletRequest request,
             @Valid @RequestBody ForumCreationRequest requestDTO) {
 
         Long userId = (Long) request.getAttribute("userId");
-        Forum forum = forumService.createForum(requestDTO, userId);
+        ForumDetailsDTO forum = forumService.createForum(requestDTO, userId);
         return ResponseEntity.ok(forum);
     }
 
     @GetMapping("/v1/get-forum-by-id/{forumId}")
-    public ResponseEntity<Forum> getForumById(
+    public ResponseEntity<ForumDetailsDTO> getForumById(
             HttpServletRequest request,
             @PathVariable ObjectId forumId){
 
@@ -70,7 +70,7 @@ public class ForumController {
      */
 
     @GetMapping("/v1/search")
-    public ResponseEntity<SearchResultDto> searchForums(
+    public ResponseEntity<SearchResultDTO> searchForums(
             @RequestParam("q") String searchQuery,
             @PageableDefault(size = 20) Pageable pageable) {
 
@@ -78,7 +78,7 @@ public class ForumController {
             return ResponseEntity.badRequest().build();
         }
 
-        SearchResultDto results = forumService.searchForums(searchQuery.trim(), pageable);
+        SearchResultDTO results = forumService.searchForums(searchQuery.trim(), pageable);
         return ResponseEntity.ok(results);
     }
 

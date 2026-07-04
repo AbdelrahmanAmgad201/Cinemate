@@ -1,6 +1,7 @@
 package org.example.backend.verification;
 
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -16,7 +17,7 @@ public class VerificationController  {
 
 
     @PostMapping("/v1/verify")
-    public ResponseEntity<VerificationResponseDTO> verify(@RequestBody VerificationDTO verificationDTO) {
+    public ResponseEntity<VerificationResponseDTO> verify(@Valid @RequestBody VerificationDTO verificationDTO) {
         VerificationResponseDTO response = verificationService.verifyEmail(verificationDTO);
 
         if (response.isSuccess()) {
@@ -35,7 +36,7 @@ public class VerificationController  {
 
     @PutMapping("/v1/update-password-with-code")
     public ResponseEntity<String> updatePasswordWithVerificationCode(HttpServletRequest request,
-                @RequestBody UpdatePasswordWithVerificationDTO updatePasswordWithVerificationDTO) {
+                @Valid @RequestBody UpdatePasswordWithVerificationDTO updatePasswordWithVerificationDTO) {
         String email = (String) request.getAttribute("userEmail");
         String role = (String) request.getAttribute("userRole");
         verificationService.updatePasswordByVerificationCode(email,updatePasswordWithVerificationDTO,role);

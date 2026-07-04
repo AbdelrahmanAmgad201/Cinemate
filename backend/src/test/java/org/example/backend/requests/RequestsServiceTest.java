@@ -8,6 +8,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.Pageable;
 import org.springframework.test.context.ActiveProfiles;
 
 import java.time.LocalDateTime;
@@ -76,13 +77,14 @@ class RequestsServiceTest {
     // -----------------------------------------------------
     @Test
     void testGetAllPendingRequests() {
-        when(requestsRepository.findAllByState(State.PENDING)).thenReturn(List.of(request));
+        when(requestsRepository.findAllByState(eq(State.PENDING), any(Pageable.class)))
+                .thenReturn(List.of(request));
 
         List<Requests> pending = requestsService.getAllPendingRequests();
 
         assertEquals(1, pending.size());
         assertEquals(State.PENDING, pending.get(0).getState());
-        verify(requestsRepository).findAllByState(State.PENDING);
+        verify(requestsRepository).findAllByState(eq(State.PENDING), any(Pageable.class));
     }
 
     // -----------------------------------------------------
@@ -90,13 +92,14 @@ class RequestsServiceTest {
     // -----------------------------------------------------
     @Test
     void testGetAllOrganizationRequests() {
-        when(requestsRepository.findAllByOrganization_Id(1L)).thenReturn(List.of(request));
+        when(requestsRepository.findAllByOrganization_Id(eq(1L), any(Pageable.class)))
+                .thenReturn(List.of(request));
 
         List<Requests> orgRequests = requestsService.getAllOrganizationRequests(1L);
 
         assertEquals(1, orgRequests.size());
         assertEquals(organization, orgRequests.get(0).getOrganization());
-        verify(requestsRepository).findAllByOrganization_Id(1L);
+        verify(requestsRepository).findAllByOrganization_Id(eq(1L), any(Pageable.class));
     }
 
     // -----------------------------------------------------

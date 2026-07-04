@@ -1,7 +1,8 @@
 package org.example.backend.userfollowing;
 
-import jakarta.transaction.Transactional;
+import org.springframework.transaction.annotation.Transactional;
 import lombok.RequiredArgsConstructor;
+import org.example.backend.errorHandler.ResourceNotFoundException;
 import org.example.backend.user.User;
 import org.example.backend.user.UserRepository;
 import org.springframework.data.domain.Page;
@@ -39,9 +40,9 @@ public class FollowService {
 
             if(follows.getIsDeleted())    return;
             User followingUser = userRepository.findById(followingUserId)
-                    .orElseThrow(()->new RuntimeException("User not found"));
+                    .orElseThrow(()->new ResourceNotFoundException("User not found"));
             User followedUser = userRepository.findById(followedUserId)
-                    .orElseThrow(()->new RuntimeException("User not found"));
+                    .orElseThrow(()->new ResourceNotFoundException("User not found"));
             followingUser.setNumberOfFollowing(followingUser.getNumberOfFollowing()-1);
             followedUser.setNumberOfFollowers(followedUser.getNumberOfFollowers()-1);
             follows.setIsDeleted(true);
@@ -51,7 +52,7 @@ public class FollowService {
         }
     }
 
-    @Transactional
+    @Transactional(readOnly = true)
     public Boolean isFollowed(Long followingUserId, Long followedUserId){
         FollowsID followsId = getFollowsID(followingUserId, followedUserId);
         Optional<Follows> optionalFollow =  followsRepository.findById(followsId);
@@ -62,22 +63,22 @@ public class FollowService {
         return false;
     }
 
-    @Transactional
+    @Transactional(readOnly = true)
     public Page<FollowerView> getUserFollowers(Long followedUserId, Pageable pageable){
         return followsRepository.findAllByFollowedUser_IdAndIsDeletedFalse(followedUserId,pageable);
     }
 
-    @Transactional
+    @Transactional(readOnly = true)
     public Page<FollowingView> getUserFollowings(Long followingUserId, Pageable pageable){
         return followsRepository.findAllByFollowingUser_IdAndIsDeletedFalse(followingUserId,pageable);
     }
 
     private void newFollow(Long followingUserId, Long followedUserId,FollowsID followsId){
         User followingUser = userRepository.findById(followingUserId)
-                .orElseThrow(()->new RuntimeException("User not found"));
+                .orElseThrow(()->new ResourceNotFoundException("User not found"));
 
         User followedUser = userRepository.findById(followedUserId)
-                .orElseThrow(()->new RuntimeException("User not found"));
+                .orElseThrow(()->new ResourceNotFoundException("User not found"));
 
         followingUser.setNumberOfFollowing(followingUser.getNumberOfFollowing()+1);
         followedUser.setNumberOfFollowers(followedUser.getNumberOfFollowers()+1);

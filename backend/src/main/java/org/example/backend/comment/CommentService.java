@@ -1,6 +1,6 @@
 package org.example.backend.comment;
 
-import jakarta.transaction.Transactional;
+import org.springframework.transaction.annotation.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.bson.types.ObjectId;
 import org.example.backend.deletion.AccessService;
@@ -13,8 +13,13 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.mongodb.core.MongoTemplate;
+import org.springframework.data.mongodb.core.query.Criteria;
+import org.springframework.data.mongodb.core.query.Query;
+import org.springframework.data.mongodb.core.query.Update;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
+
+import static org.example.backend.util.IdConverter.longToObjectId;
 
 import java.time.Instant;
 import java.util.List;
@@ -39,13 +44,21 @@ public class CommentService {
             comment.setDepth(0);
         } else {
             comment.setDepth(parentComment.getDepth() + 1);
-            parentComment.setNumberOfReplies(parentComment.getNumberOfReplies() + 1);
-            commentRepository.save(parentComment); // persist the reply-count increment
+            // Atomic $inc (REL-01) instead of load-mutate-save, which loses concurrent
+            // replies under real load (two replies both read numberOfReplies=3, both save 4).
+            mongoTemplate.updateFirst(
+                    Query.query(Criteria.where("_id").is(parentComment.getId())),
+                    new Update().inc("numberOfReplies", 1),
+                    Comment.class);
         }
-        Post post = mongoTemplate.findById(postId, Post.class);
-        post.setCommentCount(post.getCommentCount() + 1);
-        post.updateLastActivityAt(Instant.now());
-        postRepository.save(post);
+        // Same atomic treatment for the post's commentCount, and $max instead of an
+        // unconditional overwrite to preserve updateLastActivityAt()'s "only move forward"
+        // semantics. This also removes the second, null-unchecked fetch of `post` that
+        // canComment() already validated exists (REL-03).
+        mongoTemplate.updateFirst(
+                Query.query(Criteria.where("_id").is(postId)),
+                new Update().inc("commentCount", 1).max("lastActivityAt", Instant.now()),
+                Post.class);
         return commentRepository.save(comment);
     }
 
@@ -69,8 +82,8 @@ public class CommentService {
         deletionService.deleteComment(comment.getId());
     }
 
-    @Transactional
-    public Page<Comment> getPostComments(ObjectId postId, int  page,int size,String sortBy) {
+    @Transactional(readOnly = true)
+    public Page<CommentView> getPostComments(ObjectId postId, int  page,int size,String sortBy) {
         Sort sort = getSort(sortBy);
         Pageable pageable = PageRequest.of(
                 page,
@@ -79,10 +92,14 @@ public class CommentService {
         return commentRepository.findByPostIdAndIsDeletedAndDepth(postId,false,0,pageable);
     }
 
-    @Transactional
-    public List<Comment> getReplies(ObjectId commentId,String sortBy) {
-        Sort sort = getSort(sortBy);
-        return commentRepository.findByParentIdAndIsDeleted(commentId,false,sort);
+    // Cap on direct replies returned for one comment (API-NEW-01) — a single
+    // heavily-replied comment could otherwise return an unbounded result set.
+    private static final int MAX_REPLIES = 200;
+
+    @Transactional(readOnly = true)
+    public List<CommentView> getReplies(ObjectId commentId,String sortBy) {
+        Pageable pageable = PageRequest.of(0, MAX_REPLIES, getSort(sortBy));
+        return commentRepository.findByParentIdAndIsDeleted(commentId,false,pageable);
     }
 
     private Sort  getSort(String  sortBy) {
@@ -119,7 +136,4 @@ public class CommentService {
         return mongoTemplate.findById(parentId, Comment.class);
     }
 
-    private ObjectId longToObjectId(Long value) {
-        return new ObjectId(String.format("%024x", value));
-    }
 }

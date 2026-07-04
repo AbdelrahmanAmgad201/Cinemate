@@ -2,17 +2,18 @@ package org.example.backend.watchparty;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.example.backend.errorHandler.ResourceNotFoundException;
 import org.example.backend.movie.Movie;
 import org.example.backend.movie.MovieRepository;
 import org.example.backend.user.User;
 import org.example.backend.user.UserRepository;
+import org.example.backend.watchparty.DTOs.WatchPartyCreatedResponse;
 import org.example.backend.watchparty.DTOs.WatchPartyCreationDTO;
 import org.example.backend.watchparty.DTOs.WatchPartyDetailsResponse;
 import org.example.backend.watchparty.DTOs.WatchPartyUserDTO;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.RestTemplate;
 
 import java.time.LocalDateTime;
@@ -35,20 +36,22 @@ public class WatchPartyService {
     private String apiKey;
 
     /**
-     * Creates a new watch party
+     * Creates a new watch party.
+     * <p>
+     * No method-level {@code @Transactional}: the microservice HTTP call must not run
+     * inside a MySQL transaction, or the connection is held open for the full round-trip
+     * (PERF-02). The DB row is written first (its own implicit transaction via
+     * {@code save()}), then the microservice is called; if that call fails, the row is
+     * deleted as a compensating action instead of being left orphaned (REL-02).
      */
-    @Transactional
-    public WatchParty create(WatchPartyUserDTO userDTO, Long movieId) {
+    public WatchPartyCreatedResponse create(WatchPartyUserDTO userDTO, Long movieId) {
         Movie movie = movieRepository.findById(movieId)
-                .orElseThrow(() -> new RuntimeException("Movie not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Movie not found"));
 
         User user = userRepository.findById(userDTO.getUserId())
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
         String partyId = UUID.randomUUID().toString();
-
-        // Call microservice to initialize party
-        callMicroserviceInitialize(partyId, movieId, movie.getMovieUrl(), userDTO);
 
         WatchParty watchParty = WatchParty.builder()
                 .partyId(partyId)
@@ -56,18 +59,25 @@ public class WatchPartyService {
                 .user(user)
                 .status(WatchPartyStatus.ACTIVE)
                 .build();
+        watchParty = watchPartyRepository.save(watchParty);
 
-        return watchPartyRepository.save(watchParty);
+        try {
+            callMicroserviceInitialize(partyId, movieId, movie.getMovieUrl(), userDTO);
+        } catch (RuntimeException e) {
+            watchPartyRepository.delete(watchParty);
+            throw e;
+        }
+
+        return WatchPartyCreatedResponse.from(watchParty);
     }
 
     /**
      * Gets watch party details from microservice
      */
-    @Transactional(readOnly = true)
     public WatchPartyDetailsResponse get(String partyId) {
         // Verify party exists in database
         WatchParty watchParty = watchPartyRepository.findByPartyId(partyId)
-                .orElseThrow(() -> new RuntimeException("Watch party not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Watch party not found"));
 
         // Verify party is still active
         if (watchParty.getStatus() != WatchPartyStatus.ACTIVE) {
@@ -75,20 +85,16 @@ public class WatchPartyService {
         }
 
         // Get full details from microservice
-        WatchPartyDetailsResponse response = callMicroserviceGetDetails(partyId);
-
-
-        return response;
+        return callMicroserviceGetDetails(partyId);
     }
 
     /**
      * Joins an existing watch party
      */
-    @Transactional
     public WatchPartyDetailsResponse join(WatchPartyUserDTO userDTO, String partyId) {
         // Verify party exists and is active
         WatchParty watchParty = watchPartyRepository.findByPartyId(partyId)
-                .orElseThrow(() -> new RuntimeException("Watch party not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Watch party not found"));
 
         if (watchParty.getStatus() != WatchPartyStatus.ACTIVE) {
             throw new RuntimeException("Watch party is no longer active");
@@ -96,7 +102,7 @@ public class WatchPartyService {
 
         // Verify user exists
         User user = userRepository.findById(userDTO.getUserId())
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
         // Call microservice to join party
         callMicroserviceJoin(partyId, userDTO);
@@ -108,15 +114,14 @@ public class WatchPartyService {
     /**
      * Leaves a watch party
      */
-    @Transactional
     public void leave(Long userId, String partyId) {
         // Verify party exists
         WatchParty watchParty = watchPartyRepository.findByPartyId(partyId)
-                .orElseThrow(() -> new RuntimeException("Watch party not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Watch party not found"));
 
         // Verify user exists
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
         // If user is the host, delete the entire party
         if (watchParty.getUser().getId().equals(userId)) {
@@ -133,10 +138,9 @@ public class WatchPartyService {
     /**
      * Deletes a watch party (host only)
      */
-    @Transactional
     public void delete(Long userId, String partyId) {
         WatchParty watchParty = watchPartyRepository.findByPartyId(partyId)
-                .orElseThrow(() -> new RuntimeException("Watch party not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Watch party not found"));
 
         // Verify user is the host
         if (!watchParty.getUser().getId().equals(userId)) {

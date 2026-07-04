@@ -18,7 +18,11 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 @Builder
 @Entity
-@Table(name = "movies")
+@Table(name = "movies", indexes = {
+        @Index(name = "idx_movie_genre", columnList = "genre"),
+        @Index(name = "idx_movie_rating", columnList = "average_rating"),
+        @Index(name = "idx_movie_admin", columnList = "admin_id")
+})
 public class Movie {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -79,7 +83,7 @@ public class Movie {
             ratingSum = 0L;
         }
         if (ratingCount == null) {
-            ratingCount = 1;
+            ratingCount = 0;
         }
         if (averageRating == null) {
             averageRating = 0D;

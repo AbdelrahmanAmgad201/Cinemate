@@ -11,6 +11,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 
+import java.util.Map;
 
 @Slf4j
 @Service
@@ -18,6 +19,10 @@ import org.springframework.web.client.RestTemplate;
 public class HateSpeechService {
     @Value("${hatespeech.model.url}")
     private String url;
+
+    @Value("${hatespeech.api.key}")
+    private String apiKey;
+
     private final RestTemplate restTemplate;
 
     /**
@@ -31,8 +36,8 @@ public class HateSpeechService {
         try {
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.APPLICATION_JSON);
-            String body = "{\"text\":\"" + text.replace("\\", "\\\\").replace("\"", "\\\"") + "\"}";
-            HttpEntity<String> request = new HttpEntity<>(body, headers);
+            headers.set("X-Internal-API-Key", apiKey);
+            HttpEntity<Map<String, String>> request = new HttpEntity<>(Map.of("text", text), headers);
             ResponseEntity<Boolean> response = restTemplate.postForEntity(url, request, Boolean.class);
             return Boolean.TRUE.equals(response.getBody());
         } catch (RestClientException e) {

@@ -110,7 +110,7 @@ class MovieReviewServiceTest {
         when(reviewRepository.save(any(MovieReview.class))).thenReturn(savedReview);
         when(movieRepository.save(any(Movie.class))).thenReturn(movie);
 
-        MovieReview result = reviewService.addOrUpdateReview(userId, dto);
+        MovieReviewDetailsDTO result = reviewService.addOrUpdateReview(userId, dto);
 
         assertNotNull(result);
         assertEquals(dto.getRating(), result.getRating());
@@ -144,7 +144,7 @@ class MovieReviewServiceTest {
         when(reviewRepository.save(any(MovieReview.class))).thenReturn(existingReview);
         when(movieRepository.save(any(Movie.class))).thenReturn(movie);
 
-        MovieReview result = reviewService.addOrUpdateReview(userId, dto);
+        MovieReviewDetailsDTO result = reviewService.addOrUpdateReview(userId, dto);
 
         assertNotNull(result);
         assertEquals(dto.getRating(), result.getRating());

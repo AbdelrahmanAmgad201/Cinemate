@@ -1,19 +1,21 @@
 package org.example.backend.vote;
 
+import org.bson.Document;
 import org.bson.types.ObjectId;
 import org.example.backend.comment.Comment;
-import org.example.backend.comment.CommentRepository;
 import org.example.backend.deletion.AccessService;
 import org.example.backend.deletion.CascadeDeletionService;
 import org.example.backend.post.Post;
-import org.example.backend.post.PostRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.mongodb.core.MongoTemplate;
+import org.springframework.data.mongodb.core.query.Query;
+import org.springframework.data.mongodb.core.query.Update;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.test.context.ActiveProfiles;
 
@@ -36,12 +38,6 @@ class VoteServiceTest {
 
     @Mock
     private AccessService accessService;
-
-    @Mock
-    private PostRepository postRepository;
-
-    @Mock
-    private CommentRepository commentRepository;
 
     @InjectMocks
     private VoteService voteService;
@@ -98,6 +94,34 @@ class VoteServiceTest {
         updateVoteDTO.setValue(-1);
     }
 
+    // ==================== helpers ====================
+
+    // Vote counters are now updated atomically via MongoTemplate's $inc (REL-01) instead
+    // of load-mutate-save, so these tests verify the delta sent to Mongo rather than a
+    // mutated in-memory object.
+    private void verifyPostUpdate(int upvoteDelta, int downvoteDelta, int scoreDelta) {
+        ArgumentCaptor<Update> captor = ArgumentCaptor.forClass(Update.class);
+        verify(mongoTemplate).updateFirst(any(Query.class), captor.capture(), eq(Post.class));
+        assertIncDeltas(captor.getValue(), upvoteDelta, downvoteDelta, scoreDelta);
+    }
+
+    private void verifyCommentUpdate(int upvoteDelta, int downvoteDelta, int scoreDelta) {
+        ArgumentCaptor<Update> captor = ArgumentCaptor.forClass(Update.class);
+        verify(mongoTemplate).updateFirst(any(Query.class), captor.capture(), eq(Comment.class));
+        assertIncDeltas(captor.getValue(), upvoteDelta, downvoteDelta, scoreDelta);
+    }
+
+    private void assertIncDeltas(Update update, int upvoteDelta, int downvoteDelta, int scoreDelta) {
+        Document incDoc = (Document) update.getUpdateObject().get("$inc");
+        assertEquals(upvoteDelta, incDoc.getInteger("upvoteCount"));
+        assertEquals(downvoteDelta, incDoc.getInteger("downvoteCount"));
+        assertEquals(scoreDelta, incDoc.getInteger("score"));
+    }
+
+    private void verifyNoMongoUpdate() {
+        verify(mongoTemplate, never()).updateFirst(any(Query.class), any(Update.class), any(Class.class));
+    }
+
     // ==================== VOTE ON POST TESTS ====================
 
     @Test
@@ -107,8 +131,7 @@ class VoteServiceTest {
 
         voteService.vote(voteDTO, true, userId);
 
-        assertEquals(6, testPost.getUpvoteCount());
-        verify(postRepository).save(testPost);
+        verifyPostUpdate(1, 0, 1);
         verify(voteRepository).save(argThat(vote ->
                 vote.getTargetId().equals(postId) &&
                         vote.getUserId().equals(userObjectId) &&
@@ -125,8 +148,7 @@ class VoteServiceTest {
 
         voteService.vote(voteDTO, true, userId);
 
-        assertEquals(3, testPost.getDownvoteCount());
-        verify(postRepository).save(testPost);
+        verifyPostUpdate(0, 1, -1);
         verify(voteRepository).save(argThat(vote ->
                 vote.getVoteType().equals(-1)
         ));
@@ -140,7 +162,7 @@ class VoteServiceTest {
                 () -> voteService.vote(voteDTO, true, userId));
 
         verify(voteRepository, never()).save(any());
-        verify(postRepository, never()).save(any());
+        verifyNoMongoUpdate();
     }
 
     @Test
@@ -152,6 +174,7 @@ class VoteServiceTest {
                 () -> voteService.vote(voteDTO, true, userId));
 
         verify(voteRepository, never()).save(any());
+        verifyNoMongoUpdate();
     }
 
     // ==================== VOTE ON COMMENT TESTS ====================
@@ -164,8 +187,7 @@ class VoteServiceTest {
 
         voteService.vote(voteDTO, false, userId);
 
-        assertEquals(4, testComment.getUpvoteCount());
-        verify(commentRepository).save(testComment);
+        verifyCommentUpdate(1, 0, 1);
         verify(voteRepository).save(argThat(vote ->
                 vote.getTargetId().equals(commentId) &&
                         !vote.getIsPost()
@@ -181,8 +203,7 @@ class VoteServiceTest {
 
         voteService.vote(voteDTO, false, userId);
 
-        assertEquals(2, testComment.getDownvoteCount());
-        verify(commentRepository).save(testComment);
+        verifyCommentUpdate(0, 1, -1);
     }
 
     @Test
@@ -221,11 +242,9 @@ class VoteServiceTest {
         updateVoteDTO.setValue(-1);
         voteService.updateVote(updateVoteDTO, userId);
 
-        // Should increment downvote and decrement upvote
-        assertEquals(4, testPost.getUpvoteCount());
-        assertEquals(3, testPost.getDownvoteCount());
+        // Should decrement upvote and increment downvote
+        verifyPostUpdate(-1, 1, -2);
         assertEquals(-1, testVote.getVoteType());
-        verify(postRepository).save(testPost);
         verify(voteRepository).save(testVote);
     }
 
@@ -241,10 +260,8 @@ class VoteServiceTest {
         voteService.updateVote(updateVoteDTO, userId);
 
         // Should increment upvote and decrement downvote
-        assertEquals(6, testPost.getUpvoteCount());
-        assertEquals(1, testPost.getDownvoteCount());
+        verifyPostUpdate(1, -1, 2);
         assertEquals(1, testVote.getVoteType());
-        verify(postRepository).save(testPost);
     }
 
     @Test
@@ -262,9 +279,7 @@ class VoteServiceTest {
         updateVoteDTO.setValue(-1);
         voteService.updateVote(updateVoteDTO, userId);
 
-        assertEquals(2, testComment.getUpvoteCount());
-        assertEquals(2, testComment.getDownvoteCount());
-        verify(commentRepository).save(testComment);
+        verifyCommentUpdate(-1, 1, -2);
     }
 
     @Test
@@ -314,8 +329,7 @@ class VoteServiceTest {
 
         voteService.deleteVote(postId, userId);
 
-        assertEquals(4, testPost.getUpvoteCount());
-        verify(postRepository).save(testPost);
+        verifyPostUpdate(-1, 0, -1);
         verify(deletionService).deleteVote(voteId);
     }
 
@@ -330,8 +344,7 @@ class VoteServiceTest {
 
         voteService.deleteVote(postId, userId);
 
-        assertEquals(1, testPost.getDownvoteCount());
-        verify(postRepository).save(testPost);
+        verifyPostUpdate(0, -1, 1);
         verify(deletionService).deleteVote(voteId);
     }
 
@@ -348,8 +361,7 @@ class VoteServiceTest {
 
         voteService.deleteVote(commentId, userId);
 
-        assertEquals(2, testComment.getUpvoteCount());
-        verify(commentRepository).save(testComment);
+        verifyCommentUpdate(-1, 0, -1);
         verify(deletionService).deleteVote(voteId);
     }
 
@@ -439,9 +451,9 @@ class VoteServiceTest {
         updateVoteDTO.setValue(1); // Same as current
         voteService.updateVote(updateVoteDTO, userId);
 
-        // Should still update (increment upvote, decrement downvote)
-        assertEquals(6, testPost.getUpvoteCount());
-        assertEquals(1, testPost.getDownvoteCount());
+        // The service doesn't special-case "no actual change" — it always applies the
+        // increment-upvote/decrement-downvote delta for the requested direction.
+        verifyPostUpdate(1, -1, 2);
     }
 
     @Test
@@ -453,8 +465,8 @@ class VoteServiceTest {
 
         voteService.vote(voteDTO, true, userId);
 
-        assertEquals(1, testPost.getUpvoteCount());
-        assertEquals(0, testPost.getDownvoteCount());
+        // Atomic $inc deltas don't depend on the starting count.
+        verifyPostUpdate(1, 0, 1);
     }
 
     @Test
@@ -469,7 +481,6 @@ class VoteServiceTest {
 
         voteService.deleteVote(postId, userId);
 
-        assertEquals(-1, testPost.getDownvoteCount());
-        verify(postRepository).save(testPost);
+        verifyPostUpdate(0, -1, 1);
     }
 }

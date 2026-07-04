@@ -1,6 +1,7 @@
 package org.example.backend.requests;
 
 import org.example.backend.organization.RequestsOverView;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.repository.query.Param;
@@ -21,10 +22,12 @@ public interface RequestsRepository extends JpaRepository<Requests, Long> {
             "AND r.state IN ('ACCEPTED', 'REJECTED')")
     void deleteOldNonPending(LocalDateTime cutoff);
 
-    List<Requests> findAllByState(State state);
-    List<Requests> findAllByOrganization_Id(Long id);
+    // Pageable caps unbounded result sets (API-NEW-01) — callers pass a fixed page size,
+    // not user-driven paging, so these stay List<> rather than Page<>.
+    List<Requests> findAllByState(State state, Pageable pageable);
+    List<Requests> findAllByOrganization_Id(Long id, Pageable pageable);
 
-    List<Requests> findByAdmin_Id(Long id);
+    List<Requests> findByAdmin_Id(Long id, Pageable pageable);
 
     @Query("""
         SELECT new org.example.backend.organization.RequestsOverView(

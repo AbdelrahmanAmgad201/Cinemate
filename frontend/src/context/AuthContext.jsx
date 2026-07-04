@@ -1,10 +1,10 @@
 import {useState, useEffect, createContext, useContext} from 'react'
-import signInApi from '../api/sign-in-api.jsx';
-import signOutApi from '../api/sign-out-api.jsx';
-import signUpApi from '../api/sign-up-api.jsx';
-import verifyApi from '../api/verify-api.jsx';
-import signUpOrgDetailsApi from '../api/sign-up-org-details-api.jsx';
-import signUpUserDetailsApi from '../api/sign-up-user-details-api.jsx';
+import signInApi from '../api/sign-in-api.js';
+import signOutApi from '../api/sign-out-api.js';
+import signUpApi from '../api/sign-up-api.js';
+import verifyApi from '../api/verify-api.js';
+import signUpOrgDetailsApi from '../api/sign-up-org-details-api.js';
+import signUpUserDetailsApi from '../api/sign-up-user-details-api.js';
 
 
 import {jwtDecode}  from "jwt-decode";

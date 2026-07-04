@@ -2,10 +2,10 @@ package org.example.backend.security;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import lombok.RequiredArgsConstructor;
 import org.example.backend.user.User;
 import org.example.backend.user.UserRepository;
 import org.example.backend.user.OAuthUser;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.oauth2.core.user.OAuth2User;
@@ -16,26 +16,22 @@ import org.springframework.web.util.UriComponentsBuilder;
 import java.io.IOException;
 
 @Component
+@RequiredArgsConstructor
 public class OAuthSuccessHandler extends SimpleUrlAuthenticationSuccessHandler {
 
-    @Autowired
-    private JWTProvider jwtProvider;
-
-    private UserRepository userRepository;
+    private final JWTProvider jwtProvider;
+    private final UserRepository userRepository;
+    private final OAuthExchangeService oAuthExchangeService;
 
     /**
      * The frontend base URL (e.g. http://localhost:5173 in dev, https://cinemate.example.com in prod).
      * After a successful Google login, the backend redirects to
-     *   ${app.frontend.url}/oauth2/redirect?token=<JWT>
-     * so the frontend can pick up the token.
+     *   ${app.frontend.url}/oauth2/redirect?code=<one-time exchange code>
+     * so the frontend can trade the code for the JWT via POST /api/auth/v1/oauth-token.
+     * The JWT itself never appears in the URL — see SEC-04.
      */
     @Value("${app.frontend.url}")
     private String frontendUrl;
-
-    public OAuthSuccessHandler(JWTProvider jwtProvider, UserRepository userRepository) {
-        this.jwtProvider = jwtProvider;
-        this.userRepository = userRepository;
-    }
 
     @Override
     public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response, Authentication authentication) throws IOException {
@@ -61,12 +57,11 @@ public class OAuthSuccessHandler extends SimpleUrlAuthenticationSuccessHandler {
         });
 
         String token = jwtProvider.generateToken(user);
+        String code = oAuthExchangeService.issueCode(token);
 
-        // Redirect to the frontend OAuth landing page with the JWT as a query param.
-        // frontendUrl is injected from app.frontend.url (set via FRONTEND_URL env var).
         String redirectUrl = UriComponentsBuilder
                 .fromUriString(frontendUrl + "/oauth2/redirect")
-                .queryParam("token", token)
+                .queryParam("code", code)
                 .build()
                 .toUriString();
 

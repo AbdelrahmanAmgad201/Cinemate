@@ -5,9 +5,11 @@ import lombok.extern.slf4j.Slf4j;
 import org.bson.types.ObjectId;
 import org.example.backend.deletion.AccessService;
 import org.example.backend.deletion.CascadeDeletionService;
+import org.example.backend.errorHandler.ResourceNotFoundException;
 import org.example.backend.hateSpeech.HateSpeechService;
 import org.example.backend.hateSpeech.HateSpeechException;
 import org.example.backend.user.User;
+import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.mongodb.core.MongoTemplate;
@@ -17,6 +19,8 @@ import org.springframework.data.mongodb.core.query.Update;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
+
+import static org.example.backend.util.IdConverter.longToObjectId;
 
 import java.time.Instant;
 import java.util.List;
@@ -34,7 +38,8 @@ public class ForumService {
     private final MongoTemplate mongoTemplate;
     private final HateSpeechService hateSpeechService;
 
-    public Forum createForum(ForumCreationRequest request, Long userId) {
+    @CacheEvict(value = "exploreForum", allEntries = true)
+    public ForumDetailsDTO createForum(ForumCreationRequest request, Long userId) {
         if (!hateSpeechService.analyzeText(request.getName())||!hateSpeechService.analyzeText(request.getDescription())) {
             throw new HateSpeechException("hate speech detected");
         }
@@ -46,9 +51,10 @@ public class ForumService {
                 .createdAt(Instant.now())
                 .build();
 
-        return forumRepository.save(forum);
+        return ForumDetailsDTO.from(forumRepository.save(forum));
     }
 
+    @CacheEvict(value = "exploreForum", allEntries = true)
     public void deleteForum(ObjectId forumId, long userId) {
         if (!accessService.canDeleteForum(longToObjectId(userId), forumId)) {
             throw new AccessDeniedException("User " + " cannot delete this forum");
@@ -57,6 +63,7 @@ public class ForumService {
         deletionService.deleteForum(forumId);
     }
 
+    @CacheEvict(value = "exploreForum", allEntries = true)
     public Forum updateForum(ObjectId forumId, ForumCreationRequest request, long userId) {
         Forum forum = mongoTemplate.findById(forumId, Forum.class);
 
@@ -136,7 +143,7 @@ public class ForumService {
         return mongoTemplate.updateMulti(query, update, collection).getModifiedCount();
     }
 
-    public SearchResultDto searchForums(String searchTerm, Pageable pageable) {
+    public SearchResultDTO searchForums(String searchTerm, Pageable pageable) {
         Page<Forum> forumsPage = forumRepository.findByNameContainingIgnoreCaseAndIsDeletedFalse(
                 searchTerm,
                 pageable
@@ -149,16 +156,19 @@ public class ForumService {
         return forumRepository.findAllByOwnerIdAndIsDeletedFalse(ownerId,pageable);
     }
 
-    public Forum getForumById(ObjectId forumId) {
-        Forum forum =mongoTemplate.findById(forumId, Forum.class);
-        if (forum.getIsDeleted()) {
-            throw new IllegalStateException("Cannot update a deleted forum");
+    public ForumDetailsDTO getForumById(ObjectId forumId) {
+        Forum forum = mongoTemplate.findById(forumId, Forum.class);
+        if (forum == null) {
+            throw new ResourceNotFoundException("Forum not found with id: " + forumId);
         }
-        return forum;
+        if (forum.getIsDeleted()) {
+            throw new IllegalStateException("Cannot access a deleted forum");
+        }
+        return ForumDetailsDTO.from(forum);
     }
 
-    private SearchResultDto buildSearchResult(Page<Forum> page) {
-        return SearchResultDto.builder()
+    private SearchResultDTO buildSearchResult(Page<Forum> page) {
+        return SearchResultDTO.builder()
                 .forums(page.getContent())
                 .currentPage(page.getNumber())
                 .totalPages(page.getTotalPages())
@@ -177,8 +187,5 @@ public class ForumService {
         return forum.getName();
     }
 
-    private ObjectId longToObjectId(Long value) {
-        return new ObjectId(String.format("%024x", value));
-    }
 }
 

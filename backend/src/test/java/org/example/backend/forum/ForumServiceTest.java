@@ -91,12 +91,12 @@ class ForumServiceTest {
             return forum;
         });
 
-        Forum result = forumService.createForum(creationRequest, userId);
+        ForumDetailsDTO result = forumService.createForum(creationRequest, userId);
 
         assertNotNull(result);
         assertEquals("New Forum", result.getName());
         assertEquals("New Forum Description", result.getDescription());
-        assertEquals(userObjectId, result.getOwnerId());
+        assertEquals(userObjectId.toString(), result.getOwnerId());
         assertNotNull(result.getCreatedAt());
 
         verify(hateSpeechService).analyzeText("New Forum");
@@ -155,23 +155,29 @@ class ForumServiceTest {
     @Test
     void createForum_DefaultValues_AreSet() {
         when(hateSpeechService.analyzeText(anyString())).thenReturn(true);
-        when(forumRepository.save(any(Forum.class))).thenAnswer(i -> i.getArgument(0));
+        when(forumRepository.save(any(Forum.class))).thenAnswer(i -> {
+            Forum forum = i.getArgument(0);
+            forum.setId(forumId);
+            return forum;
+        });
 
-        Forum result = forumService.createForum(creationRequest, userId);
+        ForumDetailsDTO result = forumService.createForum(creationRequest, userId);
 
         assertEquals(0, result.getFollowerCount());
         assertEquals(0, result.getPostCount());
-        assertFalse(result.getIsDeleted());
-        assertNull(result.getDeletedAt());
     }
 
     @Test
     void createForum_SetsCreatedAtTimestamp() {
         when(hateSpeechService.analyzeText(anyString())).thenReturn(true);
         Instant before = Instant.now();
-        when(forumRepository.save(any(Forum.class))).thenAnswer(i -> i.getArgument(0));
+        when(forumRepository.save(any(Forum.class))).thenAnswer(i -> {
+            Forum forum = i.getArgument(0);
+            forum.setId(forumId);
+            return forum;
+        });
 
-        Forum result = forumService.createForum(creationRequest, userId);
+        ForumDetailsDTO result = forumService.createForum(creationRequest, userId);
         Instant after = Instant.now();
 
         assertNotNull(result.getCreatedAt());
@@ -225,7 +231,11 @@ class ForumServiceTest {
         // FIXED: Both must return true
         when(hateSpeechService.analyzeText("Updated Forum")).thenReturn(true);
         when(hateSpeechService.analyzeText("Updated Description")).thenReturn(true);
-        when(forumRepository.save(any(Forum.class))).thenAnswer(i -> i.getArgument(0));
+        when(forumRepository.save(any(Forum.class))).thenAnswer(i -> {
+            Forum forum = i.getArgument(0);
+            forum.setId(forumId);
+            return forum;
+        });
 
         Forum result = forumService.updateForum(forumId, updateRequest, userId);
 
@@ -315,7 +325,11 @@ class ForumServiceTest {
     void updateForum_PreservesOtherFields() {
         when(mongoTemplate.findById(forumId, Forum.class)).thenReturn(testForum);
         when(hateSpeechService.analyzeText(anyString())).thenReturn(true);
-        when(forumRepository.save(any(Forum.class))).thenAnswer(i -> i.getArgument(0));
+        when(forumRepository.save(any(Forum.class))).thenAnswer(i -> {
+            Forum forum = i.getArgument(0);
+            forum.setId(forumId);
+            return forum;
+        });
 
         Forum result = forumService.updateForum(forumId, creationRequest, userId);
 
@@ -336,7 +350,11 @@ class ForumServiceTest {
 
         when(mongoTemplate.findById(forumId, Forum.class)).thenReturn(testForum);
         when(hateSpeechService.analyzeText(anyString())).thenReturn(true);
-        when(forumRepository.save(any(Forum.class))).thenAnswer(i -> i.getArgument(0));
+        when(forumRepository.save(any(Forum.class))).thenAnswer(i -> {
+            Forum forum = i.getArgument(0);
+            forum.setId(forumId);
+            return forum;
+        });
 
         Forum result = forumService.updateForum(forumId, updateRequest, userId);
 
@@ -373,7 +391,7 @@ class ForumServiceTest {
         when(forumRepository.findByNameContainingIgnoreCaseAndIsDeletedFalse("java", pageable))
                 .thenReturn(forumPage);
 
-        SearchResultDto result = forumService.searchForums("java", pageable);
+        SearchResultDTO result = forumService.searchForums("java", pageable);
 
         assertNotNull(result);
         assertEquals(2, result.getForums().size());
@@ -393,7 +411,7 @@ class ForumServiceTest {
         when(forumRepository.findByNameContainingIgnoreCaseAndIsDeletedFalse("nonexistent", pageable))
                 .thenReturn(emptyPage);
 
-        SearchResultDto result = forumService.searchForums("nonexistent", pageable);
+        SearchResultDTO result = forumService.searchForums("nonexistent", pageable);
 
         assertNotNull(result);
         assertTrue(result.getForums().isEmpty());
@@ -410,7 +428,7 @@ class ForumServiceTest {
         when(forumRepository.findByNameContainingIgnoreCaseAndIsDeletedFalse("test", pageable))
                 .thenReturn(forumPage);
 
-        SearchResultDto result = forumService.searchForums("test", pageable);
+        SearchResultDTO result = forumService.searchForums("test", pageable);
 
         assertEquals(1, result.getCurrentPage());
         assertEquals(3, result.getTotalPages());
@@ -430,7 +448,7 @@ class ForumServiceTest {
         when(forumRepository.findByNameContainingIgnoreCaseAndIsDeletedFalse("test", pageable))
                 .thenReturn(forumPage);
 
-        SearchResultDto result = forumService.searchForums("test", pageable);
+        SearchResultDTO result = forumService.searchForums("test", pageable);
 
         assertFalse(result.isHasNext());
         assertTrue(result.isHasPrevious());
@@ -444,7 +462,7 @@ class ForumServiceTest {
         when(forumRepository.findByNameContainingIgnoreCaseAndIsDeletedFalse("TEST", pageable))
                 .thenReturn(forumPage);
 
-        SearchResultDto result = forumService.searchForums("TEST", pageable);
+        SearchResultDTO result = forumService.searchForums("TEST", pageable);
 
         assertNotNull(result);
         assertEquals(1, result.getForums().size());
@@ -457,12 +475,11 @@ class ForumServiceTest {
     void getForumById_ValidNonDeletedForum_Success() {
         when(mongoTemplate.findById(forumId, Forum.class)).thenReturn(testForum);
 
-        Forum result = forumService.getForumById(forumId);
+        ForumDetailsDTO result = forumService.getForumById(forumId);
 
         assertNotNull(result);
-        assertEquals(forumId, result.getId());
+        assertEquals(forumId.toString(), result.getId());
         assertEquals("Test Forum", result.getName());
-        assertFalse(result.getIsDeleted());
         verify(mongoTemplate).findById(forumId, Forum.class);
     }
 
@@ -478,10 +495,10 @@ class ForumServiceTest {
     }
 
     @Test
-    void getForumById_ForumNotFound_ThrowsNullPointerException() {
+    void getForumById_ForumNotFound_ThrowsResourceNotFoundException() {
         when(mongoTemplate.findById(forumId, Forum.class)).thenReturn(null);
 
-        assertThrows(NullPointerException.class,
+        assertThrows(org.example.backend.errorHandler.ResourceNotFoundException.class,
                 () -> forumService.getForumById(forumId));
 
         verify(mongoTemplate).findById(forumId, Forum.class);

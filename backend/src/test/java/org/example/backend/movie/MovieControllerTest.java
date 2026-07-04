@@ -94,8 +94,8 @@ class MovieControllerTest {
                 10
         );
 
-        List<Movie> movies = Arrays.asList(movie1);
-        Page<Movie> moviePage = new PageImpl<>(movies, PageRequest.of(0, 10), 1);
+        List<MovieDetailsDTO> movies = Arrays.asList(MovieDetailsDTO.from(movie1));
+        Page<MovieDetailsDTO> moviePage = new PageImpl<>(movies, PageRequest.of(0, 10), 1);
 
         when(movieService.getMovies(any(MovieRequestDTO.class))).thenReturn(moviePage);
 
@@ -123,8 +123,8 @@ class MovieControllerTest {
                 10
         );
 
-        List<Movie> movies = Arrays.asList(movie1, movie2);
-        Page<Movie> moviePage = new PageImpl<>(movies, PageRequest.of(0, 10), 2);
+        List<MovieDetailsDTO> movies = Arrays.asList(MovieDetailsDTO.from(movie1), MovieDetailsDTO.from(movie2));
+        Page<MovieDetailsDTO> moviePage = new PageImpl<>(movies, PageRequest.of(0, 10), 2);
 
         when(movieService.getMovies(any(MovieRequestDTO.class))).thenReturn(moviePage);
 
@@ -151,8 +151,8 @@ class MovieControllerTest {
                 10
         );
 
-        List<Movie> movies = Arrays.asList(movie2);
-        Page<Movie> moviePage = new PageImpl<>(movies, PageRequest.of(0, 10), 1);
+        List<MovieDetailsDTO> movies = Arrays.asList(MovieDetailsDTO.from(movie2));
+        Page<MovieDetailsDTO> moviePage = new PageImpl<>(movies, PageRequest.of(0, 10), 1);
 
         when(movieService.getMovies(any(MovieRequestDTO.class))).thenReturn(moviePage);
 
@@ -179,8 +179,8 @@ class MovieControllerTest {
                 10
         );
 
-        List<Movie> movies = Arrays.asList(movie2);
-        Page<Movie> moviePage = new PageImpl<>(movies, PageRequest.of(0, 10), 1);
+        List<MovieDetailsDTO> movies = Arrays.asList(MovieDetailsDTO.from(movie2));
+        Page<MovieDetailsDTO> moviePage = new PageImpl<>(movies, PageRequest.of(0, 10), 1);
 
         when(movieService.getMovies(any(MovieRequestDTO.class))).thenReturn(moviePage);
 
@@ -207,8 +207,8 @@ class MovieControllerTest {
                 1
         );
 
-        List<Movie> movies = Arrays.asList(movie2);
-        Page<Movie> moviePage = new PageImpl<>(movies, PageRequest.of(1, 1), 2);
+        List<MovieDetailsDTO> movies = Arrays.asList(MovieDetailsDTO.from(movie2));
+        Page<MovieDetailsDTO> moviePage = new PageImpl<>(movies, PageRequest.of(1, 1), 2);
 
         when(movieService.getMovies(any(MovieRequestDTO.class))).thenReturn(moviePage);
 
@@ -236,7 +236,7 @@ class MovieControllerTest {
                 10
         );
 
-        Page<Movie> moviePage = new PageImpl<>(Arrays.asList(), PageRequest.of(0, 10), 0);
+        Page<MovieDetailsDTO> moviePage = new PageImpl<>(Arrays.asList(), PageRequest.of(0, 10), 0);
 
         when(movieService.getMovies(any(MovieRequestDTO.class))).thenReturn(moviePage);
 
@@ -263,8 +263,8 @@ class MovieControllerTest {
                 10
         );
 
-        List<Movie> movies = Arrays.asList(movie2, movie1);
-        Page<Movie> moviePage = new PageImpl<>(movies, PageRequest.of(0, 10), 2);
+        List<MovieDetailsDTO> movies = Arrays.asList(MovieDetailsDTO.from(movie2), MovieDetailsDTO.from(movie1));
+        Page<MovieDetailsDTO> moviePage = new PageImpl<>(movies, PageRequest.of(0, 10), 2);
 
         when(movieService.getMovies(any(MovieRequestDTO.class))).thenReturn(moviePage);
 

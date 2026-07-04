@@ -86,11 +86,12 @@ openssl rand -hex 64
 | Variable | Required | Default | Description |
 |---|---|---|---|
 | `HATE_MODEL_URL` | ✅ | `http://hate-api:8000/api/hate/v1/analyze` | Internal URL of the hate-speech analyze endpoint |
+| `HATE_API_KEY` | ✅ | — | Shared secret for internal backend → hate-api auth |
 | `WATCHPARTY_SERVICE_URL` | ✅ | `http://watch-party:8081` | Internal HTTP URL of the watch-party microservice |
 | `WATCHPARTY_WS_URL` | ❌ | `ws://watch-party:8081/ws` | WebSocket URL (currently unused in backend code) |
 | `WATCHPARTY_KEY` | ✅ | — | Shared secret for internal backend → watch-party auth |
 
-**Generate a WATCHPARTY_KEY:**
+**Generate a WATCHPARTY_KEY or HATE_API_KEY:**
 ```bash
 openssl rand -hex 32
 ```
@@ -106,6 +107,7 @@ These are passed directly in the `compose.yaml` `environment:` block, not via a 
 | `SPRING_PROFILES_ACTIVE` | `prod` | Spring profile |
 | `SPRING_REDIS_HOST` | `redis` | Docker service name for Redis |
 | `SPRING_REDIS_PORT` | `6379` | Redis port |
+| `CORS_ALLOWED_ORIGINS` | from root `.env` | Origins allowed to open the `/ws` WebSocket (SEC-NEW-02) — same value the backend uses for CORS |
 
 ---
 

@@ -1,0 +1,36 @@
+.vote-widget {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-1);
+    border-radius: var(--radius-pill);
+    border: 1px solid var(--border-default);
+    padding: 2px var(--space-2);
+}
+
+.vote-widget__btn {
+    display: flex;
+    align-items: center;
+    background: transparent;
+    border: none;
+    color: var(--text-tertiary);
+    cursor: pointer;
+    padding: var(--space-1);
+    transition: color var(--duration-base) var(--ease-standard);
+}
+
+.vote-widget__btn:hover {
+    color: var(--color-accent);
+}
+
+.vote-widget__btn--up-active,
+.vote-widget__btn--down-active {
+    color: var(--color-accent);
+}
+
+.vote-widget__count {
+    min-width: 16px;
+    text-align: center;
+    font-size: var(--font-size-body-sm);
+    font-weight: var(--font-weight-medium);
+    color: var(--text-primary);
+}

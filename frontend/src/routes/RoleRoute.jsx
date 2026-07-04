@@ -9,7 +9,7 @@ export default function RoleRoute({ allowedRoles = [], redirectTo = PATHS.ROOT, 
     const { user, loading, isAuthenticated, pendingRestored } = useContext(AuthContext);
 
     if (loading || !pendingRestored) {
-        return <LoadingFallback />;
+        return <LoadingFallback fullScreen />;
     }
 
     // if user is not authenticated, go to login page

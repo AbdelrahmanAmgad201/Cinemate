@@ -14,6 +14,7 @@ import org.springframework.util.StringUtils;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
@@ -39,9 +40,10 @@ public class WatchPartyService {
     public WatchParty createParty(WatchParty request) {
         validateCreateRequest(request);
 
-        String partyId = StringUtils.hasText(request.getPartyId())
-                ? request.getPartyId()
-                : UUID.randomUUID().toString();
+        // Always server-generate the party ID (SEC-NEW-02) — a client-suppliable ID
+        // becomes an unvalidated raw segment in Redis keys, and defeats the assumption
+        // (used elsewhere, e.g. REL-08) that a partyId is hard to guess.
+        String partyId = UUID.randomUUID().toString();
 
         WatchParty party = WatchParty.builder()
                 .partyId(partyId)
@@ -93,12 +95,14 @@ public class WatchPartyService {
         String membersKey = partyKey + MEMBERS_SUFFIX;
         String memberKey = createMemberKey(user.getUserId());
 
-        if (Boolean.TRUE.equals(redisService.isMemberOfSet(membersKey, memberKey))) {
+        // Atomic check-membership + add + increment (REL-NEW-01) — see RedisService
+        // for why doing these as three separate calls can overcount participants.
+        boolean joined = redisService.addToSetAndIncrementHash(
+                membersKey, partyKey, "currentParticipants", memberKey);
+        if (!joined) {
             log.info("User {} ({}) already in party {}", user.getUserName(), user.getUserId(), partyId);
             return;
         }
-
-        redisService.addToSet(membersKey, memberKey);
 
         String userDataKey = partyKey + ":user:" + user.getUserId();
         try {
@@ -109,7 +113,6 @@ public class WatchPartyService {
             throw new RuntimeException("Failed to join party", e);
         }
 
-        incrementParticipantCount(partyKey);
         redisService.expire(membersKey, PARTY_TTL_HOURS, TimeUnit.HOURS);
 
         // Notify all members about the new user
@@ -226,18 +229,25 @@ public class WatchPartyService {
         Set<Object> memberKeys = redisService.getSetMembers(membersKey);
         Set<UserDataDTO> members = new HashSet<>();
 
-        if (memberKeys != null) {
-            for (Object memberKeyObj : memberKeys) {
-                Long userId = extractUserIdFromMemberKey(memberKeyObj.toString());
-                String userDataKey = partyKey + ":user:" + userId;
-                Object userData = redisService.getValue(userDataKey);
+        if (memberKeys == null || memberKeys.isEmpty()) {
+            return members;
+        }
 
+        // Single MGET instead of one GET per member (PERF-01) — a 20-person party
+        // previously meant 20 sequential Redis round-trips just to list who's in it.
+        List<String> userDataKeys = memberKeys.stream()
+                .map(memberKeyObj -> partyKey + ":user:" + extractUserIdFromMemberKey(memberKeyObj.toString()))
+                .toList();
+        List<Object> userDataValues = redisService.multiGet(userDataKeys);
+
+        if (userDataValues != null) {
+            for (Object userData : userDataValues) {
                 if (userData != null) {
                     try {
                         UserDataDTO user = objectMapper.readValue(userData.toString(), UserDataDTO.class);
                         members.add(user);
                     } catch (JsonProcessingException e) {
-                        log.error("Failed to deserialize user data for userId: {}", userId, e);
+                        log.error("Failed to deserialize user data in party {}", partyId, e);
                     }
                 }
             }
@@ -259,18 +269,11 @@ public class WatchPartyService {
         return "Unknown User";
     }
 
-    private void incrementParticipantCount(String partyKey) {
-        Object currentValue = redisService.getHashValue(partyKey, "currentParticipants");
-        int current = Integer.parseInt(currentValue.toString());
-        redisService.setHashValue(partyKey, "currentParticipants", String.valueOf(current + 1));
-    }
-
+    // Atomic HINCRBY (REL-06) instead of read-parse-write, which loses concurrent
+    // join/leave operations under real load.
     private Integer decrementParticipantCount(String partyKey) {
-        Object currentValue = redisService.getHashValue(partyKey, "currentParticipants");
-        int current = Integer.parseInt(currentValue.toString());
-        int newValue = current - 1;
-        redisService.setHashValue(partyKey, "currentParticipants", String.valueOf(newValue));
-        return newValue;
+        Long newValue = redisService.decrementHashValue(partyKey, "currentParticipants");
+        return newValue != null ? newValue.intValue() : null;
     }
 
     private void validateCreateRequest(WatchParty request) {

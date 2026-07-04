@@ -75,7 +75,10 @@ class VoteControllerTest {
     }
 
     @Test
-    void postVote_DeletedPost_Returns500() throws Exception {
+    void postVote_DeletedPost_Returns409() throws Exception {
+        // IllegalStateException maps to 409 now that GlobalExceptionHandler has a
+        // dedicated handler for it (CQ-NEW-01) instead of falling through to the
+        // generic 500 handler.
         doThrow(new IllegalStateException("Cannot vote a deleted post"))
                 .when(voteService).vote(any(VoteDTO.class), eq(true), anyLong());
 
@@ -84,7 +87,7 @@ class VoteControllerTest {
                         .requestAttr("userId", userId)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(voteDTO)))
-                .andExpect(status().is5xxServerError());
+                .andExpect(status().isConflict());
     }
 
 
@@ -116,7 +119,7 @@ class VoteControllerTest {
         verify(voteService).vote(any(VoteDTO.class), eq(false), eq(userId));
     }
     @Test
-    void commentVote_DeletedComment_Returns500() throws Exception {
+    void commentVote_DeletedComment_Returns409() throws Exception {
         doThrow(new IllegalStateException("Cannot vote a deleted comment"))
                 .when(voteService).vote(any(VoteDTO.class), eq(false), anyLong());
 
@@ -125,7 +128,7 @@ class VoteControllerTest {
                         .requestAttr("userId", userId)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(voteDTO)))
-                .andExpect(status().is5xxServerError());
+                .andExpect(status().isConflict());
     }
 
 
@@ -146,7 +149,7 @@ class VoteControllerTest {
 
 
     @Test
-    void updateVote_NotOwner_Returns500() throws Exception {
+    void updateVote_NotOwner_Returns403() throws Exception {
         doThrow(new AccessDeniedException("User does not have permission"))
                 .when(voteService).updateVote(any(UpdateVoteDTO.class), anyLong());
 
@@ -155,11 +158,11 @@ class VoteControllerTest {
                         .requestAttr("userId", userId)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(updateVoteDTO)))
-                .andExpect(status().is5xxServerError());
+                .andExpect(status().isForbidden());
     }
 
     @Test
-    void updateVote_DeletedTarget_Returns500() throws Exception {
+    void updateVote_DeletedTarget_Returns409() throws Exception {
         doThrow(new IllegalStateException("Cannot vote a deleted post"))
                 .when(voteService).updateVote(any(UpdateVoteDTO.class), anyLong());
 
@@ -168,7 +171,7 @@ class VoteControllerTest {
                         .requestAttr("userId", userId)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(updateVoteDTO)))
-                .andExpect(status().is5xxServerError());
+                .andExpect(status().isConflict());
     }
 
     @Test
@@ -199,14 +202,14 @@ class VoteControllerTest {
     }
 
     @Test
-    void deleteVote_Unauthorized_Returns500() throws Exception {
+    void deleteVote_Unauthorized_Returns403() throws Exception {
         doThrow(new AccessDeniedException("User cannot delete this vote"))
                 .when(voteService).deleteVote(any(ObjectId.class), anyLong());
 
         mockMvc.perform(delete("/api/vote/v1/delete-vote/{voteId}", voteId.toHexString())
                         .with(csrf())
                         .requestAttr("userId", userId))
-                .andExpect(status().is5xxServerError());
+                .andExpect(status().isForbidden());
     }
 
     @Test

@@ -14,12 +14,13 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy requirements and install dependencies
+# Copy requirements and install dependencies — pinned, per requirements.txt.
+# torch needs the CPU wheel index; everything else comes from the pinned
+# requirements.txt on the default index (torch is already satisfied by the
+# first install, so the second command doesn't need to touch the CPU index).
 COPY requirements.txt .
-RUN pip install --no-cache-dir \
-    torch --index-url https://download.pytorch.org/whl/cpu && \
-    pip install --no-cache-dir \
-    nltk fastapi uvicorn transformers
+RUN pip install --no-cache-dir --index-url https://download.pytorch.org/whl/cpu torch==2.5.1 && \
+    pip install --no-cache-dir -r requirements.txt
 
 # -------------------------
 # Download models and NLTK data

@@ -1,105 +1,104 @@
 import { useState, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { Calendar } from 'lucide-react';
 import { AuthContext } from '../../context/AuthContext.jsx';
 import { ToastContext } from '../../context/ToastContext.jsx';
-import profileCompletionApi from '../../api/profile-completion-api.jsx';
+import profileCompletionApi from '../../api/profile-completion-api.js';
 import { PATHS, JWT, MAX_VALUES } from '../../constants/constants.jsx';
-import {jwtDecode}  from "jwt-decode";
-import { CiCalendar } from "react-icons/ci";
+import { jwtDecode } from 'jwt-decode';
+import AuthLayout from './AuthLayout.jsx';
+import Input from '../../components/ui/Input.jsx';
+import Button from '../../components/ui/Button.jsx';
 import ProfileAvatar from '../../components/ProfileAvatar.jsx';
-import "../auth/style/SignUp.css";
+import './style/AuthForm.css';
+
+const MIN_BIRTHDATE = new Date(new Date().setFullYear(new Date().getFullYear() - MAX_VALUES.BIRTHYEARS)).toISOString().split('T')[0];
+const MAX_BIRTHDATE = new Date().toISOString().split('T')[0];
 
 const ProfileCompletion = () => {
     const navigate = useNavigate();
     const { setUser } = useContext(AuthContext);
     const { showToast } = useContext(ToastContext);
 
-    const [formData, setFormData] = useState({
-        birthday: '',
-        gender: '',
-    });
+    const [formData, setFormData] = useState({ birthday: '', gender: '' });
     const [loading, setLoading] = useState(false);
 
     const handleChange = (e) => {
-        setFormData({
-            ...formData,
-            [e.target.name]: e.target.value,
-        });
-    }
+        setFormData({ ...formData, [e.target.name]: e.target.value });
+    };
 
     const handleSubmit = async (e) => {
-        e.preventDefault(); 
+        e.preventDefault();
 
-        if(!formData.birthday || !formData.gender){
-            return showToast("Error", "Please fill in all required fields.", "error");
+        if (!formData.birthday || !formData.gender) {
+            return showToast('Error', 'Please fill in all required fields.', 'error');
         }
 
         setLoading(true);
 
-        try{
+        try {
             const response = await profileCompletionApi({
                 birthday: formData.birthday,
                 gender: formData.gender,
             });
-            if(response.success){
+            if (response.success) {
                 const token = sessionStorage.getItem(JWT.STORAGE_NAME);
                 const userData = jwtDecode(token);
                 setUser({
-                        id: userData.id,
-                        email: userData.email,
-                        role: userData.role.replace("ROLE_", ""),
-                        profileComplete: true,
-                    });
-                showToast("Success", "Profile completed successfully!", "success");
+                    id: userData.id,
+                    email: userData.email,
+                    role: userData.role.replace('ROLE_', ''),
+                    profileComplete: true,
+                });
+                showToast('Success', 'Profile completed successfully!', 'success');
                 navigate(PATHS.HOME);
             }
-
-        }
-        catch(error){
-            showToast("Error", error.message || "Profile completion failed. Please try again.", "error");
-        }
-        finally{
+        } catch (error) {
+            showToast('Error', error.message || 'Profile completion failed. Please try again.', 'error');
+        } finally {
             setLoading(false);
         }
-    }
+    };
 
-    return(
-        <div className="signup-container">
-            <ProfileAvatar />   
-            <form onSubmit={handleSubmit} className="profile-completion-form">
-                <h1>Complete Your Profile</h1>
-                <p>Please provide the following information to continue</p><br />
-                <div className="date-gender">
-                    <div className="input-elem">
-                        <label htmlFor="birthDate">Date of Birth</label><br />
-                        <div className="icon-input">
-                            <CiCalendar />
-                            <input type="date" id="birthDate" name="birthday" required style={{width: "200px"}}
-                                onChange={handleChange}
-                                min={new Date(new Date().setFullYear(new Date().getFullYear() - MAX_VALUES.BIRTHYEARS))
-                                    .toISOString()
-                                    .split("T")[0]}
-                                max={new Date().toISOString().split("T")[0]}
-                            />
-                        </div>
-                    </div>
+    return (
+        <AuthLayout>
+            <ProfileAvatar />
+            <form onSubmit={handleSubmit} className="auth-form">
+                <h1>Complete your profile</h1>
+                <p className="auth-form__subtitle">One last step before you can start browsing.</p>
 
-                    <div className="input-elem" style={{borderBottom: "none"}}>
-                        <label htmlFor="gender" style={{marginBottom: "23px"}}>Gender</label>
-                        <div className="gender-options">
-                            <input type="radio" id="male" name="gender" value="MALE" required onChange={handleChange} />
-                            <label htmlFor="male">Male</label>
-                            <input type="radio" id="female" name="gender" value="FEMALE" required onChange={handleChange} />
-                            <label htmlFor="female">Female</label>
-                        </div>
+                <Input
+                    label="Date of birth"
+                    type="date"
+                    name="birthday"
+                    required
+                    icon={<Calendar size={16} />}
+                    min={MIN_BIRTHDATE}
+                    max={MAX_BIRTHDATE}
+                    onChange={handleChange}
+                />
+
+                <div className="auth-form__gender">
+                    <span className="field__label">Gender</span>
+                    <div className="auth-form__gender-options">
+                        {['MALE', 'FEMALE'].map((option) => (
+                            <button
+                                type="button"
+                                key={option}
+                                className={`auth-form__gender-option ${formData.gender === option ? 'auth-form__gender-option--selected' : ''}`}
+                                onClick={() => setFormData({ ...formData, gender: option })}
+                                aria-pressed={formData.gender === option}
+                            >
+                                {option === 'MALE' ? 'Male' : 'Female'}
+                            </button>
+                        ))}
                     </div>
                 </div>
 
-                    <button type="submit">
-                        {loading ? 'Saving...' : 'Continue'}
-                    </button>
+                <Button type="submit" fullWidth size="lg" loading={loading}>Continue</Button>
             </form>
-        </div>
-    )
+        </AuthLayout>
+    );
+};
 
-};export default ProfileCompletion;
+export default ProfileCompletion;

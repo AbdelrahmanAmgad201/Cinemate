@@ -1,10 +1,25 @@
 .watch-page {
+    position: relative;
     width: 100vw;
     height: 100vh;
     display: flex;
     justify-content: center;
     align-items: center;
-    background: black;
+    background: #000;
+}
+
+.watch-page__back {
+    position: absolute;
+    top: var(--space-5);
+    left: var(--space-5);
+    z-index: var(--z-overlay);
+    background-color: rgba(1, 22, 30, 0.6);
+    color: var(--text-primary);
+    backdrop-filter: blur(4px);
+}
+
+.watch-page__back:hover {
+    background-color: rgba(1, 22, 30, 0.8);
 }
 
 .wistia_full {

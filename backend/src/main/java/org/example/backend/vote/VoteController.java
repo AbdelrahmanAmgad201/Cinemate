@@ -1,6 +1,7 @@
 package org.example.backend.vote;
 
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.validation.Valid;
 import org.bson.types.ObjectId;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -15,7 +16,7 @@ public class VoteController {
     @PostMapping("/v1/post-vote")
     public ResponseEntity<?> postVote(
             HttpServletRequest request,
-            @RequestBody VoteDTO voteDTO) {
+            @Valid @RequestBody VoteDTO voteDTO) {
 
         Long userId = (Long) request.getAttribute("userId");
         voteService.vote(voteDTO,true,userId);
@@ -25,7 +26,7 @@ public class VoteController {
     @PostMapping("/v1/comment-vote")
     public ResponseEntity<?> commentVote(
             HttpServletRequest request,
-            @RequestBody VoteDTO voteDTO) {
+            @Valid @RequestBody VoteDTO voteDTO) {
 
         Long userId = (Long) request.getAttribute("userId");
         voteService.vote(voteDTO,false,userId);
@@ -35,7 +36,7 @@ public class VoteController {
     @PutMapping("/v1/update-vote")
     public ResponseEntity<?> updateVote(
             HttpServletRequest request,
-            @RequestBody UpdateVoteDTO updateVoteDTO) {
+            @Valid @RequestBody UpdateVoteDTO updateVoteDTO) {
 
         Long userId = (Long) request.getAttribute("userId");
         voteService.updateVote(updateVoteDTO,userId);

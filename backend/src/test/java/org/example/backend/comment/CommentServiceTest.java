@@ -1,5 +1,6 @@
 package org.example.backend.comment;
 
+import org.bson.Document;
 import org.bson.types.ObjectId;
 import org.example.backend.deletion.AccessService;
 import org.example.backend.deletion.CascadeDeletionService;
@@ -8,10 +9,13 @@ import org.example.backend.post.PostRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.mongodb.core.MongoTemplate;
+import org.springframework.data.mongodb.core.query.Query;
+import org.springframework.data.mongodb.core.query.Update;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.test.context.ActiveProfiles;
 
@@ -77,6 +81,14 @@ class CommentServiceTest {
                 .build();
     }
 
+    // Post.commentCount and Comment.numberOfReplies are now updated atomically via
+    // MongoTemplate's $inc (REL-01) instead of load-mutate-save, so these tests verify
+    // the update sent to Mongo rather than a postRepository.save() call.
+    private void assertIncField(Update update, String field, int delta) {
+        Document incDoc = (Document) update.getUpdateObject().get("$inc");
+        assertEquals(delta, incDoc.getInteger(field));
+    }
+
     @Test
     void addComment_TopLevelComment_Success() {
         when(mongoTemplate.findById(postId, Post.class)).thenReturn(testPost);
@@ -91,7 +103,9 @@ class CommentServiceTest {
         assertEquals("New comment content", result.getContent());
         assertEquals(0, result.getDepth());
 
-        verify(postRepository).save(argThat(post -> post.getCommentCount() == 6));
+        ArgumentCaptor<Update> captor = ArgumentCaptor.forClass(Update.class);
+        verify(mongoTemplate).updateFirst(any(Query.class), captor.capture(), eq(Post.class));
+        assertIncField(captor.getValue(), "commentCount", 1);
         verify(commentRepository).save(any(Comment.class));
     }
 
@@ -114,7 +128,14 @@ class CommentServiceTest {
 
         assertEquals(parentCommentId, result.getParentId());
         assertEquals(1, result.getDepth());
-        verify(postRepository).save(any(Post.class));
+
+        ArgumentCaptor<Update> postUpdate = ArgumentCaptor.forClass(Update.class);
+        verify(mongoTemplate).updateFirst(any(Query.class), postUpdate.capture(), eq(Post.class));
+        assertIncField(postUpdate.getValue(), "commentCount", 1);
+
+        ArgumentCaptor<Update> replyUpdate = ArgumentCaptor.forClass(Update.class);
+        verify(mongoTemplate).updateFirst(any(Query.class), replyUpdate.capture(), eq(Comment.class));
+        assertIncField(replyUpdate.getValue(), "numberOfReplies", 1);
     }
 
     @Test
@@ -145,7 +166,7 @@ class CommentServiceTest {
                 () -> commentService.addComment(userId, addCommentDTO));
 
         verify(commentRepository, never()).save(any());
-        verify(postRepository, never()).save(any());
+        verify(mongoTemplate, never()).updateFirst(any(Query.class), any(Update.class), any(Class.class));
     }
 
     @Test
@@ -157,7 +178,7 @@ class CommentServiceTest {
                 () -> commentService.addComment(userId, addCommentDTO));
 
         verify(commentRepository, never()).save(any());
-        verify(postRepository, never()).save(any());
+        verify(mongoTemplate, never()).updateFirst(any(Query.class), any(Update.class), any(Class.class));
     }
 
     @Test

@@ -71,13 +71,6 @@ class MovieRepositoryTest {
     }
 
     @Test
-    void testFindByAdminIsNotNullAndOrganization_Id() {
-        List<Movie> movies = movieRepository.findByAdminIsNotNullAndOrganization_Id(org1.getId());
-        assertThat(movies).hasSize(1);
-        assertThat(movies.get(0).getName()).isEqualTo("Movie1");
-    }
-
-    @Test
     void testGetMostLikedAndMostRatedMovie() {
         List<Long> mostLiked = movieRepository.getMostLikedMovie(PageRequest.of(0, 1));
         List<Long> mostRated = movieRepository.getMostRatedMovie(PageRequest.of(0, 1));

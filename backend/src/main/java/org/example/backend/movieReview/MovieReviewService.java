@@ -1,7 +1,8 @@
 package org.example.backend.movieReview;
 
-import jakarta.transaction.Transactional;
+import org.springframework.transaction.annotation.Transactional;
 import lombok.RequiredArgsConstructor;
+import org.example.backend.errorHandler.ResourceNotFoundException;
 import org.example.backend.movie.Movie;
 import org.example.backend.movie.MovieRepository;
 import org.example.backend.user.PrivateProfileException;
@@ -22,13 +23,13 @@ public class MovieReviewService {
     private final UserRepository userRepository;
 
     @Transactional
-    public MovieReview addOrUpdateReview(Long userId, MovieReviewDTO dto) {
+    public MovieReviewDetailsDTO addOrUpdateReview(Long userId, MovieReviewDTO dto) {
 
         Movie movie = movieRepository.findById(dto.getMovieId())
-                .orElseThrow(() -> new RuntimeException("Movie not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Movie not found"));
 
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
         MovieReviewID id = new MovieReviewID(dto.getMovieId(), userId);
 
@@ -60,26 +61,28 @@ public class MovieReviewService {
 
         movieRepository.save(movie);
 
-        return reviewRepository.save(review);
+        // Mapped inside the transaction (CQ-NEW-03) — MovieReviewDetailsDTO.from()
+        // touches the lazy movie/reviewer associations.
+        return MovieReviewDetailsDTO.from(reviewRepository.save(review));
     }
 
-    @Transactional
-    public Page<MovieReview> getMovieReviews(Long movieId, Pageable pageable) {
-        return reviewRepository.findByMovie_MovieID(movieId, pageable);
+    @Transactional(readOnly = true)
+    public Page<MovieReviewDetailsDTO> getMovieReviews(Long movieId, Pageable pageable) {
+        return reviewRepository.findByMovie_MovieID(movieId, pageable).map(MovieReviewDetailsDTO::from);
     }
 
-    @Transactional
-    public Page<MovieReview> getMyMovieReviews(Long userId, Pageable pageable) {
-        return reviewRepository.findAllByReviewer_Id(userId, pageable);
+    @Transactional(readOnly = true)
+    public Page<MovieReviewDetailsDTO> getMyMovieReviews(Long userId, Pageable pageable) {
+        return reviewRepository.findAllByReviewer_Id(userId, pageable).map(MovieReviewDetailsDTO::from);
     }
 
 
-    @Transactional
-    public Page<MovieReview> getOtherUserMovieReviews(Long userId, Pageable pageable) {
+    @Transactional(readOnly = true)
+    public Page<MovieReviewDetailsDTO> getOtherUserMovieReviews(Long userId, Pageable pageable) {
         User  user = userRepository.findById(userId)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
         if(user.getIsPublic()){
-            return reviewRepository.findAllByReviewer_Id(userId, pageable);
+            return reviewRepository.findAllByReviewer_Id(userId, pageable).map(MovieReviewDetailsDTO::from);
         }
         throw new PrivateProfileException("this profile is private");
     }

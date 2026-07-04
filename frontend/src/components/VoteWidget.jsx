@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
-import { BiUpvote, BiDownvote, BiSolidUpvote, BiSolidDownvote } from "react-icons/bi";
+import { ArrowBigUp, ArrowBigDown } from 'lucide-react';
 import { createVote, updateVote, deleteVote, isVoted } from '../api/vote-api';
+import './style/VoteWidget.css';
 
 const VoteWidget = ({ targetId, initialUp = 0, initialDown = 0, isPost = false, onChange }) => {
     const [userVote, setUserVote] = useState(0);
@@ -31,7 +32,7 @@ const VoteWidget = ({ targetId, initialUp = 0, initialDown = 0, isPost = false, 
         const diff = newVote - previousVote;
 
         setUserVote(newVote);
-        setVoteCount(v => v + diff);
+        setVoteCount((v) => v + diff);
 
         try {
             let result;
@@ -44,12 +45,10 @@ const VoteWidget = ({ targetId, initialUp = 0, initialDown = 0, isPost = false, 
             }
 
             if (!result?.success) {
-                // revert
                 setUserVote(previousVote);
-                setVoteCount(v => v - diff);
+                setVoteCount((v) => v - diff);
                 console.error('Vote failed:', result?.message);
             } else {
-                // notify parent with previous and new vote so parent can update optimistically
                 onChange && onChange({ targetId, previousVote, newVote });
 
                 try {
@@ -65,31 +64,26 @@ const VoteWidget = ({ targetId, initialUp = 0, initialDown = 0, isPost = false, 
                     const baseDown = (typeof existing.downvoteCount === 'number') ? existing.downvoteCount : (initialDown || 0);
                     const updated = { upvoteCount: baseUp + upDelta, downvoteCount: baseDown + downDelta, ts: Date.now() };
                     sessionStorage.setItem(key, JSON.stringify(updated));
-                } catch (e) {
+                } catch {
                     /* ignore storage errors */
                 }
             }
         } catch (e) {
             setUserVote(previousVote);
-            setVoteCount(v => v - diff);
+            setVoteCount((v) => v - diff);
             console.error('Vote error:', e);
         }
     };
 
     return (
-        <div className="up-down-vote">
-            {userVote === 1 ? (
-                <BiSolidUpvote className="selected" onClick={() => handleVote(1)} />
-            ) : (
-                <BiUpvote onClick={() => handleVote(1)} />
-            )}
-            <span className="vote-count">{voteCount}</span>
-            {isPost && <span className="vote-separator" aria-hidden />}
-            {userVote === -1 ? (
-                <BiSolidDownvote className="selected" onClick={() => handleVote(-1)} />
-            ) : (
-                <BiDownvote onClick={() => handleVote(-1)} />
-            )}
+        <div className="vote-widget">
+            <button type="button" className={`vote-widget__btn ${userVote === 1 ? 'vote-widget__btn--up-active' : ''}`} onClick={() => handleVote(1)} aria-label="Upvote" aria-pressed={userVote === 1}>
+                <ArrowBigUp size={18} fill={userVote === 1 ? 'currentColor' : 'none'} />
+            </button>
+            <span className="vote-widget__count">{voteCount}</span>
+            <button type="button" className={`vote-widget__btn ${userVote === -1 ? 'vote-widget__btn--down-active' : ''}`} onClick={() => handleVote(-1)} aria-label="Downvote" aria-pressed={userVote === -1}>
+                <ArrowBigDown size={18} fill={userVote === -1 ? 'currentColor' : 'none'} />
+            </button>
         </div>
     );
 };

@@ -89,7 +89,7 @@ class MovieServiceTest {
         when(movieRepository.findAll(any(Specification.class), any(Pageable.class)))
                 .thenReturn(moviePage);
 
-        Page<Movie> result = movieService.getMovies(req);
+        Page<MovieDetailsDTO> result = movieService.getMovies(req);
 
         assertNotNull(result);
         assertEquals(1, result.getTotalElements());
@@ -128,7 +128,7 @@ class MovieServiceTest {
     void testGetMovie() {
         when(movieRepository.findById(10L)).thenReturn(Optional.of(movie));
 
-        Movie result = movieService.getMovie(10L);
+        MovieDetailsDTO result = movieService.getMovie(10L);
 
         assertEquals(10L, result.getMovieID());
         verify(movieRepository).findById(10L);
@@ -147,7 +147,7 @@ class MovieServiceTest {
     @Test
     void testGetMoviesOverview() {
         // 5 movies, 100 views
-        Object[] countViewObj = new Object[]{5L, 100L};
+        MovieCountAndViewsDTO countViewObj = new MovieCountAndViewsDTO(5L, 100L);
 
         // Most popular genres (List<Object[]>)
         List<Object[]> genres = new ArrayList<>();
@@ -171,7 +171,7 @@ class MovieServiceTest {
 
     @Test
     void testGetMoviesOverview_NoGenres() {
-        Object[] countViewsObj = new Object[]{3L, 20L};
+        MovieCountAndViewsDTO countViewsObj = new MovieCountAndViewsDTO(3L, 20L);
 
         when(movieRepository.getMovieCountAndTotalViews(1L)).thenReturn(countViewsObj);
         when(movieRepository.getGenresOrderedByViews(1L)).thenReturn(List.of());
@@ -181,19 +181,6 @@ class MovieServiceTest {
         assertNull(overview.getMostPopularGenre());
     }
 
-    // -------------------------------------------------------------------
-    // TEST getOrganizationMovies()
-    // -------------------------------------------------------------------
-    @Test
-    void testGetOrganizationMovies() {
-        when(movieRepository.findByAdminIsNotNullAndOrganization_Id(1L))
-                .thenReturn(List.of(movie));
-
-        List<Movie> result = movieService.getOrganizationMovies(1L);
-
-        assertEquals(1, result.size());
-        verify(movieRepository).findByAdminIsNotNullAndOrganization_Id(1L);
-    }
 
     // -------------------------------------------------------------------
     // TEST getMovieStatsByMovieId()

@@ -18,6 +18,7 @@ import java.util.List;
 public class JWTAuthenticationFilter extends OncePerRequestFilter {
 
     private final JWTProvider jwtProvider;
+    private final TokenBlacklistService tokenBlacklistService;
 
     @Override
     protected void doFilterInternal(HttpServletRequest request,
@@ -26,7 +27,7 @@ public class JWTAuthenticationFilter extends OncePerRequestFilter {
 
         String token = extractTokenFromRequest(request);
 
-        if (token != null && jwtProvider.validateToken(token)) {
+        if (token != null && jwtProvider.validateToken(token) && !tokenBlacklistService.isRevoked(token)) {
             String email = jwtProvider.getEmailFromToken(token);
             String role = jwtProvider.getRoleFromToken(token);
             Long id = jwtProvider.getIdFromToken(token);

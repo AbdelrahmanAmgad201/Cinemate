@@ -1,15 +1,12 @@
-import '../auth/style/SignUp.css';
-import { Link } from 'react-router-dom';
 import './style/orgAnalytics.css';
-import {use, useContext, useEffect, useState} from 'react';
-import NavBar from "../../components/OrgAdminNavBar.jsx";
-import { fetchOrgAnalytics, fetchOrgRequests, fetchOrgMovies } from '../../api/org-analytics-api.jsx';
-import {AuthContext} from "../../context/AuthContext.jsx";
-import {PATHS} from "../../constants/constants.jsx";
+import { useEffect, useState } from 'react';
+import NavBar from '../../components/OrgAdminNavBar.jsx';
+import { fetchOrgAnalytics, fetchOrgRequests, fetchOrgMovies } from '../../api/org-analytics-api.js';
 import MoviesList from '../../components/MoviesList.jsx';
-import { MdOutlineStar, MdNavigateNext, MdNavigateBefore } from "react-icons/md";
+import Skeleton from '../../components/ui/Skeleton.jsx';
+import Badge from '../../components/ui/Badge.jsx';
 
-export const StatCard = ({ title, value, subtitle, children }) => (
+export const DashboardCard = ({ title, value, subtitle, children }) => (
     <div className="stat-card">
         <div className="stat-card-header">
             <h3>{title}</h3>
@@ -45,19 +42,13 @@ const RequestBreakdown = ({ approved = 0, rejected = 0, pending = 0 }) => {
     );
 };
 
-const GenreBadge = ({ genre }) => (
-    <span className="genre-badge">{genre || '—'}</span>
-);
-
 const MovieRequestsList = ({ requests = [], loading = false }) => {
     const [showAll, setShowAll] = useState(false);
 
     if (loading) {
         return (
             <div className="movie-requests-list">
-                {[1, 2, 3].map(i => (
-                    <div key={i} className="skeleton skeleton-movie-item" />
-                ))}
+                {[1, 2, 3].map((i) => <Skeleton key={i} variant="rect" height={56} />)}
             </div>
         );
     }
@@ -66,23 +57,8 @@ const MovieRequestsList = ({ requests = [], loading = false }) => {
         return <div className="no-requests">No movie requests yet</div>;
     }
 
-    const getStatusClass = (state) => {
-        switch (state) {
-            case 'ACCEPTED': return 'approved';
-            case 'REJECTED': return 'rejected';
-            case 'PENDING': return 'pending';
-            default: return 'pending';
-        }
-    };
-
-    const getStatusLabel = (state) => {
-        switch (state) {
-            case 'ACCEPTED': return 'Approved';
-            case 'REJECTED': return 'Rejected';
-            case 'PENDING': return 'Pending';
-            default: return 'Unknown';
-        }
-    };
+    const statusVariant = { ACCEPTED: 'success', REJECTED: 'error', PENDING: 'warning' };
+    const statusLabel = { ACCEPTED: 'Approved', REJECTED: 'Rejected', PENDING: 'Pending' };
 
     const displayedRequests = showAll ? requests : requests.slice(0, 5);
     const hasMore = requests.length > 5;
@@ -93,19 +69,15 @@ const MovieRequestsList = ({ requests = [], loading = false }) => {
                 <div key={request.id} className="movie-request-item">
                     <div className="movie-request-info">
                         <span className="movie-name">{request.movieName}</span>
-                        <span className="request-date">
-                            {new Date(request.createdAt).toLocaleDateString()}
-                        </span>
+                        <span className="request-date">{new Date(request.createdAt).toLocaleDateString()}</span>
                     </div>
-                    <span className={`status-badge ${getStatusClass(request.state)}`}>
-                        {getStatusLabel(request.state)}
-                    </span>
+                    <Badge variant={statusVariant[request.state] || 'neutral'}>{statusLabel[request.state] || 'Unknown'}</Badge>
                 </div>
             ))}
             {hasMore && (
-                <div className="view-all-link" onClick={() => setShowAll(!showAll)}>
+                <button type="button" className="view-all-link" onClick={() => setShowAll(!showAll)}>
                     {showAll ? 'Show less' : `+ ${requests.length - 5} more requests`}
-                </div>
+                </button>
             )}
         </div>
     );
@@ -119,7 +91,6 @@ const OrgMoviesAndAnalytics = () => {
     const [requestsLoading, setRequestsLoading] = useState(true);
     const [page, setPage] = useState(0);
     const [totalPages, setTotalPages] = useState(0);
-    const [error, setError] = useState(null);
 
     useEffect(() => {
         const loadAnalytics = async () => {
@@ -133,12 +104,11 @@ const OrgMoviesAndAnalytics = () => {
                     requests: {
                         approved: requestsOverview.numberOfAccepted || 0,
                         rejected: requestsOverview.numberOfRejected || 0,
-                        pending: requestsOverview.numberOfPendings || 0
-                    }
+                        pending: requestsOverview.numberOfPendings || 0,
+                    },
                 });
             } catch (err) {
-                console.error("Error loading analytics:", err);
-                setError(err.message);
+                console.error('Error loading analytics:', err);
             } finally {
                 setLoading(false);
             }
@@ -147,106 +117,70 @@ const OrgMoviesAndAnalytics = () => {
         const loadRequests = async () => {
             try {
                 setRequestsLoading(true);
-                const requests = await fetchOrgRequests();
-                setMovieRequests(requests);
+                setMovieRequests(await fetchOrgRequests());
             } catch (err) {
-                console.error("Error loading requests:", err);
+                console.error('Error loading requests:', err);
             } finally {
                 setRequestsLoading(false);
             }
         };
 
-        
-        
         loadAnalytics();
         loadRequests();
     }, []);
 
-    
     useEffect(() => {
-        const fetchMovies = async () => {
+        const loadMovies = async () => {
             try {
                 setLoading(true);
                 const result = await fetchOrgMovies(page, 6);
-                if(result.success){
+                if (result.success) {
                     setMyMovies(result.response.content);
                     setTotalPages(result.response.totalPages);
                 }
-                console.log("Fetched movies:", result.response);
             } catch (err) {
-                console.error("Error fetching movies:", err);
+                console.error('Error fetching movies:', err);
             } finally {
                 setLoading(false);
             }
-        }
-        fetchMovies();
+        };
+        loadMovies();
     }, [page]);
 
     const data = analytics || {};
 
+    const movieCards = myMovies.map((movie) => ({
+        id: movie.movieID ?? movie.id,
+        title: movie.name,
+        poster: movie.thumbnailUrl,
+        duration: movie.duration,
+        rating: movie.averageRating,
+    }));
 
     return (
         <div className="org-analytics-page">
             <NavBar />
             <div className={`analytics-grid ${loading ? 'loading' : ''}`}>
-                <StatCard title="Total Movies Added" value={loading ? '—' : data.totalMovies} />
-                <StatCard title="Total Views" value={loading ? '—' : data.totalViews?.toLocaleString?.() ?? data.totalViews} />
-                <StatCard title="Most Popular Genre" value={null}>
-                    {loading ? <div className="skeleton skeleton-chip" /> : <GenreBadge genre={data.popularGenre} />}
-                </StatCard>
-                <StatCard title="Requests" value={null}>
-                    {loading ? (
-                        <div className="skeleton skeleton-block" />
-                    ) : (
-                        <RequestBreakdown
-                            approved={data?.requests?.approved}
-                            rejected={data?.requests?.rejected}
-                            pending={data?.requests?.pending}
-                        />
+                <DashboardCard title="Total Movies Added" value={loading ? '—' : data.totalMovies} />
+                <DashboardCard title="Total Views" value={loading ? '—' : data.totalViews?.toLocaleString?.() ?? data.totalViews} />
+                <DashboardCard title="Most Popular Genre" value={null}>
+                    {loading ? <Skeleton variant="rect" height={28} width={120} /> : <span className="genre-badge">{data.popularGenre || '—'}</span>}
+                </DashboardCard>
+                <DashboardCard title="Requests" value={null}>
+                    {loading ? <Skeleton variant="rect" height={48} /> : (
+                        <RequestBreakdown approved={data?.requests?.approved} rejected={data?.requests?.rejected} pending={data?.requests?.pending} />
                     )}
-                </StatCard>
+                </DashboardCard>
             </div>
             <div className="full-width-section">
-                <StatCard title="Recent Movie Requests" value={null}>
+                <DashboardCard title="Recent Movie Requests" value={null}>
                     <MovieRequestsList requests={movieRequests} loading={requestsLoading} />
-                </StatCard>
+                </DashboardCard>
             </div>
             <div className="full-width-section">
-                <div className="movie-list">
-                <StatCard title="Movies Approved">
-                <div className="list-container">
-                    {
-                    myMovies.length === 0 ? (
-                        <div style={{marginTop: "100px"}}>
-                            <p style={{fontSize: "30px"}}>Nothing Here...</p>
-                        </div>
-                    ) : (
-                        <>
-                        {myMovies.map((movie, index) => (
-                            <div key={index} className="movie-item">
-                                <img src={movie.thumbnailUrl} alt={movie.name} className="movie-poster" />
-                                <div className="movie-info">
-                                <h3 className="movie-title">{movie.name}</h3>
-                                <div className="movie-details">
-                                    <div style={{marginBottom: "10px"}} className="duration">{Math.floor(movie.duration/60)}h {movie.duration%60}min</div>
-                                    <div className="rating" style={{display: "flex",alignItems: "center", gap: "6px"}}><MdOutlineStar style={{color: "#ffc107"}}/> {movie.averageRating}/10</div>
-                                </div>
-                                </div>
-                            </div>
-                            ))}
-                        {totalPages > 1 &&(
-                            <div className="paging">
-                                <MdNavigateBefore className={page > 0 ? "paging-icon" : "inactive"} onClick={() => page > 0 && setPage(page - 1)} />
-                                {page + 1}
-                                <MdNavigateNext className={page < totalPages - 1 ? "paging-icon" : "inactive"} onClick={() => page < totalPages - 1  && setPage(page + 1)} />
-                            </div>
-                        )}
-                        </>
-                    )
-                    }
-                    </div>
-                </StatCard>
-                </div>
+                <DashboardCard title="Movies Approved" value={null}>
+                    <MoviesList list={movieCards} page={page} setPage={setPage} totalPages={totalPages} loading={loading} />
+                </DashboardCard>
             </div>
         </div>
     );

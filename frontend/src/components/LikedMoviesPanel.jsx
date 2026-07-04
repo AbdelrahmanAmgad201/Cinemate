@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import MoviesList from './MoviesList.jsx';
-import { getOtherUserLikedMoviesApi, getMyLikedMoviesApi, getMovieApi } from '../api/movie-api.jsx';
+import { getOtherUserLikedMoviesApi, getMyLikedMoviesApi, getMovieApi } from '../api/movie-api.js';
 import { MdNavigateNext, MdNavigateBefore } from 'react-icons/md';
 import { useNavigate } from 'react-router-dom';
 

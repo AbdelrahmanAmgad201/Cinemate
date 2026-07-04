@@ -8,8 +8,7 @@ export default function PendingUserRoute() {
     const { loading, pendingUser, pendingRestored } = useContext(AuthContext);
 
     if (loading || !pendingRestored) {
-
-        return <LoadingFallback />;
+        return <LoadingFallback fullScreen />;
     }
 
     if (!pendingUser) {

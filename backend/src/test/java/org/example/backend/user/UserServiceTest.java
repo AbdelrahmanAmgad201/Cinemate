@@ -5,7 +5,7 @@ import org.example.backend.BackendApplication;
 import org.example.backend.security.CredentialsRequest;
 import org.example.backend.security.JWTProvider;
 import org.example.backend.security.SecurityConfig;
-import org.example.backend.verification.Verfication;
+import org.example.backend.verification.Verification;
 import org.example.backend.verification.VerificationService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -16,7 +16,6 @@ import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.data.mongodb.core.query.Update;
 import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.transaction.annotation.Transactional;
 import com.mongodb.client.result.UpdateResult;
 
@@ -54,9 +53,7 @@ class UserServiceTest {
         verificationService = mock(VerificationService.class);
         jwtProvider = mock(JWTProvider.class);
 
-        userService = new UserService(userRepository, mongoTemplate);
-        ReflectionTestUtils.setField(userService, "verificationService", verificationService);
-        ReflectionTestUtils.setField(userService, "jwtProvider", jwtProvider);
+        userService = new UserService(userRepository, verificationService, jwtProvider, mongoTemplate);
     }
 
     // =============== SignUp Tests ===============
@@ -69,17 +66,17 @@ class UserServiceTest {
         when(verificationService.sendVerificationEmail(eq("test@example.com"), anyInt()))
                 .thenReturn(true);
 
-        Verfication stored = new Verfication();
-        when(verificationService.addVerfication(anyString(), anyString(), anyInt(), anyString()))
+        Verification stored = new Verification();
+        when(verificationService.addVerification(anyString(), anyString(), anyInt(), anyString()))
                 .thenReturn(stored);
 
-        Verfication result = userService.signUp(request);
+        Verification result = userService.signUp(request);
 
         assertNotNull(result);
         assertSame(stored, result);
         verify(userRepository).findByEmail("test@example.com");
         verify(verificationService).sendVerificationEmail(eq("test@example.com"), anyInt());
-        verify(verificationService).addVerfication(eq("test@example.com"), eq("pass123"), anyInt(), eq("USER"));
+        verify(verificationService).addVerification(eq("test@example.com"), eq("pass123"), anyInt(), eq("USER"));
     }
 
     @Test
@@ -97,7 +94,7 @@ class UserServiceTest {
 
     @Test
     void testSignUp_EmailSendingFails() {
-        // HIGH-05 fix: signUp must throw when email delivery fails, not silently return empty Verfication
+        // HIGH-05 fix: signUp must throw when email delivery fails, not silently return empty Verification
         CredentialsRequest request = new CredentialsRequest("test@example.com", "pass123", "USER");
 
         when(userRepository.findByEmail("test@example.com"))
@@ -111,7 +108,7 @@ class UserServiceTest {
         assertTrue(ex.getMessage().contains("Failed to send verification email"),
                 "Exception message should indicate email failure");
         verify(verificationService).sendVerificationEmail(eq("test@example.com"), anyInt());
-        verify(verificationService, never()).addVerfication(any(), any(), anyInt(), any());
+        verify(verificationService, never()).addVerification(any(), any(), anyInt(), any());
     }
 
 
@@ -129,7 +126,7 @@ class UserServiceTest {
 
         when(userRepository.save(any(User.class))).thenReturn(savedUser);
 
-        User result = userService.addUser(email, password);
+        User result = userService.addUserWithHashedPassword(email, password);
 
         assertNotNull(result);
         assertEquals(email, result.getEmail());

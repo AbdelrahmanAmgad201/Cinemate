@@ -1,6 +1,7 @@
 package org.example.backend.organization;
 
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.validation.Valid;
 import org.example.backend.movie.*;
 import org.example.backend.requests.Requests;
 import org.example.backend.requests.RequestsService;
@@ -38,7 +39,7 @@ public class OrganizationController {
     @PostMapping("/v1/set-organization-data")
     public ResponseEntity<String> setPersonalData(
             HttpServletRequest request,
-            @RequestBody OrganizationDataDTO organizationDataDTO) {
+            @Valid @RequestBody OrganizationDataDTO organizationDataDTO) {
 
         Long userId = (Long) request.getAttribute("userId");
         String message = organizationService.setOrganizationData(userId, organizationDataDTO);
@@ -47,26 +48,17 @@ public class OrganizationController {
     }
 
     @PostMapping("/v1/add-movie")
-    public ResponseEntity<?> addMovie(HttpServletRequest request, @RequestBody MovieAddDTO movieAddDTO) {
+    public ResponseEntity<?> addMovie(HttpServletRequest request, @Valid @RequestBody MovieAddDTO movieAddDTO) {
         Long userId = (Long) request.getAttribute("userId");
-        try {
-            Long movieId = organizationService.requestMovie(userId, movieAddDTO);
+        Long movieId = organizationService.requestMovie(userId, movieAddDTO);
 
-            return ResponseEntity.ok().body(
-                    Map.of(
-                            "success", true,
-                            "message", "Movie request submitted successfully",
-                            "movieId", movieId
-                    )
-            );
-        } catch (RuntimeException e) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(
-                    Map.of(
-                            "success", false,
-                            "message", "Failed to request movie: " + e.getMessage()
-                    )
-            );
-        }
+        return ResponseEntity.ok().body(
+                Map.of(
+                        "success", true,
+                        "message", "Movie request submitted successfully",
+                        "movieId", movieId
+                )
+        );
     }
 
 
@@ -80,12 +72,6 @@ public class OrganizationController {
     public ResponseEntity<MoviesOverview> getMoviesOverview(HttpServletRequest request) {
         Long userId = (Long) request.getAttribute("userId");
         return ResponseEntity.ok().body(movieService.getMoviesOverview(userId));
-    }
-
-    @PostMapping("/v1/get-organization-movies")
-    public ResponseEntity<List<Movie>> getOrganizationMovies(HttpServletRequest request) {
-        Long userId = (Long) request.getAttribute("userId");
-        return ResponseEntity.ok().body(movieService.getOrganizationMovies(userId));
     }
 
     @PostMapping("/v1/get-specific-movie-overview")
@@ -122,7 +108,7 @@ public class OrganizationController {
     @PutMapping("/v1/about")
     public ResponseEntity<String> about(
             HttpServletRequest request,
-            @RequestBody AboutDTO aboutDTO) {
+            @Valid @RequestBody AboutDTO aboutDTO) {
         Long userId = (Long) request.getAttribute("userId");
         organizationService.updateAbout(userId, aboutDTO);
         return  ResponseEntity.ok("about updated successfully");

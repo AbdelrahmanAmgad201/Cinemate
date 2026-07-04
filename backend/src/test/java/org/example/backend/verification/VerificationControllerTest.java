@@ -34,7 +34,7 @@ class VerificationControllerTest {
     void testVerifySuccessful() throws Exception {
         VerificationDTO dto = new VerificationDTO();
         dto.setEmail("test@example.com");
-        dto.setCode(1234);
+        dto.setCode(123456); // must be a real 6-digit code now that VerificationDTO validates the range
 
         VerificationResponseDTO response = VerificationResponseDTO.builder()
                 .success(true)
@@ -64,7 +64,7 @@ class VerificationControllerTest {
     void testVerifyFailed() throws Exception {
         VerificationDTO dto = new VerificationDTO();
         dto.setEmail("wrong@example.com");
-        dto.setCode(5555);
+        dto.setCode(555555);
 
         VerificationResponseDTO response = VerificationResponseDTO.builder()
                 .success(false)
@@ -90,7 +90,7 @@ class VerificationControllerTest {
     void testVerifyOrganizationSuccessful() throws Exception {
         VerificationDTO dto = new VerificationDTO();
         dto.setEmail("org@example.com");
-        dto.setCode(9999);
+        dto.setCode(999999);
 
         VerificationResponseDTO response = VerificationResponseDTO.builder()
                 .success(true)

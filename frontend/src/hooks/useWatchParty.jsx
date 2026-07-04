@@ -75,15 +75,31 @@ export const useWatchParty = (partyId, userId, userName, isHost, onIncomingChat)
         }
     }
 
+    // Truncates the rendered sender name and strips control/formatting characters
+    // (SEC-NEW-05) — `userName` on an incoming WebSocket event is attacker-controlled
+    // (no message-level auth on this channel yet, see REL-08), and React's JSX escaping
+    // already prevents script injection but not an arbitrarily long or control-character-
+    // laden name from breaking the chat UI's layout.
+    const MAX_SENDER_NAME_LENGTH = 30;
+    const sanitizeSenderName = (name) => {
+        if (typeof name !== "string") return "Unknown";
+        // eslint-disable-next-line no-control-regex
+        const stripped = name.replace(/[\x00-\x1F\x7F]/g, "").trim();
+        if (!stripped) return "Unknown";
+        return stripped.length > MAX_SENDER_NAME_LENGTH
+            ? stripped.slice(0, MAX_SENDER_NAME_LENGTH) + "…"
+            : stripped;
+    };
+
     const handleChat = (content, type = "system", senderName= "System", color = null) => {
         if(onChatRef.current){
             onChatRef.current({
                 id: Date.now().toString() + Math.random(),
-                sender: senderName,
+                sender: sanitizeSenderName(senderName),
                 type: type,
                 content: content,
                 timestamp: new Date().toLocaleTimeString('en-US', {hour: '2-digit', minute:'2-digit'}),
-                color: color 
+                color: color
             });
         }
     }

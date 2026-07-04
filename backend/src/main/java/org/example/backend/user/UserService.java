@@ -4,7 +4,8 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.transaction.Transactional;
 import lombok.extern.slf4j.Slf4j;
 import org.bson.types.ObjectId;
-import org.example.backend.verification.Verfication;
+import org.example.backend.errorHandler.ResourceNotFoundException;
+import org.example.backend.verification.Verification;
 import org.example.backend.verification.VerificationService;
 import lombok.RequiredArgsConstructor;
 import org.example.backend.security.CredentialsRequest;
@@ -15,9 +16,10 @@ import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.data.mongodb.core.query.Update;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
-import org.springframework.beans.factory.annotation.Autowired;
 
-import java.math.BigInteger;
+import static org.example.backend.util.IdConverter.longToObjectId;
+import static org.example.backend.util.IdConverter.objectIdToLong;
+
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.List;
@@ -31,18 +33,23 @@ public class UserService {
 
     private final UserRepository userRepository;
     private final Random random = new Random();
-    @Autowired
-    private VerificationService verificationService;
-    @Autowired
-    private JWTProvider jwtProvider;
+    private final VerificationService verificationService;
+    private final JWTProvider jwtProvider;
 
     private final MongoTemplate mongoTemplate;
     private static final int BATCH_SIZE = 100;
 
-    public User addUser(String email, String password) {
+    /**
+     * Creates a user record. {@code password} MUST already be a BCrypt hash (REL-09) —
+     * the plaintext password isn't available here: it was hashed and discarded before
+     * the verification record that leads to this call was ever created, so this method
+     * cannot hash it itself. Renamed from {@code addUser} specifically to make that
+     * contract explicit at every call site rather than an easy-to-miss doc comment.
+     */
+    public User addUserWithHashedPassword(String email, String hashedPassword) {
         User user = User.builder()
                 .email(email)
-                .password(password)
+                .password(hashedPassword)
                 .build();
        return userRepository.save(user);
     }
@@ -51,7 +58,7 @@ public class UserService {
     @Transactional
     public String setUserData(Long userId, UserDataDTO userDataDTO) {
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
         user.setFirstName(userDataDTO.getFirstName());
         user.setLastName(userDataDTO.getLastName());
@@ -70,7 +77,7 @@ public class UserService {
     @Transactional
     public String completeProfile(Long userId, ProfileCompletionDTO profileData){
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
         user.setBirthDate(profileData.getBirthday());
         try{
@@ -88,7 +95,7 @@ public class UserService {
     }
 
     @Transactional
-    public Verfication signUp(CredentialsRequest credentialsRequest) {
+    public Verification signUp(CredentialsRequest credentialsRequest) {
         String email = credentialsRequest.getEmail();
         String password = credentialsRequest.getPassword();
         String role = credentialsRequest.getRole();
@@ -98,7 +105,7 @@ public class UserService {
         }
         int code = 100000 + random.nextInt(900000);
         if (verificationService.sendVerificationEmail(email, code)) {
-            return verificationService.addVerfication(email, password, code, role);
+            return verificationService.addVerification(email, password, code, role);
         } else {
             throw new RuntimeException(
                 "Failed to send verification email to " + email + ". Please try again later.");
@@ -108,13 +115,13 @@ public class UserService {
 
     public Boolean isPublic(Long userId) {
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
         return  user.getIsPublic();
     }
 
     public void setIsPublic(Long userId, Boolean isPublic) {
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
         if (user.getIsPublic() == isPublic) return;
         user.setIsPublic(isPublic);
         userRepository.save(user);
@@ -124,7 +131,7 @@ public class UserService {
     public void updateAbout(Long userId, AboutDTO aboutDTO) {
         String about = aboutDTO.getAbout();
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
         user.setAbout(about);
         userRepository.save(user);
     }
@@ -133,7 +140,7 @@ public class UserService {
     public void updateBirthDate(Long userId, BirthDateDTO birthDateDTO) {
         LocalDate birthdate = birthDateDTO.getBirthDate();
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
         user.setBirthDate(birthdate);
         userRepository.save(user);
     }
@@ -142,7 +149,7 @@ public class UserService {
         String firstName = userName.getFirstName();
         String lastName = userName.getLastName();
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
         user.setFirstName(firstName);
         user.setLastName(lastName);
         userRepository.save(user);
@@ -219,7 +226,7 @@ public class UserService {
 
     public UserProfileResponseDTO getUserProfile(Long userId) {
         User user =  userRepository.findById(userId)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
         return UserProfileResponseDTO.builder()
                 .firstName(user.getFirstName())
                 .lastName(user.getLastName())
@@ -232,12 +239,4 @@ public class UserService {
                 .build();
     }
 
-    private Long objectIdToLong(ObjectId objectId) {
-        String hex = objectId.toHexString();
-        return new BigInteger(hex, 16).longValue();
-    }
-
-    private ObjectId longToObjectId(Long value) {
-        return new ObjectId(String.format("%024x", value));
-    }
 }

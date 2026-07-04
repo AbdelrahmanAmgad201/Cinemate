@@ -1,30 +1,32 @@
-import React from 'react';
-import { Link, useNavigate } from "react-router-dom";
+import { useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import PropTypes from 'prop-types';
-import "./style/reviewCard.css"
-import {timeAgo} from "../utils/formate.jsx";
-import Swal from "sweetalert2";
-import {PATHS} from "../constants/constants.jsx";
+import { Star, Trash2 } from 'lucide-react';
+import './style/reviewCard.css';
+import { timeAgo } from '../utils/formate.jsx';
+import { PATHS } from '../constants/constants.jsx';
+import Avatar from './ui/Avatar.jsx';
+import ConfirmDialog from './ui/ConfirmDialog.jsx';
 
 export default function ReviewCard({
-                                       id,
-                                       movieId,
-                                       movieTitle,
-                                       avatar,
-                                       userId,
-                                       name,
-                                       date,
-                                       rating,
-                                       description,
-                                       onDelete}) {
+    id,
+    movieId,
+    movieTitle,
+    avatar,
+    userId,
+    name = 'Anonymous',
+    date = 'Unknown',
+    rating = null,
+    description = 'No description provided.',
+    onDelete,
+}) {
+    const [confirmOpen, setConfirmOpen] = useState(false);
     const stars = Array.from({ length: 5 }, (_, i) => i + 1);
     const navigate = useNavigate();
 
     const goToMovie = () => {
-        if (movieId) {
-            navigate(PATHS.MOVIE.DETAILS(movieId));
-        }
-    }
+        if (movieId) navigate(PATHS.MOVIE.DETAILS(movieId));
+    };
 
     return (
         <article
@@ -40,54 +42,39 @@ export default function ReviewCard({
                 }
             }}
         >
-             <header className="review-card-header">
-                {/* Profile picture, name and date bundled together on the left of first row*/}
+            <header className="review-card-header">
                 <div className="review-card-header-left">
-                    <div className="review-card-header-left-avatar-wrapper">
-                        <Link to={PATHS.USER.PROFILE(userId)} onClick={(e) => e.stopPropagation()}>
-                            <img className="review-card-header-left-avatar"
-                                 src={avatar}
-                                 alt={`${name}'s avatar`}
-                                 loading="lazy"
-                            />
-                        </Link>
-                    </div>
+                    <Link to={PATHS.USER.PROFILE(userId)} onClick={(e) => e.stopPropagation()}>
+                        <Avatar name={name} src={avatar} size="md" />
+                    </Link>
                     <div className="review-card-header-left-meta">
                         <div className="review-card-header-left-name">
                             <Link to={PATHS.USER.PROFILE(userId)} onClick={(e) => e.stopPropagation()}>{name}</Link>
                         </div>
-                        <div className="review-card-header-left-sub">
-                            <div className="review-card-header-left-date">
-                                {timeAgo(date)}
-                            </div>
-                        </div>
+                        <div className="review-card-header-left-date">{timeAgo(date)}</div>
                     </div>
                 </div>
 
-                {/* Movie title above rating on the right */}
                 <div className="review-card-header-right">
                     {movieTitle && (
-                        <div className="review-card-header-right-movie">
-                            <button
-                                className="movie-link-right"
-                                onClick={(e) => { e.stopPropagation(); navigate(PATHS.MOVIE.DETAILS(movieId)); }}
-                                aria-label={`Go to movie ${movieTitle}`}
-                            >
-                                {movieTitle}
-                            </button>
-                        </div>
+                        <button
+                            className="movie-link-right"
+                            onClick={(e) => { e.stopPropagation(); navigate(PATHS.MOVIE.DETAILS(movieId)); }}
+                            aria-label={`Go to movie ${movieTitle}`}
+                        >
+                            {movieTitle}
+                        </button>
                     )}
 
                     <div className="review-card-header-right-row">
                         <div className="review-card-header-right-stars">
-                            {stars.map(s => (
-                                <span key={s} className={`rc-star ${s <= Math.round((rating/10) * 5) ? 'filled' : ''}`}>★</span>
+                            {stars.map((s) => (
+                                <Star key={s} size={15} className={s <= Math.round((rating / 10) * 5) ? 'rc-star filled' : 'rc-star'} />
                             ))}
                         </div>
-                        {(rating !== null && rating !== undefined)  &&
-                            <div className="review-card-header-right-rating" aria-label={`Rating ${rating} out of 10`}>
-                                {rating}/10
-                            </div>}
+                        {rating != null && (
+                            <div className="review-card-header-right-rating" aria-label={`Rating ${rating} out of 10`}>{rating}/10</div>
+                        )}
                     </div>
                 </div>
             </header>
@@ -96,34 +83,29 @@ export default function ReviewCard({
                 <p>{description}</p>
             </div>
 
-            <footer className="review-card-footer">
-                {onDelete && (
+            {onDelete && (
+                <footer className="review-card-footer">
                     <button
                         className="review-card-delete"
-                        onClick={async (e) => {
-                            e.stopPropagation();
-                            const result = await Swal.fire({
-                                title: "Delete Review?",
-                                text: "Are you sure you want to delete this review?",
-                                icon: "warning",
-                                showCancelButton: true,
-                                confirmButtonColor: '#d33',
-                                cancelButtonColor: '#3085d6',
-                                confirmButtonText: "Yes, delete it!",
-                                cancelButtonText: "Cancel",
-                            });
-
-                            if (result.isConfirmed) onDelete(id);
-                        }}
+                        onClick={(e) => { e.stopPropagation(); setConfirmOpen(true); }}
                         aria-label="Delete review"
                     >
-                        Delete
+                        <Trash2 size={14} /> Delete
                     </button>
-                )}
-            </footer>
+                </footer>
+            )}
 
+            <ConfirmDialog
+                open={confirmOpen}
+                onClose={() => setConfirmOpen(false)}
+                onConfirm={() => { setConfirmOpen(false); onDelete?.(id); }}
+                title="Delete review?"
+                message="This can't be undone."
+                confirmLabel="Delete"
+                danger
+            />
         </article>
-    )
+    );
 }
 
 ReviewCard.propTypes = {
@@ -136,16 +118,5 @@ ReviewCard.propTypes = {
     date: PropTypes.string,
     rating: PropTypes.number,
     description: PropTypes.string,
-    onDelete: PropTypes.func
-    // children: PropTypes.node // have children instead of description
-};
-
-
-ReviewCard.defaultProps = {
-    avatar: '',
-    movieTitle: null,
-    name: 'Anonymous',
-    date: 'Unknown',
-    rating: null,
-    description: "No description provided."
+    onDelete: PropTypes.func,
 };

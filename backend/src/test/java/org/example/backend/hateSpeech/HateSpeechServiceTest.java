@@ -13,6 +13,8 @@ import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 
+import java.util.Map;
+
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
@@ -79,7 +81,10 @@ class HateSpeechServiceTest {
     }
 
     @Test
-    void testAnalyzeText_SendsCorrectJsonBody() {
+    void testAnalyzeText_SendsTextInRequestBody() {
+        // The request body is now a Map handed to Spring's Jackson message converter
+        // (see CQ-01 fix) rather than a hand-built JSON string, so correctness of the
+        // wire-format JSON is Jackson's responsibility, not ours to re-verify here.
         String text = "Test message";
         ResponseEntity<Boolean> mockResponse = new ResponseEntity<>(false, HttpStatus.OK);
 
@@ -90,14 +95,16 @@ class HateSpeechServiceTest {
 
         hateSpeechService.analyzeText(text);
 
-        HttpEntity<String> capturedEntity = httpEntityCaptor.getValue();
-        String body = capturedEntity.getBody();
+        HttpEntity<Map<String, String>> capturedEntity = httpEntityCaptor.getValue();
+        Map<String, String> body = capturedEntity.getBody();
 
-        assertEquals("{\"text\":\"Test message\"}", body);
+        assertEquals(Map.of("text", "Test message"), body);
     }
 
     @Test
-    void testAnalyzeText_EscapesQuotesInText() {
+    void testAnalyzeText_PreservesQuotesInText() {
+        // Quote escaping is delegated to Jackson now (see CQ-01 fix); the value handed
+        // to the message converter should contain the original, unescaped text.
         String textWithQuotes = "This is a \"quoted\" message";
         ResponseEntity<Boolean> mockResponse = new ResponseEntity<>(false, HttpStatus.OK);
 
@@ -108,12 +115,10 @@ class HateSpeechServiceTest {
 
         hateSpeechService.analyzeText(textWithQuotes);
 
-        HttpEntity<String> capturedEntity = httpEntityCaptor.getValue();
-        String body = capturedEntity.getBody();
+        HttpEntity<Map<String, String>> capturedEntity = httpEntityCaptor.getValue();
+        Map<String, String> body = capturedEntity.getBody();
 
-        // Verify quotes are escaped
-        assertEquals("{\"text\":\"This is a \\\"quoted\\\" message\"}", body);
-        assertTrue(body.contains("\\\""));
+        assertEquals(textWithQuotes, body.get("text"));
     }
 
     @Test
@@ -128,10 +133,10 @@ class HateSpeechServiceTest {
 
         hateSpeechService.analyzeText(textWithMultipleQuotes);
 
-        HttpEntity<String> capturedEntity = httpEntityCaptor.getValue();
-        String body = capturedEntity.getBody();
+        HttpEntity<Map<String, String>> capturedEntity = httpEntityCaptor.getValue();
+        Map<String, String> body = capturedEntity.getBody();
 
-        assertEquals("{\"text\":\"\\\"Hello\\\" \\\"World\\\" \\\"Test\\\"\"}", body);
+        assertEquals(textWithMultipleQuotes, body.get("text"));
     }
 
     // =============== Edge Cases ===============
@@ -175,11 +180,11 @@ class HateSpeechServiceTest {
 
         hateSpeechService.analyzeText(textWithSpecialChars);
 
-        HttpEntity<String> capturedEntity = httpEntityCaptor.getValue();
-        String body = capturedEntity.getBody();
+        HttpEntity<Map<String, String>> capturedEntity = httpEntityCaptor.getValue();
+        Map<String, String> body = capturedEntity.getBody();
 
-        assertNotNull(body);
-        assertTrue(body.contains("Hello!"));
+        assertNotNull(body.get("text"));
+        assertEquals(textWithSpecialChars, body.get("text"));
     }
 
     @Test
@@ -375,11 +380,11 @@ class HateSpeechServiceTest {
 
         hateSpeechService.analyzeText(textWithBackslash);
 
-        HttpEntity<String> capturedEntity = httpEntityCaptor.getValue();
-        String body = capturedEntity.getBody();
+        HttpEntity<Map<String, String>> capturedEntity = httpEntityCaptor.getValue();
+        Map<String, String> body = capturedEntity.getBody();
 
-        assertNotNull(body);
-        assertTrue(body.contains("Path:"));
+        assertNotNull(body.get("text"));
+        assertEquals(textWithBackslash, body.get("text"));
     }
 
     @Test
@@ -394,10 +399,10 @@ class HateSpeechServiceTest {
 
         hateSpeechService.analyzeText(onlyQuotes);
 
-        HttpEntity<String> capturedEntity = httpEntityCaptor.getValue();
-        String body = capturedEntity.getBody();
+        HttpEntity<Map<String, String>> capturedEntity = httpEntityCaptor.getValue();
+        Map<String, String> body = capturedEntity.getBody();
 
-        assertEquals("{\"text\":\"\\\"\\\"\\\"\"}", body);
+        assertEquals(onlyQuotes, body.get("text"));
     }
 
     @Test
@@ -412,10 +417,9 @@ class HateSpeechServiceTest {
 
         hateSpeechService.analyzeText(mixed);
 
-        HttpEntity<String> capturedEntity = httpEntityCaptor.getValue();
-        String body = capturedEntity.getBody();
+        HttpEntity<Map<String, String>> capturedEntity = httpEntityCaptor.getValue();
+        Map<String, String> body = capturedEntity.getBody();
 
-        assertTrue(body.contains("\\\"Hello\\\""));
-        assertTrue(body.contains("\\\"Hi\\\""));
+        assertEquals(mixed, body.get("text"));
     }
 }

@@ -11,6 +11,8 @@ import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.stereotype.Service;
 
+import static org.example.backend.util.IdConverter.longToObjectId;
+
 import java.time.Instant;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -105,7 +107,4 @@ public class FollowingService {
         return mongoTemplate.find(query, Forum.class);
     }
 
-    private ObjectId longToObjectId(Long value) {
-        return new ObjectId(String.format("%024x", value));
-    }
 }

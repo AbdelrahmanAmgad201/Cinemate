@@ -1,6 +1,6 @@
 package org.example.backend.admin;
 
-import org.example.backend.movie.Movie;
+import org.example.backend.movie.MovieDetailsDTO;
 import org.example.backend.movie.MovieService;
 import org.example.backend.movie.OneMovieOverView;
 import org.example.backend.requests.Requests;
@@ -77,10 +77,10 @@ class AdminControllerTest {
         when(httpServletRequest.getAttribute("userId")).thenReturn(adminId);
         doThrow(new RuntimeException("Movie not found")).when(adminService).declineRequest(adminId, requestId);
 
-        ResponseEntity<String> response = adminController.declineRequest(httpServletRequest, requestId);
-
-        assertEquals(400, response.getStatusCodeValue());
-        assertTrue(response.getBody().contains("Failed to decline request"));
+        // No manual try/catch in the controller anymore (API-NEW-03) — the exception
+        // propagates to GlobalExceptionHandler instead of being caught here.
+        assertThrows(RuntimeException.class,
+                () -> adminController.declineRequest(httpServletRequest, requestId));
     }
 
     @Test
@@ -102,10 +102,8 @@ class AdminControllerTest {
         when(httpServletRequest.getAttribute("userId")).thenReturn(adminId);
         doThrow(new RuntimeException("Movie not found")).when(adminService).acceptRequests(adminId, requestId);
 
-        ResponseEntity<String> response = adminController.acceptRequest(httpServletRequest, requestId);
-
-        assertEquals(400, response.getStatusCodeValue());
-        assertTrue(response.getBody().contains("Failed to accept request"));
+        assertThrows(RuntimeException.class,
+                () -> adminController.acceptRequest(httpServletRequest, requestId));
     }
 
     @Test
@@ -123,10 +121,10 @@ class AdminControllerTest {
     @Test
     void testGetRequestedMovie() {
         Long requestId = 3L;
-        Movie movie = mock(Movie.class);
+        MovieDetailsDTO movie = mock(MovieDetailsDTO.class);
         when(adminService.getRequestedMovie(requestId)).thenReturn(movie);
 
-        ResponseEntity<Movie> response = adminController.getRequestedMovie(httpServletRequest, requestId);
+        ResponseEntity<MovieDetailsDTO> response = adminController.getRequestedMovie(httpServletRequest, requestId);
 
         assertEquals(movie, response.getBody());
         verify(adminService, times(1)).getRequestedMovie(requestId);

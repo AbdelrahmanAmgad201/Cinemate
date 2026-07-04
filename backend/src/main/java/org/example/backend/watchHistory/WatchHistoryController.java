@@ -24,7 +24,6 @@ public class WatchHistoryController {
             @PathVariable Long movieId) {
 
         Long userId = (Long) request.getAttribute("userId");
-//        System.out.println("userId = " + userId);
         return ResponseEntity.ok(
                 watchHistoryService.addToWatchHistory(userId, movieId)
         );

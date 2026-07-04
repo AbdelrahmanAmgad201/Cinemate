@@ -1,13 +1,13 @@
 package org.example.backend.admin;
 
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.example.backend.movie.Movie;
+import org.example.backend.movie.MovieDetailsDTO;
 import org.example.backend.movie.MovieService;
 import org.example.backend.movie.OneMovieOverView;
 import org.example.backend.requests.Requests;
 import org.example.backend.requests.RequestsService;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -32,27 +32,15 @@ public class AdminController {
     @PostMapping("/v1/decline-request")
     public ResponseEntity<String> declineRequest(HttpServletRequest request, @RequestParam Long requestId) {
         Long userId = (Long) request.getAttribute("userId");
-
-        try {
-            adminService.declineRequest(userId, requestId);
-            return ResponseEntity.ok("Request " + requestId + " declined successfully by admin " + userId);
-        } catch (RuntimeException e) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                    .body("Failed to decline request " + requestId + ": " + e.getMessage());
-        }
+        adminService.declineRequest(userId, requestId);
+        return ResponseEntity.ok("Request " + requestId + " declined successfully by admin " + userId);
     }
 
     @PostMapping("/v1/accept-request")
     public ResponseEntity<String> acceptRequest(HttpServletRequest request, @RequestParam Long requestId) {
         Long userId = (Long) request.getAttribute("userId");
-
-        try {
-            adminService.acceptRequests(userId, requestId);
-            return ResponseEntity.ok("Request " + requestId + " accepted successfully by admin " + userId);
-        } catch (RuntimeException e) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                    .body("Failed to accept request " + requestId + ": " + e.getMessage());
-        }
+        adminService.acceptRequests(userId, requestId);
+        return ResponseEntity.ok("Request " + requestId + " accepted successfully by admin " + userId);
     }
 
     @PostMapping("/v1/get-pending-requests")
@@ -61,7 +49,7 @@ public class AdminController {
     }
 
     @PostMapping("/v1/get-requested-movie")
-    public ResponseEntity<Movie> getRequestedMovie(HttpServletRequest request,@RequestParam Long requestId) {
+    public ResponseEntity<MovieDetailsDTO> getRequestedMovie(HttpServletRequest request,@RequestParam Long requestId) {
         return ResponseEntity.ok(adminService.getRequestedMovie(requestId));
     }
 
@@ -76,7 +64,7 @@ public class AdminController {
         return ResponseEntity.ok().body(adminService.getSystemOverview());
     }
     @PostMapping("/v1/add-admin")
-    public ResponseEntity<?> addAdmin(HttpServletRequest request,@RequestBody AddAdminDTO addAdminDTO) {
+    public ResponseEntity<?> addAdmin(HttpServletRequest request,@Valid @RequestBody AddAdminDTO addAdminDTO) {
         adminService.addAdmin(addAdminDTO);
         return ResponseEntity.ok().build();
     }
@@ -88,7 +76,7 @@ public class AdminController {
     }
 
     @PutMapping("/v1/update-name")
-    public ResponseEntity<String> updateAdminName(HttpServletRequest request, @RequestBody UpdateNameRequest nameRequest) {
+    public ResponseEntity<String> updateAdminName(HttpServletRequest request, @Valid @RequestBody UpdateNameRequest nameRequest) {
         Long adminId = (Long) request.getAttribute("userId");
 
         adminService.updateAdminName(adminId, nameRequest.getName());

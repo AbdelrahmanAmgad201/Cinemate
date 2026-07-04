@@ -1,6 +1,7 @@
 package org.example.backend.user;
 
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.validation.Valid;
 import org.bson.types.ObjectId;
 import org.example.backend.security.CredentialsRequest;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -33,7 +34,7 @@ public class UserController {
     @PostMapping("/v1/set-user-data")
     public ResponseEntity<String> setPersonalData(
             HttpServletRequest request,
-            @RequestBody UserDataDTO userDataDTO) {
+            @Valid @RequestBody UserDataDTO userDataDTO) {
 
         Long userId = (Long) request.getAttribute("userId");
         String message = userService.setUserData(userId, userDataDTO);
@@ -64,7 +65,7 @@ public class UserController {
     @PatchMapping("/v1/complete-profile")
     @PreAuthorize("hasRole('USER')")
     public ResponseEntity<?> completeProfile(
-        @RequestBody ProfileCompletionDTO request,
+        @Valid @RequestBody ProfileCompletionDTO request,
         HttpServletRequest httpRequest){
 
         Long userId = (Long) httpRequest.getAttribute("userId");
@@ -79,7 +80,7 @@ public class UserController {
 
     @PutMapping("/v1/user-about")
     public ResponseEntity<String> updateAboutUser(HttpServletRequest request,
-                                            @RequestBody AboutDTO about) {
+                                            @Valid @RequestBody AboutDTO about) {
         Long userId = (Long) request.getAttribute("userId");
         userService.updateAbout(userId, about);
         return ResponseEntity.ok("about is updated successfully");
@@ -87,7 +88,7 @@ public class UserController {
 
     @PutMapping("/v1/user-birth-date")
     public ResponseEntity<String> updateBirthDate(HttpServletRequest request,
-                                                  @RequestBody BirthDateDTO birthDate){
+                                                  @Valid @RequestBody BirthDateDTO birthDate){
         Long userId = (Long) request.getAttribute("userId");
         userService.updateBirthDate(userId, birthDate);
         return ResponseEntity.ok("Birth Date is updated successfully");
@@ -95,7 +96,7 @@ public class UserController {
 
     @PutMapping("/v1/user-name")
     public ResponseEntity<String> updateUserName(HttpServletRequest request,
-                                                 @RequestBody UserName userName) {
+                                                 @Valid @RequestBody UserName userName) {
         Long userId = (Long) request.getAttribute("userId");
         userService.updateName(userId,userName);
         return ResponseEntity.ok("User name is updated successfully");

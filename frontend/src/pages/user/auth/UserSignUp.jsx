@@ -1,10 +1,7 @@
-import SignUp from "../../auth/SignUp.jsx";
-import { useNavigate } from 'react-router-dom';
+import SignUp from '../../auth/SignUp.jsx';
 
 const UserSignUp = () => {
-    return (
-        <SignUp/>
-    );
-}
+    return <SignUp />;
+};
 
 export default UserSignUp;

@@ -26,17 +26,15 @@ async function fetchUserNameById(userId) {
     }
 }
 import { Link, useNavigate } from 'react-router-dom';
-import { IoIosPerson } from 'react-icons/io';
-import { BsThreeDots } from 'react-icons/bs';
-import { MdKeyboardArrowDown } from 'react-icons/md';
+import { User, MoreVertical, ChevronDown } from 'lucide-react';
 import { addCommentApi, getPostCommentsApi, deleteCommentApi, getRepliesApi } from '../api/comment-api';
 import { MAX_LENGTHS } from '../constants/constants';
 import VoteWidget from './VoteWidget';
-import Swal from 'sweetalert2';
+import ConfirmDialog from './ui/ConfirmDialog.jsx';
 import { ToastContext } from '../context/ToastContext';
 import { AuthContext } from '../context/AuthContext';
 import { PATHS } from '../constants/constants';
-import './style/postFullPage.css';
+import './style/postThread.css';
 
 const normalizeId = (id) => {
     if (id === null || id === undefined) return null;
@@ -63,6 +61,7 @@ const ThreadLinkButton = ({ comment, repliesCount, post }) => {
 const CommentItem = ({ comment, post, postOwnerId, onVoteUpdate, onRemoveComment, onEdit, onPostCommentAdded, onIncrementTopLevelReplies, inlineMaxDepth = INLINE_MAX_DEPTH, maxInlineReplies = Infinity, isModal = false, hideViewReplies = false, hideReplyButton = false, fetchRepliesTreeOnOpen = false, preferInlineReplies = false }) => {
     const { user } = useContext(AuthContext);
     const [menuOpen, setMenuOpen] = useState(false);
+    const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
     const menuRef = useRef(null);
 
     useEffect(() => {
@@ -107,33 +106,20 @@ const CommentItem = ({ comment, post, postOwnerId, onVoteUpdate, onRemoveComment
     const avatarSrc = (isCommentOwner && user?.avatar) || comment.ownerAvatar || comment.avatar || comment.owner?.avatar;
 
     const handleDeleteClick = async () => {
-        const result = await Swal.fire({
-            title: 'Delete comment?',
-            text: 'Are you sure you want to delete this comment?',
-            icon: 'warning',
-            showCancelButton: true,
-            confirmButtonText: 'Yes, delete',
-            confirmButtonColor: '#d33',
-            cancelButtonText: 'Cancel',
-        });
-
-        if (!result.isConfirmed) {
-            try { showToast('', 'Delete cancelled', 'info'); } catch (e) {}
-            return;
-        }
+        setConfirmDeleteOpen(false);
 
         try {
             const res = await deleteCommentApi({ commentId: comment.id });
             if (res.success) {
                 onRemoveComment && onRemoveComment(comment.id);
-                try { showToast('', 'Comment deleted', 'success'); } catch (e) {}
+                try { showToast('', 'Comment deleted', 'success'); } catch { /* ignore */ }
             } else {
                 console.error('Failed to delete comment:', res.message);
-                try { showToast('Error', 'Failed to delete comment: ' + (res.message || 'Unknown error'), 'error'); } catch (e) {}
+                try { showToast('Error', 'Failed to delete comment: ' + (res.message || 'Unknown error'), 'error'); } catch { /* ignore */ }
             }
         } catch (e) {
             console.error('Error deleting comment:', e);
-            try { showToast('Error', 'Error deleting comment', 'error'); } catch (err) {}
+            try { showToast('Error', 'Error deleting comment', 'error'); } catch { /* ignore */ }
         }
     };
 
@@ -291,7 +277,7 @@ const CommentItem = ({ comment, post, postOwnerId, onVoteUpdate, onRemoveComment
         if (!replyText.trim() || submittingReply) return;
         if (comment.isDeleted) {
             setShowReplyBox(false);
-            try { showToast('Error', 'Cannot reply to a deleted comment.', 'error'); } catch (e) {}
+            try { showToast('Error', 'Cannot reply to a deleted comment.', 'error'); } catch { /* ignore */ }
             return;
         }
         setSubmittingReply(true);
@@ -342,12 +328,12 @@ const CommentItem = ({ comment, post, postOwnerId, onVoteUpdate, onRemoveComment
                 // Remove optimistic reply on failure
                 setReplies(prev => prev.filter(r => !r.isOptimistic));
                 setRepliesTotalCount(prev => (typeof prev === 'number' ? Math.max(0, prev - 1) : undefined));
-                try { showToast('Error', 'Failed to post reply: ' + (res.message || 'Unknown error'), 'error'); } catch (e) {}
+                try { showToast('Error', 'Failed to post reply: ' + (res.message || 'Unknown error'), 'error'); } catch { /* ignore */ }
                 console.error('Failed to post reply:', res.message);
             }
         } catch (e) {
             setReplies(prev => prev.filter(r => !r.isOptimistic));
-            try { showToast('Error', 'Error posting reply'); } catch (err) {}
+            try { showToast('Error', 'Error posting reply'); } catch { /* ignore */ }
             console.error('Error posting reply:', e);
         } finally {
             setSubmittingReply(false);
@@ -383,12 +369,12 @@ const CommentItem = ({ comment, post, postOwnerId, onVoteUpdate, onRemoveComment
                             aria-label={`${displayName} profile`}
                         >
                             <div className="comment-avatar">
-                                {avatarSrc ? <img src={avatarSrc} alt={`${displayName} avatar`} /> : <IoIosPerson />}
+                                {avatarSrc ? <img src={avatarSrc} alt={`${displayName} avatar`} /> : <User size={16} />}
                             </div>
                         </Link>
                     ) : (
                         <div className="comment-avatar">
-                            {avatarSrc ? <img src={avatarSrc} alt={`${displayName} avatar`} /> : <IoIosPerson />}
+                            {avatarSrc ? <img src={avatarSrc} alt={`${displayName} avatar`} /> : <User size={16} />}
                         </div>
                     )}
                     {ownerProfileId ? (
@@ -403,12 +389,12 @@ const CommentItem = ({ comment, post, postOwnerId, onVoteUpdate, onRemoveComment
                     </time>
                     {(isCommentOwner || canDelete) && (
                         <div className="comment-settings" ref={menuRef}>
-                            <BsThreeDots onClick={() => setMenuOpen(prev => !prev)} />
+                            <MoreVertical size={16} onClick={() => setMenuOpen(prev => !prev)} />
                             {menuOpen && (
                                 <div className="options-menu">
                                     <ul>
                                         {canDelete && (
-                                            <li onClick={handleDeleteClick}>Delete</li>
+                                            <li onClick={() => { setMenuOpen(false); setConfirmDeleteOpen(true); }}>Delete</li>
                                         )}
                                     </ul>
                                 </div>
@@ -419,6 +405,15 @@ const CommentItem = ({ comment, post, postOwnerId, onVoteUpdate, onRemoveComment
                 <div className="comment-content">
                     <p>{comment.content}</p>
                 </div>
+                <ConfirmDialog
+                    open={confirmDeleteOpen}
+                    onClose={() => setConfirmDeleteOpen(false)}
+                    onConfirm={handleDeleteClick}
+                    title="Delete comment?"
+                    message="Are you sure you want to delete this comment? This can't be undone."
+                    confirmLabel="Delete"
+                    danger
+                />
                 <div className="comment-actions">
                     { !hideReplyButton && !comment.isDeleted && (
                         <button className="reply-btn" onClick={() => setShowReplyBox(prev => !prev)}>Reply</button>
@@ -568,7 +563,7 @@ const PostComments = ({ postId, post, postOwnerId, onCommentCountChange }) => {
                     try {
                         const cached = JSON.parse(sessionStorage.getItem(`CINEMATE_LAST_COMMENT_${c.id}`) || 'null');
                         if (cached) return { ...c, ...cached };
-                    } catch (e) { /* ignore */ }
+                    } catch { /* ignore */ }
                     return c;
                 });
                 setComments(mergedWithCache);
@@ -595,7 +590,7 @@ const PostComments = ({ postId, post, postOwnerId, onCommentCountChange }) => {
             }));
             try {
                 sessionStorage.setItem(`CINEMATE_LAST_COMMENT_COUNT_${postId}`, JSON.stringify({ count: total, ts: Date.now() }));
-            } catch (e) {
+            } catch {
                 // ignore storage errors
             }
         }
@@ -680,7 +675,7 @@ const PostComments = ({ postId, post, postOwnerId, onCommentCountChange }) => {
                             <option value="best">Best</option>
                             <option value="new">New</option>
                         </select>
-                        <MdKeyboardArrowDown className="select-arrow" />
+                        <ChevronDown size={16} className="select-arrow" />
                     </div>
                 </div>
                 {commentsLoading ? (
@@ -720,7 +715,7 @@ const PostComments = ({ postId, post, postOwnerId, onCommentCountChange }) => {
                                             if (target) {
                                                 sessionStorage.setItem(`CINEMATE_LAST_COMMENT_${target.id}`, JSON.stringify({ upvoteCount: target.upvoteCount, downvoteCount: target.downvoteCount, ts: Date.now() }));
                                             }
-                                        } catch (e) { /* ignore storage errors */ }
+                                        } catch { /* ignore storage errors */ }
 
                                         return updated;
                                     });

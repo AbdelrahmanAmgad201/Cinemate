@@ -41,7 +41,7 @@ class ForumControllerTest {
 
     private Long userId;
     private ObjectId forumId;
-    private Forum testForum;
+    private ForumDetailsDTO testForum;
     private ForumCreationRequest creationRequest;
 
     @BeforeEach
@@ -49,14 +49,13 @@ class ForumControllerTest {
         userId = 123456L;
         forumId = new ObjectId();
 
-        testForum = Forum.builder()
-                .id(forumId)
+        testForum = ForumDetailsDTO.builder()
+                .id(forumId.toString())
                 .name("Test Forum")
                 .description("Test Description")
                 .followerCount(10)
                 .postCount(5)
                 .createdAt(Instant.now())
-                .isDeleted(false)
                 .build();
 
         creationRequest =  ForumCreationRequest.builder()
@@ -119,21 +118,30 @@ class ForumControllerTest {
     }
 
     @Test
-    void deleteForum_Unauthorized_Returns500() throws Exception {
+    void deleteForum_Unauthorized_Returns403() throws Exception {
         doThrow(new AccessDeniedException("User cannot delete this forum"))
                 .when(forumService).deleteForum(any(ObjectId.class), anyLong());
 
         mockMvc.perform(delete("/api/forum/v1/delete/{forumId}", forumId.toHexString())
                         .with(csrf())
                         .requestAttr("userId", userId))
-                .andExpect(status().is5xxServerError());
+                .andExpect(status().isForbidden());
     }
 
 
     @Test
     void updateForum_Success() throws Exception {
+        Forum updatedForum = Forum.builder()
+                .id(forumId)
+                .name("Test Forum")
+                .description("Test Description")
+                .followerCount(10)
+                .postCount(5)
+                .createdAt(Instant.now())
+                .isDeleted(false)
+                .build();
         when(forumService.updateForum(any(ObjectId.class), any(ForumCreationRequest.class), anyLong()))
-                .thenReturn(testForum);
+                .thenReturn(updatedForum);
 
         mockMvc.perform(put("/api/forum/v1/update/{forumId}", forumId.toHexString())
                         .with(csrf())
@@ -149,7 +157,7 @@ class ForumControllerTest {
     }
 
     @Test
-    void updateForum_NotOwner_Returns500() throws Exception {
+    void updateForum_NotOwner_Returns403() throws Exception {
         when(forumService.updateForum(any(ObjectId.class), any(ForumCreationRequest.class), anyLong()))
                 .thenThrow(new AccessDeniedException("User does not have permission"));
 
@@ -158,11 +166,11 @@ class ForumControllerTest {
                         .requestAttr("userId", userId)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(creationRequest)))
-                .andExpect(status().is5xxServerError());
+                .andExpect(status().isForbidden());
     }
 
     @Test
-    void updateForum_DeletedForum_Returns500() throws Exception {
+    void updateForum_DeletedForum_Returns409() throws Exception {
         when(forumService.updateForum(any(ObjectId.class), any(ForumCreationRequest.class), anyLong()))
                 .thenThrow(new IllegalStateException("Cannot update a deleted forum"));
 
@@ -171,7 +179,7 @@ class ForumControllerTest {
                         .requestAttr("userId", userId)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(creationRequest)))
-                .andExpect(status().is5xxServerError());
+                .andExpect(status().isConflict());
     }
 
 
@@ -191,7 +199,7 @@ class ForumControllerTest {
                 .description("Java discussions")
                 .build();
 
-        SearchResultDto searchResult = SearchResultDto.builder()
+        SearchResultDTO searchResult = SearchResultDTO.builder()
                 .forums(Arrays.asList(forum1, forum2))
                 .currentPage(0)
                 .totalPages(1)
@@ -238,7 +246,7 @@ class ForumControllerTest {
 
     @Test
     void searchForums_WithPagination_Success() throws Exception {
-        SearchResultDto searchResult = SearchResultDto.builder()
+        SearchResultDTO searchResult = SearchResultDTO.builder()
                 .forums(List.of())
                 .currentPage(2)
                 .totalPages(5)
@@ -264,7 +272,7 @@ class ForumControllerTest {
 
     @Test
     void searchForums_TrimsSearchQuery() throws Exception {
-        SearchResultDto searchResult = SearchResultDto.builder()
+        SearchResultDTO searchResult = SearchResultDTO.builder()
                 .forums(List.of())
                 .currentPage(0)
                 .totalPages(0)
@@ -286,7 +294,7 @@ class ForumControllerTest {
 
     @Test
     void searchForums_DefaultPagination_Uses20PageSize() throws Exception {
-        SearchResultDto searchResult = SearchResultDto.builder()
+        SearchResultDTO searchResult = SearchResultDTO.builder()
                 .forums(List.of())
                 .currentPage(0)
                 .totalPages(0)
@@ -311,7 +319,7 @@ class ForumControllerTest {
 
     @Test
     void searchForums_NoResults_ReturnsEmptyList() throws Exception {
-        SearchResultDto searchResult = SearchResultDto.builder()
+        SearchResultDTO searchResult = SearchResultDTO.builder()
                 .forums(List.of())
                 .currentPage(0)
                 .totalPages(0)
