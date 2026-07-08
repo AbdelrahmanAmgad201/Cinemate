@@ -32,7 +32,6 @@ public class SecurityConfig {
     private final CustomAuthEntryPoint authEntryPoint;
     private final CustomAccessDeniedHandler accessDeniedHandler;
     private final JWTProvider jwtProvider;
-    private final TokenBlacklistService tokenBlacklistService;
     @Lazy
     private final OAuthSuccessHandler oAuthSuccessHandler;
 
@@ -46,7 +45,7 @@ public class SecurityConfig {
 
     @Bean
     public JWTAuthenticationFilter jwtAuthenticationFilter() {
-        return new JWTAuthenticationFilter(jwtProvider, tokenBlacklistService);
+        return new JWTAuthenticationFilter(jwtProvider);
     }
 
     @Bean

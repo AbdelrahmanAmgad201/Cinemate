@@ -204,14 +204,14 @@ class UserServiceTest {
 
         when(userRepository.findById(userId)).thenReturn(Optional.of(user));
         when(userRepository.save(any(User.class))).thenReturn(user);
-        when(jwtProvider.generateToken(user)).thenReturn("jwt-token");
+        when(jwtProvider.generateAccessToken(user)).thenReturn("jwt-token");
 
         String result = userService.completeProfile(userId, dto);
 
         assertEquals("jwt-token", result);
         assertEquals(Gender.FEMALE, user.getGender());
         assertTrue(user.getProfileComplete());
-        verify(jwtProvider).generateToken(user);
+        verify(jwtProvider).generateAccessToken(user);
     }
 
     @Test

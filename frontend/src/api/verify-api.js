@@ -8,7 +8,7 @@ export default async function verifyApi({email, code}) {
 
         const response = await api.post("/verification/v1/verify", {email, code});
         const data = response.data;
-        const token = data.token;
+        const token = data.accessToken;
         const user = {
             id: data.id,
             email: data.email,

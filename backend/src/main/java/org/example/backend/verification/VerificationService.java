@@ -218,12 +218,12 @@ public class VerificationService {
                 verificationRepository.delete(verification.get());
 
                 if (account != null) {
-                    String token = jwtTokenProvider.generateToken(account);
+                    String accessToken = jwtTokenProvider.generateAccessToken(account);
 
                     return VerificationResponseDTO.builder()
                             .success(true)
                             .message("Verification successful")
-                            .token(token)
+                            .accessToken(accessToken)
                             .id(account.getId())
                             .email(account.getEmail())
                             .role(account.getRole())

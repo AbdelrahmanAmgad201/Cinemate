@@ -10,6 +10,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
 import org.springframework.test.context.ActiveProfiles;
 
@@ -30,6 +31,15 @@ class AuthenticationControllerTest {
 
     @Mock
     private UserService userService;
+
+    @Mock
+    private OAuthExchangeService oAuthExchangeService;
+
+    @Mock
+    private RefreshTokenService refreshTokenService;
+
+    @Mock
+    private RefreshTokenCookie refreshTokenCookie;
 
     @InjectMocks
     private AuthenticationController authenticationController;
@@ -55,7 +65,10 @@ class AuthenticationControllerTest {
                 request.getRole()))
                 .thenReturn(Optional.of(mockUser));
 
-        when(jwtTokenProvider.generateToken(mockUser)).thenReturn("mockToken");
+        when(jwtTokenProvider.generateAccessToken(mockUser)).thenReturn("mockToken");
+        when(refreshTokenService.issue(anyString(), anyString())).thenReturn("mockRefresh");
+        when(refreshTokenCookie.build(anyString()))
+                .thenReturn(ResponseCookie.from("refresh_token", "mockRefresh").build());
 
         ResponseEntity<?> response = authenticationController.login(request);
 
@@ -63,7 +76,7 @@ class AuthenticationControllerTest {
 
         Map<String, Object> body = (Map<String, Object>) response.getBody();
         assertNotNull(body);
-        assertEquals("mockToken", body.get("token"));
+        assertEquals("mockToken", body.get("accessToken"));
         assertEquals(1L, body.get("id"));
         assertEquals("test@example.com", body.get("email"));
         assertEquals("ROLE_USER", body.get("role"));

@@ -26,7 +26,7 @@ const OAuthRedirect = () => {
 
         api.post('/auth/v1/oauth-token', { code })
             .then(({ data }) => {
-                const token = data.token;
+                const token = data.accessToken;
                 sessionStorage.setItem(JWT.STORAGE_NAME, token);
 
                 const userData = jwtDecode(token); // returns { id, email, role, iat }

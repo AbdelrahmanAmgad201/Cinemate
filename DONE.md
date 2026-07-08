@@ -382,3 +382,67 @@ With the backend unblocked, re-audited the entire redesigned frontend (all pages
 Everything else the re-audit initially flagged (raw `<input>`/`<textarea>` in `PersonalData.jsx`, `EditPost.jsx`, `LiveChat.jsx`, `EmailVerification.jsx`'s OTP boxes, `NavBar.jsx`'s search field) turned out to be false positives on inspection: all of them are styled entirely through design-system custom properties already (no hardcoded colors), just via bespoke markup rather than the shared `Input` component — a reasonable, deliberate choice for OTP digit boxes, a chat message field, and a search-with-dropdown control that don't fit the generic field shape. Left as-is rather than churning working, consistent code to satisfy a "must use the shared component everywhere" rule that isn't actually the goal.
 
 **Verification:** `npx eslint src` — same pre-existing problem set as before, minus the issues in `PartySessionHandler.jsx` (now clean); no new problems. `npm run build` succeeds. Full `docker compose build backend frontend` succeeds and the whole stack came back up healthy.
+
+---
+
+## Auth Overhaul — Access + Refresh Tokens (RS256), replacing the JWT blacklist
+
+Reworked authentication from "one long-lived HS256 JWT + a per-request Redis
+revocation list" to the standard short-lived-access-token + rotating-refresh-token
+model, and switched signing to RS256. This both hardens auth and paves the way for an
+API gateway (a gateway can now verify tokens statelessly with the public key). Full
+design + the gateway handoff contract are in [`docs/auth.md`](docs/auth.md).
+
+### What changed
+
+- **RS256 instead of HS256** (`JWTProvider`). Access tokens are signed with an RSA
+  private key (backend only) and verified with the public key. A verifier — the future
+  gateway included — can validate tokens without holding a secret that could mint them,
+  which the old shared HMAC secret could not offer. Keys are supplied as base64 DER (PEM
+  also accepted) via `JWT_PRIVATE_KEY` / `JWT_PUBLIC_KEY`.
+- **Short-lived access tokens** (15 min default). Verification is now pure signature
+  math — no Redis lookup on the hot path.
+- **Refresh tokens** (`RefreshTokenService`, new). Opaque 256-bit random strings,
+  hashed at rest in Redis, 7-day default TTL, **single-use with rotation** (each
+  `/refresh` atomically GETDELs the old token and issues a new one). This is the only
+  revocable credential and the only thing carrying "stay logged in".
+- **httpOnly refresh cookie** (`RefreshTokenCookie`, new). `Secure; HttpOnly;
+  SameSite=None; Path=/api/auth/v1` — JS/XSS can't read it. Tighten to `SameSite=Lax`
+  once the gateway unifies the origin (`AUTH_COOKIE_SAME_SITE`).
+- **`/api/auth/v1/refresh`** (new endpoint): rotate the cookie, reload the account
+  (so role/profile changes are picked up), return a new access token.
+- **Logout** now deletes the refresh token from Redis and clears the cookie, instead
+  of blacklisting the access token. `TokenBlacklistService` is deleted and gone from
+  `JWTAuthenticationFilter` and `SecurityConfig` — the filter is now stateless.
+- **All login paths** (`/login`, `/oauth-token`, email `/verify`) issue the same
+  access-token-in-body + refresh-cookie pair. Response field renamed `token` →
+  `accessToken` for a uniform contract.
+- **Frontend**: axios runs `withCredentials: true`; a response interceptor does a
+  single-flight `/refresh` on any 401 and replays the request; `AuthContext` attempts a
+  silent `/refresh` on load, so a returning visitor with a live refresh cookie is logged
+  straight back in. `sign-in`/`verify`/`oauth` read `accessToken`.
+
+### Verification
+
+- Backend compiles (local `mvnw` + Docker `mvn clean package`, `BUILD SUCCESS` incl.
+  test compilation after updating the auth tests). Full stack `docker compose up`
+  healthy, backend zero restarts, RSA keys loaded at boot.
+- **Live lifecycle test via curl** against the running stack (real MySQL/Redis):
+  login → `200` with correct `Secure; HttpOnly; SameSite=None; Path=/api/auth/v1`
+  cookie and an **RS256** access token (verified by decoding the JWT header) carrying
+  the right claims; `/refresh` → `200`, rotates the cookie; **re-using the old
+  refresh token → `401`** (single-use enforced); logout → `200` + cookie cleared;
+  refresh after logout → `401`. A protected route returns `200` with a valid access
+  token and `401` when the token is missing or tampered — proving the RS256 verify
+  path works end-to-end.
+- Frontend `npm run build` succeeds; `eslint` clean on the touched files (only the
+  pre-existing `AuthContext` fast-refresh warning remains).
+
+### Notes / follow-ups
+
+- Refresh tokens currently share the backend's existing Redis connection (the
+  eviction-capable `redis-cache`). Losing one only forces a re-login, but the durable
+  `redis` instance is the more correct home — a dedicated connection is a clean
+  follow-up (called out in `RefreshTokenService`).
+- Family-based reuse **detection** (revoke the whole token family on replay, vs. today's
+  single-use invalidation) is a possible future hardening.

@@ -56,7 +56,7 @@ public class OAuthSuccessHandler extends SimpleUrlAuthenticationSuccessHandler {
             return userRepository.save(newUser);
         });
 
-        String token = jwtProvider.generateToken(user);
+        String token = jwtProvider.generateAccessToken(user);
         String code = oAuthExchangeService.issueCode(token);
 
         String redirectUrl = UriComponentsBuilder

@@ -90,7 +90,10 @@ public class UserService {
 
         userRepository.save(user);
 
-        return jwtProvider.generateToken(user);
+        // Re-issue the access token so the profileComplete claim flips to true
+        // immediately; the existing refresh cookie stays valid and will pick up the
+        // same change on its next rotation.
+        return jwtProvider.generateAccessToken(user);
 
     }
 

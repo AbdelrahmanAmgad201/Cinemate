@@ -50,7 +50,7 @@ class VerificationServiceTest {
         verificationService.setFromEmail("noreply@example.com");
 
         // Mock JWT token generation
-        when(jwtProvider.generateToken(any())).thenReturn("mock-jwt-token");
+        when(jwtProvider.generateAccessToken(any())).thenReturn("mock-jwt-token");
     }
 
     @Test
@@ -69,7 +69,7 @@ class VerificationServiceTest {
 
         assertTrue(response.isSuccess());
         assertEquals("Verification successful", response.getMessage());
-        assertNotNull(response.getToken());
+        assertNotNull(response.getAccessToken());
         assertEquals("test1@example.com", response.getEmail());
         assertEquals("ROLE_USER", response.getRole());
         assertTrue(userRepository.findByEmail("test1@example.com").isPresent());
@@ -92,7 +92,7 @@ class VerificationServiceTest {
 
         assertTrue(response.isSuccess());
         assertEquals("Verification successful", response.getMessage());
-        assertNotNull(response.getToken());
+        assertNotNull(response.getAccessToken());
         assertEquals("test2@example.com", response.getEmail());
         assertEquals("ROLE_ORGANIZATION", response.getRole());
         assertTrue(organizationRepository.findByEmail("test2@example.com").isPresent());
@@ -122,7 +122,7 @@ class VerificationServiceTest {
 
         assertFalse(response.isSuccess());
         assertEquals("Invalid or expired code", response.getMessage());
-        assertNull(response.getToken());
+        assertNull(response.getAccessToken());
         assertFalse(userRepository.findByEmail("test@example.com").isPresent());
         assertTrue(verificationRepository.findByEmail("test@example.com").isPresent());
     }
@@ -144,7 +144,7 @@ class VerificationServiceTest {
 
         assertFalse(response.isSuccess());
         assertEquals("Invalid or expired code", response.getMessage());
-        assertNull(response.getToken());
+        assertNull(response.getAccessToken());
         assertFalse(organizationRepository.findByEmail("test@example.com").isPresent());
         assertTrue(verificationRepository.findByEmail("test@example.com").isPresent());
     }

@@ -18,7 +18,6 @@ import java.util.List;
 public class JWTAuthenticationFilter extends OncePerRequestFilter {
 
     private final JWTProvider jwtProvider;
-    private final TokenBlacklistService tokenBlacklistService;
 
     @Override
     protected void doFilterInternal(HttpServletRequest request,
@@ -27,7 +26,11 @@ public class JWTAuthenticationFilter extends OncePerRequestFilter {
 
         String token = extractTokenFromRequest(request);
 
-        if (token != null && jwtProvider.validateToken(token) && !tokenBlacklistService.isRevoked(token)) {
+        // Pure signature verification — no revocation-list lookup, no I/O. Access
+        // tokens are short-lived and revocation is handled by dropping the refresh
+        // token instead. This is exactly the check a future gateway performs with
+        // the public key.
+        if (token != null && jwtProvider.validateToken(token)) {
             String email = jwtProvider.getEmailFromToken(token);
             String role = jwtProvider.getRoleFromToken(token);
             Long id = jwtProvider.getIdFromToken(token);

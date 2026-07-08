@@ -10,7 +10,7 @@ import lombok.*;
 public class VerificationResponseDTO{
     private boolean success;
     private String message;
-    private String token;
+    private String accessToken;
     private Long id;
     private String email;
     private String role;

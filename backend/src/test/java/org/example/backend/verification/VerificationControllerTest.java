@@ -1,18 +1,23 @@
 package org.example.backend.verification;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.example.backend.security.RefreshTokenCookie;
+import org.example.backend.security.RefreshTokenService;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.http.MediaType;
+import org.springframework.http.ResponseCookie;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
@@ -27,8 +32,21 @@ class VerificationControllerTest {
     @MockitoBean
     private VerificationService verificationService;
 
+    @MockitoBean
+    private RefreshTokenService refreshTokenService;
+
+    @MockitoBean
+    private RefreshTokenCookie refreshTokenCookie;
+
     @Autowired
     private ObjectMapper objectMapper;
+
+    @BeforeEach
+    void setUp() {
+        // A successful verify issues the refresh cookie; give the builder a real cookie.
+        Mockito.when(refreshTokenCookie.build(anyString()))
+                .thenReturn(ResponseCookie.from("refresh_token", "mock-refresh").build());
+    }
 
     @Test
     void testVerifySuccessful() throws Exception {
@@ -39,7 +57,7 @@ class VerificationControllerTest {
         VerificationResponseDTO response = VerificationResponseDTO.builder()
                 .success(true)
                 .message("Verification successful")
-                .token("mock-jwt-token-xyz")
+                .accessToken("mock-jwt-token-xyz")
                 .id(1L)
                 .email("test@example.com")
                 .role("USER")
@@ -54,7 +72,7 @@ class VerificationControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.success", is(true)))
                 .andExpect(jsonPath("$.message", is("Verification successful")))
-                .andExpect(jsonPath("$.token", is("mock-jwt-token-xyz")))
+                .andExpect(jsonPath("$.accessToken", is("mock-jwt-token-xyz")))
                 .andExpect(jsonPath("$.id", is(1)))
                 .andExpect(jsonPath("$.email", is("test@example.com")))
                 .andExpect(jsonPath("$.role", is("USER")));
@@ -80,7 +98,7 @@ class VerificationControllerTest {
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.success", is(false)))
                 .andExpect(jsonPath("$.message", is("Invalid or expired code")))
-                .andExpect(jsonPath("$.token", nullValue()))
+                .andExpect(jsonPath("$.accessToken", nullValue()))
                 .andExpect(jsonPath("$.id", nullValue()))
                 .andExpect(jsonPath("$.email", nullValue()))
                 .andExpect(jsonPath("$.role", nullValue()));
@@ -95,7 +113,7 @@ class VerificationControllerTest {
         VerificationResponseDTO response = VerificationResponseDTO.builder()
                 .success(true)
                 .message("Verification successful")
-                .token("mock-org-jwt-token")
+                .accessToken("mock-org-jwt-token")
                 .id(2L)
                 .email("org@example.com")
                 .role("ORGANIZATION")
@@ -110,7 +128,7 @@ class VerificationControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.success", is(true)))
                 .andExpect(jsonPath("$.message", is("Verification successful")))
-                .andExpect(jsonPath("$.token", is("mock-org-jwt-token")))
+                .andExpect(jsonPath("$.accessToken", is("mock-org-jwt-token")))
                 .andExpect(jsonPath("$.id", is(2)))
                 .andExpect(jsonPath("$.email", is("org@example.com")))
                 .andExpect(jsonPath("$.role", is("ORGANIZATION")));
