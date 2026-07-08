@@ -24,6 +24,11 @@ spring:
 server:
   port: 8080
 
+# RS256 public key the gateway uses to verify access tokens. Same key the backend
+# holds; the gateway only ever gets the PUBLIC half, so it can verify but never mint.
+jwt:
+  public-key: ${JWT_PUBLIC_KEY}
+
 management:
   endpoints:
     web:

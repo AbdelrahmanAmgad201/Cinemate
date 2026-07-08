@@ -194,6 +194,9 @@ services:
       - BACKEND_URI=http://backend:8080
       - WATCHPARTY_URI=http://watch-party:8081
       - FRONTEND_URI=http://frontend:80
+      # Public half of the RS256 keypair — the gateway verifies access tokens with
+      # it (can validate, never mint). Same value the backend signs with.
+      - JWT_PUBLIC_KEY=${JWT_PUBLIC_KEY}
     depends_on:
       backend:
         condition: service_healthy
