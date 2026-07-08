@@ -4,8 +4,11 @@
 const runtimeConfig = typeof window !== "undefined" ? window.__CINEMATE_CONFIG__ : undefined;
 
 export const BACKEND_URL = {
-    BASE_URL: runtimeConfig?.API_BASE_URL || import.meta.env.VITE_API_BASE_URL || "http://localhost:8080",
-    // Empty string = same origin as the page (nginx proxies /ws to watch-party — FE-03).
+    // Empty string = same origin as the page: the gateway serves the SPA and proxies
+    // /api to the backend, so requests go to the gateway origin. `??` (not `||`) so an
+    // explicit "" is honored as same-origin instead of falling through to the dev default.
+    BASE_URL: runtimeConfig?.API_BASE_URL ?? import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8080",
+    // Empty string = same origin as the page (the gateway proxies /ws to watch-party).
     WATCH_PARTY_BASE_URL: runtimeConfig?.WATCH_PARTY_BASE_URL ?? import.meta.env.VITE_API_WATCH_PARTY_BASE_URL ?? "http://localhost:8081",
 
 }

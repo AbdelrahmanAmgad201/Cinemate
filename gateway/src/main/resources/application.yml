@@ -11,7 +11,10 @@ spring:
             - id: backend
               uri: ${BACKEND_URI:http://backend:8080}
               predicates:
-                - Path=/api/**
+                # The Google OAuth handshake endpoints Spring Security owns on the backend
+                # (initiation + callback). Deliberately NOT the broad /oauth2/** — the SPA
+                # has its own /oauth2/redirect page that must reach the frontend.
+                - Path=/api/**,/oauth2/authorize/**,/login/oauth2/**
             - id: watch-party
               uri: ${WATCHPARTY_URI:http://watch-party:8081}
               predicates:

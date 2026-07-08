@@ -1,50 +1,53 @@
 package com.example.gateway.config;
 
+import com.example.gateway.security.GatewayJwtAuthenticationFilter;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.core.convert.converter.Converter;
 import org.springframework.http.HttpMethod;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
-import org.springframework.security.core.GrantedAuthority;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
-import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
-import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.access.intercept.AuthorizationFilter;
+import org.springframework.security.web.authentication.HttpStatusEntryPoint;
 
 import java.security.KeyFactory;
 import java.security.interfaces.RSAPublicKey;
 import java.security.spec.X509EncodedKeySpec;
 import java.util.Base64;
-import java.util.Collection;
-import java.util.List;
 
 /**
- * Phase 2: the gateway becomes the RS256 resource server and enforces the
- * public/protected route matrix at the edge.
+ * Gateway security (Phase 3): validates the access token and enforces the
+ * public/protected route matrix at the edge, then forwards a trusted identity to
+ * the backend.
  *
- * <p>Tokens are verified with the RSA <b>public</b> key only (static, from env) — the
- * gateway can validate but never mint. The route→role rules mirror the backend's
- * SecurityConfig exactly; the backend still validates independently for now
- * (belt-and-suspenders) until the Phase 3 cutover.
- *
- * <p>Everything that isn't an API path (the SPA, static assets, /config.js, client-side
- * routes) is served publicly — auth only gates the API and only where the backend
- * gated it before.
+ * <p>Uses a custom {@link GatewayJwtAuthenticationFilter} rather than the strict
+ * oauth2 resource server: token validation is <b>opportunistic</b> (a bad/absent
+ * token isn't rejected by the filter itself — the matrix below decides), which
+ * mirrors the backend's original behaviour and keeps public endpoints working when
+ * the browser sends a stale token. The route→role rules match the backend exactly.
  */
 @Configuration
 public class SecurityConfig {
 
     @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+    public SecurityFilterChain securityFilterChain(HttpSecurity http, JwtDecoder jwtDecoder) throws Exception {
         http
                 .csrf(csrf -> csrf.disable())
                 .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                // Write auth failures as bare statuses. Both handlers set the status
+                // DIRECTLY rather than via sendError(): sendError triggers a servlet
+                // dispatch to /error, which the catch-all "/** -> frontend" route would
+                // then proxy, turning a 401/403 into a 200 SPA response. Directly-set
+                // statuses skip that dispatch.
+                .exceptionHandling(e -> e
+                        .authenticationEntryPoint(new HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED))
+                        .accessDeniedHandler((request, response, ex) ->
+                                response.setStatus(HttpStatus.FORBIDDEN.value())))
                 .authorizeHttpRequests(auth -> auth
-                        // CORS preflight + the gateway's own health probe
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         .requestMatchers("/actuator/health").permitAll()
 
@@ -55,8 +58,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/health/**").permitAll()
                         .requestMatchers("/api/movie/**").permitAll()
 
-                        // WebSocket handshake — its own auth is tracked separately (REL-08);
-                        // permit here so it keeps working exactly as today.
+                        // WebSocket handshake — its own auth is tracked separately (REL-08).
                         .requestMatchers("/ws/**").permitAll()
 
                         // ── Role-protected API ──
@@ -81,35 +83,17 @@ public class SecurityConfig {
                         // Everything else is the frontend (SPA + assets) — served publicly.
                         .anyRequest().permitAll()
                 )
-                .oauth2ResourceServer(oauth2 -> oauth2
-                        .jwt(jwt -> jwt.jwtAuthenticationConverter(jwtAuthenticationConverter())));
+                // Populate the SecurityContext (for the matrix) + inject X-User-* before
+                // authorization runs.
+                .addFilterBefore(new GatewayJwtAuthenticationFilter(jwtDecoder), AuthorizationFilter.class);
 
         return http.build();
     }
 
-    /**
-     * Verifies access tokens with the RSA public key. Nimbus enforces the RS256
-     * signature and the exp claim by default.
-     */
+    /** Verifies access tokens with the RSA public key. Nimbus enforces RS256 + exp. */
     @Bean
     public JwtDecoder jwtDecoder(@Value("${jwt.public-key}") String publicKeyMaterial) {
         return NimbusJwtDecoder.withPublicKey(parsePublicKey(publicKeyMaterial)).build();
-    }
-
-    /**
-     * Maps the token's {@code role} claim (e.g. "ROLE_USER") straight to a granted
-     * authority, so the hasAuthority(...) rules above line up with the backend's.
-     */
-    private JwtAuthenticationConverter jwtAuthenticationConverter() {
-        Converter<Jwt, Collection<GrantedAuthority>> rolesConverter = jwt -> {
-            String role = jwt.getClaimAsString("role");
-            return (role == null || role.isBlank())
-                    ? List.of()
-                    : List.of(new SimpleGrantedAuthority(role));
-        };
-        JwtAuthenticationConverter converter = new JwtAuthenticationConverter();
-        converter.setJwtGrantedAuthoritiesConverter(rolesConverter);
-        return converter;
     }
 
     // Accept base64 DER or full PEM, matching the backend's tolerant key loading.

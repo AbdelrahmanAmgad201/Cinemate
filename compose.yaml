@@ -95,18 +95,26 @@ services:
       dockerfile: Dockerfile
     container_name: backend
     restart: unless-stopped
-    ports:
-      - "8080:8080"
+    # No host port: the backend is internal-only, reachable solely across app-net via
+    # the gateway. That's what makes the gateway's X-User-* identity headers trustworthy
+    # (an external client can't reach the backend to forge them).
+    expose:
+      - "8080"
     env_file:
       - ./backend/.env.prod
     environment:
       - JAVA_OPTS=-Xmx512m -Xms256m
       - WATCHPARTY_SERVICE_URL=http://watch-party:8081
       - WATCHPARTY_WS_URL=ws://watch-party:8081/ws
-      # These flow in from the root .env file — they override backend/.env.prod values of the same name
+      # These flow in from the root .env file — they override backend/.env.prod values of the same name.
+      # FRONTEND_URL / BASE_URL are the gateway origin now (single entry point): the OAuth
+      # redirect + the post-login SPA redirect both go through the gateway.
       - FRONTEND_URL=${FRONTEND_URL}
-      - CORS_ALLOWED_ORIGINS=${CORS_ALLOWED_ORIGINS}
       - BASE_URL=${BASE_URL}
+      # Single origin now, so the refresh cookie is SameSite=Lax and not Secure (works
+      # over http://localhost). CORS on the backend is gone — the gateway owns the edge.
+      - AUTH_COOKIE_SECURE=false
+      - AUTH_COOKIE_SAME_SITE=Lax
       # DB_PASSWORD must match MYSQL_ROOT_PASSWORD — source from root .env to keep them in sync
       - DB_PASSWORD=${MYSQL_ROOT_PASSWORD}
       # Dedicated cache instance (ARC-06) — deliberately NOT the `redis` service
@@ -147,16 +155,14 @@ services:
       dockerfile: Dockerfile
     container_name: frontend
     restart: unless-stopped
-    ports:
-      - "5173:80"
+    # No host port: the SPA is served through the gateway (/ -> frontend), so the
+    # gateway is the single origin the browser ever talks to.
+    expose:
+      - "80"
     environment:
-      # Runtime config (FE-02) — generated into config.js at container start by
-      # docker-entrypoint.sh, so this image doesn't need rebuilding to point at a
-      # different backend. API_BASE_URL is reachable directly since the backend is
-      # published on the host; WATCH_PARTY_BASE_URL is left empty so the frontend
-      # uses this same origin, which nginx proxies to the internal watch-party
-      # service at /ws (FE-03).
-      - API_BASE_URL=${BASE_URL:-http://localhost:8080}
+      # Runtime config (FE-02). Both are empty so the SPA calls the SAME origin it was
+      # served from (the gateway): /api -> backend, /ws -> watch-party, all same-origin.
+      - API_BASE_URL=
       - WATCH_PARTY_BASE_URL=
     networks:
       - app-net
@@ -177,11 +183,10 @@ services:
           cpus: '1'
           memory: 256M
 
-  # API Gateway (Spring Cloud Gateway). Being introduced incrementally.
-  # Phase 1: additive only — published on 8090 alongside the still-published
-  # backend:8080, so the running app (frontend:5173 → backend:8080) is untouched
-  # while gateway routing is verified. A later phase makes the gateway the sole
-  # entry point (backend goes internal, gateway takes 8080).
+  # API Gateway (Spring Cloud Gateway) — the single entry point. The browser only
+  # ever talks to this: it serves the SPA (/), proxies the API (/api) and WebSocket
+  # (/ws), and validates access tokens at the edge, forwarding a trusted identity to
+  # the internal backend. It's the only service with a published host port.
   gateway:
     build:
       context: ./gateway
@@ -189,7 +194,7 @@ services:
     container_name: gateway
     restart: unless-stopped
     ports:
-      - "8090:8080"
+      - "8080:8080"
     environment:
       - BACKEND_URI=http://backend:8080
       - WATCHPARTY_URI=http://watch-party:8081

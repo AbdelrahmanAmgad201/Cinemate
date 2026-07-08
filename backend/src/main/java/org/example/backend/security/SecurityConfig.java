@@ -3,7 +3,6 @@ package org.example.backend.security;
 import lombok.RequiredArgsConstructor;
 import org.example.backend.errorHandler.CustomAccessDeniedHandler;
 import org.example.backend.errorHandler.CustomAuthEntryPoint;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -15,13 +14,7 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
-import org.springframework.web.cors.CorsConfiguration;
-import org.springframework.web.cors.CorsConfigurationSource;
-import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import org.springframework.context.annotation.Lazy;
-
-import java.util.Arrays;
-import java.util.List;
 
 @Configuration
 @EnableWebSecurity
@@ -31,27 +24,19 @@ public class SecurityConfig {
 
     private final CustomAuthEntryPoint authEntryPoint;
     private final CustomAccessDeniedHandler accessDeniedHandler;
-    private final JWTProvider jwtProvider;
     @Lazy
     private final OAuthSuccessHandler oAuthSuccessHandler;
 
-    /**
-     * Comma-separated list of allowed CORS origins.
-     * Set via CORS_ALLOWED_ORIGINS env var.
-     * Example: http://localhost:5173,https://cinemate.example.com
-     */
-    @Value("${app.cors.allowed-origins}")
-    private String corsAllowedOrigins;
-
     @Bean
-    public JWTAuthenticationFilter jwtAuthenticationFilter() {
-        return new JWTAuthenticationFilter(jwtProvider);
+    public GatewayAuthenticationFilter gatewayAuthenticationFilter() {
+        return new GatewayAuthenticationFilter();
     }
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
-                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
+                // CORS is handled at the gateway now (single origin); the backend is
+                // internal-only and never reached cross-origin by a browser.
                 .csrf(csrf -> csrf.disable())
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
@@ -88,29 +73,10 @@ public class SecurityConfig {
                 .redirectionEndpoint(redirection -> redirection.baseUri("/login/oauth2/code/*"))
                 .successHandler(oAuthSuccessHandler)
         )
-            .addFilterBefore((jwtAuthenticationFilter()), UsernamePasswordAuthenticationFilter.class);
+            .addFilterBefore((gatewayAuthenticationFilter()), UsernamePasswordAuthenticationFilter.class);
 
 
         return http.build();
-    }
-
-    @Bean
-    public CorsConfigurationSource corsConfigurationSource() {
-        CorsConfiguration configuration = new CorsConfiguration();
-        // Origins come from CORS_ALLOWED_ORIGINS env var (comma-separated).
-        // Example: http://localhost:5173,https://cinemate.example.com
-        List<String> origins = Arrays.stream(corsAllowedOrigins.split(","))
-                .map(String::trim)
-                .filter(s -> !s.isEmpty())
-                .toList();
-        configuration.setAllowedOrigins(origins);
-        configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"));
-        configuration.setAllowedHeaders(List.of("Authorization", "Content-Type", "X-Requested-With"));
-        configuration.setAllowCredentials(true);
-
-        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
-        source.registerCorsConfiguration("/api/**", configuration);
-        return source;
     }
 
     @Bean
