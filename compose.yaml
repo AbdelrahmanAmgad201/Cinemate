@@ -177,6 +177,44 @@ services:
           cpus: '1'
           memory: 256M
 
+  # API Gateway (Spring Cloud Gateway). Being introduced incrementally.
+  # Phase 1: additive only — published on 8090 alongside the still-published
+  # backend:8080, so the running app (frontend:5173 → backend:8080) is untouched
+  # while gateway routing is verified. A later phase makes the gateway the sole
+  # entry point (backend goes internal, gateway takes 8080).
+  gateway:
+    build:
+      context: ./gateway
+      dockerfile: Dockerfile
+    container_name: gateway
+    restart: unless-stopped
+    ports:
+      - "8090:8080"
+    environment:
+      - BACKEND_URI=http://backend:8080
+      - WATCHPARTY_URI=http://watch-party:8081
+      - FRONTEND_URI=http://frontend:80
+    depends_on:
+      backend:
+        condition: service_healthy
+      watch-party:
+        condition: service_healthy
+      frontend:
+        condition: service_healthy
+    networks:
+      - app-net
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/actuator/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 512M
+
   # Watch-party's main store of live party state — not a cache, must not lose data.
   # Internal only (no host port, same pattern as watch-party/hate-api): an
   # unauthenticated Redis exposed on the host is itself a data-loss vector.

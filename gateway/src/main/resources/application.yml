@@ -1,0 +1,31 @@
+spring:
+  application:
+    name: gateway
+  cloud:
+    gateway:
+      server:
+        webmvc:
+          routes:
+            # Order matters: the /** catch-all to the frontend must come last so the
+            # more specific /api and /ws routes win first.
+            - id: backend
+              uri: ${BACKEND_URI:http://backend:8080}
+              predicates:
+                - Path=/api/**
+            - id: watch-party
+              uri: ${WATCHPARTY_URI:http://watch-party:8081}
+              predicates:
+                - Path=/ws/**
+            - id: frontend
+              uri: ${FRONTEND_URI:http://frontend:80}
+              predicates:
+                - Path=/**
+
+server:
+  port: 8080
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
