@@ -202,12 +202,17 @@ services:
       # Public half of the RS256 keypair — the gateway verifies access tokens with
       # it (can validate, never mint). Same value the backend signs with.
       - JWT_PUBLIC_KEY=${JWT_PUBLIC_KEY}
+      # Redis for the rate-limiter's token buckets (reuses the cache instance).
+      - REDIS_HOST=redis-cache
+      - REDIS_PORT=6379
     depends_on:
       backend:
         condition: service_healthy
       watch-party:
         condition: service_healthy
       frontend:
+        condition: service_healthy
+      redis-cache:
         condition: service_healthy
     networks:
       - app-net

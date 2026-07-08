@@ -1,6 +1,7 @@
 package com.example.gateway.config;
 
 import com.example.gateway.security.GatewayJwtAuthenticationFilter;
+import com.example.gateway.security.RateLimitFilter;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -34,7 +35,8 @@ import java.util.Base64;
 public class SecurityConfig {
 
     @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http, JwtDecoder jwtDecoder) throws Exception {
+    public SecurityFilterChain securityFilterChain(HttpSecurity http, JwtDecoder jwtDecoder,
+                                                   RateLimitFilter rateLimitFilter) throws Exception {
         http
                 .csrf(csrf -> csrf.disable())
                 .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
@@ -85,7 +87,10 @@ public class SecurityConfig {
                 )
                 // Populate the SecurityContext (for the matrix) + inject X-User-* before
                 // authorization runs.
-                .addFilterBefore(new GatewayJwtAuthenticationFilter(jwtDecoder), AuthorizationFilter.class);
+                .addFilterBefore(new GatewayJwtAuthenticationFilter(jwtDecoder), AuthorizationFilter.class)
+                // Rate-limit right after identity is established (so per-user keying works)
+                // and before authorization — cheap rejection ahead of any real work.
+                .addFilterAfter(rateLimitFilter, GatewayJwtAuthenticationFilter.class);
 
         return http.build();
     }

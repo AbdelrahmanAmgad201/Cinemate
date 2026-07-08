@@ -32,6 +32,11 @@ server:
 jwt:
   public-key: ${JWT_PUBLIC_KEY}
 
+# Redis backing the rate-limiter's token buckets (shared across gateway replicas).
+redis:
+  host: ${REDIS_HOST:redis-cache}
+  port: ${REDIS_PORT:6379}
+
 management:
   endpoints:
     web:
