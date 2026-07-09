@@ -446,3 +446,72 @@ design + the gateway handoff contract are in [`docs/auth.md`](docs/auth.md).
   follow-up (called out in `RefreshTokenService`).
 - Family-based reuse **detection** (revoke the whole token family on replay, vs. today's
   single-use invalidation) is a possible future hardening.
+
+---
+
+## API Gateway Migration — Spring Cloud Gateway as the single entry point
+
+Moved authentication, routing, and rate limiting out of the individual services and
+in front of them, behind one Spring Cloud Gateway (servlet / `server-webmvc`). Done in
+six verified phases; each left the stack buildable and functional. Full design +
+rationale in [`docs/auth.md`](docs/auth.md).
+
+### End state
+
+- **The gateway is the only published port.** The browser talks solely to it; the
+  backend, frontend, watch-party, hate-api, and both Redises are internal to `app-net`.
+  The gateway serves the SPA (`/`) and proxies `/api` → backend, `/ws` → watch-party,
+  and the Google OAuth handshake (`/oauth2/authorize/**`, `/login/oauth2/**`) → backend.
+- **One origin.** CORS is gone (removed from the backend), the refresh cookie is
+  `SameSite=Lax`, CSP `connect-src` tightened to `'self'`, and the SPA calls its API
+  with relative URLs.
+- **Auth lives at the edge.** The gateway verifies RS256 access tokens with the public
+  key only (never able to mint), enforces the public/protected route + role matrix, and
+  forwards a trusted `X-User-Id/Role/Email/Name` identity to the backend after stripping
+  any inbound copies. The backend swapped its JWT-parsing filter for a
+  `GatewayAuthenticationFilter` that trusts those headers — so `@PreAuthorize` and every
+  controller are unchanged, but the backend does no token crypto on the request path.
+  It's safe because the backend has no host port. Token *issuance* stays in the backend.
+- **Rate limiting.** Bucket4j token buckets shared via Redis: a tight per-IP bucket on
+  `/api/auth/**` (cap 10, refill 5/s) and a per-user-else-IP bucket on the rest (cap 40,
+  refill 20/s), returning `429` + `X-RateLimit-Remaining` + `Retry-After`.
+
+### Phases
+
+1. **Routing skeleton** — gateway as a pure reverse proxy on a spare port, app untouched.
+2. **JWT validation + route/role matrix** at the edge (backend still validating too).
+3. **Cutover** — gateway becomes the sole entry (backend/frontend internal); opportunistic
+   JWT filter + trusted-header injection; backend trusts headers; single origin.
+4. **Rate limiting** (Bucket4j + Redis, hybrid keying).
+5. **Single-origin polish** — relative API base, CSP tightening, dead CORS config removal.
+6. **Docs + verification.**
+
+### Notable bug caught in testing
+
+During the Phase 3 cutover, a gateway-level `403` for an authenticated-but-wrong-role
+user was silently turning into a `200` SPA response: the default access-denied handler
+calls `sendError`, which dispatches to `/error`, which the `/**` → frontend catch-all
+then proxied. A USER could reach `/api/admin`. Fixed by having the access-denied handler
+set the status directly (no dispatch). Re-verified: wrong-role → `403`.
+
+### Verification (live, through the gateway at :8080)
+
+- Login / refresh (rotation) / logout, with a `SameSite=Lax` cookie; single-use refresh
+  enforced; a gateway-issued token authorizes a protected route.
+- Role matrix: USER→user route `200`, USER→admin `403`, ADMIN→admin allowed; expired and
+  wrong-key-forged tokens `401`.
+- Header trust end-to-end (`/api/user/test` `200` with the backend doing no JWT parsing);
+  forged `X-User-*` with no token `401`; forged role header can't escalate (`403`).
+- Rate limiting: auth burst → `429`s; a genuinely concurrent 400-request burst on a
+  general route → ~100 `200` + ~300 `429` with `Retry-After`; Redis shows
+  `rl:auth:ip:*`, `rl:ip:*`, `rl:user:<id>` keys.
+- WebSocket: `/ws/info` proxies and a real SockJS session opens through the gateway
+  (`o` frame, origin check passing) under the tightened CSP.
+- Gateway `contextLoads` test passes; the Redis connection is lazy so the gateway boots
+  even if the cache is briefly down.
+
+**Not done:** a literal browser UI click-through (the Chrome automation wasn't available
+in this environment). Everything above was verified at the HTTP/protocol level through
+the gateway; the remaining manual check is: open `http://localhost:8080`, sign in via the
+form, reload to confirm the silent-refresh keeps you logged in, and open a watch party to
+confirm live chat — with the browser devtools console clear of CORS/CSP errors.

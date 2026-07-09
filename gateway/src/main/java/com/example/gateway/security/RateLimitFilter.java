@@ -9,6 +9,7 @@ import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
@@ -34,7 +35,9 @@ import java.util.function.Supplier;
  */
 public class RateLimitFilter extends OncePerRequestFilter {
 
-    private final ProxyManager<String> proxyManager;
+    // Resolved lazily on first request so the Redis connection isn't opened at startup.
+    private final ObjectProvider<ProxyManager<String>> proxyManagerProvider;
+    private volatile ProxyManager<String> proxyManager;
 
     // Auth endpoints: capacity 10, refilling 5/sec. Everything else: capacity 40,
     // refilling 20/sec. Numbers are intentionally modest and easy to tune.
@@ -43,8 +46,22 @@ public class RateLimitFilter extends OncePerRequestFilter {
     private final Supplier<BucketConfiguration> apiConfig =
             bucket(40, 20, Duration.ofSeconds(1));
 
-    public RateLimitFilter(ProxyManager<String> proxyManager) {
-        this.proxyManager = proxyManager;
+    public RateLimitFilter(ObjectProvider<ProxyManager<String>> proxyManagerProvider) {
+        this.proxyManagerProvider = proxyManagerProvider;
+    }
+
+    private ProxyManager<String> proxyManager() {
+        ProxyManager<String> pm = this.proxyManager;
+        if (pm == null) {
+            synchronized (this) {
+                pm = this.proxyManager;
+                if (pm == null) {
+                    pm = proxyManagerProvider.getObject();
+                    this.proxyManager = pm;
+                }
+            }
+        }
+        return pm;
     }
 
     @Override
@@ -73,7 +90,7 @@ public class RateLimitFilter extends OncePerRequestFilter {
             config = apiConfig;
         }
 
-        BucketProxy bucket = proxyManager.builder().build(key, config);
+        BucketProxy bucket = proxyManager().builder().build(key, config);
         ConsumptionProbe probe = bucket.tryConsumeAndReturnRemaining(1);
 
         if (probe.isConsumed()) {

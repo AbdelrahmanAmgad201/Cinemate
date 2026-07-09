@@ -10,9 +10,11 @@ import io.lettuce.core.api.StatefulRedisConnection;
 import io.lettuce.core.codec.ByteArrayCodec;
 import io.lettuce.core.codec.RedisCodec;
 import io.lettuce.core.codec.StringCodec;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Lazy;
 
 import java.time.Duration;
 
@@ -30,7 +32,10 @@ public class RateLimitConfig {
         return RedisClient.create(RedisURI.builder().withHost(host).withPort(port).build());
     }
 
+    // @Lazy: the Redis connection is opened on first use, not at startup. So the gateway
+    // still boots (and its context still loads in tests) even if redis-cache isn't up yet.
     @Bean
+    @Lazy
     public ProxyManager<String> rateLimitProxyManager(RedisClient client) {
         StatefulRedisConnection<String, byte[]> connection =
                 client.connect(RedisCodec.of(StringCodec.UTF8, ByteArrayCodec.INSTANCE));
@@ -42,7 +47,7 @@ public class RateLimitConfig {
     }
 
     @Bean
-    public RateLimitFilter rateLimitFilter(ProxyManager<String> proxyManager) {
-        return new RateLimitFilter(proxyManager);
+    public RateLimitFilter rateLimitFilter(ObjectProvider<ProxyManager<String>> proxyManagerProvider) {
+        return new RateLimitFilter(proxyManagerProvider);
     }
 }
