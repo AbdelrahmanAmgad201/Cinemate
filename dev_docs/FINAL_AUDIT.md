@@ -37,12 +37,6 @@ Re-scans all comments from last 24 hours, one HTTP call per comment sequentially
 
 **Fix:** Add `isModerated` flag to `Comment`. Scheduler only processes `isModerated=false`. Paginate. Use thread pool for parallel HTTP.
 
-### TEST-02 — No Tests for Critical Security Paths
-**Severity:** High | **Effort:** Medium
-
-Missing coverage: JWT edge cases (expired, tampered, missing claims), `InternalApiKeyFilter` with missing/wrong/present key, hate-api unavailability fail-open, concurrent vote/comment operations (atomic `$inc` fix has no regression test).
-
-**Fix:** Add `JWTProviderTest`, `InternalApiKeyFilterTest`, `HateSpeechIntegrationTest` (test fail-open), `VoteConcurrencyTest` (10-thread concurrent voting).
 
 ### ARC-08 — No Observability Infrastructure
 **Severity:** Medium | **Effort:** Medium
@@ -61,13 +55,6 @@ No metrics, no distributed tracing, no centralized logging. Only per-service SLF
 Nightly scheduler fetches all 24h comments and re-runs each through hate-api individually, one HTTP call per comment. Duplicated work (comments already moderated at write time, or skipped entirely per HS-04). No batching, no parallelism.
 
 **Fix:** Add `isModerated` flag. Only re-scan unmoderated comments in pages with thread pool.
-
-
-### TEST-05 — No Observability / Metrics
-**Severity:** High | **Effort:** Medium
-
-Application has no metrics collection, no health indicators beyond static "UP". No way to know RPS, hate-api latency, Redis connectivity, or JVM pressure. See ARC-08.
-
 
 ---
 
