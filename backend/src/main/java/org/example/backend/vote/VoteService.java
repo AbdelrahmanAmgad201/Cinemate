@@ -28,17 +28,17 @@ public class VoteService {
     private final AccessService accessService;
 
     @Transactional
-    public void vote(VoteDTO voteDTO,Boolean isPost,Long userId) {
+    public void vote(VoteDTO voteDTO,VoteTargetType targetType,Long userId) {
         ObjectId targetId = voteDTO.getTargetId();
         ObjectId ownerId = longToObjectId(userId);
         Boolean upVote = voteDTO.getValue().equals(1);
-        Votable target = canVote(targetId,isPost);
+        Votable target = canVote(targetId,targetType);
         incrementVote(target,upVote);
         Vote vote = Vote.builder()
                 .targetId(targetId)
                 .userId(ownerId)
                 .voteType(voteDTO.getValue())
-                .isPost(isPost)
+                .targetType(targetType)
                 .build();
         voteRepository.save(vote);
     }
@@ -55,7 +55,7 @@ public class VoteService {
             throw new AccessDeniedException("User does not have permission to update this forum");
         }
         Boolean upVote = updateVoteDTO.getValue().equals(1);
-        Votable target = canVote(vote.getTargetId(),vote.getIsPost());
+        Votable target = canVote(vote.getTargetId(),vote.getTargetType());
         updateIncrement(target,upVote);
         vote.setVoteType(updateVoteDTO.getValue());
         voteRepository.save(vote);
@@ -80,14 +80,14 @@ public class VoteService {
         if (!accessService.canDeleteVote(longToObjectId(userId), voteId)) {
             throw new AccessDeniedException("User " + " cannot delete this vote");
         }
-        Votable target = canVote(vote.getTargetId(),vote.getIsPost());
+        Votable target = canVote(vote.getTargetId(),vote.getTargetType());
         Boolean upVote = vote.getVoteType().equals(1);
         decrementVote(target,upVote);
         deletionService.deleteVote(voteId);
     }
 
-    private Votable canVote(ObjectId targetId,Boolean isPost){
-        if(isPost)  return canVotePost(targetId);
+    private Votable canVote(ObjectId targetId,VoteTargetType targetType){
+        if(targetType == VoteTargetType.POST)  return canVotePost(targetId);
         else return canVoteComment(targetId);
     }
 

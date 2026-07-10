@@ -40,10 +40,15 @@ public class WatchPartyService {
     public WatchParty createParty(WatchParty request) {
         validateCreateRequest(request);
 
-        // Always server-generate the party ID (SEC-NEW-02) — a client-suppliable ID
-        // becomes an unvalidated raw segment in Redis keys, and defeats the assumption
-        // (used elsewhere, e.g. REL-08) that a partyId is hard to guess.
-        String partyId = UUID.randomUUID().toString();
+        // Honor the partyId supplied by the backend. The backend is this service's only
+        // caller (InternalApiKeyFilter + internal-only network) and is the source of
+        // truth: it generates a secure random UUID and persists it in MySQL, then keys
+        // every later GET/join/leave/delete off it. If we minted our own ID here, that
+        // ID would never reach MySQL or the client, so every subsequent lookup would
+        // 404 (the "party no longer exists" bug). validateCreateRequest still enforces
+        // UUID form, so the SEC-NEW-02 concern (a raw, guessable Redis-key segment) is
+        // preserved without breaking the ID contract.
+        String partyId = request.getPartyId();
 
         WatchParty party = WatchParty.builder()
                 .partyId(partyId)
@@ -279,6 +284,17 @@ public class WatchPartyService {
     private void validateCreateRequest(WatchParty request) {
         if (request == null) {
             throw new IllegalArgumentException("Party request cannot be null");
+        }
+        // partyId is supplied by the backend and used verbatim as a Redis key segment.
+        // Require canonical UUID form so it can never be an injected/guessable key
+        // (SEC-NEW-02), while still letting the backend own the ID (see createParty).
+        if (!StringUtils.hasText(request.getPartyId())) {
+            throw new IllegalArgumentException("Party ID is required");
+        }
+        try {
+            UUID.fromString(request.getPartyId());
+        } catch (IllegalArgumentException e) {
+            throw new IllegalArgumentException("Party ID must be a valid UUID");
         }
         if (request.getMovieId() == null) {
             throw new IllegalArgumentException("Movie ID is required");

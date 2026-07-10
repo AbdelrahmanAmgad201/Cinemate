@@ -1,7 +1,7 @@
 import { useState, useEffect, useContext } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import PostsFeed from '../../components/PostsFeed.jsx';
-import { getExploreFeedPostsApi, getMainFeedPostsApi } from '../../api/posts-api.js';
+import { getExploreFeedPostsApi, getMainFeedPostsApi } from '../../api/post-api.js';
 import './style/HomePage.css';
 import { ToastContext } from '../../context/ToastContext.jsx';
 

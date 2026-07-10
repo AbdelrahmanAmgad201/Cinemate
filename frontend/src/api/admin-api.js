@@ -2,7 +2,7 @@ import api from './api-client.js';
 
 export async function getRequestsHistoryApi() {
     try{
-        const response = await api.post("/admin/v1/find-admin-requests");
+        const response = await api.get("/admin/v1/find-admin-requests");
         const rawRequestsHistory = response.data;
         console.log(rawRequestsHistory);
         const RequestsHistoryMapped = rawRequestsHistory.map(req => ({
@@ -68,7 +68,7 @@ export async function acceptRequestApi({requestId}) {
 export async function getPendingRequestsApi() {
 
     try{
-        const response = await api.post("/admin/v1/get-pending-requests");
+        const response = await api.get("/admin/v1/get-pending-requests");
         console.log(response.data);
         const pendingRequests = response.data;
         const pendingRequestsArray = pendingRequests.map(req => ({
@@ -98,7 +98,7 @@ export async function getPendingRequestsApi() {
 
 export async function getSystemAnalyticsApi() {
     try {
-        const response = await api.post("/admin/v1/get-system-overview");
+        const response = await api.get("/admin/v1/get-system-overview");
         const systemAnalytics = response.data;
 
         // Mapping based on your provided console log
@@ -122,7 +122,7 @@ export async function getSystemAnalyticsApi() {
 export async function getMovieAnalyticsApi({ movieId }) {
 
     try{
-        const response = await api.post("/admin/v1/get-specific-movie-overview", null,  {
+        const response = await api.get("/admin/v1/get-specific-movie-overview", {
             params: { movieId },
         });
         const movieAnalytics = response.data;

@@ -23,7 +23,7 @@ public class AdminController {
     private final RequestsService requestsService;
     private final MovieService movieService;
 
-    @PostMapping("/v1/find-admin-requests")
+    @GetMapping("/v1/find-admin-requests")
     public ResponseEntity<List<Requests>> findAllAdminRequests(HttpServletRequest request) {
         Long userId = (Long) request.getAttribute("userId");
         return ResponseEntity.ok(requestsService.getAllAdminRequests(userId));
@@ -43,23 +43,23 @@ public class AdminController {
         return ResponseEntity.ok("Request " + requestId + " accepted successfully by admin " + userId);
     }
 
-    @PostMapping("/v1/get-pending-requests")
+    @GetMapping("/v1/get-pending-requests")
     public ResponseEntity<List<Requests>> findAllPendingRequests(HttpServletRequest request) {
         return ResponseEntity.ok(requestsService.getAllPendingRequests());
     }
 
-    @PostMapping("/v1/get-requested-movie")
+    @GetMapping("/v1/get-requested-movie")
     public ResponseEntity<MovieDetailsDTO> getRequestedMovie(HttpServletRequest request,@RequestParam Long requestId) {
         return ResponseEntity.ok(adminService.getRequestedMovie(requestId));
     }
 
-    @PostMapping("/v1/get-specific-movie-overview")
+    @GetMapping("/v1/get-specific-movie-overview")
     public ResponseEntity<OneMovieOverView> getSpecificMovieOverview(HttpServletRequest request,@RequestParam Long movieId) {
             OneMovieOverView overview = movieService.getMovieStatsByMovieId(movieId);
             return ResponseEntity.ok(overview);
     }
 
-    @PostMapping("/v1/get-system-overview")
+    @GetMapping("/v1/get-system-overview")
     public ResponseEntity<SystemOverview> getSystemOverview(HttpServletRequest request) {
         return ResponseEntity.ok().body(adminService.getSystemOverview());
     }

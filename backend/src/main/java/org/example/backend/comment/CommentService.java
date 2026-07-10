@@ -6,6 +6,8 @@ import org.bson.types.ObjectId;
 import org.example.backend.deletion.AccessService;
 import org.example.backend.deletion.CascadeDeletionService;
 import org.example.backend.forum.Forum;
+import org.example.backend.hateSpeech.HateSpeechException;
+import org.example.backend.hateSpeech.HateSpeechService;
 import org.example.backend.post.Post;
 import org.example.backend.post.PostRepository;
 import org.springframework.data.domain.Page;
@@ -32,11 +34,15 @@ public class CommentService {
     private final PostRepository postRepository;
     private final CascadeDeletionService deletionService;
     private final AccessService accessService;
+    private final HateSpeechService hateSpeechService;
 
     @Transactional
     public Comment addComment(Long ownerId, AddCommentDTO addCommentDTO) {
         ObjectId postId = addCommentDTO.getPostId();
         canComment(postId);
+        if (!hateSpeechService.analyzeText(addCommentDTO.getContent())) {
+            throw new HateSpeechException("hate speech detected");
+        }
         Comment parentComment = getParentComment(addCommentDTO.getParentId());
         ObjectId parentId = (parentComment != null) ? parentComment.getId() : null;
         Comment comment = defaultCommentBuilder(ownerId, postId, parentId, addCommentDTO);

@@ -9,6 +9,7 @@ import org.example.backend.errorHandler.ResourceNotFoundException;
 import org.example.backend.comment.CommentRepository;
 import org.example.backend.post.Post;
 import org.example.backend.post.PostRepository;
+import org.example.backend.vote.VoteTargetType;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.aggregation.Aggregation;
 import org.springframework.data.mongodb.core.aggregation.AggregationResults;
@@ -214,7 +215,7 @@ public class CascadeDeletionService {
             // Delete votes on the post itself
             long postVotes = softDeleteBatch(
                     "votes",
-                    Criteria.where("targetId").is(postId).and("isPost").is(true),
+                    Criteria.where("targetId").is(postId).and("targetType").is(VoteTargetType.POST),
                     deletedAt
             );
             log.info("Soft deleted {} votes for post {}", postVotes, postId);
@@ -234,7 +235,7 @@ public class CascadeDeletionService {
         try {
             long votes = softDeleteBatch(
                     "votes",
-                    Criteria.where("targetId").is(commentId).and("isPost").is(false),
+                    Criteria.where("targetId").is(commentId).and("targetType").is(VoteTargetType.COMMENT),
                     deletedAt
             );
             log.info("Soft deleted {} votes for comment {}", votes, commentId);
@@ -340,7 +341,7 @@ public class CascadeDeletionService {
             List<ObjectId> batch = postIds.subList(i, Math.min(i + BATCH_SIZE, postIds.size()));
             long deleted = softDeleteBatch(
                     "votes",
-                    Criteria.where("targetId").in(batch).and("isPost").is(true),
+                    Criteria.where("targetId").in(batch).and("targetType").is(VoteTargetType.POST),
                     deletedAt
             );
             totalDeleted += deleted;
@@ -359,7 +360,7 @@ public class CascadeDeletionService {
             List<ObjectId> batch = commentIds.subList(i, Math.min(i + BATCH_SIZE, commentIds.size()));
             long deleted = softDeleteBatch(
                     "votes",
-                    Criteria.where("targetId").in(batch).and("isPost").is(false),
+                    Criteria.where("targetId").in(batch).and("targetType").is(VoteTargetType.COMMENT),
                     deletedAt
             );
             totalDeleted += deleted;

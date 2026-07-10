@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { getFollowedForumsApi } from '../api/forums-api.js';
+import { getFollowedForumsApi } from '../api/forum-api.js';
 import './style/FollowedForums.css';
 import { Link } from 'react-router-dom';
 import { PATHS } from '../constants/constants.jsx';

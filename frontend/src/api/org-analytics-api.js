@@ -2,7 +2,7 @@ import api from "./api-client.js";
 
 export const fetchMoviesOverview = async () => {
     try {
-        const response = await api.post("/organization/v1/movies-overview");
+        const response = await api.get("/organization/v1/movies-overview");
         return response.data;
     } catch (error) {
         // console.error("Failed to fetch movies overview:", error);
@@ -14,7 +14,7 @@ export const fetchMoviesOverview = async () => {
 
 export const fetchOrgRequests = async () => {
     try {
-        const response = await api.post("/organization/v1/get-all-organization-requests");
+        const response = await api.get("/organization/v1/get-all-organization-requests");
         return response.data;
     } catch (error) {
         // console.error("Failed to fetch organization requests:", error);
@@ -26,7 +26,7 @@ export const fetchOrgRequests = async () => {
 
 export async function fetchRequestsOverview (){
     try {
-        const response = await api.post("/organization/v1/get-requests-over-view");
+        const response = await api.get("/organization/v1/get-requests-over-view");
         return response.data;
     } catch (error) {
         // console.error("Failed to fetch requests overview:", error);

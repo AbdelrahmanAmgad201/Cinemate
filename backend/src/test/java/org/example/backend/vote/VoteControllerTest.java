@@ -60,7 +60,7 @@ class VoteControllerTest {
     @Test
     void postVote_Downvote_Success() throws Exception {
         voteDTO.setValue(-1);
-        doNothing().when(voteService).vote(any(VoteDTO.class), eq(true), anyLong());
+        doNothing().when(voteService).vote(any(VoteDTO.class), eq(VoteTargetType.POST), anyLong());
 
         mockMvc.perform(post("/api/vote/v1/post-vote")
                         .with(csrf())
@@ -71,7 +71,7 @@ class VoteControllerTest {
 
         verify(voteService).vote(argThat(dto ->
                 dto.getValue().equals(-1)
-        ), eq(true), eq(userId));
+        ), eq(VoteTargetType.POST), eq(userId));
     }
 
     @Test
@@ -80,7 +80,7 @@ class VoteControllerTest {
         // dedicated handler for it (CQ-NEW-01) instead of falling through to the
         // generic 500 handler.
         doThrow(new IllegalStateException("Cannot vote a deleted post"))
-                .when(voteService).vote(any(VoteDTO.class), eq(true), anyLong());
+                .when(voteService).vote(any(VoteDTO.class), eq(VoteTargetType.POST), anyLong());
 
         mockMvc.perform(post("/api/vote/v1/post-vote")
                         .with(csrf())
@@ -93,7 +93,7 @@ class VoteControllerTest {
 
     @Test
     void postVote_WithoutUserId_CallsServiceWithNull() throws Exception {
-        doNothing().when(voteService).vote(any(VoteDTO.class), eq(true), isNull());
+        doNothing().when(voteService).vote(any(VoteDTO.class), eq(VoteTargetType.POST), isNull());
 
         mockMvc.perform(post("/api/vote/v1/post-vote")
                         .with(csrf())
@@ -101,13 +101,13 @@ class VoteControllerTest {
                         .content(objectMapper.writeValueAsString(voteDTO)))
                 .andExpect(status().isOk());
 
-        verify(voteService).vote(any(VoteDTO.class), eq(true), isNull());
+        verify(voteService).vote(any(VoteDTO.class), eq(VoteTargetType.POST), isNull());
     }
 
     @Test
     void commentVote_Downvote_Success() throws Exception {
         voteDTO.setValue(-1);
-        doNothing().when(voteService).vote(any(VoteDTO.class), eq(false), anyLong());
+        doNothing().when(voteService).vote(any(VoteDTO.class), eq(VoteTargetType.COMMENT), anyLong());
 
         mockMvc.perform(post("/api/vote/v1/comment-vote")
                         .with(csrf())
@@ -116,12 +116,12 @@ class VoteControllerTest {
                         .content(objectMapper.writeValueAsString(voteDTO)))
                 .andExpect(status().isOk());
 
-        verify(voteService).vote(any(VoteDTO.class), eq(false), eq(userId));
+        verify(voteService).vote(any(VoteDTO.class), eq(VoteTargetType.COMMENT), eq(userId));
     }
     @Test
     void commentVote_DeletedComment_Returns409() throws Exception {
         doThrow(new IllegalStateException("Cannot vote a deleted comment"))
-                .when(voteService).vote(any(VoteDTO.class), eq(false), anyLong());
+                .when(voteService).vote(any(VoteDTO.class), eq(VoteTargetType.COMMENT), anyLong());
 
         mockMvc.perform(post("/api/vote/v1/comment-vote")
                         .with(csrf())
@@ -134,7 +134,7 @@ class VoteControllerTest {
 
     @Test
     void commentVote_WithoutUserId_CallsServiceWithNull() throws Exception {
-        doNothing().when(voteService).vote(any(VoteDTO.class), eq(false), isNull());
+        doNothing().when(voteService).vote(any(VoteDTO.class), eq(VoteTargetType.COMMENT), isNull());
 
         mockMvc.perform(post("/api/vote/v1/comment-vote")
                         .with(csrf())
@@ -142,7 +142,7 @@ class VoteControllerTest {
                         .content(objectMapper.writeValueAsString(voteDTO)))
                 .andExpect(status().isOk());
 
-        verify(voteService).vote(any(VoteDTO.class), eq(false), isNull());
+        verify(voteService).vote(any(VoteDTO.class), eq(VoteTargetType.COMMENT), isNull());
     }
 
     // ==================== UPDATE VOTE TESTS ====================
@@ -228,7 +228,7 @@ class VoteControllerTest {
     @Test
     void postVote_ZeroValue_ProcessedByService() throws Exception {
         voteDTO.setValue(0);
-        doNothing().when(voteService).vote(any(VoteDTO.class), eq(true), anyLong());
+        doNothing().when(voteService).vote(any(VoteDTO.class), eq(VoteTargetType.POST), anyLong());
 
         mockMvc.perform(post("/api/vote/v1/post-vote")
                         .with(csrf())
@@ -239,7 +239,7 @@ class VoteControllerTest {
 
         verify(voteService).vote(argThat(dto ->
                 dto.getValue().equals(0)
-        ), eq(true), eq(userId));
+        ), eq(VoteTargetType.POST), eq(userId));
     }
 
     @Test

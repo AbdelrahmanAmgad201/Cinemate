@@ -4,6 +4,8 @@ import org.bson.Document;
 import org.bson.types.ObjectId;
 import org.example.backend.deletion.AccessService;
 import org.example.backend.deletion.CascadeDeletionService;
+import org.example.backend.hateSpeech.HateSpeechException;
+import org.example.backend.hateSpeech.HateSpeechService;
 import org.example.backend.post.Post;
 import org.example.backend.post.PostRepository;
 import org.junit.jupiter.api.BeforeEach;
@@ -42,6 +44,9 @@ class CommentServiceTest {
     @Mock
     private AccessService accessService;
 
+    @Mock
+    private HateSpeechService hateSpeechService;
+
     @InjectMocks
     private CommentService commentService;
 
@@ -79,6 +84,8 @@ class CommentServiceTest {
                 .parentId(null)
                 .content("New comment content")
                 .build();
+
+        lenient().when(hateSpeechService.analyzeText(anyString())).thenReturn(true);
     }
 
     // Post.commentCount and Comment.numberOfReplies are now updated atomically via
@@ -191,6 +198,18 @@ class CommentServiceTest {
 
         assertNull(result.getParentId());
         assertEquals(0, result.getDepth());
+    }
+
+    @Test
+    void addComment_HateSpeechDetected_ThrowsException() {
+        when(mongoTemplate.findById(postId, Post.class)).thenReturn(testPost);
+        when(hateSpeechService.analyzeText(addCommentDTO.getContent())).thenReturn(false);
+
+        assertThrows(HateSpeechException.class,
+                () -> commentService.addComment(userId, addCommentDTO));
+
+        verify(commentRepository, never()).save(any());
+        verify(mongoTemplate, never()).updateFirst(any(Query.class), any(Update.class), any(Class.class));
     }
 
     @Test

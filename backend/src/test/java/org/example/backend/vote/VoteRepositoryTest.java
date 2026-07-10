@@ -29,20 +29,20 @@ class VoteRepositoryTest extends AbstractMongoIntegrationTest {
 
     @Test
     void save_ValidVote_Success() {
-        Vote vote = createVote(userId, targetId, true, 1);
+        Vote vote = createVote(userId, targetId, VoteTargetType.POST, 1);
 
         Vote saved = voteRepository.save(vote);
 
         assertNotNull(saved.getId());
         assertEquals(userId, saved.getUserId());
         assertEquals(targetId, saved.getTargetId());
-        assertTrue(saved.getIsPost());
+        assertEquals(VoteTargetType.POST, saved.getTargetType());
         assertEquals(1, saved.getVoteType());
     }
 
     @Test
     void findById_ExistingVote_ReturnsVote() {
-        Vote vote = createVote(userId, targetId, true, 1);
+        Vote vote = createVote(userId, targetId, VoteTargetType.POST, 1);
         Vote saved = voteRepository.save(vote);
 
         Optional<Vote> found = voteRepository.findById(saved.getId());
@@ -60,7 +60,7 @@ class VoteRepositoryTest extends AbstractMongoIntegrationTest {
 
     @Test
     void deleteById_ExistingVote_DeletesSuccessfully() {
-        Vote vote = createVote(userId, targetId, true, 1);
+        Vote vote = createVote(userId, targetId, VoteTargetType.POST, 1);
         Vote saved = voteRepository.save(vote);
 
         voteRepository.deleteById(saved.getId());
@@ -73,8 +73,8 @@ class VoteRepositoryTest extends AbstractMongoIntegrationTest {
         ObjectId target1 = new ObjectId();
         ObjectId target2 = new ObjectId();
 
-        Vote vote1 = createVote(userId, target1, true, 1);
-        Vote vote2 = createVote(userId, target2, false, -1);
+        Vote vote1 = createVote(userId, target1, VoteTargetType.POST, 1);
+        Vote vote2 = createVote(userId, target2, VoteTargetType.COMMENT, -1);
         voteRepository.saveAll(List.of(vote1, vote2));
 
         List<Vote> result = voteRepository.findByUserId(userId);
@@ -88,8 +88,8 @@ class VoteRepositoryTest extends AbstractMongoIntegrationTest {
         ObjectId user1 = new ObjectId();
         ObjectId user2 = new ObjectId();
 
-        Vote vote1 = createVote(user1, targetId, true, 1);
-        Vote vote2 = createVote(user2, targetId, true, 1);
+        Vote vote1 = createVote(user1, targetId, VoteTargetType.POST, 1);
+        Vote vote2 = createVote(user2, targetId, VoteTargetType.POST, 1);
         voteRepository.saveAll(List.of(vote1, vote2));
 
         List<Vote> result = voteRepository.findByUserId(user1);
@@ -110,8 +110,8 @@ class VoteRepositoryTest extends AbstractMongoIntegrationTest {
         ObjectId user1 = new ObjectId();
         ObjectId user2 = new ObjectId();
 
-        Vote vote1 = createVote(user1, targetId, true, 1);
-        Vote vote2 = createVote(user2, targetId, true, -1);
+        Vote vote1 = createVote(user1, targetId, VoteTargetType.POST, 1);
+        Vote vote2 = createVote(user2, targetId, VoteTargetType.POST, -1);
         voteRepository.saveAll(List.of(vote1, vote2));
 
         List<Vote> result = voteRepository.findByTargetId(targetId);
@@ -125,8 +125,8 @@ class VoteRepositoryTest extends AbstractMongoIntegrationTest {
         ObjectId target1 = new ObjectId();
         ObjectId target2 = new ObjectId();
 
-        Vote vote1 = createVote(userId, target1, true, 1);
-        Vote vote2 = createVote(userId, target2, true, 1);
+        Vote vote1 = createVote(userId, target1, VoteTargetType.POST, 1);
+        Vote vote2 = createVote(userId, target2, VoteTargetType.POST, 1);
         voteRepository.saveAll(List.of(vote1, vote2));
 
         List<Vote> result = voteRepository.findByTargetId(target1);
@@ -144,7 +144,7 @@ class VoteRepositoryTest extends AbstractMongoIntegrationTest {
 
     @Test
     void findByUserIdAndTargetId_ReturnsMatchingVote() {
-        Vote vote = createVote(userId, targetId, true, 1);
+        Vote vote = createVote(userId, targetId, VoteTargetType.POST, 1);
         voteRepository.save(vote);
 
         List<Vote> result = voteRepository.findByUserIdAndTargetId(userId, targetId);
@@ -166,7 +166,7 @@ class VoteRepositoryTest extends AbstractMongoIntegrationTest {
         Vote vote = Vote.builder()
                 .userId(userId)
                 .targetId(targetId)
-                .isPost(true)
+                .targetType(VoteTargetType.POST)
                 .voteType(1)
                 .createdAt(Instant.now())
                 .isDeleted(false)
@@ -176,7 +176,7 @@ class VoteRepositoryTest extends AbstractMongoIntegrationTest {
 
         assertEquals(userId, saved.getUserId());
         assertEquals(targetId, saved.getTargetId());
-        assertTrue(saved.getIsPost());
+        assertEquals(VoteTargetType.POST, saved.getTargetType());
         assertEquals(1, saved.getVoteType());
         assertNotNull(saved.getCreatedAt());
         assertFalse(saved.getIsDeleted());
@@ -188,7 +188,7 @@ class VoteRepositoryTest extends AbstractMongoIntegrationTest {
         Vote vote = Vote.builder()
                 .userId(userId)
                 .targetId(targetId)
-                .isPost(true)
+                .targetType(VoteTargetType.POST)
                 .voteType(1)
                 .build();
 
@@ -203,7 +203,7 @@ class VoteRepositoryTest extends AbstractMongoIntegrationTest {
         Vote vote = Vote.builder()
                 .userId(userId)
                 .targetId(targetId)
-                .isPost(true)
+                .targetType(VoteTargetType.POST)
                 .voteType(1)
                 .isDeleted(true)
                 .deletedAt(Instant.now())
@@ -217,7 +217,7 @@ class VoteRepositoryTest extends AbstractMongoIntegrationTest {
 
     @Test
     void update_ExistingVote_UpdatesSuccessfully() {
-        Vote vote = createVote(userId, targetId, true, 1);
+        Vote vote = createVote(userId, targetId, VoteTargetType.POST, 1);
         Vote saved = voteRepository.save(vote);
 
         saved.setVoteType(-1);
@@ -228,8 +228,8 @@ class VoteRepositoryTest extends AbstractMongoIntegrationTest {
 
     @Test
     void save_UpvoteAndDownvote_BothTypes() {
-        Vote upvote = createVote(userId, targetId, true, 1);
-        Vote downvote = createVote(new ObjectId(), targetId, true, -1);
+        Vote upvote = createVote(userId, targetId, VoteTargetType.POST, 1);
+        Vote downvote = createVote(new ObjectId(), targetId, VoteTargetType.POST, -1);
 
         voteRepository.saveAll(List.of(upvote, downvote));
 
@@ -241,22 +241,22 @@ class VoteRepositoryTest extends AbstractMongoIntegrationTest {
 
     @Test
     void save_PostVoteAndCommentVote_BothTypes() {
-        Vote postVote = createVote(userId, targetId, true, 1);
-        Vote commentVote = createVote(userId, new ObjectId(), false, 1);
+        Vote postVote = createVote(userId, targetId, VoteTargetType.POST, 1);
+        Vote commentVote = createVote(userId, new ObjectId(), VoteTargetType.COMMENT, 1);
 
         voteRepository.saveAll(List.of(postVote, commentVote));
 
         List<Vote> userVotes = voteRepository.findByUserId(userId);
         assertEquals(2, userVotes.size());
-        assertTrue(userVotes.stream().anyMatch(Vote::getIsPost));
-        assertTrue(userVotes.stream().anyMatch(v -> !v.getIsPost()));
+        assertTrue(userVotes.stream().anyMatch(v -> v.getTargetType() == VoteTargetType.POST));
+        assertTrue(userVotes.stream().anyMatch(v -> v.getTargetType() == VoteTargetType.COMMENT));
     }
 
 
     @Test
     void compoundIndex_DifferentTargetType_AllowsSave() {
-        Vote postVote = createVote(userId, targetId, true, 1);
-        Vote commentVote = createVote(userId, targetId, false, 1);
+        Vote postVote = createVote(userId, targetId, VoteTargetType.POST, 1);
+        Vote commentVote = createVote(userId, targetId, VoteTargetType.COMMENT, 1);
 
         voteRepository.save(postVote);
 
@@ -267,7 +267,7 @@ class VoteRepositoryTest extends AbstractMongoIntegrationTest {
     @Test
     void findByUserIdAndTargetId_MultipleVotes_ReturnsAll() {
         // This could happen if compound index includes more fields
-        Vote vote1 = createVote(userId, targetId, true, 1);
+        Vote vote1 = createVote(userId, targetId, VoteTargetType.POST, 1);
         voteRepository.save(vote1);
 
         List<Vote> result = voteRepository.findByUserIdAndTargetId(userId, targetId);
@@ -280,8 +280,8 @@ class VoteRepositoryTest extends AbstractMongoIntegrationTest {
 
     @Test
     void findAll_ReturnsAllVotes() {
-        Vote vote1 = createVote(userId, targetId, true, 1);
-        Vote vote2 = createVote(new ObjectId(), new ObjectId(), false, -1);
+        Vote vote1 = createVote(userId, targetId, VoteTargetType.POST, 1);
+        Vote vote2 = createVote(new ObjectId(), new ObjectId(), VoteTargetType.COMMENT, -1);
         voteRepository.saveAll(List.of(vote1, vote2));
 
         List<Vote> all = voteRepository.findAll();
@@ -291,8 +291,8 @@ class VoteRepositoryTest extends AbstractMongoIntegrationTest {
 
     @Test
     void count_ReturnsCorrectCount() {
-        Vote vote1 = createVote(userId, targetId, true, 1);
-        Vote vote2 = createVote(new ObjectId(), new ObjectId(), false, -1);
+        Vote vote1 = createVote(userId, targetId, VoteTargetType.POST, 1);
+        Vote vote2 = createVote(new ObjectId(), new ObjectId(), VoteTargetType.COMMENT, -1);
         voteRepository.saveAll(List.of(vote1, vote2));
 
         long count = voteRepository.count();
@@ -306,7 +306,7 @@ class VoteRepositoryTest extends AbstractMongoIntegrationTest {
         Vote vote = Vote.builder()
                 .userId(userId)
                 .targetId(targetId)
-                .isPost(true)
+                .targetType(VoteTargetType.POST)
                 .voteType(1)
                 .createdAt(specificTime)
                 .build();
@@ -316,11 +316,11 @@ class VoteRepositoryTest extends AbstractMongoIntegrationTest {
         assertEquals(specificTime, saved.getCreatedAt());
     }
 
-    private Vote createVote(ObjectId userId, ObjectId targetId, Boolean isPost, Integer voteType) {
+    private Vote createVote(ObjectId userId, ObjectId targetId, VoteTargetType targetType, Integer voteType) {
         return Vote.builder()
                 .userId(userId)
                 .targetId(targetId)
-                .isPost(isPost)
+                .targetType(targetType)
                 .voteType(voteType)
                 .createdAt(Instant.now())
                 .build();

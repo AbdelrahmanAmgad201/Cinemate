@@ -24,6 +24,7 @@ import org.example.backend.user.UserRepository;
 import org.example.backend.user.UserService;
 import org.example.backend.vote.VoteDTO;
 import org.example.backend.vote.VoteService;
+import org.example.backend.vote.VoteTargetType;
 import org.example.backend.watchHistory.WatchHistory;
 import org.example.backend.watchHistory.WatchHistoryService;
 import org.example.backend.watchLater.WatchLaterService;
@@ -149,7 +150,7 @@ public class DataInitializer implements CommandLineRunner {
                     .targetId(post.getId())
                     .value(1)
                     .build();
-            voteService.vote(voteDTO,true,Long.valueOf(k));
+            voteService.vote(voteDTO,VoteTargetType.POST,Long.valueOf(k));
         }
     }
 

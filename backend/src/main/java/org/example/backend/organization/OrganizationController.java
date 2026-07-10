@@ -62,19 +62,19 @@ public class OrganizationController {
     }
 
 
-    @PostMapping("/v1/get-all-organization-requests")
+    @GetMapping("/v1/get-all-organization-requests")
     public List<Requests> getOrgRequests(HttpServletRequest request) {
         Long orgId = (Long) request.getAttribute("userId");
         return requestsService.getAllOrganizationRequests(orgId);
     }
 
-    @PostMapping("/v1/movies-overview")
+    @GetMapping("/v1/movies-overview")
     public ResponseEntity<MoviesOverview> getMoviesOverview(HttpServletRequest request) {
         Long userId = (Long) request.getAttribute("userId");
         return ResponseEntity.ok().body(movieService.getMoviesOverview(userId));
     }
 
-    @PostMapping("/v1/get-specific-movie-overview")
+    @GetMapping("/v1/get-specific-movie-overview")
     public ResponseEntity<OneMovieOverView> getSpecificMovieOverview(HttpServletRequest request,
                                                                      @RequestParam Long movieId) {
         Long userId = (Long) request.getAttribute("userId");
@@ -86,7 +86,7 @@ public class OrganizationController {
         return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
     }
 
-    @PostMapping("/v1/get-requests-over-view")
+    @GetMapping("/v1/get-requests-over-view")
     public ResponseEntity<RequestsOverView> getRequestsOverview(HttpServletRequest request) {
         Long userId = (Long) request.getAttribute("userId");
         return ResponseEntity.ok().body(requestsService.getRequestsOverView(userId));

@@ -1,6 +1,7 @@
 package org.example.backend.hateSpeech;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.example.backend.comment.Comment;
 import org.example.backend.comment.CommentRepository;
 import org.example.backend.comment.CommentService;
@@ -17,6 +18,7 @@ import java.time.temporal.ChronoUnit;
 @EnableScheduling
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class HateSpeechScheduler {
 
     // PERF-04: process in fixed-size pages instead of loading every comment from the
@@ -29,7 +31,11 @@ public class HateSpeechScheduler {
     private final CommentRepository commentRepository;
     @Scheduled(cron = "0 0 0 * * ?")
     public void schedule(){
-        cleanHateSpeachComments();
+        try {
+            cleanHateSpeachComments();
+        } catch (Exception e) {
+            log.error("Nightly hate-speech cleanup run failed", e);
+        }
     }
 
     private void cleanHateSpeachComments(){
@@ -47,11 +53,15 @@ public class HateSpeechScheduler {
         }
     }
     private void cleanComment(Comment comment){
-        if(comment.getIsDeleted()){
-            return;
-        }
-        if(!hateSpeechService.analyzeText(comment.getContent())){
-            commentService.systemDeleteComment(comment);
+        try {
+            if (comment.getIsDeleted()) {
+                return;
+            }
+            if (!hateSpeechService.analyzeText(comment.getContent())) {
+                commentService.systemDeleteComment(comment);
+            }
+        } catch (Exception e) {
+            log.error("Failed to process comment {} during hate-speech cleanup", comment.getId(), e);
         }
     }
 

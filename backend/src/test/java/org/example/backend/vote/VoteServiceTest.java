@@ -79,7 +79,7 @@ class VoteServiceTest {
                 .id(voteId)
                 .userId(userObjectId)
                 .targetId(postId)
-                .isPost(true)
+                .targetType(VoteTargetType.POST)
                 .voteType(1)
                 .isDeleted(false)
                 .build();
@@ -129,14 +129,14 @@ class VoteServiceTest {
         when(mongoTemplate.findById(postId, Post.class)).thenReturn(testPost);
         when(voteRepository.save(any(Vote.class))).thenAnswer(i -> i.getArgument(0));
 
-        voteService.vote(voteDTO, true, userId);
+        voteService.vote(voteDTO, VoteTargetType.POST, userId);
 
         verifyPostUpdate(1, 0, 1);
         verify(voteRepository).save(argThat(vote ->
                 vote.getTargetId().equals(postId) &&
                         vote.getUserId().equals(userObjectId) &&
                         vote.getVoteType().equals(1) &&
-                        vote.getIsPost()
+                        vote.getTargetType() == VoteTargetType.POST
         ));
     }
 
@@ -146,7 +146,7 @@ class VoteServiceTest {
         when(mongoTemplate.findById(postId, Post.class)).thenReturn(testPost);
         when(voteRepository.save(any(Vote.class))).thenAnswer(i -> i.getArgument(0));
 
-        voteService.vote(voteDTO, true, userId);
+        voteService.vote(voteDTO, VoteTargetType.POST, userId);
 
         verifyPostUpdate(0, 1, -1);
         verify(voteRepository).save(argThat(vote ->
@@ -159,7 +159,7 @@ class VoteServiceTest {
         when(mongoTemplate.findById(postId, Post.class)).thenReturn(null);
 
         assertThrows(IllegalArgumentException.class,
-                () -> voteService.vote(voteDTO, true, userId));
+                () -> voteService.vote(voteDTO, VoteTargetType.POST, userId));
 
         verify(voteRepository, never()).save(any());
         verifyNoMongoUpdate();
@@ -171,7 +171,7 @@ class VoteServiceTest {
         when(mongoTemplate.findById(postId, Post.class)).thenReturn(testPost);
 
         assertThrows(IllegalStateException.class,
-                () -> voteService.vote(voteDTO, true, userId));
+                () -> voteService.vote(voteDTO, VoteTargetType.POST, userId));
 
         verify(voteRepository, never()).save(any());
         verifyNoMongoUpdate();
@@ -185,12 +185,12 @@ class VoteServiceTest {
         when(mongoTemplate.findById(commentId, Comment.class)).thenReturn(testComment);
         when(voteRepository.save(any(Vote.class))).thenAnswer(i -> i.getArgument(0));
 
-        voteService.vote(voteDTO, false, userId);
+        voteService.vote(voteDTO, VoteTargetType.COMMENT, userId);
 
         verifyCommentUpdate(1, 0, 1);
         verify(voteRepository).save(argThat(vote ->
                 vote.getTargetId().equals(commentId) &&
-                        !vote.getIsPost()
+                        vote.getTargetType() == VoteTargetType.COMMENT
         ));
     }
 
@@ -201,7 +201,7 @@ class VoteServiceTest {
         when(mongoTemplate.findById(commentId, Comment.class)).thenReturn(testComment);
         when(voteRepository.save(any(Vote.class))).thenAnswer(i -> i.getArgument(0));
 
-        voteService.vote(voteDTO, false, userId);
+        voteService.vote(voteDTO, VoteTargetType.COMMENT, userId);
 
         verifyCommentUpdate(0, 1, -1);
     }
@@ -212,7 +212,7 @@ class VoteServiceTest {
         when(mongoTemplate.findById(commentId, Comment.class)).thenReturn(null);
 
         assertThrows(IllegalArgumentException.class,
-                () -> voteService.vote(voteDTO, false, userId));
+                () -> voteService.vote(voteDTO, VoteTargetType.COMMENT, userId));
 
         verify(voteRepository, never()).save(any());
     }
@@ -224,7 +224,7 @@ class VoteServiceTest {
         when(mongoTemplate.findById(commentId, Comment.class)).thenReturn(testComment);
 
         assertThrows(IllegalStateException.class,
-                () -> voteService.vote(voteDTO, false, userId));
+                () -> voteService.vote(voteDTO, VoteTargetType.COMMENT, userId));
 
         verify(voteRepository, never()).save(any());
     }
@@ -267,7 +267,7 @@ class VoteServiceTest {
     @Test
     void updateVote_CommentVote_Success() {
         testVote.setTargetId(commentId);
-        testVote.setIsPost(false);
+        testVote.setTargetType(VoteTargetType.COMMENT);
         testVote.setVoteType(1);
         updateVoteDTO.setTargetId(commentId);
 
@@ -351,7 +351,7 @@ class VoteServiceTest {
     @Test
     void deleteVote_CommentVote_Success() {
         testVote.setTargetId(commentId);
-        testVote.setIsPost(false);
+        testVote.setTargetType(VoteTargetType.COMMENT);
         testVote.setVoteType(1);
         when(voteRepository.findByIsDeletedIsFalseAndUserIdAndTargetId(userObjectId, commentId))
                 .thenReturn(testVote);
@@ -430,13 +430,13 @@ class VoteServiceTest {
         when(mongoTemplate.findById(postId, Post.class)).thenReturn(testPost);
         when(voteRepository.save(any(Vote.class))).thenAnswer(i -> i.getArgument(0));
 
-        voteService.vote(voteDTO, true, userId);
+        voteService.vote(voteDTO, VoteTargetType.POST, userId);
 
         verify(voteRepository).save(argThat(vote ->
                 vote.getUserId().equals(userObjectId) &&
                         vote.getTargetId().equals(postId) &&
                         vote.getVoteType().equals(1) &&
-                        vote.getIsPost().equals(true)
+                        vote.getTargetType().equals(VoteTargetType.POST)
         ));
     }
 
@@ -463,7 +463,7 @@ class VoteServiceTest {
         when(mongoTemplate.findById(postId, Post.class)).thenReturn(testPost);
         when(voteRepository.save(any(Vote.class))).thenAnswer(i -> i.getArgument(0));
 
-        voteService.vote(voteDTO, true, userId);
+        voteService.vote(voteDTO, VoteTargetType.POST, userId);
 
         // Atomic $inc deltas don't depend on the starting count.
         verifyPostUpdate(1, 0, 1);

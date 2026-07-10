@@ -19,7 +19,7 @@ public class VoteController {
             @Valid @RequestBody VoteDTO voteDTO) {
 
         Long userId = (Long) request.getAttribute("userId");
-        voteService.vote(voteDTO,true,userId);
+        voteService.vote(voteDTO,VoteTargetType.POST,userId);
         return ResponseEntity.ok().build();
     }
 
@@ -29,7 +29,7 @@ public class VoteController {
             @Valid @RequestBody VoteDTO voteDTO) {
 
         Long userId = (Long) request.getAttribute("userId");
-        voteService.vote(voteDTO,false,userId);
+        voteService.vote(voteDTO,VoteTargetType.COMMENT,userId);
         return ResponseEntity.ok().build();
     }
 
