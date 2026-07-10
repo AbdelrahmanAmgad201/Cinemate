@@ -20,6 +20,7 @@ import org.springframework.web.client.RestTemplate;
 import org.springframework.security.access.AccessDeniedException;
 
 import java.time.Instant;
+import java.util.Map;
 
 import static org.assertj.core.api.Assertions.*;
 import static org.mockito.Mockito.*;
@@ -168,9 +169,8 @@ class PostServiceIntegrationTest extends AbstractMongoIntegrationTest {
         assertThat(result).isTrue();
 
         verify(restTemplate).postForEntity(eq(url), captor.capture(), eq(Boolean.class));
-        HttpEntity captured = captor.getValue();
-        String jsonSent = (String) captured.getBody();
-        assertThat(jsonSent).isEqualTo("{\"text\":\"hello \\\"world\\\"\"}");
+        HttpEntity<?> captured = captor.getValue();
+        assertThat(captured.getBody()).isEqualTo(Map.of("text", text));
         assertThat(captured.getHeaders().getContentType()).isEqualTo(MediaType.APPLICATION_JSON);
     }
 
