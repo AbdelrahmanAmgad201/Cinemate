@@ -39,13 +39,13 @@ public class CommentService {
     @Transactional
     public Comment addComment(Long ownerId, AddCommentDTO addCommentDTO) {
         ObjectId postId = addCommentDTO.getPostId();
-        canComment(postId);
+        Post post = canComment(postId);
         if (!hateSpeechService.analyzeText(addCommentDTO.getContent())) {
             throw new HateSpeechException("hate speech detected");
         }
         Comment parentComment = getParentComment(addCommentDTO.getParentId());
         ObjectId parentId = (parentComment != null) ? parentComment.getId() : null;
-        Comment comment = defaultCommentBuilder(ownerId, postId, parentId, addCommentDTO);
+        Comment comment = defaultCommentBuilder(ownerId, post, parentId, addCommentDTO);
         if (parentComment == null) {
             comment.setDepth(0);
         } else {
@@ -115,7 +115,7 @@ public class CommentService {
             default -> Sort.by(Sort.Direction.DESC, "score");
         };
     }
-    private void canComment(ObjectId postId) {
+    private Post canComment(ObjectId postId) {
         Post post = mongoTemplate.findById(postId, Post.class);
         if (post == null) {
             throw new IllegalArgumentException("Post not found with id: " + postId);
@@ -123,12 +123,18 @@ public class CommentService {
         if (post.getIsDeleted()) {
             throw new IllegalStateException("this post is deleted");
         }
+        return post;
     }
 
-    private Comment defaultCommentBuilder(Long ownerId,ObjectId postId, ObjectId parentId,AddCommentDTO addCommentDTO) {
+    private Comment defaultCommentBuilder(Long ownerId, Post post, ObjectId parentId, AddCommentDTO addCommentDTO) {
+        // postOwnerId/forumId are denormalized from the post we already fetched to
+        // validate the comment (PERF-06) — no extra query — so AccessService can check
+        // delete permissions without chasing Comment -> Post -> Forum every time.
         Comment comment = Comment.builder()
                 .ownerId(longToObjectId(ownerId))
-                .postId(postId)
+                .postId(post.getId())
+                .postOwnerId(post.getOwnerId())
+                .forumId(post.getForumId())
                 .parentId(parentId)
                 .content(addCommentDTO.getContent())
                 .createdAt(Instant.now())

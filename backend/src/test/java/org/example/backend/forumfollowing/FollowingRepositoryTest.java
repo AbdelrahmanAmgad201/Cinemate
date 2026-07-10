@@ -13,6 +13,7 @@ import org.springframework.data.domain.Sort;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
+import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -33,12 +34,12 @@ class FollowingRepositoryTest extends AbstractMongoIntegrationTest {
     }
 
     @Test
-    void findByUserId_ReturnsAllFollowings() {
+    void findByUserIdAndIsDeletedFalse_ReturnsAllFollowings() {
         Following following1 = createFollowing(userId, forumId1);
         Following following2 = createFollowing(userId, forumId2);
         followingRepository.saveAll(List.of(following1, following2));
 
-        List<Following> result = followingRepository.findByUserId(userId);
+        List<Following> result = followingRepository.findByUserIdAndIsDeletedFalse(userId);
 
         assertEquals(2, result.size());
         assertTrue(result.stream().anyMatch(f -> f.getForumId().equals(forumId1)));
@@ -46,47 +47,80 @@ class FollowingRepositoryTest extends AbstractMongoIntegrationTest {
     }
 
     @Test
-    void findByUserId_NoResults_ReturnsEmpty() {
-        List<Following> result = followingRepository.findByUserId(new ObjectId());
+    void findByUserIdAndIsDeletedFalse_ExcludesSoftDeletedFollowings() {
+        Following active = createFollowing(userId, forumId1);
+        Following unfollowed = createFollowing(userId, forumId2);
+        unfollowed.setIsDeleted(true);
+        unfollowed.setDeletedAt(Instant.now());
+        followingRepository.saveAll(List.of(active, unfollowed));
+
+        List<Following> result = followingRepository.findByUserIdAndIsDeletedFalse(userId);
+
+        assertEquals(1, result.size());
+        assertEquals(forumId1, result.get(0).getForumId());
+    }
+
+    @Test
+    void findByUserIdAndIsDeletedFalse_NoResults_ReturnsEmpty() {
+        List<Following> result = followingRepository.findByUserIdAndIsDeletedFalse(new ObjectId());
 
         assertTrue(result.isEmpty());
     }
 
     @Test
-    void existsByUserIdAndForumId_Exists_ReturnsTrue() {
+    void existsByUserIdAndForumIdAndIsDeletedFalse_Exists_ReturnsTrue() {
         Following following = createFollowing(userId, forumId1);
         followingRepository.save(following);
 
-        boolean exists = followingRepository.existsByUserIdAndForumId(userId, forumId1);
+        boolean exists = followingRepository.existsByUserIdAndForumIdAndIsDeletedFalse(userId, forumId1);
 
         assertTrue(exists);
     }
 
     @Test
-    void existsByUserIdAndForumId_NotExists_ReturnsFalse() {
-        boolean exists = followingRepository.existsByUserIdAndForumId(userId, forumId1);
+    void existsByUserIdAndForumIdAndIsDeletedFalse_NotExists_ReturnsFalse() {
+        boolean exists = followingRepository.existsByUserIdAndForumIdAndIsDeletedFalse(userId, forumId1);
 
         assertFalse(exists);
     }
 
     @Test
-    void deleteByUserIdAndForumId_DeletesSuccessfully() {
+    void existsByUserIdAndForumIdAndIsDeletedFalse_SoftDeleted_ReturnsFalse() {
         Following following = createFollowing(userId, forumId1);
+        following.setIsDeleted(true);
+        following.setDeletedAt(Instant.now());
         followingRepository.save(following);
 
-        followingRepository.deleteByUserIdAndForumId(userId, forumId1);
+        boolean exists = followingRepository.existsByUserIdAndForumIdAndIsDeletedFalse(userId, forumId1);
 
-        assertFalse(followingRepository.existsByUserIdAndForumId(userId, forumId1));
+        assertFalse(exists);
     }
 
     @Test
-    void deleteByUserIdAndForumId_NotExists_NoError() {
-        assertDoesNotThrow(() ->
-                followingRepository.deleteByUserIdAndForumId(userId, forumId1));
+    void findByUserIdAndForumId_ReturnsRowRegardlessOfDeletionState() {
+        Following following = createFollowing(userId, forumId1);
+        following.setIsDeleted(true);
+        following.setDeletedAt(Instant.now());
+        followingRepository.save(following);
+
+        // Unlike the filtered lookups above, this one exists so follow()/unfollow() can
+        // find and reactivate/soft-delete the row in place (DB-NEW-03) instead of it
+        // being invisible once soft-deleted.
+        Optional<Following> result = followingRepository.findByUserIdAndForumId(userId, forumId1);
+
+        assertTrue(result.isPresent());
+        assertTrue(result.get().getIsDeleted());
     }
 
     @Test
-    void findByUserId_WithPageable_ReturnsPaginatedResults() {
+    void findByUserIdAndForumId_NotExists_ReturnsEmpty() {
+        Optional<Following> result = followingRepository.findByUserIdAndForumId(userId, forumId1);
+
+        assertTrue(result.isEmpty());
+    }
+
+    @Test
+    void findByUserIdAndIsDeletedFalse_WithPageable_ReturnsPaginatedResults() {
         Instant now = Instant.now();
         Following following1 = createFollowing(userId, forumId1, now.minus(2, ChronoUnit.DAYS));
         Following following2 = createFollowing(userId, forumId2, now.minus(1, ChronoUnit.DAYS));
@@ -94,7 +128,7 @@ class FollowingRepositoryTest extends AbstractMongoIntegrationTest {
         followingRepository.saveAll(List.of(following1, following2, following3));
 
         PageRequest pageRequest = PageRequest.of(0, 2, Sort.by(Sort.Direction.DESC, "createdAt"));
-        Page<Following> page = followingRepository.findByUserId(userId, pageRequest);
+        Page<Following> page = followingRepository.findByUserIdAndIsDeletedFalse(userId, pageRequest);
 
         assertEquals(2, page.getContent().size());
         assertEquals(3, page.getTotalElements());
@@ -106,14 +140,14 @@ class FollowingRepositoryTest extends AbstractMongoIntegrationTest {
     }
 
     @Test
-    void findByUserId_WithPageable_SecondPage() {
+    void findByUserIdAndIsDeletedFalse_WithPageable_SecondPage() {
         Following following1 = createFollowing(userId, forumId1);
         Following following2 = createFollowing(userId, forumId2);
         Following following3 = createFollowing(userId, new ObjectId());
         followingRepository.saveAll(List.of(following1, following2, following3));
 
         PageRequest pageRequest = PageRequest.of(1, 2);
-        Page<Following> page = followingRepository.findByUserId(userId, pageRequest);
+        Page<Following> page = followingRepository.findByUserIdAndIsDeletedFalse(userId, pageRequest);
 
         assertEquals(1, page.getContent().size());
         assertFalse(page.hasNext());
@@ -135,14 +169,28 @@ class FollowingRepositoryTest extends AbstractMongoIntegrationTest {
     }
 
     @Test
-    void findByUserId_DifferentUsers_IsolatesData() {
+    void findForumIdsByUserId_ExcludesSoftDeletedFollowings() {
+        Following active = createFollowing(userId, forumId1);
+        Following unfollowed = createFollowing(userId, forumId2);
+        unfollowed.setIsDeleted(true);
+        unfollowed.setDeletedAt(Instant.now());
+        followingRepository.saveAll(List.of(active, unfollowed));
+
+        List<Document> result = followingRepository.findForumIdsByUserId(userId);
+
+        assertEquals(1, result.size());
+        assertEquals(forumId1, result.get(0).getObjectId("forumId"));
+    }
+
+    @Test
+    void findByUserIdAndIsDeletedFalse_DifferentUsers_IsolatesData() {
         ObjectId userId2 = new ObjectId();
         Following following1 = createFollowing(userId, forumId1);
         Following following2 = createFollowing(userId2, forumId2);
         followingRepository.saveAll(List.of(following1, following2));
 
-        List<Following> user1Results = followingRepository.findByUserId(userId);
-        List<Following> user2Results = followingRepository.findByUserId(userId2);
+        List<Following> user1Results = followingRepository.findByUserIdAndIsDeletedFalse(userId);
+        List<Following> user2Results = followingRepository.findByUserIdAndIsDeletedFalse(userId2);
 
         assertEquals(1, user1Results.size());
         assertEquals(1, user2Results.size());
@@ -151,9 +199,9 @@ class FollowingRepositoryTest extends AbstractMongoIntegrationTest {
     }
 
     @Test
-    void findByUserId_WithPageable_EmptyResults() {
+    void findByUserIdAndIsDeletedFalse_WithPageable_EmptyResults() {
         PageRequest pageRequest = PageRequest.of(0, 20);
-        Page<Following> page = followingRepository.findByUserId(new ObjectId(), pageRequest);
+        Page<Following> page = followingRepository.findByUserIdAndIsDeletedFalse(new ObjectId(), pageRequest);
 
         assertTrue(page.isEmpty());
         assertEquals(0, page.getTotalElements());

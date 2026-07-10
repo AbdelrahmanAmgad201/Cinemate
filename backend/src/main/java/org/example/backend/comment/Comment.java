@@ -3,7 +3,9 @@ package org.example.backend.comment;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.fasterxml.jackson.databind.ser.std.ToStringSerializer;
 import lombok.*;
+import lombok.experimental.SuperBuilder;
 import org.bson.types.ObjectId;
+import org.example.backend.mongo.SoftDeletableDocument;
 import org.example.backend.vote.Votable;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.index.CompoundIndex;
@@ -17,14 +19,14 @@ import java.time.Instant;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-@Builder
+@SuperBuilder
 @Document(collection = "comments")
 @CompoundIndexes({
         @CompoundIndex(name = "post_created", def = "{'postId': 1, 'isDeleted': 1, 'createdAt': 1}"),
         @CompoundIndex(name = "post_score", def = "{'postId': 1, 'isDeleted': 1, 'score': -1}"),
         @CompoundIndex(name = "parent_created", def = "{'parentId': 1, 'isDeleted': 1, 'createdAt': 1}")
 })
-public class Comment implements Votable {
+public class Comment extends SoftDeletableDocument implements Votable {
 
     @Id
     @JsonSerialize(using = ToStringSerializer.class)
@@ -41,6 +43,17 @@ public class Comment implements Votable {
     @Indexed
     @JsonSerialize(using = ToStringSerializer.class)
     private ObjectId ownerId;
+
+    // Denormalized from the parent Post at creation time (PERF-06) so
+    // AccessService.canDeleteComment() can check post/forum ownership without chasing
+    // Comment -> Post -> Forum on every call. Null on comments created before this field
+    // existed; canDeleteComment() falls back to the old lookup chain for those.
+    @JsonSerialize(using = ToStringSerializer.class)
+    private ObjectId postOwnerId;
+
+    @Indexed
+    @JsonSerialize(using = ToStringSerializer.class)
+    private ObjectId forumId;
 
     private String content;
 
@@ -60,12 +73,6 @@ public class Comment implements Votable {
 
     @Builder.Default
     private Integer numberOfReplies = 0;
-
-    // Soft delete
-    @Builder.Default
-    private Boolean isDeleted = false;
-
-    private Instant deletedAt;
 
     @Override
     public void incrementUpvote() {

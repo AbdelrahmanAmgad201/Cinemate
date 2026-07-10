@@ -275,6 +275,58 @@ class AccessServiceTest {
         assertFalse(result);
     }
 
+    // PERF-06: comments created after the postOwnerId/forumId denormalization carry
+    // both fields already, so canDeleteComment() should skip the Post lookup entirely.
+
+    @Test
+    void canDeleteComment_DenormalizedPostOwner_ReturnsTrueWithoutPostLookup() {
+        ObjectId postOwnerId = new ObjectId();
+        testComment.setOwnerId(new ObjectId());
+        testComment.setPostOwnerId(postOwnerId);
+        testComment.setForumId(forumId);
+
+        when(mongoTemplate.findById(commentId, Comment.class)).thenReturn(testComment);
+
+        boolean result = accessService.canDeleteComment(postOwnerId, commentId);
+
+        assertTrue(result);
+        verify(mongoTemplate, never()).findById(postId, Post.class);
+    }
+
+    @Test
+    void canDeleteComment_DenormalizedForumId_ReturnsTrueWithoutPostLookup() {
+        ObjectId forumOwnerId = new ObjectId();
+        testComment.setOwnerId(new ObjectId());
+        testComment.setPostOwnerId(new ObjectId());
+        testComment.setForumId(forumId);
+        testForum.setOwnerId(forumOwnerId);
+
+        when(mongoTemplate.findById(commentId, Comment.class)).thenReturn(testComment);
+        when(mongoTemplate.findById(forumId, Forum.class)).thenReturn(testForum);
+
+        boolean result = accessService.canDeleteComment(forumOwnerId, commentId);
+
+        assertTrue(result);
+        verify(mongoTemplate, never()).findById(postId, Post.class);
+    }
+
+    @Test
+    void canDeleteComment_LegacyCommentWithoutDenormalizedFields_FallsBackToPostLookup() {
+        // testComment has no postOwnerId/forumId set (comment created before PERF-06),
+        // so this must still work via the original Comment -> Post -> Forum chain.
+        ObjectId postOwnerId = new ObjectId();
+        testComment.setOwnerId(new ObjectId());
+        testPost.setOwnerId(postOwnerId);
+
+        when(mongoTemplate.findById(commentId, Comment.class)).thenReturn(testComment);
+        when(mongoTemplate.findById(postId, Post.class)).thenReturn(testPost);
+
+        boolean result = accessService.canDeleteComment(postOwnerId, commentId);
+
+        assertTrue(result);
+        verify(mongoTemplate).findById(postId, Post.class);
+    }
+
     // ==================== VOTE DELETION TESTS ====================
 
     @Test

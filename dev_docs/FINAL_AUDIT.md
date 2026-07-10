@@ -37,20 +37,6 @@ Re-scans all comments from last 24 hours, one HTTP call per comment sequentially
 
 **Fix:** Add `isModerated` flag to `Comment`. Scheduler only processes `isModerated=false`. Paginate. Use thread pool for parallel HTTP.
 
-### ARC-05 — Three-Role Authentication Model (Flat, Hard-Coded)
-**Severity:** Medium | **Effort:** Medium
-
-`User`, `Admin`, `Organization` are separate tables/entities with one `AuthenticationService` switching on role string. Frontend must submit role in login request (non-standard, enables brute-force by role). Adding a new role requires changes to auth service, security config, and 3+ verification methods.
-
-**Fix:** Consolidate into single `accounts` table with `@DiscriminatorColumn`, use Spring `GrantedAuthority` hierarchy, derive role from account record (not from request body).
-
-### DB-NEW-03 — Inconsistent Soft-Delete: Some Collections Lack `deletedAt`
-**Severity:** Medium | **Effort:** Medium
-
-Most soft-deleted documents have `isDeleted` but not `deletedAt`, making "when was this deleted?" unanswerable for compliance. `FollowingRepository` hard-deletes despite soft-delete elsewhere in the same domain.
-
-**Fix:** Introduce `@MappedSuperclass` base document with `isDeleted + deletedAt`, audit all repositories for hard-delete methods that should be soft-delete.
-
 ### TEST-02 — No Tests for Critical Security Paths
 **Severity:** High | **Effort:** Medium
 
@@ -76,23 +62,12 @@ Nightly scheduler fetches all 24h comments and re-runs each through hate-api ind
 
 **Fix:** Add `isModerated` flag. Only re-scan unmoderated comments in pages with thread pool.
 
-### PERF-06 — `AccessService.canDeleteComment()` Issues 3 Sequential MongoDB Queries
-**Severity:** Medium | **Effort:** Medium
-
-Fetches comment → post → forum to check access. Denormalize `postOwnerId` and `forumId` into `Comment` document.
 
 ### TEST-05 — No Observability / Metrics
 **Severity:** High | **Effort:** Medium
 
 Application has no metrics collection, no health indicators beyond static "UP". No way to know RPS, hate-api latency, Redis connectivity, or JVM pressure. See ARC-08.
 
-
-### TEST-01 — `@SpringBootTest` + `@BeforeEach` Mock Override Anti-Pattern
-**Severity:** High | **Effort:** Medium
-
-Full Spring context loads on every test (slow, requires DB), then autowired beans are immediately replaced with mocks (defeating the purpose). 7 of 57 backend tests do this.
-
-**Fix:** Replace with `@ExtendWith(MockitoExtension.class)`, use `@Mock` and `@InjectMocks`.
 
 ---
 

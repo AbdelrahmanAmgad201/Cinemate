@@ -246,12 +246,41 @@ class CommentServiceTest {
     }
 
     @Test
-    void deleteComment_UpdatesPostCommentCount() {
+    void deleteComment_TouchesPostActivityAndDelegatesCascadeDeletion() {
         when(accessService.canDeleteComment(userObjectId, commentId)).thenReturn(true);
         when(mongoTemplate.findById(commentId, Comment.class)).thenReturn(testComment);
         when(mongoTemplate.findById(postId, Post.class)).thenReturn(testPost);
+        assertNull(testPost.getLastActivityAt());
 
         commentService.deleteComment(commentId, userId);
+
+        assertNotNull(testPost.getLastActivityAt());
+        verify(postRepository).save(testPost);
+        verify(deletionService).deleteComment(commentId);
+    }
+
+    @Test
+    void addComment_DenormalizesPostOwnerAndForumId() {
+        // PERF-06: postOwnerId/forumId come from the Post already fetched to validate
+        // the comment, so AccessService.canDeleteComment() doesn't need to look up the
+        // Post again on every delete-permission check.
+        ObjectId postOwnerId = new ObjectId();
+        ObjectId forumId = new ObjectId();
+        Post postWithOwnerAndForum = Post.builder()
+                .id(postId)
+                .ownerId(postOwnerId)
+                .forumId(forumId)
+                .commentCount(5)
+                .isDeleted(false)
+                .build();
+
+        when(mongoTemplate.findById(postId, Post.class)).thenReturn(postWithOwnerAndForum);
+        when(commentRepository.save(any(Comment.class))).thenAnswer(i -> i.getArgument(0));
+
+        Comment result = commentService.addComment(userId, addCommentDTO);
+
+        assertEquals(postOwnerId, result.getPostOwnerId());
+        assertEquals(forumId, result.getForumId());
     }
 
     @Test

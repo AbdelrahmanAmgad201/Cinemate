@@ -1,7 +1,9 @@
 package org.example.backend.forumfollowing;
 
 import lombok.*;
+import lombok.experimental.SuperBuilder;
 import org.bson.types.ObjectId;
+import org.example.backend.mongo.SoftDeletableDocument;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.index.CompoundIndex;
 import org.springframework.data.mongodb.core.index.CompoundIndexes;
@@ -14,13 +16,13 @@ import java.time.Instant;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-@Builder
+@SuperBuilder
 @Document(collection = "following")
 @CompoundIndexes({
         @CompoundIndex(name = "user_forum_unique", def = "{'userId': 1, 'forumId': 1}", unique = true),
         @CompoundIndex(name = "user_created", def = "{'userId': 1, 'createdAt': -1}")
 })
-public class Following {
+public class Following extends SoftDeletableDocument {
 
     @Id
     private ObjectId id;
@@ -32,10 +34,5 @@ public class Following {
     private ObjectId forumId;
 
     private Instant createdAt;
-
-    @Builder.Default
-    private Boolean isDeleted = false;
-
-    private Instant deletedAt;
 
 }

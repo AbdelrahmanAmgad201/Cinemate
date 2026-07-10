@@ -3,7 +3,9 @@ package org.example.backend.post;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.fasterxml.jackson.databind.ser.std.ToStringSerializer;
 import lombok.*;
+import lombok.experimental.SuperBuilder;
 import org.bson.types.ObjectId;
+import org.example.backend.mongo.SoftDeletableDocument;
 import org.example.backend.vote.Votable;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.index.CompoundIndex;
@@ -17,7 +19,7 @@ import java.time.Instant;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-@Builder
+@SuperBuilder
 @Document(collection = "posts")
 @CompoundIndexes({
         @CompoundIndex(name = "forum_created", def = "{'forumId': 1, 'isDeleted': 1, 'createdAt': -1}"),
@@ -26,7 +28,7 @@ import java.time.Instant;
         // NEW: Index for explore feed
         @CompoundIndex(name = "explore_popular", def = "{'isDeleted': 1, 'createdAt': -1, 'score': -1}")
 })
-public class Post implements Votable {
+public class Post extends SoftDeletableDocument implements Votable {
 
     @Id
     @JsonSerialize(using = ToStringSerializer.class)
@@ -59,12 +61,6 @@ public class Post implements Votable {
 
     private Instant createdAt;
     private Instant lastActivityAt;
-
-    @Builder.Default
-    private Boolean isDeleted = false;
-
-    private Instant deletedAt;
-
 
     public void updateLastActivityAt(Instant lastActivityAt) {
         if (this.lastActivityAt == null || this.lastActivityAt.isBefore(lastActivityAt)) {

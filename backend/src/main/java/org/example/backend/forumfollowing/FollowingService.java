@@ -15,6 +15,7 @@ import static org.example.backend.util.IdConverter.longToObjectId;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
@@ -27,7 +28,8 @@ public class FollowingService {
     public void follow(ObjectId forumId, Long userId) {
         ObjectId userObjectId = longToObjectId(userId);
 
-        if (followingRepository.existsByUserIdAndForumId(userObjectId, forumId)) {
+        Optional<Following> existing = followingRepository.findByUserIdAndForumId(userObjectId, forumId);
+        if (existing.isPresent() && !Boolean.TRUE.equals(existing.get().getIsDeleted())) {
             return;
         }
 
@@ -38,12 +40,22 @@ public class FollowingService {
             throw new IllegalStateException("Cannot follow a deleted forum");
         }
 
-        Following following = Following.builder()
-                .userId(userObjectId)
-                .forumId(forumId)
-                .createdAt(Instant.now())
-                .build();
-        followingRepository.save(following);
+        if (existing.isPresent()) {
+            // Reactivate the previously soft-deleted row in place instead of inserting a
+            // new document, which would violate the {userId, forumId} unique index.
+            Following following = existing.get();
+            following.setIsDeleted(false);
+            following.setDeletedAt(null);
+            following.setCreatedAt(Instant.now());
+            followingRepository.save(following);
+        } else {
+            Following following = Following.builder()
+                    .userId(userObjectId)
+                    .forumId(forumId)
+                    .createdAt(Instant.now())
+                    .build();
+            followingRepository.save(following);
+        }
 
         // Increment follower count
         forum.setFollowerCount(forum.getFollowerCount() + 1);
@@ -53,11 +65,18 @@ public class FollowingService {
     public void unfollow(ObjectId forumId, Long userId) {
         ObjectId userObjectId = longToObjectId(userId);
 
-        if (!followingRepository.existsByUserIdAndForumId(userObjectId, forumId)) {
+        Optional<Following> existing = followingRepository.findByUserIdAndForumId(userObjectId, forumId);
+        if (existing.isEmpty() || Boolean.TRUE.equals(existing.get().getIsDeleted())) {
             return;
         }
 
-        followingRepository.deleteByUserIdAndForumId(userObjectId, forumId);
+        // DB-NEW-03: soft-delete, consistent with every other domain in the app —
+        // previously this hard-deleted the row despite Following already carrying
+        // isDeleted/deletedAt fields that nothing ever set.
+        Following following = existing.get();
+        following.setIsDeleted(true);
+        following.setDeletedAt(Instant.now());
+        followingRepository.save(following);
 
         // Decrement follower count
         forumRepository.findById(forumId).ifPresent(forum -> {
@@ -70,7 +89,7 @@ public class FollowingService {
         ObjectId userObjectId = longToObjectId(userId);
 
 
-        Page<Following> followingPage = followingRepository.findByUserId(userObjectId, pageable);
+        Page<Following> followingPage = followingRepository.findByUserIdAndIsDeletedFalse(userObjectId, pageable);
         List<ObjectId> forumIds = followingPage.getContent()
                 .stream()
                 .map(Following::getForumId)
@@ -91,7 +110,7 @@ public class FollowingService {
 
     public Boolean isFollowed(ObjectId forumId, Long userId) {
         ObjectId userObjectId = longToObjectId(userId);
-        return followingRepository.existsByUserIdAndForumId(userObjectId, forumId);
+        return followingRepository.existsByUserIdAndForumIdAndIsDeletedFalse(userObjectId, forumId);
     }
 
     private List<Forum> fetchNonDeletedForums(List<ObjectId> forumIds) {

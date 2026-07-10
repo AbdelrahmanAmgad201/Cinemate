@@ -3,7 +3,9 @@ package org.example.backend.forum;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.fasterxml.jackson.databind.ser.std.ToStringSerializer;
 import lombok.*;
+import lombok.experimental.SuperBuilder;
 import org.bson.types.ObjectId;
+import org.example.backend.mongo.SoftDeletableDocument;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.index.TextIndexed;
@@ -15,9 +17,9 @@ import java.time.Instant;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-@Builder
+@SuperBuilder
 @Document(collection = "forums")
-public class Forum {
+public class Forum extends SoftDeletableDocument {
 
     @Id
     @JsonSerialize(using = ToStringSerializer.class)
@@ -41,9 +43,4 @@ public class Forum {
     private Integer postCount = 0;
 
     private Instant createdAt;
-
-    @Builder.Default
-    private Boolean isDeleted = false;
-
-    private Instant deletedAt;
 }

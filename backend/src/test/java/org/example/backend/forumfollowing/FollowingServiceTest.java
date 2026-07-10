@@ -69,7 +69,7 @@ class FollowingServiceTest {
 
     @Test
     void follow_NewFollowing_Success() {
-        when(followingRepository.existsByUserIdAndForumId(userId, forumId)).thenReturn(false);
+        when(followingRepository.findByUserIdAndForumId(userId, forumId)).thenReturn(Optional.empty());
         when(forumRepository.findById(forumId)).thenReturn(Optional.of(testForum));
         when(followingRepository.save(any(Following.class))).thenReturn(testFollowing);
 
@@ -87,7 +87,7 @@ class FollowingServiceTest {
 
     @Test
     void follow_AlreadyFollowing_DoesNothing() {
-        when(followingRepository.existsByUserIdAndForumId(userId, forumId)).thenReturn(true);
+        when(followingRepository.findByUserIdAndForumId(userId, forumId)).thenReturn(Optional.of(testFollowing));
 
         followingService.follow(forumId, userIdLong);
 
@@ -96,8 +96,34 @@ class FollowingServiceTest {
     }
 
     @Test
+    void follow_PreviouslyUnfollowed_ReactivatesInsteadOfInserting() {
+        Following softDeleted = Following.builder()
+                .id(testFollowing.getId())
+                .userId(userId)
+                .forumId(forumId)
+                .createdAt(Instant.now().minusSeconds(3600))
+                .isDeleted(true)
+                .deletedAt(Instant.now().minusSeconds(60))
+                .build();
+        when(followingRepository.findByUserIdAndForumId(userId, forumId)).thenReturn(Optional.of(softDeleted));
+        when(forumRepository.findById(forumId)).thenReturn(Optional.of(testForum));
+        when(followingRepository.save(any(Following.class))).thenAnswer(i -> i.getArgument(0));
+
+        followingService.follow(forumId, userIdLong);
+
+        // Same document id reactivated (isDeleted cleared), not a second insert that
+        // would violate the {userId, forumId} unique index.
+        verify(followingRepository).save(argThat(following ->
+                following.getId().equals(softDeleted.getId()) &&
+                        !following.getIsDeleted() &&
+                        following.getDeletedAt() == null
+        ));
+        verify(forumRepository).save(argThat(forum -> forum.getFollowerCount() == 11));
+    }
+
+    @Test
     void follow_ForumNotFound_ThrowsException() {
-        when(followingRepository.existsByUserIdAndForumId(userId, forumId)).thenReturn(false);
+        when(followingRepository.findByUserIdAndForumId(userId, forumId)).thenReturn(Optional.empty());
         when(forumRepository.findById(forumId)).thenReturn(Optional.empty());
 
         assertThrows(IllegalArgumentException.class,
@@ -109,7 +135,7 @@ class FollowingServiceTest {
     @Test
     void follow_DeletedForum_ThrowsException() {
         testForum.setIsDeleted(true);
-        when(followingRepository.existsByUserIdAndForumId(userId, forumId)).thenReturn(false);
+        when(followingRepository.findByUserIdAndForumId(userId, forumId)).thenReturn(Optional.empty());
         when(forumRepository.findById(forumId)).thenReturn(Optional.of(testForum));
 
         assertThrows(IllegalStateException.class,
@@ -120,12 +146,14 @@ class FollowingServiceTest {
 
     @Test
     void unfollow_ExistingFollowing_Success() {
-        when(followingRepository.existsByUserIdAndForumId(userId, forumId)).thenReturn(true);
+        when(followingRepository.findByUserIdAndForumId(userId, forumId)).thenReturn(Optional.of(testFollowing));
         when(forumRepository.findById(forumId)).thenReturn(Optional.of(testForum));
 
         followingService.unfollow(forumId, userIdLong);
 
-        verify(followingRepository).deleteByUserIdAndForumId(userId, forumId);
+        verify(followingRepository).save(argThat(following ->
+                following.getIsDeleted() && following.getDeletedAt() != null
+        ));
         verify(forumRepository).save(argThat(forum ->
                 forum.getFollowerCount() == 9
         ));
@@ -133,29 +161,46 @@ class FollowingServiceTest {
 
     @Test
     void unfollow_NotFollowing_DoesNothing() {
-        when(followingRepository.existsByUserIdAndForumId(userId, forumId)).thenReturn(false);
+        when(followingRepository.findByUserIdAndForumId(userId, forumId)).thenReturn(Optional.empty());
 
         followingService.unfollow(forumId, userIdLong);
 
-        verify(followingRepository, never()).deleteByUserIdAndForumId(any(), any());
+        verify(followingRepository, never()).save(any());
+        verify(forumRepository, never()).save(any());
+    }
+
+    @Test
+    void unfollow_AlreadyUnfollowed_DoesNothing() {
+        Following softDeleted = Following.builder()
+                .id(testFollowing.getId())
+                .userId(userId)
+                .forumId(forumId)
+                .isDeleted(true)
+                .deletedAt(Instant.now())
+                .build();
+        when(followingRepository.findByUserIdAndForumId(userId, forumId)).thenReturn(Optional.of(softDeleted));
+
+        followingService.unfollow(forumId, userIdLong);
+
+        verify(followingRepository, never()).save(any());
         verify(forumRepository, never()).save(any());
     }
 
     @Test
     void unfollow_ForumNotFound_DoesNotThrow() {
-        when(followingRepository.existsByUserIdAndForumId(userId, forumId)).thenReturn(true);
+        when(followingRepository.findByUserIdAndForumId(userId, forumId)).thenReturn(Optional.of(testFollowing));
         when(forumRepository.findById(forumId)).thenReturn(Optional.empty());
 
         assertDoesNotThrow(() -> followingService.unfollow(forumId, userIdLong));
 
-        verify(followingRepository).deleteByUserIdAndForumId(userId, forumId);
+        verify(followingRepository).save(argThat(Following::getIsDeleted));
         verify(forumRepository, never()).save(any());
     }
 
     @Test
     void unfollow_FollowerCountZero_StaysZero() {
         testForum.setFollowerCount(0);
-        when(followingRepository.existsByUserIdAndForumId(userId, forumId)).thenReturn(true);
+        when(followingRepository.findByUserIdAndForumId(userId, forumId)).thenReturn(Optional.of(testFollowing));
         when(forumRepository.findById(forumId)).thenReturn(Optional.of(testForum));
 
         followingService.unfollow(forumId, userIdLong);
@@ -184,7 +229,7 @@ class FollowingServiceTest {
         forum2.setId(forumId2);
         forum2.setIsDeleted(false);
 
-        when(followingRepository.findByUserId(userId, pageable)).thenReturn(followingPage);
+        when(followingRepository.findByUserIdAndIsDeletedFalse(userId, pageable)).thenReturn(followingPage);
         when(mongoTemplate.find(any(Query.class), eq(Forum.class)))
                 .thenReturn(Arrays.asList(testForum, forum2));
 
@@ -205,7 +250,7 @@ class FollowingServiceTest {
         Pageable pageable = PageRequest.of(0, 20);
         Page<Following> emptyPage = new PageImpl<>(List.of(), pageable, 0);
 
-        when(followingRepository.findByUserId(userId, pageable)).thenReturn(emptyPage);
+        when(followingRepository.findByUserIdAndIsDeletedFalse(userId, pageable)).thenReturn(emptyPage);
 
         ForumPageResponse response = followingService.getFollowedForums(userIdLong, pageable);
 
@@ -221,7 +266,7 @@ class FollowingServiceTest {
         List<Following> followings = Arrays.asList(testFollowing);
         Page<Following> followingPage = new PageImpl<>(followings, pageable, 25);
 
-        when(followingRepository.findByUserId(userId, pageable)).thenReturn(followingPage);
+        when(followingRepository.findByUserIdAndIsDeletedFalse(userId, pageable)).thenReturn(followingPage);
         when(mongoTemplate.find(any(Query.class), eq(Forum.class)))
                 .thenReturn(Arrays.asList(testForum));
 
@@ -240,7 +285,7 @@ class FollowingServiceTest {
         List<Following> followings = Arrays.asList(testFollowing);
         Page<Following> followingPage = new PageImpl<>(followings, pageable, 1);
 
-        when(followingRepository.findByUserId(userId, pageable)).thenReturn(followingPage);
+        when(followingRepository.findByUserIdAndIsDeletedFalse(userId, pageable)).thenReturn(followingPage);
         when(mongoTemplate.find(any(Query.class), eq(Forum.class)))
                 .thenReturn(List.of()); // Simulates deleted forum being filtered out
 

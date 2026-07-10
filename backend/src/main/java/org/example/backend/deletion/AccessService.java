@@ -88,21 +88,35 @@ public class AccessService {
             return true;
         }
 
-        // Check if user is the post owner
-        Post post = mongoTemplate.findById(comment.getPostId(), Post.class);
-        if (post == null) {
-            log.warn("Post not found for comment: {}", commentId);
-            return false;
+        // PERF-06: postOwnerId/forumId are denormalized onto Comment at creation time,
+        // so the common case (comment owner already handled above; here checking post/
+        // forum ownership) needs at most one more round trip (Forum) instead of two
+        // (Post, then Forum). Comments created before this field existed have both null,
+        // so fall back to the original Comment -> Post -> Forum lookup for those.
+        ObjectId postOwnerId = comment.getPostOwnerId();
+        ObjectId forumId = comment.getForumId();
+
+        if (postOwnerId == null || forumId == null) {
+            Post post = mongoTemplate.findById(comment.getPostId(), Post.class);
+            if (post == null) {
+                log.warn("Post not found for comment: {}", commentId);
+                return false;
+            }
+            postOwnerId = post.getOwnerId();
+            forumId = post.getForumId();
         }
 
-        if (post.getOwnerId().equals(userId)) {
+        // Check if user is the post owner
+        if (postOwnerId != null && postOwnerId.equals(userId)) {
             return true;
         }
 
         // Check if user is the forum owner
-        Forum forum = mongoTemplate.findById(post.getForumId(), Forum.class);
-        if (forum != null && forum.getOwnerId().equals(userId)) {
-            return true;
+        if (forumId != null) {
+            Forum forum = mongoTemplate.findById(forumId, Forum.class);
+            if (forum != null && forum.getOwnerId().equals(userId)) {
+                return true;
+            }
         }
 
         log.warn("User {} does not have permission to delete comment {}", userId, commentId);
