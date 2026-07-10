@@ -97,7 +97,8 @@ class PostServiceIntegrationTest extends AbstractMongoIntegrationTest {
         assertThat(fromDb.getForumName()).isEqualTo("Test Forum");
         assertThat(fromDb.getAuthorName()).isEqualTo("TestUser");
 
-        verify(restTemplate, times(2))
+        // HS-03/HS-07: title+content are analyzed in a single combined call, not one per field.
+        verify(restTemplate, times(1))
                 .postForEntity(eq(url), any(HttpEntity.class), eq(Boolean.class));
         verify(userService, times(1)).getUserName(userId);
     }
