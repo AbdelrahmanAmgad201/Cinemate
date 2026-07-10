@@ -10,6 +10,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
+import java.time.Clock;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -26,9 +27,10 @@ public class RequestsService {
             PageRequest.of(0, MAX_LIST_SIZE, Sort.by(Sort.Direction.DESC, "id"));
 
     private final RequestsRepository requestsRepository;
+    private final Clock clock;
     @Transactional
     public void deleteOldRequests() {
-        LocalDateTime cutoff = LocalDateTime.now().minusDays(10);
+        LocalDateTime cutoff = LocalDateTime.now(clock).minusDays(10);
         requestsRepository.deleteOldNonPending(cutoff);
         log.info("Old declined requests cleanup executed — removed entries before {}", cutoff);
 

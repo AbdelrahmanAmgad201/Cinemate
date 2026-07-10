@@ -5,13 +5,18 @@ import org.example.backend.organization.Organization;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.Pageable;
 import org.springframework.test.context.ActiveProfiles;
 
+import java.time.Clock;
+import java.time.Instant;
 import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -23,6 +28,9 @@ class RequestsServiceTest {
 
     @Mock
     private RequestsRepository requestsRepository;
+
+    @Spy
+    private Clock clock = Clock.fixed(Instant.parse("2024-06-15T12:00:00Z"), ZoneOffset.UTC);
 
     @InjectMocks
     private RequestsService requestsService;
@@ -107,9 +115,12 @@ class RequestsServiceTest {
     // -----------------------------------------------------
     @Test
     void testDeleteOldRequests() {
+        ArgumentCaptor<LocalDateTime> cutoffCaptor = ArgumentCaptor.forClass(LocalDateTime.class);
+
         requestsService.deleteOldRequests();
 
-        // We can only verify that the repository method is called with a cutoff
-        verify(requestsRepository).deleteOldNonPending(any(LocalDateTime.class));
+        LocalDateTime expectedCutoff = LocalDateTime.now(clock).minusDays(10);
+        verify(requestsRepository).deleteOldNonPending(cutoffCaptor.capture());
+        assertEquals(expectedCutoff, cutoffCaptor.getValue());
     }
 }

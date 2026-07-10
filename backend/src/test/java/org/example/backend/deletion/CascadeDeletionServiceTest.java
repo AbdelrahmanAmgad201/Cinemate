@@ -1,6 +1,7 @@
 package org.example.backend.deletion;
 
 import com.mongodb.client.result.UpdateResult;
+import org.bson.Document;
 import org.bson.types.ObjectId;
 import org.example.backend.comment.Comment;
 import org.example.backend.comment.CommentRepository;
@@ -9,19 +10,24 @@ import org.example.backend.post.PostRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.data.mongodb.core.query.Update;
 import org.springframework.test.context.ActiveProfiles;
 
+import java.time.Clock;
 import java.time.Instant;
+import java.time.ZoneOffset;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
@@ -37,6 +43,9 @@ class CascadeDeletionServiceTest {
 
     @Mock
     private CommentRepository commentRepository;
+
+    @Spy
+    private Clock clock = Clock.fixed(Instant.parse("2024-06-15T12:00:00Z"), ZoneOffset.UTC);
 
     @InjectMocks
     private CascadeDeletionService cascadeDeletionService;
@@ -371,14 +380,19 @@ class CascadeDeletionServiceTest {
 
     @Test
     void hardDeleteOldEntities_DeletesOldRecords() {
+        ArgumentCaptor<Query> queryCaptor = ArgumentCaptor.forClass(Query.class);
         com.mongodb.client.result.DeleteResult deleteResult = mock(com.mongodb.client.result.DeleteResult.class);
-        when(mongoTemplate.remove(any(Query.class), eq("forums")))
+        when(mongoTemplate.remove(queryCaptor.capture(), eq("forums")))
                 .thenReturn(deleteResult);
         when(deleteResult.getDeletedCount()).thenReturn(10L);
 
         cascadeDeletionService.hardDeleteOldEntities("forums", 30);
 
-        verify(mongoTemplate).remove(any(Query.class), eq("forums"));
+        Instant expectedCutoff = clock.instant().minusSeconds(30L * 24 * 60 * 60);
+        Document queryDoc = queryCaptor.getValue().getQueryObject();
+        assertEquals(true, queryDoc.get("isDeleted"));
+        Document deletedAtCondition = (Document) queryDoc.get("deletedAt");
+        assertEquals(expectedCutoff, deletedAtCondition.get("$lt"));
     }
 
     @Test

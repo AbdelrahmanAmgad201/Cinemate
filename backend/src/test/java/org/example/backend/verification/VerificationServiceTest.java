@@ -1,5 +1,6 @@
 package org.example.backend.verification;
 
+import org.example.backend.AbstractMySQLIntegrationTest;
 import org.example.backend.BackendApplication;
 import org.example.backend.organization.OrganizationRepository;
 import org.example.backend.security.JWTProvider;
@@ -11,7 +12,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.annotation.Transactional;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -19,9 +19,8 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
 @SpringBootTest(classes = {BackendApplication.class, SecurityConfig.class})
-@ActiveProfiles("test")
 @Transactional
-class VerificationServiceTest {
+class VerificationServiceTest extends AbstractMySQLIntegrationTest {
 
     @Autowired
     private VerificationRepository verificationRepository;

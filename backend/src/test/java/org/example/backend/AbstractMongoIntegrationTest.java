@@ -4,16 +4,14 @@ import org.junit.jupiter.api.AfterEach;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.data.mongodb.core.MongoTemplate;
-import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 
 @SpringBootTest
-@ActiveProfiles("test")
-public abstract class AbstractMongoIntegrationTest {
+public abstract class AbstractMongoIntegrationTest extends AbstractMySQLIntegrationTest {
 
     @DynamicPropertySource
-    static void setProperties(DynamicPropertyRegistry registry) {
+    static void mongoProperties(DynamicPropertyRegistry registry) {
         registry.add("spring.data.mongodb.uri", MongoDBTestContainer::getReplicaSetUrl);
     }
 

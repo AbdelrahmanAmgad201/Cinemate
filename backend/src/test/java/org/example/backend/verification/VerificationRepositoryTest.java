@@ -1,21 +1,20 @@
 package org.example.backend.verification;
 
+import org.example.backend.AbstractMySQLIntegrationTest;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.domain.EntityScan;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
-import org.springframework.test.context.ActiveProfiles;
 
 import java.time.LocalDateTime;
 
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 
 @DataJpaTest
-@ActiveProfiles("test") // <--- make sure this matches your test properties
 @EntityScan(basePackages = "org.example.backend")
 @EnableJpaRepositories(basePackages = "org.example.backend")
-class VerificationRepositoryTest {
+class VerificationRepositoryTest extends AbstractMySQLIntegrationTest {
 
     @Autowired
     private VerificationRepository verificationRepository;

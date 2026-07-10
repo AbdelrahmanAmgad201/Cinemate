@@ -14,8 +14,18 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.http.client.HttpComponentsClientHttpRequestFactory;
 import org.springframework.web.client.RestTemplate;
 
+import java.time.Clock;
+
 @Configuration
 public class AppConfig {
+
+    // Injected wherever "now" needs to be testable (cutoff-date math, timestamps)
+    // instead of called directly via Instant.now()/LocalDateTime.now(), so tests can
+    // fix the clock and assert exact boundary values.
+    @Bean
+    public Clock clock() {
+        return Clock.systemUTC();
+    }
 
     @Bean
     public RestTemplate restTemplate() {

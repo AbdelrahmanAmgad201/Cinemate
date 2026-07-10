@@ -82,10 +82,10 @@
             <scope>runtime</scope>
         </dependency>
 
-        <!-- H2 for MySQL testing -->
+        <!-- Testcontainers for MySQL testing (real MySQL, matches production dialect/constraints) -->
         <dependency>
-            <groupId>com.h2database</groupId>
-            <artifactId>h2</artifactId>
+            <groupId>org.testcontainers</groupId>
+            <artifactId>mysql</artifactId>
             <scope>test</scope>
         </dependency>
 

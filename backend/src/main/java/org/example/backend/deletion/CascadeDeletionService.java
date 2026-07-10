@@ -19,6 +19,7 @@ import org.springframework.data.mongodb.core.query.Update;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
+import java.time.Clock;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -33,13 +34,14 @@ public class CascadeDeletionService {
     private static final int BATCH_SIZE = 100;
     private final PostRepository postRepository;
     private final CommentRepository commentRepository;
+    private final Clock clock;
 
     /**
      * Delete Forum - cascades to Posts, Comments, Votes
      */
     public void deleteForum(ObjectId forumId) {
         log.info("Starting forum deletion: {}", forumId);
-        Instant deletedAt = Instant.now();
+        Instant deletedAt = Instant.now(clock);
 
         // 1. Soft delete the forum itself
         softDeleteEntity("forums", forumId, deletedAt);
@@ -56,7 +58,7 @@ public class CascadeDeletionService {
      */
     public void deletePost(ObjectId postId) {
         log.info("Starting post deletion: {}", postId);
-        Instant deletedAt = Instant.now();
+        Instant deletedAt = Instant.now(clock);
 
         // 1. Soft delete the post itself
         softDeleteEntity("posts", postId, deletedAt);
@@ -70,7 +72,7 @@ public class CascadeDeletionService {
      */
     public void deleteComment(ObjectId commentId) {
         log.info("Starting comment deletion: {}", commentId);
-        Instant deletedAt = Instant.now();
+        Instant deletedAt = Instant.now(clock);
 
         Comment comment = commentRepository.findById(commentId)
                 .orElseThrow(() -> new ResourceNotFoundException("Comment not found"));
@@ -83,7 +85,7 @@ public class CascadeDeletionService {
      */
     public void deleteVote(ObjectId voteId) {
         log.info("Starting vote deletion: {}", voteId);
-        Instant deletedAt = Instant.now();
+        Instant deletedAt = Instant.now(clock);
 
         // Soft delete the vote itself (no cascade needed)
         softDeleteEntity("votes", voteId, deletedAt);
@@ -432,7 +434,7 @@ public class CascadeDeletionService {
      */
     @Async
     public void hardDeleteOldEntities(String collection, int daysOld) {
-        Instant cutoffDate = Instant.now().minusSeconds(daysOld * 24L * 60 * 60);
+        Instant cutoffDate = Instant.now(clock).minusSeconds(daysOld * 24L * 60 * 60);
 
         Query query = new Query(
                 Criteria.where("isDeleted").is(true)
