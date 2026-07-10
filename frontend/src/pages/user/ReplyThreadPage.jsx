@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useContext } from 'react';
 import { useLocation, useParams, useNavigate, Link } from 'react-router-dom';
-import { CommentItem } from '../../components/PostComments';
+import { CommentItem } from '../../components/CommentItem';
 import { getRepliesApi, getPostCommentsApi, addCommentApi } from '../../api/comment-api';
 import { getPostApi } from '../../api/post-api';
 import { PATHS, MAX_LENGTHS } from '../../constants/constants';

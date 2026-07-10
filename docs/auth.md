@@ -12,7 +12,7 @@ Two credentials, with deliberately different lifetimes and jobs:
 |---|---|---|
 | Form | RS256 JWT (signed claims) | opaque 256-bit random string |
 | Lifetime | short (15 min default) | long (7 days default) |
-| Carried in | `Authorization: Bearer …` (from `sessionStorage`) | httpOnly cookie `refresh_token`, `Path=/api/auth/v1` |
+| Carried in | `Authorization: Bearer …` (from an in-memory store) | httpOnly cookie `refresh_token`, `Path=/api/auth/v1` |
 | Verified by | signature only — **no DB, no Redis** | lookup in Redis (`refresh-token:<sha256>`) |
 | Purpose | prove identity on every request | mint new access tokens; the only revocable credential |
 
@@ -78,8 +78,10 @@ Config knobs (`application.properties`, all env-overridable):
 
 ## Frontend flow
 
-- Access token lives in `sessionStorage`; the axios client attaches it as a Bearer
-  header and runs with `withCredentials: true` so the refresh cookie is sent.
+- Access token lives only in memory (`src/auth/tokenStore.js`), never in
+  `sessionStorage`/`localStorage`, so it isn't readable via storage APIs from an
+  injected script. The axios client attaches it as a Bearer header and runs with
+  `withCredentials: true` so the refresh cookie is sent.
 - On any `401`, a response interceptor makes **one** `/refresh` attempt (single-flight,
   so concurrent 401s share it), stores the new access token, and replays the request.
   If refresh fails, the user is signed out.

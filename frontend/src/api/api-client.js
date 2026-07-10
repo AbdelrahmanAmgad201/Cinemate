@@ -1,6 +1,7 @@
 import axios from "axios";
 import  signOutApi from "./sign-out-api.js";
-import {BACKEND_URL, JWT} from "../constants/constants.jsx";
+import {BACKEND_URL} from "../constants/constants.jsx";
+import {getAccessToken, setAccessToken} from "../auth/tokenStore.js";
 
 // Some defaults and base urls / properties to an axios instance
 const api = axios.create({
@@ -11,8 +12,8 @@ const api = axios.create({
 });
 
 api.interceptors.request.use(config => {
-    // Attach the short-lived access token from session storage.
-    const token = sessionStorage.getItem(JWT.STORAGE_NAME);
+    // Attach the short-lived access token held in memory.
+    const token = getAccessToken();
     if (token) {
         config.headers.Authorization = `Bearer ${token}`;
     }
@@ -31,7 +32,7 @@ export function refreshAccessToken() {
             .post(`${BACKEND_URL.BASE_URL}/api/auth/v1/refresh`, {}, { withCredentials: true })
             .then(res => {
                 const token = res.data.accessToken;
-                sessionStorage.setItem(JWT.STORAGE_NAME, token);
+                setAccessToken(token);
                 return token;
             })
             .finally(() => { refreshPromise = null; });

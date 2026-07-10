@@ -1,5 +1,5 @@
 import api from './api-client.js';
-import {JWT} from "../constants/constants.jsx";
+import {setAccessToken} from "../auth/tokenStore.js";
 
 
 export default async function signInApi({email, password, role}) {
@@ -13,7 +13,7 @@ export default async function signInApi({email, password, role}) {
             role: data.role.replace("ROLE_", "")
         }
 
-        sessionStorage.setItem(JWT.STORAGE_NAME, token);
+        setAccessToken(token);
 
         return { success: true, user: user};
     }

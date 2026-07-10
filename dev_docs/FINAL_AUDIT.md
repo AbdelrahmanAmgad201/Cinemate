@@ -12,12 +12,7 @@
 
 Posts/forums block on hate-api inference (200–2000ms CPU, 10s timeout). Comments skip write-time moderation entirely. Single uvicorn worker caps platform to ~2 writes/second. Recommended: decouple into async post-publish moderation with `status=PENDING`, fire-and-forget worker thread, update to `PUBLISHED` on safe result. Combine title+content into single HTTP call.
 
-### FE-01 — JWT Stored in `sessionStorage` (XSS Accessible)
-**Severity:** High | **Effort:** Medium
 
-Any XSS vulnerability leads to token theft. Migrate to `HttpOnly` cookies with `Secure; SameSite=Strict`.
-
----
 
 ## Open High-Priority Issues
 
@@ -91,10 +86,6 @@ Fetches comment → post → forum to check access. Denormalize `postOwnerId` an
 
 Application has no metrics collection, no health indicators beyond static "UP". No way to know RPS, hate-api latency, Redis connectivity, or JVM pressure. See ARC-08.
 
-### FE-NEW-02 — `PostComments.jsx` Is 765 Lines Doing Five Unrelated Jobs
-**Severity:** Low | **Effort:** Medium
-
-Handles user-name cache, comment CRUD, nested reply rendering, vote handling, menu state. Extract `useUserNameCache`, `useCommentVoting`, `CommentItem` component.
 
 ### TEST-01 — `@SpringBootTest` + `@BeforeEach` Mock Override Anti-Pattern
 **Severity:** High | **Effort:** Medium
@@ -102,20 +93,6 @@ Handles user-name cache, comment CRUD, nested reply rendering, vote handling, me
 Full Spring context loads on every test (slow, requires DB), then autowired beans are immediately replaced with mocks (defeating the purpose). 7 of 57 backend tests do this.
 
 **Fix:** Replace with `@ExtendWith(MockitoExtension.class)`, use `@Mock` and `@InjectMocks`.
-
-### TEST-03 — Only One True End-to-End Integration Test
-**Severity:** Medium | **Effort:** High
-
-`ForumPostCommentIntegrationTest` is the only integration test. Cascade deletion (441 lines) has no integration test. `@Async` methods are hard to verify without async integration tests.
-
-**Fix:** Add Testcontainers-based integration tests for cascade deletion, `@Async` methods (using `CompletableFuture` with timeout), watch-party lifecycle.
-
-### HS-05e — Single-Worker Inference Caps Throughput at ~2 Writes/Second
-**Severity:** High | **Effort:** Medium
-
-`hate-api` Dockerfile: `CMD ["uvicorn", "app:app", "--workers", "1"]`. PyTorch inference isn't thread-safe; one worker is technically correct for safety but creates a global throughput ceiling regardless of backend scaling.
-
-**Recommendation:** Commit to one of: (a) multiple workers with model-per-worker (4× RAM); (b) async endpoint with semaphore lock (serialize inference, allow concurrent I/O); (c) GPU (drops CPU inference 200–500ms to <20ms).
 
 ---
 
@@ -141,13 +118,3 @@ Full Spring context loads on every test (slow, requires DB), then autowired bean
 
 ### 7. Observability Is Not Optional In Distributed Systems
 **Lesson:** With four services (backend, watch-party, hate-api, frontend), a user report of "the app is slow" is unanswerable without metrics. Is the backend slow? The hate-api? Network? Just because you can log to stdout doesn't mean you have observability — you need: metrics (latency, throughput, errors), structured logs (queryable by userId, requestId), and tracing (correlating a frontend action to backend calls to microservice calls). This is not a "nice to have" for a polyglot, multi-service system — it's table-stakes for debugging.
-
-### 8. Race Conditions Hide in Read-Modify-Write Patterns
-**Lesson:** Vote counts and comment counters in Cinemate were incrementing via read-modify-write (fetch, compute, write) in several places — invisible race conditions under concurrent load. The fix was always the same: use atomic operations (`MongoDB $inc`, `Redis HINCRBY`). The lesson: make "use the database's atomic operators" a team instinct, not an exception.
-
-### 9. Verification Codes Should Be Tokens, Not Enumerable Integers
-**Lesson:** 6-digit codes are guessable (900k options, guessed in 2.5 hours at 100 req/sec). Use cryptographic tokens (UUID, SecureRandom), store bcrypt hashes, enforce rate limiting. This pattern applies to anything "secret": API keys, temporary codes, session tokens.
-
-### 10. Test Coverage Requires Intentional Design, Not Just Test Count
-**Lesson:** 57 backend test files is a solid starting point, but 7 of them use `@SpringBootTest` + manual mocks (worst of both worlds), and critical paths (security, concurrency, cascade deletion) have zero tests. "We have tests" is not the same as "the critical paths are tested." Recommendation: define "critical" upfront (auth, data integrity, external service failure modes) and ensure 100% coverage on those paths, even if other paths have gaps.
-

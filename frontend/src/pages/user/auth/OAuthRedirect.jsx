@@ -2,8 +2,9 @@ import { useEffect, useContext, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { AuthContext } from '../../../context/AuthContext.jsx';
 import { jwtDecode } from 'jwt-decode';
-import { JWT, PATHS } from '../../../constants/constants.jsx';
+import { PATHS } from '../../../constants/constants.jsx';
 import api from '../../../api/api-client.js';
+import { setAccessToken } from '../../../auth/tokenStore.js';
 import LoadingFallback from '../../../components/LoadingFallback.jsx';
 
 const OAuthRedirect = () => {
@@ -27,7 +28,7 @@ const OAuthRedirect = () => {
         api.post('/auth/v1/oauth-token', { code })
             .then(({ data }) => {
                 const token = data.accessToken;
-                sessionStorage.setItem(JWT.STORAGE_NAME, token);
+                setAccessToken(token);
 
                 const userData = jwtDecode(token); // returns { id, email, role, iat }
 

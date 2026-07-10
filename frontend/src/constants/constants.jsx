@@ -105,10 +105,6 @@ export const PATHS = {
     
 }
 
-export const JWT = {
-    STORAGE_NAME : "CINEMATE_JWT_TOKEN",
-}
-
 export const SESSION_STORAGE = {
     USER_SIDE_BAR_NAME : "CINEMATE_USER_SIDE_BAR",
     ACTIVE_PARTY_KEY: (userId) => `CINEMATE_PARTY_SESSION_USER_${userId}`,

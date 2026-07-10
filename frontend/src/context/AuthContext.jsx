@@ -9,8 +9,9 @@ import signUpUserDetailsApi from '../api/sign-up-user-details-api.js';
 
 import {jwtDecode}  from "jwt-decode";
 import {ToastContext} from "./ToastContext.jsx";
-import {JWT, ROLES} from "../constants/constants.jsx";
+import {ROLES} from "../constants/constants.jsx";
 import {refreshAccessToken} from "../api/api-client.js";
+import {getAccessToken, clearAccessToken} from "../auth/tokenStore.js";
 
 export const AuthContext   = createContext(null);
 
@@ -62,7 +63,7 @@ export default function AuthProvider({ children }){
         signOutApi();
         setUser(null);
         setPendingUser(null);
-        sessionStorage.removeItem(JWT.STORAGE_NAME);
+        clearAccessToken();
     }
 
     const verifyEmail = async ( email, code ) => {
@@ -128,9 +129,9 @@ export default function AuthProvider({ children }){
         };
 
         const bootstrap = async () => {
-            const token = sessionStorage.getItem(JWT.STORAGE_NAME);
+            const token = getAccessToken();
 
-            // 1) A valid, unexpired access token in this tab — use it directly.
+            // 1) A valid, unexpired access token already in memory — use it directly.
             if (token) {
                 try {
                     const userData = jwtDecode(token);
@@ -151,7 +152,7 @@ export default function AuthProvider({ children }){
                 const newToken = await refreshAccessToken();
                 applyToken(newToken);
             } catch {
-                sessionStorage.removeItem(JWT.STORAGE_NAME);
+                clearAccessToken();
                 setUser(null);
             } finally {
                 setLoading(false);

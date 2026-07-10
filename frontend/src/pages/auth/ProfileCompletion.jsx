@@ -4,8 +4,9 @@ import { Calendar } from 'lucide-react';
 import { AuthContext } from '../../context/AuthContext.jsx';
 import { ToastContext } from '../../context/ToastContext.jsx';
 import profileCompletionApi from '../../api/profile-completion-api.js';
-import { PATHS, JWT, MAX_VALUES } from '../../constants/constants.jsx';
+import { PATHS, MAX_VALUES } from '../../constants/constants.jsx';
 import { jwtDecode } from 'jwt-decode';
+import { getAccessToken } from '../../auth/tokenStore.js';
 import AuthLayout from './AuthLayout.jsx';
 import Input from '../../components/ui/Input.jsx';
 import Button from '../../components/ui/Button.jsx';
@@ -42,7 +43,7 @@ const ProfileCompletion = () => {
                 gender: formData.gender,
             });
             if (response.success) {
-                const token = sessionStorage.getItem(JWT.STORAGE_NAME);
+                const token = getAccessToken();
                 const userData = jwtDecode(token);
                 setUser({
                     id: userData.id,

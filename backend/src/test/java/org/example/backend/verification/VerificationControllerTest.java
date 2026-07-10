@@ -43,7 +43,12 @@ class VerificationControllerTest {
 
     @BeforeEach
     void setUp() {
-        // A successful verify issues the refresh cookie; give the builder a real cookie.
+        // A successful verify issues a refresh token then builds a cookie around it.
+        // Both must be stubbed: anyString() doesn't match a null argument, so leaving
+        // issue() unstubbed makes it return null, which then fails to match
+        // build(anyString()) too and falls through to a null cookie.
+        Mockito.when(refreshTokenService.issue(anyString(), anyString()))
+                .thenReturn("mock-refresh");
         Mockito.when(refreshTokenCookie.build(anyString()))
                 .thenReturn(ResponseCookie.from("refresh_token", "mock-refresh").build());
     }

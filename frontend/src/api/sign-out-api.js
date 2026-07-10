@@ -1,5 +1,6 @@
 import api from './api-client.js';
-import {PATHS, JWT} from "../constants/constants.jsx";
+import {PATHS} from "../constants/constants.jsx";
+import {clearAccessToken} from "../auth/tokenStore.js";
 
 
 export default async function signOutApi() {
@@ -8,7 +9,7 @@ export default async function signOutApi() {
     } catch (err) {
         console.log("Error revoking session on logout:", err);
     }
-    sessionStorage.removeItem(JWT.STORAGE_NAME);
+    clearAccessToken();
     window.location.href = PATHS.ROOT;
 }
 

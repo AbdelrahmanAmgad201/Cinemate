@@ -1,22 +1,18 @@
 package org.example.backend.user;
 
 import org.bson.types.ObjectId;
-import org.example.backend.BackendApplication;
 import org.example.backend.security.CredentialsRequest;
 import org.example.backend.security.JWTProvider;
-import org.example.backend.security.SecurityConfig;
 import org.example.backend.verification.Verification;
 import org.example.backend.verification.VerificationService;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.ArgumentCaptor;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.data.mongodb.core.query.Update;
-import org.springframework.test.context.ActiveProfiles;
-import org.springframework.transaction.annotation.Transactional;
 import com.mongodb.client.result.UpdateResult;
 
 import java.time.LocalDate;
@@ -27,34 +23,23 @@ import java.util.Optional;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
-@SpringBootTest(classes = {BackendApplication.class, SecurityConfig.class})
-@ActiveProfiles("test")
-@Transactional
+@ExtendWith(MockitoExtension.class)
 class UserServiceTest {
 
-    @Autowired
+    @Mock
     private UserRepository userRepository;
 
-    @Autowired
+    @Mock
     private VerificationService verificationService;
 
-    @Autowired
+    @Mock
     private JWTProvider jwtProvider;
 
-    @Autowired
-    private UserService userService;
-
+    @Mock
     private MongoTemplate mongoTemplate;
 
-    @BeforeEach
-    void setUp() {
-        userRepository = mock(UserRepository.class);
-        mongoTemplate = mock(MongoTemplate.class);
-        verificationService = mock(VerificationService.class);
-        jwtProvider = mock(JWTProvider.class);
-
-        userService = new UserService(userRepository, verificationService, jwtProvider, mongoTemplate);
-    }
+    @InjectMocks
+    private UserService userService;
 
     // =============== SignUp Tests ===============
     @Test
