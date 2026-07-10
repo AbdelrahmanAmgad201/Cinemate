@@ -24,8 +24,13 @@ import java.time.Instant;
 import static org.assertj.core.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
+// This is a full-context integration test, not a unit test (unlike its sibling
+// *ServiceTest classes) — it exercises real Mongo persistence, sorting, and
+// forum-count denormalization rather than mocking MongoTemplate. Named accordingly
+// so its Docker/Testcontainers dependency and slower runtime are visible, matching
+// the ForumPostCommentIntegrationTest convention.
 @SpringBootTest
-class PostServiceTest extends AbstractMongoIntegrationTest {
+class PostServiceIntegrationTest extends AbstractMongoIntegrationTest {
 
     @Autowired
     private PostService postService;

@@ -1,406 +1,211 @@
 package org.example.backend.movie;
 
-import jakarta.persistence.criteria.*;
+import org.example.backend.AbstractMySQLIntegrationTest;
+import org.example.backend.organization.Organization;
+import org.example.backend.organization.OrganizationRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.data.jpa.domain.Specification;
-import org.springframework.test.context.ActiveProfiles;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.autoconfigure.domain.EntityScan;
+import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.*;
+import java.time.LocalDate;
+import java.util.List;
 
-@ExtendWith(MockitoExtension.class)
-@ActiveProfiles("test")
-class MovieSpecificationTest {
+import static org.assertj.core.api.Assertions.assertThat;
 
-    @Mock
-    private Root<Movie> root;
+/**
+ * Exercises {@link MovieSpecification} against a real database instead of mocking
+ * the JPA Criteria API, so a broken filter/sort actually fails these tests (the
+ * previous mock-based version only checked which CriteriaBuilder methods were
+ * called, and would pass even if the resulting query returned the wrong movies).
+ */
+@DataJpaTest
+@EntityScan(basePackages = "org.example.backend")
+@EnableJpaRepositories(basePackages = "org.example.backend")
+class MovieSpecificationTest extends AbstractMySQLIntegrationTest {
 
-    @Mock
-    private CriteriaQuery<?> query;
+    @Autowired
+    private MovieRepository movieRepository;
 
-    @Mock
-    private CriteriaBuilder criteriaBuilder;
+    @Autowired
+    private OrganizationRepository organizationRepository;
 
-    @Mock
-    private Path<String> namePath;
-
-    @Mock
-    private Path<Genre> genrePath;
-
-    @Mock
-    private Path<Double> ratingPath;
-
-    @Mock
-    private Path<Object> releaseDatePath;
-
-    @Mock
-    private Predicate predicate;
-
-    @Mock
-    private Expression<String> lowerExpression;
-
-    @Mock
-    private Order ascOrder;
-
-    @Mock
-    private Order descOrder;
+    private Movie darkKnight;
+    private Movie inception;
+    private Movie batmanBegins;
+    private Movie matrix;
 
     @BeforeEach
     void setUp() {
-        lenient().when(root.get("name")).thenReturn((Path) namePath);
-        lenient().when(root.get("genre")).thenReturn((Path) genrePath);
-        lenient().when(root.get("averageRating")).thenReturn((Path) ratingPath);
-        lenient().when(root.get("releaseDate")).thenReturn(releaseDatePath);
+        Organization org = organizationRepository.save(
+                Organization.builder().name("Org").email("org@test.com").password("pass").build());
 
-        lenient().when(criteriaBuilder.lower(any())).thenReturn(lowerExpression);
-        lenient().when(criteriaBuilder.like(any(), anyString())).thenReturn(predicate);
-        lenient().when(criteriaBuilder.equal(any(), any())).thenReturn(predicate);
-
-        lenient().when(criteriaBuilder.and(any(Predicate[].class))).thenReturn(predicate);
-        lenient().when(criteriaBuilder.asc(any())).thenReturn(ascOrder);
-        lenient().when(criteriaBuilder.desc(any())).thenReturn(descOrder);
+        darkKnight = movieRepository.save(Movie.builder()
+                .name("The Dark Knight").genre(Genre.ACTION).averageRating(9.0)
+                .releaseDate(LocalDate.of(2008, 7, 18)).organization(org).build());
+        inception = movieRepository.save(Movie.builder()
+                .name("Inception").genre(Genre.SCIFI).averageRating(8.8)
+                .releaseDate(LocalDate.of(2010, 7, 16)).organization(org).build());
+        batmanBegins = movieRepository.save(Movie.builder()
+                .name("Batman Begins").genre(Genre.ACTION).averageRating(8.2)
+                .releaseDate(LocalDate.of(2005, 6, 15)).organization(org).build());
+        matrix = movieRepository.save(Movie.builder()
+                .name("The Matrix").genre(Genre.SCIFI).averageRating(8.7)
+                .releaseDate(LocalDate.of(1999, 3, 31)).organization(org).build());
     }
 
-
-    @Test
-    void testFilterMovies_WithNameFilter() {
-        // Arrange
-        MovieRequestDTO requestDTO = new MovieRequestDTO(
-                "dark knight",
-                null,
-                null,
-                null,
-                0,
-                10
-        );
-
-        // Act
-        Specification<Movie> specification = MovieSpecification.filterMovies(requestDTO);
-        Predicate result = specification.toPredicate(root, query, criteriaBuilder);
-
-        // Assert
-        assertNotNull(result);
-        verify(criteriaBuilder).lower(namePath);
-        verify(criteriaBuilder).like(lowerExpression, "%dark knight%");
-        verify(query).orderBy(descOrder);
+    private Page<Movie> filter(MovieRequestDTO dto) {
+        return movieRepository.findAll(MovieSpecification.filterMovies(dto), PageRequest.of(0, 10));
     }
 
     @Test
-    void testFilterMovies_WithGenreFilter() {
-        // Arrange
-        MovieRequestDTO requestDTO = new MovieRequestDTO(
-                null,
-                Genre.ACTION,
-                null,
-                null,
-                0,
-                10
-        );
+    void filterMovies_ByPartialCaseInsensitiveName_ReturnsOnlyMatches() {
+        MovieRequestDTO dto = new MovieRequestDTO("dark", null, null, null, 0, 10);
 
-        // Act
-        Specification<Movie> specification = MovieSpecification.filterMovies(requestDTO);
-        Predicate result = specification.toPredicate(root, query, criteriaBuilder);
+        Page<Movie> result = filter(dto);
 
-        // Assert
-        assertNotNull(result);
-        verify(criteriaBuilder).equal(genrePath, Genre.ACTION);
-        verify(query).orderBy(descOrder);
+        assertThat(result.getContent()).containsExactly(darkKnight);
     }
 
     @Test
-    void testFilterMovies_WithNameAndGenreFilters() {
-        // Arrange
-        MovieRequestDTO requestDTO = new MovieRequestDTO(
-                "dark",
-                Genre.ACTION,
-                null,
-                null,
-                0,
-                10
-        );
+    void filterMovies_ByUppercaseNameQuery_StillMatchesLowercaseTitle() {
+        MovieRequestDTO dto = new MovieRequestDTO("DARK KNIGHT", null, null, null, 0, 10);
 
-        // Act
-        Specification<Movie> specification = MovieSpecification.filterMovies(requestDTO);
-        Predicate result = specification.toPredicate(root, query, criteriaBuilder);
+        Page<Movie> result = filter(dto);
 
-        // Assert
-        assertNotNull(result);
-        verify(criteriaBuilder).lower(namePath);
-        verify(criteriaBuilder).like(lowerExpression, "%dark%");
-        verify(criteriaBuilder).equal(genrePath, Genre.ACTION);
-        verify(query).orderBy(descOrder);
+        assertThat(result.getContent()).containsExactly(darkKnight);
     }
 
     @Test
-    void testFilterMovies_SortByRatingAscending() {
-        // Arrange
-        MovieRequestDTO requestDTO = new MovieRequestDTO(
-                null,
-                null,
-                "rating",
-                "asc",
-                0,
-                10
-        );
+    void filterMovies_ByGenre_ReturnsOnlyThatGenreOrderedByDefaultSort() {
+        MovieRequestDTO dto = new MovieRequestDTO(null, Genre.ACTION, null, null, 0, 10);
 
-        // Act
-        Specification<Movie> specification = MovieSpecification.filterMovies(requestDTO);
-        Predicate result = specification.toPredicate(root, query, criteriaBuilder);
+        Page<Movie> result = filter(dto);
 
-        // Assert
-        assertNotNull(result);
-        verify(criteriaBuilder).asc(ratingPath);
-        verify(query).orderBy(ascOrder);
+        // Default sort is releaseDate desc: Dark Knight (2008) before Batman Begins (2005).
+        assertThat(result.getContent()).containsExactly(darkKnight, batmanBegins);
     }
 
     @Test
-    void testFilterMovies_SortByRatingDescending() {
-        // Arrange
-        MovieRequestDTO requestDTO = new MovieRequestDTO(
-                null,
-                null,
-                "rating",
-                "desc",
-                0,
-                10
-        );
+    void filterMovies_ByNameAndGenreCombined_AppliesBothFilters() {
+        MovieRequestDTO dto = new MovieRequestDTO("batman", Genre.ACTION, null, null, 0, 10);
 
-        // Act
-        Specification<Movie> specification = MovieSpecification.filterMovies(requestDTO);
-        Predicate result = specification.toPredicate(root, query, criteriaBuilder);
+        Page<Movie> result = filter(dto);
 
-        // Assert
-        assertNotNull(result);
-        verify(criteriaBuilder).desc(ratingPath);
-        verify(query).orderBy(descOrder);
+        assertThat(result.getContent()).containsExactly(batmanBegins);
     }
 
     @Test
-    void testFilterMovies_SortByReleaseDateAscending() {
-        // Arrange
-        MovieRequestDTO requestDTO = new MovieRequestDTO(
-                null,
-                null,
-                "releaseDate",
-                "asc",
-                0,
-                10
-        );
+    void filterMovies_ByNameMatchingWrongGenre_ReturnsEmpty() {
+        MovieRequestDTO dto = new MovieRequestDTO("batman", Genre.SCIFI, null, null, 0, 10);
 
-        // Act
-        Specification<Movie> specification = MovieSpecification.filterMovies(requestDTO);
-        Predicate result = specification.toPredicate(root, query, criteriaBuilder);
+        Page<Movie> result = filter(dto);
 
-        // Assert
-        assertNotNull(result);
-        verify(criteriaBuilder).asc(releaseDatePath);
-        verify(query).orderBy(ascOrder);
+        assertThat(result.getContent()).isEmpty();
     }
 
     @Test
-    void testFilterMovies_SortByReleaseDateDescending() {
-        // Arrange
-        MovieRequestDTO requestDTO = new MovieRequestDTO(
-                null,
-                null,
-                "release_date",
-                "desc",
-                0,
-                10
-        );
+    void filterMovies_SortByRatingAscending_OrdersLowestFirst() {
+        MovieRequestDTO dto = new MovieRequestDTO(null, null, "rating", "asc", 0, 10);
 
-        // Act
-        Specification<Movie> specification = MovieSpecification.filterMovies(requestDTO);
-        Predicate result = specification.toPredicate(root, query, criteriaBuilder);
+        Page<Movie> result = filter(dto);
 
-        // Assert
-        assertNotNull(result);
-        verify(criteriaBuilder).desc(releaseDatePath);
-        verify(query).orderBy(descOrder);
+        assertThat(result.getContent()).containsExactly(batmanBegins, matrix, inception, darkKnight);
     }
 
     @Test
-    void testFilterMovies_SortByNameAscending() {
-        // Arrange
-        MovieRequestDTO requestDTO = new MovieRequestDTO(
-                null,
-                null,
-                "name",
-                "asc",
-                0,
-                10
-        );
+    void filterMovies_SortByRatingDescending_OrdersHighestFirst() {
+        MovieRequestDTO dto = new MovieRequestDTO(null, null, "rating", "desc", 0, 10);
 
-        // Act
-        Specification<Movie> specification = MovieSpecification.filterMovies(requestDTO);
-        Predicate result = specification.toPredicate(root, query, criteriaBuilder);
+        Page<Movie> result = filter(dto);
 
-        // Assert
-        assertNotNull(result);
-        verify(criteriaBuilder).asc(namePath);
-        verify(query).orderBy(ascOrder);
+        assertThat(result.getContent()).containsExactly(darkKnight, inception, matrix, batmanBegins);
     }
 
     @Test
-    void testFilterMovies_SortByNameDescending() {
-        // Arrange
-        MovieRequestDTO requestDTO = new MovieRequestDTO(
-                null,
-                null,
-                "name",
-                "desc",
-                0,
-                10
-        );
+    void filterMovies_SortByReleaseDateAscending_OldestFirst() {
+        MovieRequestDTO dto = new MovieRequestDTO(null, null, "releaseDate", "asc", 0, 10);
 
-        // Act
-        Specification<Movie> specification = MovieSpecification.filterMovies(requestDTO);
-        Predicate result = specification.toPredicate(root, query, criteriaBuilder);
+        Page<Movie> result = filter(dto);
 
-        // Assert
-        assertNotNull(result);
-        verify(criteriaBuilder).desc(namePath);
-        verify(query).orderBy(descOrder);
+        assertThat(result.getContent()).containsExactly(matrix, batmanBegins, darkKnight, inception);
     }
 
     @Test
-    void testFilterMovies_DefaultSortWhenNoSortProvided() {
-        // Arrange
-        MovieRequestDTO requestDTO = new MovieRequestDTO(
-                null,
-                null,
-                null,
-                null,
-                0,
-                10
-        );
+    void filterMovies_SortByReleaseDateUnderscoreAlias_NewestFirst() {
+        MovieRequestDTO dto = new MovieRequestDTO(null, null, "release_date", "desc", 0, 10);
 
-        // Act
-        Specification<Movie> specification = MovieSpecification.filterMovies(requestDTO);
-        Predicate result = specification.toPredicate(root, query, criteriaBuilder);
+        Page<Movie> result = filter(dto);
 
-        // Assert
-        assertNotNull(result);
-        verify(criteriaBuilder).desc(releaseDatePath);
-        verify(query).orderBy(descOrder);
+        assertThat(result.getContent()).containsExactly(inception, darkKnight, batmanBegins, matrix);
     }
 
     @Test
-    void testFilterMovies_DefaultSortWhenInvalidSortProvided() {
-        // Arrange
-        MovieRequestDTO requestDTO = new MovieRequestDTO(
-                null,
-                null,
-                "invalidSort",
-                "asc",
-                0,
-                10
-        );
+    void filterMovies_SortByNameAscending_IsAlphabetical() {
+        MovieRequestDTO dto = new MovieRequestDTO(null, null, "name", "asc", 0, 10);
 
-        // Act
-        Specification<Movie> specification = MovieSpecification.filterMovies(requestDTO);
-        Predicate result = specification.toPredicate(root, query, criteriaBuilder);
+        Page<Movie> result = filter(dto);
 
-        // Assert
-        assertNotNull(result);
-        verify(criteriaBuilder).desc(releaseDatePath);
-        verify(query).orderBy(descOrder);
+        assertThat(result.getContent())
+                .extracting(Movie::getName)
+                .containsExactly("Batman Begins", "Inception", "The Dark Knight", "The Matrix");
     }
 
     @Test
-    void testFilterMovies_WithEmptyNameString() {
-        // Arrange
-        MovieRequestDTO requestDTO = new MovieRequestDTO(
-                "   ",
-                null,
-                null,
-                null,
-                0,
-                10
-        );
+    void filterMovies_DefaultSort_IsReleaseDateDescending() {
+        MovieRequestDTO dto = new MovieRequestDTO(null, null, null, null, 0, 10);
 
-        // Act
-        Specification<Movie> specification = MovieSpecification.filterMovies(requestDTO);
-        Predicate result = specification.toPredicate(root, query, criteriaBuilder);
+        Page<Movie> result = filter(dto);
 
-        // Assert
-        assertNotNull(result);
-        verify(criteriaBuilder, never()).like(any(), anyString());
-        verify(query).orderBy(descOrder);
+        assertThat(result.getContent()).containsExactly(inception, darkKnight, batmanBegins, matrix);
     }
 
     @Test
-    void testFilterMovies_WithEmptySortByString() {
-        // Arrange
-        MovieRequestDTO requestDTO = new MovieRequestDTO(
-                null,
-                null,
-                "   ",
-                "asc",
-                0,
-                10
-        );
+    void filterMovies_InvalidSortKey_FallsBackToDefaultSort() {
+        MovieRequestDTO dto = new MovieRequestDTO(null, null, "invalidSort", "asc", 0, 10);
 
-        // Act
-        Specification<Movie> specification = MovieSpecification.filterMovies(requestDTO);
-        Predicate result = specification.toPredicate(root, query, criteriaBuilder);
+        Page<Movie> result = filter(dto);
 
-        // Assert
-        assertNotNull(result);
-        verify(criteriaBuilder).desc(releaseDatePath);
-        verify(query).orderBy(descOrder);
+        assertThat(result.getContent()).containsExactly(inception, darkKnight, batmanBegins, matrix);
     }
 
     @Test
-    void testFilterMovies_AllFiltersAndSorting() {
-        // Arrange
-        MovieRequestDTO requestDTO = new MovieRequestDTO(
-                "inception",
-                Genre.SCIFI,
-                "rating",
-                "desc",
-                0,
-                10
-        );
+    void filterMovies_BlankNameString_AppliesNoNameFilter() {
+        MovieRequestDTO dto = new MovieRequestDTO("   ", null, null, null, 0, 10);
 
-        // Act
-        Specification<Movie> specification = MovieSpecification.filterMovies(requestDTO);
-        Predicate result = specification.toPredicate(root, query, criteriaBuilder);
+        Page<Movie> result = filter(dto);
 
-        // Assert
-        assertNotNull(result);
-        verify(criteriaBuilder).lower(namePath);
-        verify(criteriaBuilder).like(lowerExpression, "%inception%");
-        verify(criteriaBuilder).equal(genrePath, Genre.SCIFI);
-        verify(criteriaBuilder).desc(ratingPath);
-        verify(query).orderBy(descOrder);
+        assertThat(result.getContent()).hasSize(4);
     }
 
     @Test
-    void testFilterMovies_CaseInsensitiveNameSearch() {
-        // Arrange
-        MovieRequestDTO requestDTO = new MovieRequestDTO(
-                "DARK KNIGHT",
-                null,
-                null,
-                null,
-                0,
-                10
-        );
+    void filterMovies_BlankSortByString_FallsBackToDefaultSort() {
+        MovieRequestDTO dto = new MovieRequestDTO(null, null, "   ", "asc", 0, 10);
 
-        // Act
-        Specification<Movie> specification = MovieSpecification.filterMovies(requestDTO);
-        Predicate result = specification.toPredicate(root, query, criteriaBuilder);
+        Page<Movie> result = filter(dto);
 
-        // Assert
-        assertNotNull(result);
-        verify(criteriaBuilder).lower(namePath);
-        verify(criteriaBuilder).like(lowerExpression, "%dark knight%");
+        assertThat(result.getContent()).containsExactly(inception, darkKnight, batmanBegins, matrix);
+    }
+
+    @Test
+    void filterMovies_NameGenreAndSortCombined() {
+        MovieRequestDTO dto = new MovieRequestDTO(null, Genre.SCIFI, "rating", "asc", 0, 10);
+
+        Page<Movie> result = filter(dto);
+
+        assertThat(result.getContent()).containsExactly(matrix, inception);
+    }
+
+    @Test
+    void filterMovies_NoNameMatch_ReturnsEmptyPage() {
+        MovieRequestDTO dto = new MovieRequestDTO("nonexistent title", null, null, null, 0, 10);
+
+        Page<Movie> result = filter(dto);
+
+        assertThat(result.getContent()).isEmpty();
     }
 }

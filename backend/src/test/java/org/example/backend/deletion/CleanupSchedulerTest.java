@@ -1,7 +1,5 @@
-
 package org.example.backend.deletion;
 
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -21,29 +19,8 @@ class CleanupSchedulerTest {
     @InjectMocks
     private CleanupScheduler cleanupScheduler;
 
-    @BeforeEach
-    void setUp() {
-        // Reset mocks before each test
-        reset(deletionService);
-    }
-
     @Test
-    void cleanupSoftDeletedData_CallsAllCollections() {
-        doNothing().when(deletionService).hardDeleteOldEntities(anyString(), anyInt());
-
-        cleanupScheduler.cleanupSoftDeletedData();
-
-        verify(deletionService).hardDeleteOldEntities("forums", 30);
-        verify(deletionService).hardDeleteOldEntities("posts", 30);
-        verify(deletionService).hardDeleteOldEntities("comments", 30);
-        verify(deletionService).hardDeleteOldEntities("votes", 30);
-        verifyNoMoreInteractions(deletionService);
-    }
-
-    @Test
-    void cleanupSoftDeletedData_CallsInCorrectOrder() {
-        doNothing().when(deletionService).hardDeleteOldEntities(anyString(), anyInt());
-
+    void cleanupSoftDeletedData_PurgesAllFourCollectionsWithThirtyDayRetentionInOrder() {
         cleanupScheduler.cleanupSoftDeletedData();
 
         var inOrder = inOrder(deletionService);
@@ -51,27 +28,6 @@ class CleanupSchedulerTest {
         inOrder.verify(deletionService).hardDeleteOldEntities("posts", 30);
         inOrder.verify(deletionService).hardDeleteOldEntities("comments", 30);
         inOrder.verify(deletionService).hardDeleteOldEntities("votes", 30);
-    }
-
-    @Test
-    void cleanupSoftDeletedData_Uses30DaysForAll() {
-        doNothing().when(deletionService).hardDeleteOldEntities(anyString(), anyInt());
-
-        cleanupScheduler.cleanupSoftDeletedData();
-
-        verify(deletionService, times(4)).hardDeleteOldEntities(anyString(), eq(30));
-    }
-
-
-    @Test
-    void cleanupSoftDeletedData_AllCollections_CalledExactlyOnce() {
-        doNothing().when(deletionService).hardDeleteOldEntities(anyString(), anyInt());
-
-        cleanupScheduler.cleanupSoftDeletedData();
-
-        verify(deletionService, times(1)).hardDeleteOldEntities("forums", 30);
-        verify(deletionService, times(1)).hardDeleteOldEntities("posts", 30);
-        verify(deletionService, times(1)).hardDeleteOldEntities("comments", 30);
-        verify(deletionService, times(1)).hardDeleteOldEntities("votes", 30);
+        verifyNoMoreInteractions(deletionService);
     }
 }
