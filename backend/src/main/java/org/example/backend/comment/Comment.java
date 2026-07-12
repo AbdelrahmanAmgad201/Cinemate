@@ -1,97 +1,85 @@
 package org.example.backend.comment;
 
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-import com.fasterxml.jackson.databind.ser.std.ToStringSerializer;
+import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.SuperBuilder;
-import org.bson.types.ObjectId;
-import org.example.backend.mongo.SoftDeletableDocument;
-import org.example.backend.vote.Votable;
-import org.springframework.data.annotation.Id;
-import org.springframework.data.mongodb.core.index.CompoundIndex;
-import org.springframework.data.mongodb.core.index.CompoundIndexes;
-import org.springframework.data.mongodb.core.index.Indexed;
-import org.springframework.data.mongodb.core.mapping.Document;
+import org.example.backend.common.SoftDeletable;
+import org.example.backend.moderation.Moderatable;
+import org.example.backend.moderation.ModerationStatus;
+import org.example.backend.util.UuidV7;
 
 import java.time.Instant;
+import java.util.UUID;
 
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @SuperBuilder
-@Document(collection = "comments")
-@CompoundIndexes({
-        @CompoundIndex(name = "post_created", def = "{'postId': 1, 'isDeleted': 1, 'createdAt': 1}"),
-        @CompoundIndex(name = "post_score", def = "{'postId': 1, 'isDeleted': 1, 'score': -1}"),
-        @CompoundIndex(name = "parent_created", def = "{'parentId': 1, 'isDeleted': 1, 'createdAt': 1}")
-})
-public class Comment extends SoftDeletableDocument implements Votable {
+@Entity
+@Table(name = "comments")
+public class Comment extends SoftDeletable implements Moderatable {
 
     @Id
-    @JsonSerialize(using = ToStringSerializer.class)
-    private ObjectId id;
+    @Column(name = "id")
+    private UUID id;
 
-    @Indexed
-    @JsonSerialize(using = ToStringSerializer.class)
-    private ObjectId postId;
+    @Column(name = "post_id", nullable = false)
+    private UUID postId;
 
-    @Indexed
-    @JsonSerialize(using = ToStringSerializer.class)
-    private ObjectId parentId;  // null for top-level comments
+    // null for top-level comments; self-FK with ON DELETE CASCADE in the schema.
+    @Column(name = "parent_id")
+    private UUID parentId;
 
-    @Indexed
-    @JsonSerialize(using = ToStringSerializer.class)
-    private ObjectId ownerId;
+    @Column(name = "owner_id", nullable = false)
+    private Long ownerId;
+    // forum_id / post_owner_id denormalization removed — access checks join
+    // comments -> posts -> forums (cheap on PK/FK).
 
-    // Denormalized from the parent Post at creation time (PERF-06) so
-    // AccessService.canDeleteComment() can check post/forum ownership without chasing
-    // Comment -> Post -> Forum on every call. Null on comments created before this field
-    // existed; canDeleteComment() falls back to the old lookup chain for those.
-    @JsonSerialize(using = ToStringSerializer.class)
-    private ObjectId postOwnerId;
-
-    @Indexed
-    @JsonSerialize(using = ToStringSerializer.class)
-    private ObjectId forumId;
-
+    @Column(nullable = false, columnDefinition = "text")
     private String content;
 
+    @Column(name = "upvote_count", nullable = false, updatable = false)
     @Builder.Default
     private Integer upvoteCount = 0;
 
+    @Column(name = "downvote_count", nullable = false, updatable = false)
     @Builder.Default
     private Integer downvoteCount = 0;
 
+    @Column(name = "score", insertable = false, updatable = false)
+    private Integer score;
+
+    @Column(nullable = false)
     @Builder.Default
-    private Integer score = 0;
+    private Integer depth = 0;   // 0 = top-level, 1 = reply, 2 = nested reply
 
-    @Builder.Default
-    private Integer depth = 0;  // 0 = top-level, 1 = reply, 2 = nested reply
-
-    private Instant createdAt;
-
+    // Direct-children count. Maintained by CommentService via atomic @Modifying increments
+    // (not a trigger — a comments→comments trigger collides with bulk subtree soft-deletes).
+    // updatable=false so an entity flush can't clobber those explicit JPQL updates.
+    @Column(name = "number_of_replies", nullable = false, updatable = false)
     @Builder.Default
     private Integer numberOfReplies = 0;
 
-    @Override
-    public void incrementUpvote() {
-        this.upvoteCount++;
-    }
-    @Override
-    public void incrementDownvote() {
-        this.downvoteCount++;
-    }
-    @Override
-    public void decrementUpvote() {
-        this.upvoteCount--;
-    }
-    @Override
-    public void decrementDownvote() {
-        this.downvoteCount--;
-    }
-    @Override
-    public void updateScore(){
-        this.score = this.upvoteCount - this.downvoteCount;
+    @Column(name = "created_at", nullable = false)
+    private Instant createdAt;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "moderation_status", nullable = false)
+    @Builder.Default
+    private ModerationStatus moderationStatus = ModerationStatus.PENDING;
+
+    @Column(name = "moderation_version", nullable = false)
+    @Builder.Default
+    private long moderationVersion = 1;
+
+    @PrePersist
+    protected void onCreate() {
+        if (id == null) {
+            id = UuidV7.generate();
+        }
+        if (createdAt == null) {
+            createdAt = Instant.now();
+        }
     }
 }

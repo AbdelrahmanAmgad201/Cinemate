@@ -1,28 +1,16 @@
 package org.example.backend.user;
 
-import jakarta.servlet.http.HttpServletRequest;
 import jakarta.transaction.Transactional;
 import lombok.extern.slf4j.Slf4j;
-import org.bson.types.ObjectId;
 import org.example.backend.errorHandler.ResourceNotFoundException;
 import org.example.backend.verification.Verification;
 import org.example.backend.verification.VerificationService;
 import lombok.RequiredArgsConstructor;
 import org.example.backend.security.CredentialsRequest;
 import org.example.backend.security.JWTProvider;
-import org.springframework.data.mongodb.core.MongoTemplate;
-import org.springframework.data.mongodb.core.query.Criteria;
-import org.springframework.data.mongodb.core.query.Query;
-import org.springframework.data.mongodb.core.query.Update;
-import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
-import static org.example.backend.util.IdConverter.longToObjectId;
-import static org.example.backend.util.IdConverter.objectIdToLong;
-
-import java.time.Instant;
 import java.time.LocalDate;
-import java.util.List;
 import java.util.Optional;
 import java.util.Random;
 
@@ -36,24 +24,16 @@ public class UserService {
     private final VerificationService verificationService;
     private final JWTProvider jwtProvider;
 
-    private final MongoTemplate mongoTemplate;
-    private static final int BATCH_SIZE = 100;
-
     /**
-     * Creates a user record. {@code password} MUST already be a BCrypt hash (REL-09) —
-     * the plaintext password isn't available here: it was hashed and discarded before
-     * the verification record that leads to this call was ever created, so this method
-     * cannot hash it itself. Renamed from {@code addUser} specifically to make that
-     * contract explicit at every call site rather than an easy-to-miss doc comment.
+     * Creates a user record. {@code password} MUST already be a BCrypt hash (REL-09).
      */
     public User addUserWithHashedPassword(String email, String hashedPassword) {
         User user = User.builder()
                 .email(email)
                 .password(hashedPassword)
                 .build();
-       return userRepository.save(user);
+        return userRepository.save(user);
     }
-
 
     @Transactional
     public String setUserData(Long userId, UserDataDTO userDataDTO) {
@@ -70,31 +50,26 @@ public class UserService {
         }
 
         userRepository.save(user);
-
         return "User data updated successfully";
     }
 
     @Transactional
-    public String completeProfile(Long userId, ProfileCompletionDTO profileData){
+    public String completeProfile(Long userId, ProfileCompletionDTO profileData) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
         user.setBirthDate(profileData.getBirthday());
-        try{
+        try {
             user.setGender(Gender.valueOf(profileData.getGender().toUpperCase()));
-        } 
-        catch(IllegalArgumentException e){
+        } catch (IllegalArgumentException e) {
             throw new IllegalArgumentException("Invalid gender value");
         }
         user.setProfileComplete(true);
 
         userRepository.save(user);
 
-        // Re-issue the access token so the profileComplete claim flips to true
-        // immediately; the existing refresh cookie stays valid and will pick up the
-        // same change on its next rotation.
+        // Re-issue the access token so the profileComplete claim flips to true immediately.
         return jwtProvider.generateAccessToken(user);
-
     }
 
     @Transactional
@@ -111,15 +86,14 @@ public class UserService {
             return verificationService.addVerification(email, password, code, role);
         } else {
             throw new RuntimeException(
-                "Failed to send verification email to " + email + ". Please try again later.");
+                    "Failed to send verification email to " + email + ". Please try again later.");
         }
     }
-
 
     public Boolean isPublic(Long userId) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found"));
-        return  user.getIsPublic();
+        return user.getIsPublic();
     }
 
     public void setIsPublic(Long userId, Boolean isPublic) {
@@ -132,10 +106,9 @@ public class UserService {
 
     @Transactional
     public void updateAbout(Long userId, AboutDTO aboutDTO) {
-        String about = aboutDTO.getAbout();
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found"));
-        user.setAbout(about);
+        user.setAbout(aboutDTO.getAbout());
         userRepository.save(user);
     }
 
@@ -148,87 +121,29 @@ public class UserService {
         userRepository.save(user);
     }
 
+    @Transactional
     public void updateName(Long userId, UserName userName) {
-        String firstName = userName.getFirstName();
-        String lastName = userName.getLastName();
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found"));
-        user.setFirstName(firstName);
-        user.setLastName(lastName);
+        user.setFirstName(userName.getFirstName());
+        user.setLastName(userName.getLastName());
         userRepository.save(user);
-        updatePostsUserName(user);
-    }
-
-    @Async
-    protected void updatePostsUserName(User user) {
-        ObjectId userId = longToObjectId(user.getId());
-        String newName = user.getFirstName()+ " " + user.getLastName();
-        try {
-            // Get all post IDs for this user
-            List<ObjectId> postIds = getIds("posts", Criteria.where("ownerId").is(userId));
-
-            if (postIds.isEmpty()) {
-                return;
-            }
-            int totalPosts = ChangePostsAuthor (postIds, newName);
-        } catch (Exception e) {
-            log.error("Error during posts cascade updating userName: {}",userId, e);
-        }
-    }
-
-    private List<ObjectId> getIds(String collection, Criteria criteria) {
-        Query query = new Query(criteria);
-        List<ObjectId> ids = mongoTemplate.findDistinct(
-                query,
-                "_id",
-                collection,
-                ObjectId.class
-        );
-
-        log.info("Found {} posts to change name for user {}", ids.size(), criteria);
-        return ids;
-    }
-
-    private int ChangePostsAuthor(List<ObjectId> postIds, String newName) {
-        int totalChanged = 0;
-
-        for (int i = 0; i < postIds.size(); i += BATCH_SIZE) {
-            List<ObjectId> batch = postIds.subList(i, Math.min(i + BATCH_SIZE, postIds.size()));
-            long changed = changeAuthorNameBatch("posts", Criteria.where("_id").in(batch), newName);
-            totalChanged += changed;
-            log.debug("change author name batch of {} posts", changed);
-        }
-
-        return totalChanged;
-    }
-
-    private long changeAuthorNameBatch(String collection, Criteria criteria, String newName) {
-        Query query = new Query(criteria);
-        Update update = new Update()
-                .set("authorName", newName);
-
-        return mongoTemplate.updateMulti(query, update, collection).getModifiedCount();
-    }
-
-    public String getUserNameFromObjectUserId(ObjectId objectUserId) {
-        Long userId = objectIdToLong(objectUserId);
-        return getUserName(userId);
+        // No authorName denormalization to sync onto posts anymore — the name is joined.
     }
 
     public String getUserName(Long userId) {
         Optional<User> user = userRepository.findById(userId);
         if (user.isPresent()) {
-            if(user.get().getLastName()==null)
+            if (user.get().getLastName() == null)
                 return user.get().getFirstName();
-            return user.get().getFirstName()+" "+user.get().getLastName();
-        }
-        else  {
+            return user.get().getFirstName() + " " + user.get().getLastName();
+        } else {
             return "Unknown user";
         }
     }
 
     public UserProfileResponseDTO getUserProfile(Long userId) {
-        User user =  userRepository.findById(userId)
+        User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found"));
         return UserProfileResponseDTO.builder()
                 .firstName(user.getFirstName())
@@ -241,5 +156,4 @@ public class UserService {
                 .gender(user.getGender())
                 .build();
     }
-
 }

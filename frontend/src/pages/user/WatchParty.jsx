@@ -95,8 +95,7 @@ export default function WatchParty() {
             // Fetch user data
             setUserId(user.id);
 
-            const hexId = user.id.toString(16).padStart(24, '0');
-            const response = await getModApi({ userId:hexId });
+            const response = await getModApi({ userId: user.id });
             const userName = response.data;
             setUserName(userName);
             setUserColor(generateColorFromUserId(user.id));

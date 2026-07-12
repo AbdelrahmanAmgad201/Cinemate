@@ -2,7 +2,7 @@ package org.example.backend;
 
 import org.junit.jupiter.api.Test;
 
-class BackendApplicationTests extends AbstractMongoIntegrationTest {
+class BackendApplicationTests extends AbstractPostgresIntegrationTest {
 
     @Test
     void contextLoads() {

@@ -1,38 +1,42 @@
 package org.example.backend.forumfollowing;
 
+import jakarta.persistence.*;
 import lombok.*;
-import lombok.experimental.SuperBuilder;
-import org.bson.types.ObjectId;
-import org.example.backend.mongo.SoftDeletableDocument;
-import org.springframework.data.annotation.Id;
-import org.springframework.data.mongodb.core.index.CompoundIndex;
-import org.springframework.data.mongodb.core.index.CompoundIndexes;
-import org.springframework.data.mongodb.core.index.Indexed;
-import org.springframework.data.mongodb.core.mapping.Document;
 
 import java.time.Instant;
+import java.util.UUID;
 
+/**
+ * A user following a forum (table {@code forum_follows}). Hard-deleted now: unfollow
+ * removes the row, follow inserts it (the natural (user, forum) PK makes re-follow a
+ * plain insert). The old Mongo soft-delete + "reactivate in place" only existed to
+ * dodge a unique index — gone.
+ */
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-@SuperBuilder
-@Document(collection = "following")
-@CompoundIndexes({
-        @CompoundIndex(name = "user_forum_unique", def = "{'userId': 1, 'forumId': 1}", unique = true),
-        @CompoundIndex(name = "user_created", def = "{'userId': 1, 'createdAt': -1}")
-})
-public class Following extends SoftDeletableDocument {
+@Builder
+@Entity
+@Table(name = "forum_follows")
+@IdClass(FollowingId.class)
+public class Following {
 
     @Id
-    private ObjectId id;
+    @Column(name = "user_id")
+    private Long userId;
 
-    @Indexed
-    private ObjectId userId;
+    @Id
+    @Column(name = "forum_id")
+    private UUID forumId;
 
-    @Indexed
-    private ObjectId forumId;
-
+    @Column(name = "created_at", nullable = false)
     private Instant createdAt;
 
+    @PrePersist
+    protected void onCreate() {
+        if (createdAt == null) {
+            createdAt = Instant.now();
+        }
+    }
 }

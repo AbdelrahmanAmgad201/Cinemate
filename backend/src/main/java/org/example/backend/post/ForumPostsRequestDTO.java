@@ -4,7 +4,8 @@ import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
 import lombok.Data;
-import org.bson.types.ObjectId;
+
+import java.util.UUID;
 
 @Data
 public class ForumPostsRequestDTO {
@@ -16,7 +17,7 @@ public class ForumPostsRequestDTO {
     private int pageSize;
 
     @NotNull
-    private ObjectId forumId;
+    private UUID forumId;
 
     private String sortBy; // new - old - top
 }

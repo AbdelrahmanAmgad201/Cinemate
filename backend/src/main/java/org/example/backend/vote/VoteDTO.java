@@ -3,13 +3,14 @@ package org.example.backend.vote;
 import jakarta.validation.constraints.NotNull;
 import lombok.Builder;
 import lombok.Data;
-import org.bson.types.ObjectId;
+
+import java.util.UUID;
 
 @Data
 @Builder
 public class VoteDTO {
     @NotNull
-    private ObjectId targetId;
+    private UUID targetId;
 
     @NotNull
     private Integer value;

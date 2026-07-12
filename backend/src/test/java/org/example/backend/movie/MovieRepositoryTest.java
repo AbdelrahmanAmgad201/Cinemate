@@ -1,6 +1,6 @@
 package org.example.backend.movie;
 
-import org.example.backend.AbstractMySQLIntegrationTest;
+import org.example.backend.AbstractPostgresIntegrationTest;
 import org.example.backend.admin.Admin;
 import org.example.backend.admin.AdminRepository;
 import org.example.backend.likedMovie.LikedMovie;
@@ -25,7 +25,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 @DataJpaTest
 @EntityScan(basePackages = "org.example.backend")
 @EnableJpaRepositories(basePackages = "org.example.backend")
-class MovieRepositoryTest extends AbstractMySQLIntegrationTest {
+class MovieRepositoryTest extends AbstractPostgresIntegrationTest {
 
     @Autowired
     private MovieRepository movieRepository;

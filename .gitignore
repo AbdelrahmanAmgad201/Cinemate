@@ -7,7 +7,7 @@ CLAUDE.md
 
 # Python cache
 /model-api/__pycache__
-hate-api/__pycache__/
+Content-moderator/**/__pycache__/
 
 # ── Secret env files (never commit these) ────────────────────────────────────
 # Root Compose secrets

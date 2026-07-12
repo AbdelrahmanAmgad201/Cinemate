@@ -1,6 +1,6 @@
 package org.example.backend.verification;
 
-import org.example.backend.AbstractMySQLIntegrationTest;
+import org.example.backend.AbstractPostgresIntegrationTest;
 import org.example.backend.BackendApplication;
 import org.example.backend.organization.OrganizationRepository;
 import org.example.backend.security.JWTProvider;
@@ -20,7 +20,7 @@ import static org.mockito.Mockito.when;
 
 @SpringBootTest(classes = {BackendApplication.class, SecurityConfig.class})
 @Transactional
-class VerificationServiceTest extends AbstractMySQLIntegrationTest {
+class VerificationServiceTest extends AbstractPostgresIntegrationTest {
 
     @Autowired
     private VerificationRepository verificationRepository;

@@ -2,7 +2,7 @@ package org.example.backend.post;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
-import org.bson.types.ObjectId;
+import java.util.UUID;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Page;
@@ -22,20 +22,20 @@ public class PostController {
     public ResponseEntity<String> addPost(HttpServletRequest request, @Valid @RequestBody AddPostDTO addPostDto) {
         Long userId = (Long) request.getAttribute("userId");
         Post post = postService.addPost(addPostDto, userId);
-        ObjectId postId = post.getId();
-        return ResponseEntity.ok(postId.toHexString());
+        UUID postId = post.getId();
+        return ResponseEntity.ok(postId.toString());
     }
 
     @PutMapping("/v1/post/{postId}")
-    public ResponseEntity<String> updatePost(HttpServletRequest request, @PathVariable ObjectId postId,
+    public ResponseEntity<String> updatePost(HttpServletRequest request, @PathVariable UUID postId,
             @Valid @RequestBody AddPostDTO addPostDto) {
         Long userId = (Long) request.getAttribute("userId");
         postService.updatePost(postId, addPostDto, userId);
-        return ResponseEntity.ok(postId.toHexString());
+        return ResponseEntity.ok(postId.toString());
     }
 
     @DeleteMapping("/v1/post/{postId}")
-    public ResponseEntity<String> deletePost(HttpServletRequest request, @PathVariable ObjectId postId) {
+    public ResponseEntity<String> deletePost(HttpServletRequest request, @PathVariable UUID postId) {
         Long userId = (Long) request.getAttribute("userId");
         postService.deletePost(postId, userId);
         return ResponseEntity.ok("deleted");
@@ -56,7 +56,7 @@ public class PostController {
     }
 
     @GetMapping("/v1/{postId}")
-    public ResponseEntity<PostView> getPost(HttpServletRequest request, @PathVariable ObjectId postId) {
+    public ResponseEntity<PostView> getPost(HttpServletRequest request, @PathVariable UUID postId) {
         return ResponseEntity.ok(postService.getPostById(postId));
     }
 

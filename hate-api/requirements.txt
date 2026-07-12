@@ -1,8 +1,0 @@
-# Pinned versions — do not upgrade without testing the full Docker build.
-# Root cause: transformers>=4.52 requires torch>=2.7 (for float8_e8m0fnu dtype),
-# but the CPU torch whl only provides torch 2.5.x. Pin both together.
-nltk==3.9.1
-fastapi==0.115.12
-uvicorn==0.34.2
-torch==2.5.1
-transformers==4.47.1

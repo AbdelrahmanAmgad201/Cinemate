@@ -239,10 +239,9 @@ export const CommentItem = ({ comment, post, postOwnerId, onVoteUpdate, onRemove
         }
         setSubmittingReply(true);
         const nowIso = new Date().toISOString();
-        const ownerHex = user?.id ? user.id.toString(16).padStart(24, '0') : '0'.padStart(24, '0');
         const optimisticReply = {
             id: Math.random().toString(36).slice(2) + nowIso, // temp id
-            ownerId: ownerHex,
+            ownerId: user?.id ?? null,
             postId: comment.postId,
             parentId: comment.id,
             content: replyText.trim(),

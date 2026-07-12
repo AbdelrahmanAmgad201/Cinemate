@@ -1,28 +1,29 @@
 services:
-  # MySQL Database
-  mysql:
-    image: mysql:8.0
-    container_name: mysql
+  # PostgreSQL — the single source of truth for ALL application data (identity,
+  # catalog, social content, moderation outbox, auth tokens). Replaced the previous
+  # MySQL + MongoDB split (see dev_docs/postgres-consolidation.md). No replica set,
+  # no second store, no cross-database transaction boundary.
+  postgres:
+    image: postgres:16
+    container_name: postgres
     restart: unless-stopped
     environment:
-      MYSQL_DATABASE: ${MYSQL_DATABASE:-Cinemate}
-      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
-      MYSQL_ROOT_HOST: "%"
+      POSTGRES_DB: ${POSTGRES_DB:-Cinemate}
+      POSTGRES_USER: ${POSTGRES_USER:-cinemate}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     volumes:
-      - mysql-data:/var/lib/mysql
+      - postgres-data:/var/lib/postgresql/data
     ports:
-      - "3307:3306"  # Changed to avoid conflict with local MySQL
+      - "5433:5432"  # dev access only; avoids clashing with a local Postgres on 5432
     networks:
       - app-net
     healthcheck:
-      test: ["CMD-SHELL", "mysqladmin ping -h localhost -p${MYSQL_ROOT_PASSWORD} || exit 1"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-cinemate} -d ${POSTGRES_DB:-Cinemate}"]
       interval: 10s
       timeout: 5s
       retries: 10
-      start_period: 40s
-    command: --default-authentication-plugin=mysql_native_password
-    # §11.4: previously only hate-api had a resource ceiling — a runaway query or
-    # unbounded aggregation on any of the databases could otherwise consume unbounded
+      start_period: 20s
+    # §11.4: a runaway query or unbounded aggregation could otherwise consume unbounded
     # host memory with nothing to stop it.
     deploy:
       resources:
@@ -30,56 +31,68 @@ services:
           cpus: '2'
           memory: 1G
 
-  # MongoDB Database
-  mongodb:
-    image: mongo:6
-    container_name: mongodb
+  # Kafka — the moderation pipeline's durable, replayable log (single-node KRaft).
+  # Internal only: an unauthenticated broker exposed on the host is a data-loss
+  # vector, same reasoning as the internal Redis instances. Topics are created by
+  # the backend's KafkaAdmin at startup (auto-create is off so partition counts
+  # stay deliberate). Single node ⇒ replication settings are all 1; a real
+  # cluster would run RF=3 / min.insync.replicas=2.
+  kafka:
+    image: apache/kafka:3.9.1
+    container_name: kafka
     restart: unless-stopped
+    expose:
+      - "9092"
     environment:
-      MONGO_INITDB_DATABASE: Cinemate2
+      KAFKA_NODE_ID: 1
+      KAFKA_PROCESS_ROLES: broker,controller
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka:9093
+      KAFKA_LISTENERS: PLAINTEXT://:9092,CONTROLLER://:9093
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,CONTROLLER:PLAINTEXT
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "false"
+      KAFKA_LOG_DIRS: /var/lib/kafka/data
     volumes:
-      - mongo-data:/data/db
-    ports:
-      - "27018:27017"  # Changed to avoid conflict with local MongoDB
+      - kafka-data:/var/lib/kafka/data
     networks:
       - app-net
     healthcheck:
-      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      test: ["CMD-SHELL", "/opt/kafka/bin/kafka-broker-api-versions.sh --bootstrap-server localhost:9092 >/dev/null 2>&1"]
       interval: 10s
-      timeout: 5s
-      retries: 5
-      start_period: 20s
+      timeout: 10s
+      retries: 10
+      start_period: 30s
     deploy:
       resources:
         limits:
-          cpus: '2'
+          cpus: '1'
           memory: 1G
 
-  # Hate Speech Detection API
-  hate-api:
+  # Content Moderation — ONNX inference worker (Kafka micro-batching consumer).
+  # Stateless; scale horizontally with `docker compose up --scale moderation-worker=N`
+  # (parallelism is bounded by moderation.requests' partition count). Commits offsets
+  # only after verdicts are written; crashes restart and redeliver — at-least-once.
+  moderation-worker:
     build:
-      context: ./hate-api
-      dockerfile: Dockerfile
-    container_name: hate-api
+      context: ./Content-moderator
+      dockerfile: worker/Dockerfile
+      args:
+        HF_MODEL_REPO: ${HF_MODEL_REPO:-minuva/MiniLMv2-toxic-jigaw-lite-onnx}
+        HF_MODEL_REVISION: ${HF_MODEL_REVISION:-82158a0b785a545700601d6a72634528f2b917c2}
     restart: unless-stopped
-    # Internal service: not exposed on the host. Only reachable within app-net.
-    # Remove the comment below and add "- 8000:8000" under 'ports:' only when debugging locally.
-    expose:
-      - "8000"
     environment:
-      - HATE_API_KEY=${HATE_API_KEY}
+      - KAFKA_BOOTSTRAP_SERVERS=kafka:9092
+      - TOXIC_THRESHOLD=${TOXIC_THRESHOLD:-0.5}
+      - SEVERE_TOXIC_THRESHOLD=${SEVERE_TOXIC_THRESHOLD:-0.5}
+    depends_on:
+      kafka:
+        condition: service_healthy
     networks:
       - app-net
-    volumes:
-      - hate-api-models:/models
-      - hate-api-nltk:/nltk_data
-
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/api/hate/v1/health"]
-      interval: 15s
-      timeout: 10s
-      retries: 5
-      start_period: 90s  # Model loading takes time
     deploy:
       resources:
         limits:
@@ -106,6 +119,13 @@ services:
       - JAVA_OPTS=-Xmx512m -Xms256m
       - WATCHPARTY_SERVICE_URL=http://watch-party:8081
       - WATCHPARTY_WS_URL=ws://watch-party:8081/ws
+      # Moderation pipeline (Kafka). The transactional outbox now commits the content
+      # row + outbox row in one ordinary Postgres transaction — no replica set required.
+      - KAFKA_BOOTSTRAP_SERVERS=kafka:9092
+      # Single Postgres datasource for everything.
+      - DB_URL=jdbc:postgresql://postgres:5432/${POSTGRES_DB:-Cinemate}
+      - DB_USERNAME=${POSTGRES_USER:-cinemate}
+      - DB_PASSWORD=${POSTGRES_PASSWORD}
       # These flow in from the root .env file — they override backend/.env.prod values of the same name.
       # FRONTEND_URL / BASE_URL are the gateway origin now (single entry point): the OAuth
       # redirect + the post-login SPA redirect both go through the gateway.
@@ -115,23 +135,14 @@ services:
       # over http://localhost). CORS on the backend is gone — the gateway owns the edge.
       - AUTH_COOKIE_SECURE=false
       - AUTH_COOKIE_SAME_SITE=Lax
-      # DB_PASSWORD must match MYSQL_ROOT_PASSWORD — source from root .env to keep them in sync
-      - DB_PASSWORD=${MYSQL_ROOT_PASSWORD}
-      # Dedicated cache instance (ARC-06) — deliberately NOT the `redis` service
-      # watch-party uses, see the comments on both services above.
-      - REDIS_CACHE_HOST=redis-cache
-      - REDIS_CACHE_PORT=6379
     depends_on:
-      mysql:
-        condition: service_healthy
-      mongodb:
+      postgres:
         condition: service_healthy
       watch-party:
         condition: service_healthy
-      redis-cache:
-        condition: service_healthy
-      # hate-api intentionally excluded: backend degrades gracefully when moderation is unavailable.
-      # See HateSpeechService for the fail-open fallback.
+      # kafka intentionally excluded: content publishes optimistically, the outbox
+      # relay just retries until the broker is back — the backend must boot and
+      # serve writes even when the moderation pipeline is down.
     networks:
       - app-net
     healthcheck:
@@ -202,8 +213,10 @@ services:
       # Public half of the RS256 keypair — the gateway verifies access tokens with
       # it (can validate, never mint). Same value the backend signs with.
       - JWT_PUBLIC_KEY=${JWT_PUBLIC_KEY}
-      # Redis for the rate-limiter's token buckets (reuses the cache instance).
-      - REDIS_HOST=redis-cache
+      # Redis for the rate-limiter's token buckets. This is the ONLY Redis the app
+      # keeps now: a per-request hot counter shared across gateway replicas, which is
+      # exactly Redis's sweet spot and a poor fit for Postgres.
+      - REDIS_HOST=redis-ratelimit
       - REDIS_PORT=6379
     depends_on:
       backend:
@@ -212,7 +225,7 @@ services:
         condition: service_healthy
       frontend:
         condition: service_healthy
-      redis-cache:
+      redis-ratelimit:
         condition: service_healthy
     networks:
       - app-net
@@ -229,7 +242,7 @@ services:
           memory: 512M
 
   # Watch-party's main store of live party state — not a cache, must not lose data.
-  # Internal only (no host port, same pattern as watch-party/hate-api): an
+  # Internal only (no host port, same pattern as watch-party): an
   # unauthenticated Redis exposed on the host is itself a data-loss vector.
   redis:
     image: redis:7
@@ -259,23 +272,19 @@ services:
           cpus: '1'
           memory: 512M
 
-  # Backend's response cache (explore feed/forums) — pure cache, not a source of
-  # truth. Separate instance from `redis` above on purpose: a cache wants eviction
-  # under memory pressure and doesn't need durability; watch-party's store wants
-  # the opposite. Sharing one instance risks a cache eviction storm quietly
-  # discarding live party state, or an AOF fsync tax on every cache write for
-  # data that doesn't need it.
-  redis-cache:
+  # Gateway rate-limiter's token-bucket store (Bucket4j). Evictable, non-durable —
+  # losing a bucket just resets a client's window, never an incident. Kept separate
+  # from watch-party's durable `redis` on purpose (conflicting eviction/durability
+  # needs). This replaced the old `redis-cache` instance, which also backed the
+  # backend response cache + refresh tokens; both of those moved into Postgres, so
+  # rate-limiting is all that remains on Redis.
+  redis-ratelimit:
     image: redis:7
-    container_name: redis-cache
+    container_name: redis-ratelimit
     restart: unless-stopped
     expose:
       - "6379"
-    # No persistence (--save "" disables RDB, appendonly no disables AOF) and a
-    # capped, evictable memory budget — losing every cached entry on restart is a
-    # cold-cache blip, not an incident. maxmemory-policy allkeys-lru evicts the
-    # least-recently-used entries once the cap is hit instead of erroring.
-    command: redis-server --maxmemory 256mb --maxmemory-policy allkeys-lru --save "" --appendonly no
+    command: redis-server --maxmemory 128mb --maxmemory-policy allkeys-lru --save "" --appendonly no
     networks:
       - app-net
     healthcheck:
@@ -283,13 +292,11 @@ services:
       interval: 5s
       timeout: 3s
       retries: 5
-    # Slightly above the in-process --maxmemory 256mb cap to leave headroom for
-    # Redis's own process overhead.
     deploy:
       resources:
         limits:
           cpus: '1'
-          memory: 384M
+          memory: 256M
 
   # Watch Party Microservice
   watch-party:
@@ -330,14 +337,12 @@ services:
 
 
 volumes:
-  mysql-data:
+  postgres-data:
     driver: local
-  mongo-data:
-    driver: local
-  hate-api-models:
   redis-data:
     driver: local
-  hate-api-nltk:
+  kafka-data:
+    driver: local
 
 networks:
   app-net:

@@ -71,8 +71,6 @@ export async function getForumApi({ forumId }) {
         const response = await api.get(`/forum/v1/get-forum-by-id/${forumId}`);
         // console.log(response.data);
 
-        const normalId = parseInt(response.data.ownerId, 16);
-
         const data = {
             id: response.data.id,
             name: response.data.name,
@@ -80,8 +78,7 @@ export async function getForumApi({ forumId }) {
             createdAt: response.data.createdAt,
             followerCount: response.data.followerCount,
             postCount: response.data.postCount,
-            ownerId24Bit: response.data.ownerId, // TODO: THIS HAS ISSUES
-            ownerId: normalId,
+            ownerId: response.data.ownerId, // plain numeric user id now
         }
         // console.log(data);
         return { success: true, data: data };

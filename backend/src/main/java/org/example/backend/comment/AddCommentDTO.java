@@ -5,15 +5,16 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import lombok.Builder;
 import lombok.Data;
-import org.bson.types.ObjectId;
+
+import java.util.UUID;
 
 @Data
 @Builder
 public class AddCommentDTO {
-    private ObjectId parentId;
+    private UUID parentId;
 
     @NotNull
-    private ObjectId postId;
+    private UUID postId;
 
     @NotBlank
     @Size(max = 2000)

@@ -1,10 +1,9 @@
+// Owner ids are plain numeric user ids now (was a 24-char ObjectId hex fabricated
+// from the user id, which had to be parsed back with base-16). Just coerce to Number.
 export const normalizeId = (id) => {
     if (id === null || id === undefined) return null;
-    if (typeof id === 'number') return id;
     const numeric = Number(id);
-    if (!Number.isNaN(numeric)) return numeric;
-    const hex = parseInt(id, 16);
-    return Number.isNaN(hex) ? null : hex;
+    return Number.isNaN(numeric) ? null : numeric;
 };
 
 export const computeTotalComments = (arr) => {

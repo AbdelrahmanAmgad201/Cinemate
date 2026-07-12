@@ -1,6 +1,6 @@
 package org.example.backend.organization;
 
-import org.example.backend.AbstractMySQLIntegrationTest;
+import org.example.backend.AbstractPostgresIntegrationTest;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.domain.EntityScan;
@@ -14,7 +14,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 @DataJpaTest
 @EntityScan(basePackages = "org.example.backend")
 @EnableJpaRepositories(basePackages = "org.example.backend")
-class OrganizationRepositoryTest extends AbstractMySQLIntegrationTest {
+class OrganizationRepositoryTest extends AbstractPostgresIntegrationTest {
 
     @Autowired
     private OrganizationRepository organizationRepository;

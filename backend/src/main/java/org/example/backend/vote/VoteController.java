@@ -2,7 +2,7 @@ package org.example.backend.vote;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
-import org.bson.types.ObjectId;
+import java.util.UUID;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -46,7 +46,7 @@ public class VoteController {
     @DeleteMapping("/v1/delete-vote/{targetId}")
     public ResponseEntity<?> deleteVote(
             HttpServletRequest request,
-            @PathVariable ObjectId targetId
+            @PathVariable UUID targetId
     ){
         Long userId = (Long) request.getAttribute("userId");
         voteService.deleteVote(targetId,userId);
@@ -56,7 +56,7 @@ public class VoteController {
     @GetMapping("/v1/is-voted/{targetId}")
     public ResponseEntity<Integer> getIsVoted(
             HttpServletRequest request,
-            @PathVariable ObjectId targetId
+            @PathVariable UUID targetId
     ){
         Long userId = (Long) request.getAttribute("userId");
         return ResponseEntity.ok(voteService.isVote(targetId,userId));

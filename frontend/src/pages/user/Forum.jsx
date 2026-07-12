@@ -59,7 +59,7 @@ export default function Forum() {
             setForumCreationDate(new Date(data.createdAt).toDateString());
             setFollowersCount(data.followerCount);
             setPostsCount(data.postCount);
-            const res2 = await getModApi({ userId: data.ownerId24Bit });
+            const res2 = await getModApi({ userId: data.ownerId });
             setModerators([{ id: data.ownerId, username: res2.data, avatar: null }]);
         };
 

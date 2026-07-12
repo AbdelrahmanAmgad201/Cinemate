@@ -36,7 +36,7 @@ public class WatchHistory {
     @Column(name = "watched_at", nullable = false, updatable = false)
     private LocalDateTime watchedAt;
 
-    @Column(name = "is_deleted", columnDefinition = "TINYINT(1)")
+    @Column(name = "is_deleted", nullable = false)
     @Builder.Default
     private Boolean isDeleted = false;
 

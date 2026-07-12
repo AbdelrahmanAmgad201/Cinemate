@@ -2,8 +2,7 @@ package org.example.backend.comment;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
-import org.apache.coyote.Response;
-import org.bson.types.ObjectId;
+import java.util.UUID;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
@@ -21,17 +20,17 @@ public class CommentController {
     public ResponseEntity<String> createComment(HttpServletRequest request, @Valid @RequestBody AddCommentDTO addCommentDTO) {
         Long userId = (Long) request.getAttribute("userId");
         Comment comment=commentService.addComment(userId,addCommentDTO);
-        return ResponseEntity.ok(comment.getId().toHexString());
+        return ResponseEntity.ok(comment.getId().toString());
     }
     @DeleteMapping("/v1/delete-comment/{commentId}")
-    public ResponseEntity<String> deleteComment(HttpServletRequest request, @PathVariable ObjectId commentId) {
+    public ResponseEntity<String> deleteComment(HttpServletRequest request, @PathVariable UUID commentId) {
         Long userId = (Long) request.getAttribute("userId");
         commentService.deleteComment(commentId, userId);
         return ResponseEntity.ok("Comment deleted successfully");
     }
     @GetMapping("/v1/posts/{postId}/comments")
     public ResponseEntity<Page<CommentView>> getAllComments(HttpServletRequest request,
-                                                        @PathVariable ObjectId postId,
+                                                        @PathVariable UUID postId,
                                                         @RequestParam(defaultValue = "0") int page,
                                                         @RequestParam(defaultValue = "20") int size,
                                                         @RequestParam(defaultValue = "score") String sortBy) {
@@ -39,7 +38,7 @@ public class CommentController {
     }
     @GetMapping("/v1/replies/{parentId}")
     public ResponseEntity<List<CommentView>> getAllReplies(HttpServletRequest request,
-                                                       @PathVariable ObjectId parentId,
+                                                       @PathVariable UUID parentId,
                                                        @RequestParam(defaultValue = "score") String sortBy) {
         return ResponseEntity.ok(commentService.getReplies(parentId,sortBy));
     }

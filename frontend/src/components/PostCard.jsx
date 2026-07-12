@@ -118,7 +118,7 @@ const PostCard = ({ postBody, fullMode = false, showForumName = false }) => {
         return () => document.removeEventListener('mousedown', handleClickOutside);
     }, [postOptions]);
 
-    const ownerIdConverted = postBody.ownerId ? parseInt(postBody.ownerId, 10) : null;
+    const ownerIdConverted = postBody.ownerId != null ? Number(postBody.ownerId) : null;
     const isOwner = ownerIdConverted === user.id;
 
     return (

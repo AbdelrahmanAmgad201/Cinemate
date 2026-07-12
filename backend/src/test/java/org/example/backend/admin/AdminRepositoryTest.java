@@ -1,6 +1,6 @@
 package org.example.backend.admin;
 
-import org.example.backend.AbstractMySQLIntegrationTest;
+import org.example.backend.AbstractPostgresIntegrationTest;
 import org.example.backend.movie.Movie;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -17,7 +17,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 @DataJpaTest
 @EntityScan(basePackages = "org.example.backend")
 @EnableJpaRepositories(basePackages = "org.example.backend")
-class AdminRepositoryTest extends AbstractMySQLIntegrationTest {
+class AdminRepositoryTest extends AbstractPostgresIntegrationTest {
 
     @Autowired
     private AdminRepository adminRepository;

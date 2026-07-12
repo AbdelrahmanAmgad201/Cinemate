@@ -1,94 +1,86 @@
 package org.example.backend.post;
 
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-import com.fasterxml.jackson.databind.ser.std.ToStringSerializer;
+import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.SuperBuilder;
-import org.bson.types.ObjectId;
-import org.example.backend.mongo.SoftDeletableDocument;
-import org.example.backend.vote.Votable;
-import org.springframework.data.annotation.Id;
-import org.springframework.data.mongodb.core.index.CompoundIndex;
-import org.springframework.data.mongodb.core.index.CompoundIndexes;
-import org.springframework.data.mongodb.core.index.Indexed;
-import org.springframework.data.mongodb.core.mapping.Document;
+import org.example.backend.common.SoftDeletable;
+import org.example.backend.moderation.Moderatable;
+import org.example.backend.moderation.ModerationStatus;
+import org.example.backend.util.UuidV7;
 
 import java.time.Instant;
+import java.util.UUID;
 
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @SuperBuilder
-@Document(collection = "posts")
-@CompoundIndexes({
-        @CompoundIndex(name = "forum_created", def = "{'forumId': 1, 'isDeleted': 1, 'createdAt': -1}"),
-        @CompoundIndex(name = "forum_score", def = "{'forumId': 1, 'isDeleted': 1, 'score': -1}"),
-        @CompoundIndex(name = "forum_hot", def = "{'forumId': 1, 'isDeleted': 1, 'lastActivityAt': -1}"),
-        // NEW: Index for explore feed
-        @CompoundIndex(name = "explore_popular", def = "{'isDeleted': 1, 'createdAt': -1, 'score': -1}")
-})
-public class Post extends SoftDeletableDocument implements Votable {
+@Entity
+@Table(name = "posts")
+public class Post extends SoftDeletable implements Moderatable {
 
     @Id
-    @JsonSerialize(using = ToStringSerializer.class)
-    private ObjectId id;
+    @Column(name = "id")
+    private UUID id;
 
-    @Indexed
-    @JsonSerialize(using = ToStringSerializer.class)
-    private ObjectId forumId;
+    @Column(name = "forum_id", nullable = false)
+    private UUID forumId;
 
-    @Indexed
-    @JsonSerialize(using = ToStringSerializer.class)
-    private ObjectId ownerId;
+    // Real FK to users(user_id). forum_name / author_name denormalization removed —
+    // the view queries join to forums / users instead (no staleness to maintain).
+    @Column(name = "owner_id", nullable = false)
+    private Long ownerId;
 
+    @Column(nullable = false)
     private String title;
-    private String content;
-    private String forumName;
-    private String authorName;
 
+    @Column(columnDefinition = "text")
+    private String content;
+
+    // Trigger-maintained (post_votes); updatable=false so a title edit can't clobber them.
+    @Column(name = "upvote_count", nullable = false, updatable = false)
     @Builder.Default
     private Integer upvoteCount = 0;
 
+    @Column(name = "downvote_count", nullable = false, updatable = false)
     @Builder.Default
     private Integer downvoteCount = 0;
 
-    @Builder.Default
-    private Integer score = 0;
+    // Generated column (upvote_count - downvote_count) — read-only from the app.
+    @Column(name = "score", insertable = false, updatable = false)
+    private Integer score;
 
+    // Trigger-maintained (comments, is_deleted-aware).
+    @Column(name = "comment_count", nullable = false, updatable = false)
     @Builder.Default
     private Integer commentCount = 0;
 
+    @Column(name = "created_at", nullable = false)
     private Instant createdAt;
+
+    @Column(name = "last_activity_at")
     private Instant lastActivityAt;
 
-    public void updateLastActivityAt(Instant lastActivityAt) {
-        if (this.lastActivityAt == null || this.lastActivityAt.isBefore(lastActivityAt)) {
-            this.lastActivityAt = lastActivityAt;
+    @Enumerated(EnumType.STRING)
+    @Column(name = "moderation_status", nullable = false)
+    @Builder.Default
+    private ModerationStatus moderationStatus = ModerationStatus.PENDING;
+
+    @Column(name = "moderation_version", nullable = false)
+    @Builder.Default
+    private long moderationVersion = 1;
+
+    @PrePersist
+    protected void onCreate() {
+        if (id == null) {
+            id = UuidV7.generate();
         }
-    }
-    @Override
-    public void incrementUpvote() {
-        updateLastActivityAt(Instant.now());
-        this.upvoteCount++;
-    }
-    @Override
-    public void incrementDownvote() {
-        updateLastActivityAt(Instant.now());
-        this.downvoteCount++;
-    }
-    @Override
-    public void decrementUpvote() {
-        updateLastActivityAt(Instant.now());
-        this.upvoteCount--;
-    }
-    @Override
-    public void decrementDownvote() {
-        updateLastActivityAt(Instant.now());
-        this.downvoteCount--;
-    }
-    @Override
-    public void updateScore(){
-        this.score = this.upvoteCount - this.downvoteCount;
+        if (createdAt == null) {
+            createdAt = Instant.now();
+        }
+        if (lastActivityAt == null) {
+            lastActivityAt = createdAt;
+        }
     }
 }

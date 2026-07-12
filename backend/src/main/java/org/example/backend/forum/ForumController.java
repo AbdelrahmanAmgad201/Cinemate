@@ -2,7 +2,7 @@ package org.example.backend.forum;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
-import org.bson.types.ObjectId;
+import java.util.UUID;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -31,7 +31,7 @@ public class ForumController {
     @GetMapping("/v1/get-forum-by-id/{forumId}")
     public ResponseEntity<ForumDetailsDTO> getForumById(
             HttpServletRequest request,
-            @PathVariable ObjectId forumId){
+            @PathVariable UUID forumId){
 
         return ResponseEntity.ok(forumService.getForumById(forumId));
     }
@@ -40,7 +40,7 @@ public class ForumController {
     @DeleteMapping("/v1/delete/{forumId}")
     public ResponseEntity<?> deleteForum(
             HttpServletRequest request,
-            @PathVariable ObjectId forumId) {
+            @PathVariable UUID forumId) {
 
         Long userId = (Long) request.getAttribute("userId");
         forumService.deleteForum(forumId,userId);
@@ -50,7 +50,7 @@ public class ForumController {
     @PutMapping("/v1/update/{forumId}")
     public ResponseEntity<?> updateForum(
             HttpServletRequest request,
-            @PathVariable ObjectId forumId,
+            @PathVariable UUID forumId,
             @Valid @RequestBody ForumCreationRequest requestDTO) {
 
         Long userId = (Long) request.getAttribute("userId");
@@ -85,7 +85,7 @@ public class ForumController {
     @GetMapping("/v1/forum-name/{forumId}")
     public ResponseEntity<String> getForumByName(
             HttpServletRequest request,
-            @PathVariable ObjectId forumId
+            @PathVariable UUID forumId
     ) {
         return ResponseEntity.ok(forumService.getForumName(forumId));
         }

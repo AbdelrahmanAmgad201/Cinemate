@@ -2,446 +2,72 @@ package org.example.backend.deletion;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.bson.Document;
-import org.bson.types.ObjectId;
-import org.example.backend.comment.Comment;
-import org.example.backend.errorHandler.ResourceNotFoundException;
 import org.example.backend.comment.CommentRepository;
-import org.example.backend.post.Post;
+import org.example.backend.forum.ForumRepository;
 import org.example.backend.post.PostRepository;
-import org.example.backend.vote.VoteTargetType;
-import org.springframework.data.mongodb.core.MongoTemplate;
-import org.springframework.data.mongodb.core.aggregation.Aggregation;
-import org.springframework.data.mongodb.core.aggregation.AggregationResults;
-import org.springframework.data.mongodb.core.query.Criteria;
-import org.springframework.data.mongodb.core.query.Query;
-import org.springframework.data.mongodb.core.query.Update;
-import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Clock;
 import java.time.Instant;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
+import java.util.UUID;
 
+/**
+ * Soft-delete cascades, now a few bulk SQL statements instead of the Mongo $graphLookup +
+ * async batching (~450 lines removed). The DB counter triggers keep forum.post_count,
+ * post.comment_count and parent comments' number_of_replies correct as rows flip.
+ *
+ * Physical cleanup (the scheduled purge) is a plain DELETE — FK ON DELETE CASCADE removes
+ * the children (comments, votes, follows) automatically.
+ */
 @Slf4j
 @Service
 @RequiredArgsConstructor
 public class CascadeDeletionService {
 
-    private final MongoTemplate mongoTemplate;
-    private static final int BATCH_SIZE = 100;
+    private final ForumRepository forumRepository;
     private final PostRepository postRepository;
     private final CommentRepository commentRepository;
     private final Clock clock;
 
-    /**
-     * Delete Forum - cascades to Posts, Comments, Votes
-     */
-    public void deleteForum(ObjectId forumId) {
-        log.info("Starting forum deletion: {}", forumId);
-        Instant deletedAt = Instant.now(clock);
-
-        // 1. Soft delete the forum itself
-        softDeleteEntity("forums", forumId, deletedAt);
-
-        // 2. Cascade to all posts in this forum
-        cascadeDeleteForumPostsAsync(forumId, deletedAt);
-
-        // 3. Cascade to all followings in this forum
-        cascadeDeleteForumFollowingAsync(forumId, deletedAt);
+    /** Forum → its posts → their comments. */
+    @Transactional
+    public void deleteForum(UUID forumId) {
+        Instant now = Instant.now(clock);
+        commentRepository.softDeleteByForum(forumId, now);
+        postRepository.softDeleteByForum(forumId, now);
+        forumRepository.softDelete(forumId, now);
+        log.info("Soft-deleted forum {} and its posts/comments", forumId);
     }
 
-    /**
-     * Delete Post - cascades to Comments, Votes
-     */
-    public void deletePost(ObjectId postId) {
-        log.info("Starting post deletion: {}", postId);
-        Instant deletedAt = Instant.now(clock);
-
-        // 1. Soft delete the post itself
-        softDeleteEntity("posts", postId, deletedAt);
-
-        // 2. Cascade to comments and votes
-        cascadeDeletePostAsync(postId, deletedAt);
+    /** Post → its comments. */
+    @Transactional
+    public void deletePost(UUID postId) {
+        Instant now = Instant.now(clock);
+        commentRepository.softDeleteByPost(postId, now);
+        postRepository.softDelete(postId, now);
+        log.info("Soft-deleted post {} and its comments", postId);
     }
 
-    /**
-     * Delete Comment - cascades to Votes
-     */
-    public void deleteComment(ObjectId commentId) {
-        log.info("Starting comment deletion: {}", commentId);
-        Instant deletedAt = Instant.now(clock);
-
-        Comment comment = commentRepository.findById(commentId)
-                .orElseThrow(() -> new ResourceNotFoundException("Comment not found"));
-        ObjectId postId = comment.getPostId();
-        cascadeDeleteCommentAsync(commentId, deletedAt,postId,comment.getParentId());
+    /** Comment → its reply subtree (recursive CTE). */
+    @Transactional
+    public void deleteComment(UUID commentId) {
+        Instant now = Instant.now(clock);
+        int n = commentRepository.softDeleteSubtree(commentId, now);
+        log.info("Soft-deleted comment {} and {} descendant(s)", commentId, Math.max(0, n - 1));
     }
 
-    /**
-     * Delete Vote - no cascade (leaf entity)
-     */
-    public void deleteVote(ObjectId voteId) {
-        log.info("Starting vote deletion: {}", voteId);
-        Instant deletedAt = Instant.now(clock);
+    // ─── Scheduled physical purge (FK ON DELETE CASCADE clears children) ─────────
+    @Transactional
+    public void purgeOldForums(int daysOld)  { forumRepository.purgeDeletedBefore(cutoff(daysOld)); }
 
-        // Soft delete the vote itself (no cascade needed)
-        softDeleteEntity("votes", voteId, deletedAt);
+    @Transactional
+    public void purgeOldPosts(int daysOld)    { postRepository.purgeDeletedBefore(cutoff(daysOld)); }
 
-        log.info("Vote {} deleted successfully", voteId);
-    }
+    @Transactional
+    public void purgeOldComments(int daysOld) { commentRepository.purgeDeletedBefore(cutoff(daysOld)); }
 
-    // ==================== PRIVATE HELPER METHODS ====================
-
-    /**
-     * Generic soft delete for a single entity
-     */
-    private void softDeleteEntity(String collection, ObjectId id, Instant deletedAt) {
-        Query query = new Query(Criteria.where("_id").is(id));
-        Update update = new Update()
-                .set("isDeleted", true)
-                .set("deletedAt", deletedAt);
-
-        long modified = mongoTemplate.updateFirst(query, update, collection).getModifiedCount();
-
-        if (modified == 0) {
-            log.warn("Entity not found or already deleted: {} in {}", id, collection);
-        } else {
-            log.info("Soft deleted {} with id: {}", collection, id);
-        }
-    }
-
-    /**
-     * Batch soft delete entities by criteria
-     */
-    private long softDeleteBatch(String collection, Criteria criteria, Instant deletedAt) {
-        Query query = new Query(criteria);
-        Update update = new Update()
-                .set("isDeleted", true)
-                .set("deletedAt", deletedAt);
-
-        return mongoTemplate.updateMulti(query, update, collection).getModifiedCount();
-    }
-
-    /**
-     * Get IDs for a collection matching criteria
-     */
-    private List<ObjectId> getIds(String collection, Criteria criteria) {
-        Query query = new Query(criteria);
-        List<ObjectId> ids = mongoTemplate.findDistinct(
-                query,
-                "_id",
-                collection,
-                ObjectId.class
-        );
-
-        log.info("Found {} matching documents in {} for criteria {}", ids.size(), collection, criteria);
-        return ids;
-    }
-    // ==================== ASYNC CASCADE METHODS ====================
-
-    /**
-     * Cascade delete all posts in a forum
-     */
-    @Async
-    public void cascadeDeleteForumPostsAsync(ObjectId forumId, Instant deletedAt) {
-        try {
-            // Get all post IDs for this forum
-            List<ObjectId> postIds = getIds("posts", Criteria.where("forumId").is(forumId));
-            log.info("Found {} posts to delete for forum {}", postIds.size(), forumId);
-
-            if (postIds.isEmpty()) {
-                log.info("No posts to delete for forum {}", forumId);
-                return;
-            }
-
-            // Soft delete posts in batches
-            int totalPosts = softDeletePostsBatch(postIds, deletedAt);
-            log.info("Soft deleted {} posts for forum {}", totalPosts, forumId);
-
-            // Cascade to comments and votes for all posts
-            cascadeDeletePostsBatch(postIds, deletedAt);
-
-            log.info("Completed cascade deletion for forum {}", forumId);
-
-        } catch (Exception e) {
-            log.error("Error during forum cascade deletion: {}", forumId, e);
-        }
-    }
-
-    /**
-     * Cascade delete for following forums
-     */
-    @Async
-    public void cascadeDeleteForumFollowingAsync(ObjectId forumId, Instant deletedAt) {
-        try {
-            // Get all following IDs for this forum
-            List<ObjectId> followingIds = getIds("following", Criteria.where("forumId").is(forumId));
-            log.info("Found {} followings to delete for forum {}", followingIds.size(), forumId);
-
-            if (followingIds.isEmpty()) {
-                log.info("No followings to delete for forum {}", forumId);
-                return;
-            }
-
-            // Soft delete followings in batches
-            int totalFollowings = softDeleteFollowingsBatch(followingIds, deletedAt);
-            log.info("Soft deleted {} followings for forum {}", totalFollowings, forumId);
-
-        } catch (Exception e) {
-            log.error("Error during forum cascade deletion: {}", forumId, e);
-        }
-    }
-
-    /**
-     * Cascade delete for a single post
-     */
-    @Async
-    public void cascadeDeletePostAsync(ObjectId postId, Instant deletedAt) {
-        try {
-            // Get all comment IDs for this post
-            List<ObjectId> commentIds = getIds("comments", Criteria.where("postId").is(postId));
-            log.info("Found {} comments to delete for post {}", commentIds.size(), postId);
-
-            // Soft delete comments in batches
-            if (!commentIds.isEmpty()) {
-                int totalComments = softDeleteCommentsBatch(List.of(postId), deletedAt);
-                log.info("Soft deleted {} comments for post {}", totalComments, postId);
-
-                // Delete votes on comments
-                cascadeDeleteCommentsVotesBatch(commentIds, deletedAt);
-            }
-
-            // Delete votes on the post itself
-            long postVotes = softDeleteBatch(
-                    "votes",
-                    Criteria.where("targetId").is(postId).and("targetType").is(VoteTargetType.POST),
-                    deletedAt
-            );
-            log.info("Soft deleted {} votes for post {}", postVotes, postId);
-
-            log.info("Completed cascade deletion for post {}", postId);
-
-        } catch (Exception e) {
-            log.error("Error during post cascade deletion: {}", postId, e);
-        }
-    }
-
-    /**
-     * Cascade delete votes for a single comment
-     */
-    @Async
-    public void cascadeDeleteCommentVotesAsync(ObjectId commentId, Instant deletedAt) {
-        try {
-            long votes = softDeleteBatch(
-                    "votes",
-                    Criteria.where("targetId").is(commentId).and("targetType").is(VoteTargetType.COMMENT),
-                    deletedAt
-            );
-            log.info("Soft deleted {} votes for comment {}", votes, commentId);
-
-        } catch (Exception e) {
-            log.error("Error during comment votes deletion: {}", commentId, e);
-        }
-    }
-
-    /**
-     * Batch soft delete posts
-     */
-    private int softDeletePostsBatch(List<ObjectId> postIds, Instant deletedAt) {
-        int totalDeleted = 0;
-
-        for (int i = 0; i < postIds.size(); i += BATCH_SIZE) {
-            List<ObjectId> batch = postIds.subList(i, Math.min(i + BATCH_SIZE, postIds.size()));
-            long deleted = softDeleteBatch("posts", Criteria.where("_id").in(batch), deletedAt);
-            totalDeleted += deleted;
-            log.debug("Soft deleted batch of {} posts", deleted);
-        }
-
-        return totalDeleted;
-    }
-
-    /**
-     * Batch soft delete followings
-     */
-    private int softDeleteFollowingsBatch(List<ObjectId> followingIds, Instant deletedAt) {
-        int totalDeleted = 0;
-
-        for (int i = 0; i < followingIds.size(); i += BATCH_SIZE) {
-            List<ObjectId> batch = followingIds.subList(i, Math.min(i + BATCH_SIZE, followingIds.size()));
-            long deleted = softDeleteBatch("following", Criteria.where("_id").in(batch), deletedAt);
-            totalDeleted += deleted;
-            log.debug("Soft deleted batch of {} followings", deleted);
-        }
-
-        return totalDeleted;
-    }
-
-    /**
-     * Cascade delete for multiple posts (comments + votes)
-     */
-    private void cascadeDeletePostsBatch(List<ObjectId> postIds, Instant deletedAt) {
-        // Delete all comments for these posts
-        int totalComments = softDeleteCommentsBatch(postIds, deletedAt);
-        log.info("Soft deleted {} comments for {} posts", totalComments, postIds.size());
-
-        // Get all comment IDs to delete their votes
-        List<ObjectId> commentIds = getIds("comments", Criteria.where("postId").in(postIds));
-
-        // Delete votes on posts
-        int postVotes = softDeletePostVotesBatch(postIds, deletedAt);
-        log.info("Soft deleted {} post votes", postVotes);
-
-        // Delete votes on comments
-        if (!commentIds.isEmpty()) {
-            int commentVotes = cascadeDeleteCommentsVotesBatch(commentIds, deletedAt);
-            log.info("Soft deleted {} comment votes", commentVotes);
-        }
-    }
-
-    /**
-     * Batch soft delete comments for posts
-     */
-    private int softDeleteCommentsBatch(List<ObjectId> postIds, Instant deletedAt) {
-        int totalDeleted = 0;
-
-        for (int i = 0; i < postIds.size(); i += BATCH_SIZE) {
-            List<ObjectId> batch = postIds.subList(i, Math.min(i + BATCH_SIZE, postIds.size()));
-            long deleted = softDeleteBatch("comments", Criteria.where("postId").in(batch), deletedAt);
-            totalDeleted += deleted;
-            log.debug("Soft deleted batch of {} comments", deleted);
-        }
-
-        return totalDeleted;
-    }
-
-    /**
-     * Batch soft delete comments by comment IDs (not post IDs)
-     */
-    private int softDeleteCommentsByIdsBatch(List<ObjectId> commentIds, Instant deletedAt) {
-        int totalDeleted = 0;
-
-        for (int i = 0; i < commentIds.size(); i += BATCH_SIZE) {
-            List<ObjectId> batch = commentIds.subList(i, Math.min(i + BATCH_SIZE, commentIds.size()));
-            long deleted = softDeleteBatch("comments", Criteria.where("_id").in(batch), deletedAt);
-            totalDeleted += deleted;
-            log.debug("Soft deleted batch of {} comments", deleted);
-        }
-
-        return totalDeleted;
-    }
-
-    /**
-     * Batch soft delete votes on posts
-     */
-    private int softDeletePostVotesBatch(List<ObjectId> postIds, Instant deletedAt) {
-        int totalDeleted = 0;
-
-        for (int i = 0; i < postIds.size(); i += BATCH_SIZE) {
-            List<ObjectId> batch = postIds.subList(i, Math.min(i + BATCH_SIZE, postIds.size()));
-            long deleted = softDeleteBatch(
-                    "votes",
-                    Criteria.where("targetId").in(batch).and("targetType").is(VoteTargetType.POST),
-                    deletedAt
-            );
-            totalDeleted += deleted;
-        }
-
-        return totalDeleted;
-    }
-
-    /**
-     * Batch soft delete votes on comments
-     */
-    private int cascadeDeleteCommentsVotesBatch(List<ObjectId> commentIds, Instant deletedAt) {
-        int totalDeleted = 0;
-
-        for (int i = 0; i < commentIds.size(); i += BATCH_SIZE) {
-            List<ObjectId> batch = commentIds.subList(i, Math.min(i + BATCH_SIZE, commentIds.size()));
-            long deleted = softDeleteBatch(
-                    "votes",
-                    Criteria.where("targetId").in(batch).and("targetType").is(VoteTargetType.COMMENT),
-                    deletedAt
-            );
-            totalDeleted += deleted;
-        }
-
-        return totalDeleted;
-    }
-
-    @Async
-    public void cascadeDeleteCommentAsync(ObjectId commentId,Instant deletedAt,ObjectId postId,ObjectId parentId) {
-        Aggregation aggregation = Aggregation.newAggregation(
-                // Match the parent comment
-                Aggregation.match(Criteria.where("_id").is(commentId)),
-
-                // Use $graphLookup to recursively find all descendants
-                Aggregation.graphLookup("comments")
-                        .startWith("$_id")
-                        .connectFrom("_id")
-                        .connectTo("parentId")
-                        .maxDepth(100)
-                        .depthField("level")
-                        .as("descendants"),
-
-                Aggregation.project()
-                        .and("_id").as("parentId")
-                        .and("descendants._id").as("descendantIds")
-        );
-
-        AggregationResults<Document> results = mongoTemplate.aggregate(
-                aggregation,
-                "comments",
-                Document.class
-        );
-
-        Document result = results.getUniqueMappedResult();
-        if (result == null) {
-            return ;
-        }
-
-        List<ObjectId> allIds = new ArrayList<>();
-        allIds.add(result.getObjectId("parentId"));
-
-        List<ObjectId> descendantIds = result.getList("descendantIds", ObjectId.class);
-        if (descendantIds != null) {
-            allIds.addAll(descendantIds);
-        }
-
-        int totalComments = softDeleteCommentsByIdsBatch(allIds, deletedAt);
-
-        // Delete votes on comments
-        cascadeDeleteCommentsVotesBatch(allIds, deletedAt);
-        Post post = postRepository.findById(postId)
-                .orElseThrow(() -> new ResourceNotFoundException("Post not found"));
-        post.setCommentCount(post.getCommentCount() - totalComments);
-        postRepository.save(post);
-        if(parentId != null) {
-            Comment parent = commentRepository.findById(parentId)
-                    .orElseThrow(() -> new ResourceNotFoundException("Comment not found"));
-            // The parent lost exactly one direct child, not the whole deleted subtree
-            // (totalComments includes all descendants) — see REL-07.
-            parent.setNumberOfReplies(parent.getNumberOfReplies() - 1);
-            commentRepository.save(parent);
-        }
-    }
-
-    /**
-     * Hard delete entities that have been soft-deleted for a certain period
-     * Runs Daily
-     */
-    @Async
-    public void hardDeleteOldEntities(String collection, int daysOld) {
-        Instant cutoffDate = Instant.now(clock).minusSeconds(daysOld * 24L * 60 * 60);
-
-        Query query = new Query(
-                Criteria.where("isDeleted").is(true)
-                        .and("deletedAt").lt(cutoffDate)
-        );
-
-        long deleted = mongoTemplate.remove(query, collection).getDeletedCount();
-        log.info("Hard deleted {} old entities from {}", deleted, collection);
+    private Instant cutoff(int daysOld) {
+        return Instant.now(clock).minusSeconds(daysOld * 24L * 60 * 60);
     }
 }

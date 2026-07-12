@@ -7,7 +7,7 @@ import org.example.backend.admin.Admin;
 import org.example.backend.admin.AdminService;
 import org.example.backend.comment.AddCommentDTO;
 import org.example.backend.comment.CommentService;
-import org.bson.types.ObjectId;
+import java.util.UUID;
 import org.example.backend.forum.ForumCreationRequest;
 import org.example.backend.forum.ForumDetailsDTO;
 import org.example.backend.forum.ForumService;
@@ -87,12 +87,19 @@ public class DataInitializer implements CommandLineRunner {
             return;
         }
         String hashedPassword = passwordEncoder.encode(defaultPass);
-        for(int i=1;i<=defaultNumberOfUsers;i++){
-            User user=initializeUser(i,hashedPassword);
-            ForumDetailsDTO forum=initializeForum(i,user);
+        // Create ALL users first: follows/votes/comments below reference users 1..N by id,
+        // and those are real FKs now (forum_follows.user_id, post_votes.user_id, ...). Seeding
+        // content for user i while users i+1.. don't yet exist would violate them.
+        java.util.List<User> users = new java.util.ArrayList<>();
+        for (int i = 1; i <= defaultNumberOfUsers; i++) {
+            users.add(initializeUser(i, hashedPassword));
+        }
+        for (int i = 1; i <= defaultNumberOfUsers; i++) {
+            User user = users.get(i - 1);
+            ForumDetailsDTO forum = initializeForum(i, user);
             forumFollowing(forum);
-            for(int j=1;j<=defaultNumberOfPostsPerUser;j++){
-                initializePostWithVotesAndComments(i,j,forum,user);
+            for (int j = 1; j <= defaultNumberOfPostsPerUser; j++) {
+                initializePostWithVotesAndComments(i, j, forum, user);
             }
         }
         AddAdminDTO addAdminDTO = new AddAdminDTO();
@@ -127,7 +134,7 @@ public class DataInitializer implements CommandLineRunner {
     }
 
     private void forumFollowing(ForumDetailsDTO forum){
-        ObjectId forumId = new ObjectId(forum.getId());
+        UUID forumId = UUID.fromString(forum.getId());
         for(int j=1;j<=defaultNumberOfFollowingPosts;j++){
             followingService.follow(forumId,Long.valueOf(j));
         }
@@ -135,7 +142,7 @@ public class DataInitializer implements CommandLineRunner {
 
     private void initializePostWithVotesAndComments(int forumNumber,int postNumber,ForumDetailsDTO forum,User user){
         AddPostDTO addPostDto = AddPostDTO.builder()
-                .forumId(new ObjectId(forum.getId()))
+                .forumId(UUID.fromString(forum.getId()))
                 .title("test"+postNumber+"for forum"+forumNumber)
                 .content("this only for test")
                 .build();

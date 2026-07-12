@@ -1,0 +1,4 @@
+onnxruntime>=1.17,<2
+tokenizers>=0.15,<1
+numpy>=1.26,<2
+confluent-kafka>=2.5,<3

@@ -32,9 +32,9 @@ These are consumed directly by `compose.yaml` and passed into the relevant conta
 
 | Variable | Required | Default | Description |
 |---|---|---|---|
-| `MYSQL_ROOT_PASSWORD` | ✅ | — | MySQL root password |
-| `MYSQL_DATABASE` | ✅ | `Cinemate` | MySQL database name |
-| `MONGO_INITDB_DATABASE` | ✅ | `Cinemate2` | MongoDB initial database |
+| `POSTGRES_PASSWORD` | ✅ | — | PostgreSQL password |
+| `POSTGRES_DB` | ✅ | `Cinemate` | PostgreSQL database name |
+| `POSTGRES_USER` | ✅ | `cinemate` | PostgreSQL username |
 
 ---
 
@@ -46,12 +46,13 @@ Loaded via `env_file: ./backend/.env.prod` in `compose.yaml`.
 
 | Variable | Required | Default | Description |
 |---|---|---|---|
-| `DB_URL` | ✅ | — | JDBC URL for MySQL (e.g. `jdbc:mysql://mysql:3306/Cinemate?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC`) |
-| `DB_USERNAME` | ✅ | — | MySQL username |
-| `DB_PASSWORD` | ✅ | — | MySQL password (must match `MYSQL_ROOT_PASSWORD`) |
-| `JPA_DDL_AUTO` | ✅ | `validate` | JPA schema strategy. Use `validate` in prod, `update` in dev. **Never use `create` in prod.** |
+| `DB_URL` | ✅ | — | JDBC URL for PostgreSQL (e.g. `jdbc:postgresql://postgres:5432/Cinemate`) |
+| `DB_USERNAME` | ✅ | — | PostgreSQL username (matches `POSTGRES_USER`) |
+| `DB_PASSWORD` | ✅ | — | PostgreSQL password (must match `POSTGRES_PASSWORD`) |
 | `JPA_SHOW_SQL` | ❌ | `false` | Log every SQL query. Disable in prod. |
-| `MONGODB_URI` | ✅ | — | MongoDB connection string (e.g. `mongodb://mongodb:27017/Cinemate2`) |
+
+> Schema is owned by **Flyway** migrations (`ddl-auto=validate`, fixed). There is no
+> `JPA_DDL_AUTO` knob or `MONGODB_URI` anymore — the app runs on a single PostgreSQL database.
 
 #### JWT
 
@@ -85,13 +86,12 @@ openssl rand -hex 64
 
 | Variable | Required | Default | Description |
 |---|---|---|---|
-| `HATE_MODEL_URL` | ✅ | `http://hate-api:8000/api/hate/v1/analyze` | Internal URL of the hate-speech analyze endpoint |
-| `HATE_API_KEY` | ✅ | — | Shared secret for internal backend → hate-api auth |
+| `KAFKA_BOOTSTRAP_SERVERS` | ❌ | `kafka:9092` | Internal Kafka broker for the moderation pipeline (outbox → `moderation.requests`, verdicts ← `moderation.verdicts`). No auth — internal-only. |
 | `WATCHPARTY_SERVICE_URL` | ✅ | `http://watch-party:8081` | Internal HTTP URL of the watch-party microservice |
 | `WATCHPARTY_WS_URL` | ❌ | `ws://watch-party:8081/ws` | WebSocket URL (currently unused in backend code) |
 | `WATCHPARTY_KEY` | ✅ | — | Shared secret for internal backend → watch-party auth |
 
-**Generate a WATCHPARTY_KEY or HATE_API_KEY:**
+**Generate a WATCHPARTY_KEY:**
 ```bash
 openssl rand -hex 32
 ```
@@ -213,12 +213,12 @@ openssl rand -hex 32
 
 ---
 
-### 6. Hate-Speech Model (no API key needed)
+### 6. Content-Moderation Model (no API key needed)
 
-The `hate-api` service downloads the `facebook/roberta-hate-speech-dynabench-r4-target` model from HuggingFace **at Docker image build time** and stores it in the `hate-api-models` Docker volume. No account or API key is required.
+The `moderation-worker` service bakes the `minuva/MiniLMv2-toxic-jigsaw-lite` ONNX model (pinned HuggingFace revision) into its image **at Docker image build time**. No account or API key is required. Thresholds are configured via `TOXIC_THRESHOLD` / `SEVERE_TOXIC_THRESHOLD` (default `0.5` each); either label crossing its threshold flags the content.
 
 > [!NOTE]
-> The first `docker compose up --build` will take **5–10 minutes** and require a stable internet connection to download the ~500 MB model. Subsequent runs are fast as the volume is cached.
+> The first `docker compose up --build` downloads the model at build time and may take a few minutes on a stable connection. Subsequent runs reuse the cached image layer.
 
 ---
 
@@ -236,7 +236,7 @@ The `hate-api` service downloads the `facebook/roberta-hate-speech-dynabench-r4-
 │ backend/.env.prod                    │  │ compose.yaml environment: │
 │   DB_URL, DB_PASSWORD, JWT_SECRET,   │  │   SPRING_REDIS_HOST,      │
 │   GOOGLE_CLIENT_ID, SENDGRID_API_KEY │  │   SPRING_PROFILES_ACTIVE  │
-│   WATCHPARTY_KEY, HATE_MODEL_URL ... │  │   (watch-party service)   │
+│   WATCHPARTY_KEY, KAFKA_BOOTSTRAP... │  │   (watch-party service)   │
 └──────────────────────────────────────┘  └──────────────────────────┘
          │ env_file: ./backend/.env.prod
          ▼

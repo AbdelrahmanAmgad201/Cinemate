@@ -17,8 +17,8 @@ everything that changed elsewhere because of it.
   enforces authorization, injects a trusted identity to the backend, and rate-limits.**
 - Everything is now **one origin**, so there is no CORS, the refresh cookie is
   `SameSite=Lax`, and the CSP is tight.
-- The backend, frontend, watch-party, hate-api, and both Redis instances are **internal
-  to the Docker network** — unreachable from the host.
+- The backend, frontend, watch-party, the content-moderation services, and all Redis
+  instances are **internal to the Docker network** — unreachable from the host.
 - **Yes, the WebSocket passes through the gateway** (`/ws` → watch-party). See §7.
 
 ---
@@ -30,7 +30,7 @@ everything that changed elsewhere because of it.
 ```
 browser ──▶ frontend nginx  :5173   (SPA + /ws proxy)
 browser ──▶ backend         :8080   (/api, validates JWT on every request, sets CORS)
-                              backend ──▶ watch-party / hate-api (internal)
+                              backend ──▶ watch-party (internal) · kafka (moderation)
 ```
 
 **After** — the browser talks only to the gateway; auth is at the edge:
@@ -43,7 +43,7 @@ browser ──▶ backend         :8080   (/api, validates JWT on every request,
                  │     /ws/**       ─▶ watch-party     :8081   (SockJS / STOMP)                             │
                  │     /oauth2/authorize/**, /login/oauth2/** ─▶ backend (Google handshake)                 │
                  └──────────────────────────────────────────────────────────────────────────────────────┘
-                        backend ──▶ mysql · mongodb · redis-cache · hate-api        (all internal)
+                        backend ──▶ mysql · mongodb · redis-cache · kafka        (all internal)
                         watch-party ──▶ redis                                        (internal)
 ```
 
@@ -215,7 +215,8 @@ Because the browser now only ever hits the gateway origin:
 | backend | — | 8080 | internal only (`expose`) |
 | frontend | — | 80 | internal only; nginx serves the SPA behind the gateway |
 | watch-party | — | 8081 | internal only |
-| hate-api | — | 8000 | internal only |
+| kafka | — | 9092 | internal only (moderation pipeline log; no auth) |
+| moderation-worker | — | — | internal only (ONNX inference; no port) |
 | redis | — | 6379 | internal only (watch-party state) |
 | redis-cache | — | 6379 | internal only (response cache, refresh tokens, rate-limit buckets) |
 | mysql | 3307 | 3306 | host port kept for dev DB access |
