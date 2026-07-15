@@ -117,8 +117,6 @@ services:
       - ./backend/.env.prod
     environment:
       - JAVA_OPTS=-Xmx512m -Xms256m
-      - WATCHPARTY_SERVICE_URL=http://watch-party:8081
-      - WATCHPARTY_WS_URL=ws://watch-party:8081/ws
       # Moderation pipeline (Kafka). The transactional outbox now commits the content
       # row + outbox row in one ordinary Postgres transaction — no replica set required.
       - KAFKA_BOOTSTRAP_SERVERS=kafka:9092
@@ -138,8 +136,9 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
-      watch-party:
-        condition: service_healthy
+      # watch-party is no longer a dependency: the backend doesn't call it anymore
+      # (Stage 1). The dependency now runs the other way — watch-party calls the backend's
+      # public movie API lazily at create-time, which needs no startup ordering.
       # kafka intentionally excluded: content publishes optimistically, the outbox
       # relay just retries until the broker is back — the backend must boot and
       # serve writes even when the moderation pipeline is down.
@@ -314,10 +313,16 @@ services:
       - SPRING_REDIS_HOST=redis
       - SPRING_REDIS_PORT=6379
       - JAVA_OPTS=-Xmx512m -Xms256m
-      - WATCHPARTY_KEY=${WATCHPARTY_KEY}
       # Restricts which origins may open the /ws WebSocket (SEC-NEW-02) — same value
       # the backend uses for its own CORS config.
       - CORS_ALLOWED_ORIGINS=${CORS_ALLOWED_ORIGINS}
+      # Public half of the RS256 keypair — the service verifies the access token on the
+      # STOMP CONNECT frame with it (REL-08). Same value the gateway/backend use.
+      - JWT_PUBLIC_KEY=${JWT_PUBLIC_KEY}
+      # Backend base URL — the service calls the backend's public movie API (read-only) to
+      # resolve a movie's playable URL at party-create time (Stage 1). Lazy call, so this
+      # is not a startup dependency.
+      - BACKEND_URL=http://backend:8080
     depends_on:
       redis:
         condition: service_healthy

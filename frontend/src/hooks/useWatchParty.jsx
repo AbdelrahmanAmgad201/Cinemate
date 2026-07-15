@@ -5,6 +5,7 @@ import SockJS from "sockjs-client";
 import {ToastContext} from "../context/ToastContext.jsx";
 import {useNavigate} from "react-router-dom";
 import {generateColorFromUserId} from "../utils/generate-color.jsx";
+import {getAccessToken} from "../auth/tokenStore.js";
 
 // PartyEventPayload {
 //     time?: number;
@@ -183,6 +184,14 @@ export const useWatchParty = (partyId, userId, userName, isHost, onIncomingChat)
         const client = new Client({
             webSocketFactory: () => new SockJS(`${BACKEND_URL.WATCH_PARTY_BASE_URL}/ws`),
             reconnectDelay: 5000,
+
+            // Authenticate the STOMP session (REL-08): the service verifies this token on
+            // CONNECT and binds the identity it then stamps on every event. Read fresh on
+            // each (re)connect so a token refreshed via the axios flow is picked up.
+            beforeConnect: () => {
+                const token = getAccessToken();
+                client.connectHeaders = token ? { Authorization: `Bearer ${token}` } : {};
+            },
 
             onConnect: () => {
                 stompClientRef.current = client;

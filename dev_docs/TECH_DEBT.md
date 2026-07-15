@@ -43,29 +43,6 @@ These are that design's own open edges.
   scaling out. Already flagged in the `OutboxRelay` javadoc.
 - **Priority:** Medium
 
-### MOD-04 — Head-of-line blocking in the relay
-- **Description:** The relay stops at the first failed publish to preserve order, so one
-  persistently-failing entry blocks all newer entries.
-- **Why it matters:** A single poison payload can wedge the whole pipeline.
-- **Suggested solution:** A per-entry attempt counter → move to a poison table after K tries.
-- **Priority:** Low
-
-### MOD-05 — No pipeline observability
-- **Description:** No consumer-group lag, verdict latency, or DLQ-size signal. If workers
-  fall behind, `PENDING` content lingers with no alert.
-- **Why it matters:** The pipeline can silently degrade.
-- **Suggested solution:** Scrape Kafka consumer-group lag + DLQ record count; expose
-  verdict-latency metrics. (Subset of ARC-08 below.)
-- **Priority:** Medium
-
-### MOD-06 — Frontend gives no moderation feedback
-- **Description:** The create flow doesn't surface `PENDING` state, and moderation-removed
-  content vanishes with no explanation.
-- **Why it matters:** Confusing UX — users can't tell why their content disappeared.
-- **Suggested solution:** Expose `moderationStatus` in the view DTOs → "pending review" /
-  "removed by moderation" states.
-- **Priority:** Low
-
 ---
 
 ## Architecture

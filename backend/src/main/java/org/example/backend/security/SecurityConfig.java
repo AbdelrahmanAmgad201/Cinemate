@@ -59,8 +59,9 @@ public class SecurityConfig {
                 .requestMatchers("/api/forum-follow/**").hasAuthority("ROLE_USER")
                 .requestMatchers("/api/feed/**").hasAuthority("ROLE_USER")
                 .requestMatchers("/api/post/**").hasAuthority("ROLE_USER")
-                .requestMatchers("/api/watch-party/**").hasAuthority("ROLE_USER")
-
+                // /api/watch-party/** is owned by the watch-party microservice now (Stage 1);
+                // the gateway routes it there and enforces ROLE_USER at the edge. The backend
+                // no longer serves it.
 
                 .anyRequest().authenticated()
         )

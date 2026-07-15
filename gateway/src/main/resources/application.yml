@@ -7,7 +7,14 @@ spring:
         webmvc:
           routes:
             # Order matters: the /** catch-all to the frontend must come last so the
-            # more specific /api and /ws routes win first.
+            # more specific /api and /ws routes win first. The watch-party API route must
+            # precede the broad /api/** backend route so it wins for /api/watch-party/**.
+            - id: watch-party-api
+              uri: ${WATCHPARTY_URI:http://watch-party:8081}
+              predicates:
+                # The watch-party microservice now owns this domain directly (Stage 1).
+                # The gateway still authenticates + injects X-User-* here (see SecurityConfig).
+                - Path=/api/watch-party/**
             - id: backend
               uri: ${BACKEND_URI:http://backend:8080}
               predicates:

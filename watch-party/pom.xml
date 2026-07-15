@@ -45,6 +45,16 @@
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-websocket</artifactId>
         </dependency>
+
+        <!-- JWT verification for WebSocket auth (REL-08): validates the RS256 access token
+             carried in the STOMP CONNECT frame, using the same public key the gateway uses.
+             This provides NimbusJwtDecoder WITHOUT pulling spring-security-web/config onto the
+             classpath, so Spring Security's servlet filter chain never auto-activates and the
+             plain servlet filters (GatewayAuthenticationFilter) + REST endpoints are unaffected. -->
+        <dependency>
+            <groupId>org.springframework.security</groupId>
+            <artifactId>spring-security-oauth2-jose</artifactId>
+        </dependency>
         <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>

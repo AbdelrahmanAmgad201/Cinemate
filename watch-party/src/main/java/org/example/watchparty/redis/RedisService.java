@@ -47,6 +47,35 @@ public class RedisService {
         return result != null && result == 1L;
     }
 
+    // The mirror of the join script for the leave path (REL-NEW-03): atomically checks
+    // membership, removes from the set, and decrements the participant count in one
+    // round-trip. Doing these as separate calls (SISMEMBER → SREM → HINCRBY) lets a
+    // check-then-act race double-decrement the counter or drift it out of step with the
+    // member set — and since a party self-destructs when the count reaches 0, a miscount
+    // can prematurely tear down a live party or strand an empty one. Returns -1 (not a
+    // valid count: the set/count are kept in lockstep, so a present member always implies
+    // count ≥ 1) when the user wasn't a member, so the caller can distinguish a no-op.
+    private static final RedisScript<Long> LEAVE_SET_AND_DECREMENT_SCRIPT = new DefaultRedisScript<>(
+            "if redis.call('SISMEMBER', KEYS[1], ARGV[1]) == 0 then\n" +
+            "  return -1\n" +
+            "end\n" +
+            "redis.call('SREM', KEYS[1], ARGV[1])\n" +
+            "return redis.call('HINCRBY', KEYS[2], ARGV[2], -1)",
+            Long.class
+    );
+
+    /**
+     * Removes {@code member} from the set at {@code setKey} and decrements {@code hashField}
+     * in the hash at {@code hashKey} atomically, but only if {@code member} was present.
+     * Returns the new participant count (≥ 0), or {@code -1} if the user was not a member
+     * (no-op).
+     */
+    public long removeFromSetAndDecrementHash(String setKey, String hashKey, String hashField, Object member) {
+        Long result = redisTemplate.execute(LEAVE_SET_AND_DECREMENT_SCRIPT,
+                List.of(setKey, hashKey), member, hashField);
+        return result != null ? result : -1;
+    }
+
     // ========== Basic Key-Value Operations ==========
 
     public void setValue(String key, Object value) {
