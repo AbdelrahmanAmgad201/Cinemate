@@ -43,7 +43,7 @@ browser ──▶ backend         :8080   (/api, validates JWT on every request,
                  │     /ws/**       ─▶ watch-party     :8081   (SockJS / STOMP)                             │
                  │     /oauth2/authorize/**, /login/oauth2/** ─▶ backend (Google handshake)                 │
                  └──────────────────────────────────────────────────────────────────────────────────────┘
-                        backend ──▶ mysql · mongodb · redis-cache · kafka        (all internal)
+                        backend ──▶ postgres · kafka                             (all internal)
                         watch-party ──▶ redis                                        (internal)
 ```
 
@@ -69,10 +69,10 @@ reachable from the host.
 | Not its job | Where it lives instead |
 |---|---|
 | **Issue / sign tokens** | Backend (`JWTProvider` signs with the private key). |
-| **Store / rotate refresh tokens** | Backend (`RefreshTokenService`, Redis). Login/refresh/logout are just proxied through. |
+| **Store / rotate refresh tokens** | Backend (`RefreshTokenService`, Postgres `refresh_tokens` table). Login/refresh/logout are just proxied through. |
 | **Fine-grained authorization** ("is this user the author of post 42?", "does this org own this movie?") | Backend — it needs domain data the gateway shouldn't have. |
 | **Business logic / DB access** | Backend and the other services. The gateway has no database. |
-| **Talk to MySQL / MongoDB** | Only the backend does. The gateway's only stateful dependency is Redis (for rate-limit buckets). |
+| **Talk to Postgres** | Only the backend does. The gateway's only stateful dependency is Redis (for rate-limit buckets). |
 | **Per-message WebSocket auth** | Not yet done anywhere (tracked as REL-08). The gateway proxies the `/ws` handshake but does not authenticate individual STOMP frames. |
 | **Service discovery / load balancing logic** | Static routing by Docker DNS name. No Eureka/Consul (overkill for Compose). |
 
@@ -150,8 +150,8 @@ STOMP messages. Per-connection/per-message WS auth remains a separate, open item
 
 ## 8. Rate limiting
 
-Token-bucket limiting with **Bucket4j**, backed by **Redis** (Lettuce, the same
-`redis-cache` instance) so counters are shared across gateway replicas.
+Token-bucket limiting with **Bucket4j**, backed by **Redis** (Lettuce, the dedicated
+`redis-ratelimit` instance) so counters are shared across gateway replicas.
 Implemented in `RateLimitFilter` (+ `RateLimitConfig`), running right after identity is
 established and before authorization.
 
@@ -170,7 +170,7 @@ established and before authorization.
   falling back to the socket address. In local Compose all host traffic shares the
   Docker bridge IP, so it lumps into one IP bucket — expected in dev.
 - The Redis connection is opened **lazily** on first request, so the gateway still boots
-  if `redis-cache` is briefly unavailable.
+  if `redis-ratelimit` is briefly unavailable.
 
 ## 9. Trusted-header contract (gateway → backend)
 
@@ -218,9 +218,8 @@ Because the browser now only ever hits the gateway origin:
 | kafka | — | 9092 | internal only (moderation pipeline log; no auth) |
 | moderation-worker | — | — | internal only (ONNX inference; no port) |
 | redis | — | 6379 | internal only (watch-party state) |
-| redis-cache | — | 6379 | internal only (response cache, refresh tokens, rate-limit buckets) |
-| mysql | 3307 | 3306 | host port kept for dev DB access |
-| mongodb | 27018 | 27017 | host port kept for dev DB access |
+| redis-ratelimit | — | 6379 | internal only (gateway rate-limit buckets) |
+| postgres | 5433 | 5432 | host port kept for dev DB access |
 
 **You now open the app at `http://localhost:8080`** (not `:5173`).
 
@@ -234,7 +233,7 @@ Environment variables consumed by the gateway container:
 | `BACKEND_URI` | `http://backend:8080` | backend upstream |
 | `WATCHPARTY_URI` | `http://watch-party:8081` | watch-party upstream |
 | `FRONTEND_URI` | `http://frontend:80` | frontend (SPA) upstream |
-| `REDIS_HOST` | `redis-cache` | Redis host for rate-limit buckets |
+| `REDIS_HOST` | `redis-ratelimit` | Redis host for rate-limit buckets |
 | `REDIS_PORT` | `6379` | Redis port |
 
 The gateway never receives `JWT_PRIVATE_KEY` — verification only.

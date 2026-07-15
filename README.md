@@ -1,161 +1,147 @@
 # Cinemate
 
-**Cinemate** is a full-stack social platform for discovering movies, writing reviews, participating in community discussions, and hosting real-time watch parties with friends.
+**Cinemate** is a full-stack social platform for movies: discovery and reviews,
+Reddit-style forums (forums → posts → threaded comments → votes), real-time
+synchronized watch parties with live chat, and AI-based content moderation of
+user-generated text.
 
-The system is designed using a hybrid monolith + microservices architecture and a polyglot persistence data model to handle both transactional and high-volume social content efficiently.
+It is built as a **hybrid monolith + microservices** system behind a single API
+gateway, with all application data in one PostgreSQL database.
 
 ---
 
 ## Features
 
-* Movie discovery and reviews
-* Reddit-style forums (posts, comments, discussions)
-* Real-time watch party with live chat
-* JWT authentication and authorization
-* Content moderation service (AI-based)
-* Redis-backed real-time party state management
-* Dockerized multi-service deployment
+* Movie discovery, browsing, and reviews
+* Reddit-style forums (posts, threaded comments, votes)
+* Real-time watch parties with live chat
+* Access + refresh token auth (RS256) and Google OAuth2
+* Asynchronous AI content moderation (optimistic publish + transactional outbox)
+* Dockerized multi-service deployment behind one gateway
 
 ---
 
 ## Tech Stack
 
-| Layer            | Technology                     |
-| ---------------- | ------------------------------ |
-| Backend          | Spring Boot                    |
-| Frontend         | React                          |
-| Relational DB    | MySQL                          |
-| Document DB      | MongoDB                        |
-| Cache / Realtime | Redis                          |
-| Microservice     | FastAPI (Python)               |
-| Realtime         | WebSockets                     |
-| Deployment       | Docker / Docker Compose        |
-| External APIs    | Wistia, SendGrid, Google OAuth |
+| Layer            | Technology                                         |
+| ---------------- | -------------------------------------------------- |
+| Backend          | Java 21, Spring Boot, Spring Security              |
+| API Gateway      | Spring Cloud Gateway (single entry point)          |
+| Frontend         | React + Vite (served as static SPA via nginx)      |
+| Database         | PostgreSQL 16 (JPA/Hibernate + Flyway)             |
+| Realtime         | Redis 7 (watch-party state) + WebSocket / STOMP    |
+| Messaging        | Kafka 3.9 (KRaft) — moderation pipeline            |
+| ML inference     | ONNX Runtime + tokenizers (Python worker)          |
+| Deployment       | Docker / Docker Compose                            |
+| External APIs    | Wistia, SendGrid, Google OAuth                     |
 
 ---
 
 ## Architecture Overview
 
-![Architecture diagram](assets/diagrams/arch.png)
+The browser only ever talks to the **gateway** (the single published port, `:8080`).
+Everything else is internal to the `app-net` Docker network.
+
+```
+browser ─▶ gateway (Spring Cloud Gateway, :8080)
+             ├── /            ─▶ frontend  (React SPA, nginx)
+             ├── /api/**      ─▶ backend   (Spring Boot monolith)
+             ├── /ws/**       ─▶ watch-party (Spring Boot microservice)
+             └── /oauth2/**   ─▶ backend   (Google handshake)
+
+backend      ─▶ PostgreSQL · Kafka (moderation)
+watch-party  ─▶ Redis (durable party state)
+moderation-worker ◀─ Kafka ─▶ backend   (Content-moderator, Python/ONNX)
+```
 
 ### Services
 
-#### 1. Main Backend Service
+- **backend/** — Spring Boot monolith: auth, users, movies, forums/posts/comments/votes,
+  feed, admin/org, and the moderation producer + verdict consumer.
+- **gateway/** — Spring Cloud Gateway: the single entry point. Serves the SPA, proxies
+  `/api` and `/ws`, verifies access tokens (RS256, public key only), enforces the
+  route/role matrix, injects trusted `X-User-*` identity headers, and rate-limits.
+- **frontend/** — React + Vite SPA.
+- **watch-party/** — Spring Boot microservice: WebSocket/STOMP fan-out for watch parties,
+  Redis pub/sub for party state, authenticated to the backend via an internal API key.
+- **Content-moderator/** — Python Kafka consumer that scores text with a quantized ONNX
+  transformer and produces moderation verdicts.
 
-**Spring Boot**
+### Persistence
 
-* Authentication & authorization (JWT)
-* REST APIs (users, movies, forums, posts, moderation)
-* Business logic and core application services
-* Integration with microservices and external APIs
-
-#### 2. Watch Party Microservice
-
-**Spring Boot + Redis + WebSockets**
-
-* Maintains party state in Redis
-* Pub/Sub messaging for party events
-* WebSocket broadcasting for real-time updates
-* Handles join/leave and party lifecycle
-
-#### 3. Content Moderation Microservice
-
-**Python FastAPI**
-
-* AI-based text moderation
-* Scans posts/comments for abusive or hateful content
-* Returns moderation verdicts to backend
-
-#### 4. Databases
-
-* **MySQL** → Structured transactional data (users, auth, movies)
-* **MongoDB** → User-generated content (posts, comments, forums)
+All application data lives in **one PostgreSQL database** (schema owned by Flyway;
+Hibernate runs `ddl-auto=validate`). Identity/catalog entities use `BIGINT` ids;
+social content uses UUIDv7 ids. The moderation outbox commits in the same transaction
+as the content it moderates. The only Redis instances are watch-party's durable party
+state and the gateway's rate-limiter — the backend uses no Redis.
 
 ---
 
 ## Design Decisions
-### Shared Redis State for Watch-Party Service (Horizontal Scaling)
 
-The watch-party service uses **Redis as a shared in-memory state store** instead of storing session or party state inside individual Spring Boot service instances.
+### Single entry point (gateway)
 
-**Rationale:**
+The gateway is the only service with a published host port. It verifies tokens at the
+edge and forwards a trusted identity to the internal backend, which has no host port
+and therefore cannot receive forged identity headers. One origin means no CORS and a
+`SameSite=Lax` refresh cookie. See [`dev_docs/gateway.md`](dev_docs/gateway.md).
 
-* Watch parties require shared state (members, playback time, chat events, party status).
-* If state were stored inside each service instance, users connected to different instances would not see the same party state.
-* By storing all party/session state in **shared Redis memory**, any service instance can handle any user request.
-* This allows the watch-party microservice to be **horizontally scaled behind a load balancer without sticky sessions**, since all instances read/write from the same shared state.
+### Asynchronous content moderation
 
-**Result:**
+Moderation is off the request's critical path. Content is saved as `PENDING` and is
+visible immediately; a transactional outbox relays a moderation request to Kafka, an
+ONNX worker fleet scores it, and a verdict either approves or retroactively removes the
+content. See [`dev_docs/moderation-architecture.md`](dev_docs/moderation-architecture.md).
 
-* Stateless service instances
-* No sticky sessions required
-* Easier horizontal scaling
-* Better fault tolerance (instance can die without losing party state)
-* Consistent party state across all service instances
+### Shared Redis state for watch parties (horizontal scaling)
 
-### Polyglot Persistence
-
-The system uses **MySQL + MongoDB** to balance consistency and scalability.
-
-| Database | Used For                              | Reason                                 |
-| -------- | ------------------------------------- | -------------------------------------- |
-| MySQL    | Users, authentication, movie metadata | ACID, relational constraints           |
-| MongoDB  | Posts, comments, forums               | Flexible schema, high write throughput |
-
-Schema diagram:
-![Schema diagram](assets/diagrams/Cinemate-\(3\).png)
-
-Document model:
-![ERD](assets/diagrams/erdplus-\(5\).png)
+Party state (members, playback position, chat, status) lives in shared Redis rather
+than in-process, so any watch-party instance can serve any request — stateless
+instances, no sticky sessions.
 
 ---
 
 ## Running the Project
 
-### Docker (Recommended)
-
 ```bash
+# 1. Copy the env templates and fill in secrets
+cp .env.example .env
+cp backend/.env.example backend/.env.prod
+
+# 2. Build and start the full stack
 docker compose up --build
 ```
 
-Make sure to configure environment variables and API keys before running.
+Open the app at **http://localhost:8080** (the gateway).
+
+See [`docs/environment.md`](docs/environment.md) for every environment variable and how
+to obtain the external API credentials (Google OAuth2, SendGrid).
 
 ---
 
-## Testing & Quality
+## Testing
 
-* Unit and integration testing using **JUnit + Spring Boot Test**
-* Service and API testing performed using **API testing tools and load testing**
-* ~60%+ backend code coverage
-* Integration testing with containerized databases
+* Backend unit tests (mocked): `cd backend && ./mvnw test`
+* Integration tests use **Testcontainers** (a real `postgres:16` container + Flyway),
+  so a reachable Docker daemon is required.
 
 ---
 
-## Project Highlights
+## Documentation
 
-This project demonstrates:
-
-* Hybrid **monolith + microservices** architecture
-* **WebSockets** for real-time communication
-* **Redis Pub/Sub** for distributed state management
-* **Polyglot persistence** (MySQL + MongoDB)
-* **JWT authentication & authorization**
-* **Dockerized multi-service deployment with multi-stage builds**
-* External API integration
-* Content moderation microservice
+| Doc | Use for |
+|---|---|
+| [`docs/auth.md`](docs/auth.md) | Access/refresh token model + gateway contract |
+| [`docs/environment.md`](docs/environment.md) | Env vars, secrets, deployment |
+| [`dev_docs/gateway.md`](dev_docs/gateway.md) | Gateway design and topology |
+| [`dev_docs/moderation-architecture.md`](dev_docs/moderation-architecture.md) | Moderation pipeline deep dive |
+| [`dev_docs/postgres-consolidation.md`](dev_docs/postgres-consolidation.md) | Data-layer design rationale |
+| [`dev_docs/TECH_DEBT.md`](dev_docs/TECH_DEBT.md) | Known open issues / backlog |
 
 ---
 
 ## Media Disclaimer
 
-Cinemate does **not** host or distribute copyrighted movies.
-
-All movie posters, metadata, and trailers are used strictly for:
-
-* Educational purposes
-* Academic demonstration
-* Portfolio showcase
-
-All media content belongs to their respective copyright owners.
-
----
+Cinemate does **not** host or distribute copyrighted movies. All movie posters,
+metadata, and trailers are used strictly for educational, academic, and portfolio
+demonstration purposes. All media content belongs to its respective copyright owners.

@@ -39,7 +39,7 @@ public class WatchPartyService {
      * Creates a new watch party.
      * <p>
      * No method-level {@code @Transactional}: the microservice HTTP call must not run
-     * inside a MySQL transaction, or the connection is held open for the full round-trip
+     * inside a database transaction, or the connection is held open for the full round-trip
      * (PERF-02). The DB row is written first (its own implicit transaction via
      * {@code save()}), then the microservice is called; if that call fails, the row is
      * deleted as a compensating action instead of being left orphaned (REL-02).

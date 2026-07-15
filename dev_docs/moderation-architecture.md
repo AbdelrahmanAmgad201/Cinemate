@@ -172,12 +172,6 @@ both explicitly:
 > `mongoTransactionOperations` (a `TransactionOperations`), Boot backs off and ours is the
 > *only* bean of that type — so constructor injection resolves cleanly by type.
 
-> **Why Mongo transactions need a replica set:** MongoDB multi-document transactions are only
-> available on a replica set (or sharded cluster), never on a standalone `mongod`. That's why
-> `compose.yaml` runs Mongo with `--replSet rs0` and initiates it in the healthcheck. Point
-> the backend at a standalone Mongo and **every content write fails**. (See MOD-07 in
-> `FINAL_AUDIT.md`.)
-
 ### 4.5 The services — optimistic publish
 Files: [`post/PostService.java`](../backend/src/main/java/org/example/backend/post/PostService.java),
 [`comment/CommentService.java`](../backend/src/main/java/org/example/backend/comment/CommentService.java),
@@ -462,9 +456,8 @@ mechanism; ordering is just a helpful assist.
 | Backend crashes after Kafka `send`, before outbox delete | Row survives → re-published → duplicate request → idempotent verdict. | ✅ |
 | Worker crashes mid-batch (before commit) | Offset not committed → batch redelivered → possibly duplicate verdicts → idempotent apply. | ✅ |
 | Worker gets a malformed request | Routed to `moderation.requests.dlq`; worker keeps running. | ✅ (isolated) |
-| Verdict consumer throws (e.g. Mongo blip) | Default error handler retries, then **commits and moves on** → verdict lost, flagged item not removed. **(MOD-02 — open)** | ⚠️ egress soft spot |
+| Verdict consumer throws (e.g. datastore blip) | Default error handler retries, then **commits and moves on** → verdict lost, flagged item not removed. **(MOD-02 — open)** | ⚠️ egress soft spot |
 | Verdict simply never arrives (bug/loss) | Content stuck `PENDING` forever, visible, never re-checked. **(MOD-01 — no reconciliation sweep yet)** | ⚠️ |
-| Mongo is standalone (not a replica set) | Every content write fails (outbox transaction unsupported). **(MOD-07)** | ❌ writes rejected loudly |
 | Two backend replicas | Both relays publish every row → duplicate requests → idempotent but wasteful. **(MOD-03)** | ✅ correct, wasteful |
 
 ---
@@ -474,7 +467,8 @@ mechanism; ordering is just a helpful assist.
 **Backend (Java):**
 - `spring-kafka` — `KafkaTemplate` (relay producer), `@KafkaListener` (verdict consumer),
   `KafkaAdmin` (topic creation).
-- `spring-boot-starter-data-mongodb` — documents, repositories, `MongoTransactionManager`.
+- `spring-boot-starter-data-jpa` + Flyway + the PostgreSQL driver — entities,
+  repositories, and the outbox table that shares the content transaction.
 - Jackson (via Boot) — request/verdict JSON.
 
 **Worker (Python):** [`Content-moderator/worker/requirements.txt`](../Content-moderator/worker/requirements.txt)
@@ -483,8 +477,8 @@ mechanism; ordering is just a helpful assist.
 
 **Infrastructure** ([`compose.yaml`](../compose.yaml)):
 - **Kafka** `apache/kafka:3.9.1` in **KRaft** mode (no ZooKeeper) — single-node, internal-only.
-- **MongoDB** as a single-node **replica set** (`--replSet rs0`) — required for the outbox
-  transaction; the healthcheck initiates the set on first boot.
+- **PostgreSQL** `postgres:16` — the outbox row commits in the same ordinary transaction
+  as its content; no replica set or special configuration required.
 - **moderation-worker** — built from `Content-moderator/`, the model baked in at build time.
 
 The backend deliberately does **not** `depends_on: kafka` — optimistic publish means the app
@@ -527,7 +521,8 @@ If you can answer these, you understand the system:
 3. A user edits a post twice in quick succession. Three verdicts arrive out of order. Which
    one wins, and what mechanism enforces that?
 4. Why does the worker commit its Kafka offset *after* producing verdicts rather than before?
-5. Why is a MongoDB replica set a hard requirement now, when it wasn't before?
+5. How does the outbox row commit atomically with its content, and why does that need
+   no special database configuration (unlike the old Mongo multi-document transaction)?
 6. Where is the durability guarantee strong, and where is it soft? What single component would
    close the soft gap?
 7. Why did we choose at-least-once + idempotency over Kafka's exactly-once semantics?
@@ -537,6 +532,6 @@ If you can answer these, you understand the system:
 ---
 
 ## 11. Related documents
-- [`FINAL_AUDIT.md`](FINAL_AUDIT.md) — remaining work items (MOD-01…08) and lessons learned.
+- [`TECH_DEBT.md`](TECH_DEBT.md) — remaining moderation work items (MOD-01…06) and the wider backlog.
 - [`Content-moderator/README.md`](../Content-moderator/README.md) — the worker service in isolation.
 - [`docs/environment.md`](../docs/environment.md) — env vars and deployment.

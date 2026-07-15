@@ -1,7 +1,10 @@
 # PostgreSQL Consolidation — Phase 2 Schema Design
 
-> **Status:** Design proposal (no code written yet). Supersedes the MySQL + MongoDB +
-> response-cache design. Locked scope from Phase 1:
+> **Status:** ✅ Implemented — this is the current data layer (schema lives in
+> `backend/src/main/resources/db/migration/V1__baseline.sql`, owned by Flyway). The
+> document is retained as the authoritative design rationale for how and why the store
+> was consolidated. Supersedes the old MySQL + MongoDB + response-cache design.
+> Locked scope (from Phase 1):
 > - MySQL **and** MongoDB → one PostgreSQL database.
 > - Response cache (`exploreFeed`/`exploreForum`) **removed**.
 > - Refresh tokens **move to Postgres**; gateway rate-limiting **stays on its own Redis**;

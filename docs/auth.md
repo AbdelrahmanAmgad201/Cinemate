@@ -13,7 +13,7 @@ Two credentials, with deliberately different lifetimes and jobs:
 | Form | RS256 JWT (signed claims) | opaque 256-bit random string |
 | Lifetime | short (15 min default) | long (7 days default) |
 | Carried in | `Authorization: Bearer …` (from an in-memory store) | httpOnly cookie `refresh_token`, `Path=/api/auth/v1` |
-| Verified by | signature only — **no DB, no Redis** | lookup in Redis (`refresh-token:<sha256>`) |
+| Verified by | signature only — **no DB lookup** | lookup in Postgres (`refresh_tokens`, keyed by `sha256(token)`) |
 | Purpose | prove identity on every request | mint new access tokens; the only revocable credential |
 
 Why this shape:
@@ -21,15 +21,16 @@ Why this shape:
 - **The access token is stateless.** Verifying it is pure signature math against the
   RSA public key — no revocation-list lookup on the hot path. That's what lets
   verification move to a gateway (or scale across replicas) with zero shared state.
-- **Revocation lives with the refresh token.** Logout deletes the refresh token from
-  Redis, so no new access tokens can be minted. Any already-issued access token
+- **Revocation lives with the refresh token.** Logout deletes the refresh token row,
+  so no new access tokens can be minted. Any already-issued access token
   keeps working until it expires (≤15 min) — the standard, accepted trade-off of
   dropping the per-request blacklist.
 - **The refresh token is opaque and httpOnly.** It carries no readable identity and
   JavaScript can't touch it, so an XSS bug can't exfiltrate the long-lived
-  credential. It's also hashed at rest, so a Redis dump yields nothing usable.
-- **Rotation.** Every `/refresh` atomically consumes the presented token (Redis
-  `GETDEL`) and issues a replacement. A token replayed after use fails — the basic
+  credential. It's also hashed at rest, so a database dump yields nothing usable.
+- **Rotation.** Every `/refresh` atomically consumes the presented token (a
+  delete-by-hash that must affect exactly one row) and issues a replacement. A token
+  replayed after use fails — the basic
   theft-detection guarantee.
 
 ## Endpoints (all under `/api/auth/v1`, all public)
@@ -38,7 +39,7 @@ Why this shape:
 |---|---|
 | `POST /login` | validate credentials → access token in body + `Set-Cookie: refresh_token` |
 | `POST /refresh` | read refresh cookie → rotate it → new access token in body + rotated cookie |
-| `POST /logout` | delete refresh token from Redis + clear the cookie |
+| `POST /logout` | delete refresh token row + clear the cookie |
 | `POST /oauth-token` | redeem the OAuth exchange code → same handoff as `/login` |
 | `POST /sign-up` | create a pending verification (no tokens yet) |
 
@@ -125,5 +126,6 @@ else are internal to the Docker network. It:
 
 Issuance (signing tokens, the refresh-token store, the user database) stays entirely
 in the backend — the gateway is a verifier and traffic cop, never a minter. To scale
-the gateway horizontally, nothing changes: token verification is stateless and both
-the rate-limit buckets and refresh tokens already live in Redis.
+the gateway horizontally, nothing changes: token verification is stateless, and its
+only shared state — the rate-limit buckets — lives in Redis. (The refresh-token store
+is the backend's concern, in Postgres, not the gateway's.)

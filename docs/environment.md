@@ -28,13 +28,21 @@ docker compose up --build
 
 ### Root Compose (`.env`)
 
-These are consumed directly by `compose.yaml` and passed into the relevant containers.
+These are read by `compose.yaml` via `${VAR}` substitution and injected into the
+relevant containers. (See `.env.example` for the full annotated template.)
 
 | Variable | Required | Default | Description |
 |---|---|---|---|
-| `POSTGRES_PASSWORD` | ✅ | — | PostgreSQL password |
+| `POSTGRES_PASSWORD` | ✅ | — | PostgreSQL password (also becomes `DB_PASSWORD` for the backend) |
 | `POSTGRES_DB` | ✅ | `Cinemate` | PostgreSQL database name |
 | `POSTGRES_USER` | ✅ | `cinemate` | PostgreSQL username |
+| `JWT_PUBLIC_KEY` | ✅ | — | RS256 public key — the gateway verifies access tokens with it |
+| `BASE_URL` | ✅ | `http://localhost:8080` | The gateway origin (single entry point) |
+| `FRONTEND_URL` | ✅ | `http://localhost:8080` | Post-login redirect target (the gateway origin) |
+| `CORS_ALLOWED_ORIGINS` | ✅ | `http://localhost:8080` | Origin allowed to open the `/ws` WebSocket (watch-party) |
+| `WATCHPARTY_KEY` | ✅ | — | Shared internal API key (backend ↔ watch-party) |
+| `TOXIC_THRESHOLD` / `SEVERE_TOXIC_THRESHOLD` | ❌ | `0.5` | Moderation-worker toxicity thresholds |
+| `HF_MODEL_REPO` / `HF_MODEL_REVISION` | ❌ | pinned | ONNX model baked into the worker image at build time |
 
 ---
 
@@ -54,15 +62,25 @@ Loaded via `env_file: ./backend/.env.prod` in `compose.yaml`.
 > Schema is owned by **Flyway** migrations (`ddl-auto=validate`, fixed). There is no
 > `JPA_DDL_AUTO` knob or `MONGODB_URI` anymore — the app runs on a single PostgreSQL database.
 
-#### JWT
+#### JWT (RS256 keypair)
+
+Access tokens are **RS256** — signed with a private key, verified with the public key.
+There is no shared HMAC secret. The public key is also given to the gateway so it can
+verify tokens at the edge.
 
 | Variable | Required | Description |
 |---|---|---|
-| `JWT_SECRET` | ✅ | Random secret used to sign JWTs. Must be ≥ 64 characters for HS512. |
+| `JWT_PRIVATE_KEY` | ✅ | Base64 (DER/PKCS#8) or PEM private key. Signs access tokens; **backend only**. |
+| `JWT_PUBLIC_KEY` | ✅ | Base64 (DER/X.509) or PEM public key. Verifies tokens; used by **backend + gateway**. |
+| `JWT_ACCESS_TOKEN_EXP_MS` | ❌ | Access-token lifetime (default `900000` = 15 min). |
+| `JWT_REFRESH_TOKEN_EXP_MS` | ❌ | Refresh-token lifetime (default `604800000` = 7 days). |
 
-**Generate a secure secret:**
+**Generate a keypair (single-line base64, env-friendly):**
 ```bash
-openssl rand -hex 64
+openssl genpkey -algorithm RSA -pkeyopt rsa_keygen_bits:2048 -out priv.pem
+openssl rsa -pubout -in priv.pem -out pub.pem
+JWT_PRIVATE_KEY=$(grep -v '^-' priv.pem | tr -d '\n')
+JWT_PUBLIC_KEY=$(grep -v '^-' pub.pem  | tr -d '\n')
 ```
 
 #### Google OAuth2
@@ -71,9 +89,9 @@ openssl rand -hex 64
 |---|---|---|
 | `GOOGLE_CLIENT_ID` | ✅ | OAuth 2.0 Client ID from Google Cloud Console |
 | `GOOGLE_CLIENT_SECRET` | ✅ | OAuth 2.0 Client Secret |
-| `BASE_URL` | ✅ | Publicly reachable URL of the **backend** (e.g. `http://localhost:8080` or `https://api.cinemate.example.com`) |
-| `FRONTEND_URL` | ✅ | Publicly reachable URL of the **frontend** (e.g. `http://localhost:5173`). The backend redirects here after login. |
-| `CORS_ALLOWED_ORIGINS` | ✅ | Comma-separated list of origins allowed via CORS (e.g. `http://localhost:5173,https://cinemate.example.com`) |
+| `BASE_URL` | ✅ | The single externally-reachable origin — the **gateway** (e.g. `http://localhost:8080` or `https://cinemate.example.com`). Used to build the Google OAuth redirect URI. |
+| `FRONTEND_URL` | ✅ | The gateway origin the backend redirects to after a Google login (same value as `BASE_URL` — everything is one origin, e.g. `http://localhost:8080`). |
+| `CORS_ALLOWED_ORIGINS` | ✅ | The browser origin (the gateway). The backend no longer does CORS (single origin behind the gateway); this is consumed **only** by watch-party's WebSocket origin check. |
 
 #### SendGrid
 
@@ -173,30 +191,32 @@ Used to send email verification codes and password reset emails.
 
 ---
 
-### 3. JWT Secret
+### 3. JWT Keypair (RS256)
 
-Not an external service — you generate this yourself.
+Not an external service — you generate this yourself. Access tokens are RS256, so you
+need an RSA **keypair**, not a shared secret.
 
 ```bash
-# Generate a cryptographically secure 64-byte hex string (128 chars)
-openssl rand -hex 64
+openssl genpkey -algorithm RSA -pkeyopt rsa_keygen_bits:2048 -out priv.pem
+openssl rsa -pubout -in priv.pem -out pub.pem
+JWT_PRIVATE_KEY=$(grep -v '^-' priv.pem | tr -d '\n')
+JWT_PUBLIC_KEY=$(grep -v '^-' pub.pem  | tr -d '\n')
 ```
 
-Paste the result as `JWT_SECRET`. This secret must:
-- Be at least 64 characters (required by HS512).
-- Be kept secret — anyone with this value can forge valid JWTs.
-- Never change in production (all issued tokens would become invalid).
+- The **private** key signs access tokens and must stay only on the backend.
+- The **public** key verifies tokens; it is given to both the backend and the gateway.
+- Rotating the keypair invalidates all in-flight access tokens (≤15 min lifetime), so
+  the blast radius is small — but refresh tokens (opaque, in Postgres) survive.
 
 ---
 
-### 4. MySQL Root Password
+### 4. PostgreSQL Password
 
-Set `MYSQL_ROOT_PASSWORD` to any strong password. A suggested generator:
+Set `POSTGRES_PASSWORD` in the root `.env` to any strong value, and use the **same**
+value for `DB_PASSWORD` in `backend/.env.prod`. A suggested generator:
 ```bash
 openssl rand -base64 24
 ```
-
-Use the same value for `DB_PASSWORD` in the backend env.
 
 ---
 
@@ -209,7 +229,10 @@ openssl rand -hex 32
 ```
 
 > [!NOTE]
-> The internal API key enforcement between the backend and watch-party service is currently **commented out** in `WatchPartyService.java`. Setting this variable now will make it easy to enable once the code is uncommented (`TD-01` in the tech debt backlog).
+> This key is **enforced**: the backend sends it as an `X-Internal-API-Key` header on
+> every call to watch-party, and watch-party's `InternalApiKeyFilter` rejects requests
+> that don't match (it fails **closed** — returns 503 — if the key is unset, so it must
+> be configured for the stack to work). Health-check paths are exempt.
 
 ---
 
@@ -227,24 +250,25 @@ The `moderation-worker` service bakes the `minuva/MiniLMv2-toxic-jigsaw-lite` ON
 ```
 ┌──────────────────────────────────────────────────────────────────────┐
 │ .env (root — loaded by Docker Compose)                               │
-│   MYSQL_ROOT_PASSWORD, MYSQL_DATABASE,                               │
-│   FRONTEND_URL, CORS_ALLOWED_ORIGINS, ...                            │
+│   POSTGRES_USER, POSTGRES_PASSWORD, POSTGRES_DB,                     │
+│   JWT_PUBLIC_KEY, BASE_URL, FRONTEND_URL, CORS_ALLOWED_ORIGINS, ...  │
 └──────────────────────────────────────────────────────────────────────┘
          │ passed to containers via compose.yaml
          ▼
-┌──────────────────────────────────────┐  ┌──────────────────────────┐
-│ backend/.env.prod                    │  │ compose.yaml environment: │
-│   DB_URL, DB_PASSWORD, JWT_SECRET,   │  │   SPRING_REDIS_HOST,      │
-│   GOOGLE_CLIENT_ID, SENDGRID_API_KEY │  │   SPRING_PROFILES_ACTIVE  │
-│   WATCHPARTY_KEY, KAFKA_BOOTSTRAP... │  │   (watch-party service)   │
-└──────────────────────────────────────┘  └──────────────────────────┘
+┌──────────────────────────────────────────┐  ┌──────────────────────────┐
+│ backend/.env.prod                        │  │ compose.yaml environment: │
+│   DB_URL, DB_PASSWORD,                    │  │   SPRING_REDIS_HOST,      │
+│   JWT_PRIVATE_KEY, JWT_PUBLIC_KEY,        │  │   SPRING_PROFILES_ACTIVE, │
+│   GOOGLE_CLIENT_ID, SENDGRID_API_KEY,     │  │   WATCHPARTY_KEY          │
+│   WATCHPARTY_KEY, KAFKA_BOOTSTRAP...      │  │   (watch-party service)   │
+└──────────────────────────────────────────┘  └──────────────────────────┘
          │ env_file: ./backend/.env.prod
          ▼
 ┌──────────────────────────────────────┐
 │ Spring application.properties        │
-│   ${DB_URL}, ${JWT_SECRET},          │
-│   ${app.frontend.url},               │
-│   ${app.cors.allowed-origins} ...    │
+│   ${DB_URL}, ${JWT_PRIVATE_KEY},     │
+│   ${JWT_PUBLIC_KEY},                 │
+│   ${app.frontend.url} ...            │
 └──────────────────────────────────────┘
 
 ┌──────────────────────────────────────┐
