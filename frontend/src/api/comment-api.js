@@ -10,13 +10,11 @@ import api from './api-client.js';
  */
 export async function addCommentApi({ postId, parentId, content }) {
     try {
-        console.debug('[API] addComment request', { postId, parentId: parentId || null, contentLength: content?.length });
-        const response = await api.post("/comment/v1/create-comment", {
+        const response = await api.post("/comment/v1", {
             postId,
             parentId: parentId || null,
             content
         });
-        console.debug('[API] addComment response', { status: response.status, data: response.data });
 
         return { success: true, data: response.data };
     } catch (err) {
@@ -39,7 +37,7 @@ export async function addCommentApi({ postId, parentId, content }) {
  */
 export async function getPostCommentsApi({ postId, page = 0, size = 20, sortBy = 'score' }) {
     try {
-        const response = await api.get(`/comment/v1/posts/${postId}/comments`, {
+        const response = await api.get(`/comment/v1/post/${postId}`, {
             params: { page, size, sortBy }
         });
 
@@ -61,7 +59,7 @@ export async function getPostCommentsApi({ postId, page = 0, size = 20, sortBy =
  */
 export async function getRepliesApi({ parentId, sortBy = 'score' }) {
     try {
-        const response = await api.get(`/comment/v1/replies/${parentId}`, {
+        const response = await api.get(`/comment/v1/${parentId}/replies`, {
             params: { sortBy }
         });
 
@@ -80,7 +78,7 @@ export async function getRepliesApi({ parentId, sortBy = 'score' }) {
  */
 export async function deleteCommentApi({ commentId }) {
     try {
-        const response = await api.delete(`/comment/v1/delete-comment/${commentId}`);
+        const response = await api.delete(`/comment/v1/${commentId}`);
 
         return { success: true, data: response.data };
     } catch (err) {
@@ -92,98 +90,6 @@ export async function deleteCommentApi({ commentId }) {
     }
 }
 
-/**
- * Update a comment
- * @param {Object} params
- * @param {string} params.commentId
- * @param {string} params.content
- */
 // Note: comment update handled locally in frontend workflow; no backend endpoint.
-
-/**
- * Vote on a comment
- * @param {Object} params - Vote parameters
- * @param {string} params.commentId - Comment ID (ObjectId as string)
- * @param {number} params.value - Vote value (1 for upvote, -1 for downvote)
- * @returns {Promise<Object>} - Returns success status
- */
-export async function voteCommentApi({ commentId, value }) {
-    try {
-        const response = await api.post("/vote/v1/comment-vote", {
-            targetId: commentId,
-            value: value
-        });
-
-        return { success: true, data: response.data };
-    } catch (err) {
-        console.error("Error voting on comment:", err);
-        return { 
-            success: false, 
-            message: err.response?.data?.error || err.message 
-        };
-    }
-}
-
-/**
- * Update vote on a comment
- * @param {Object} params - Vote parameters
- * @param {string} params.commentId - Comment ID (ObjectId as string)
- * @param {number} params.value - New vote value (1 for upvote, -1 for downvote)
- * @returns {Promise<Object>} - Returns success status
- */
-export async function updateVoteCommentApi({ commentId, value }) {
-    try {
-        const response = await api.put("/vote/v1/update-vote", {
-            targetId: commentId,
-            value: value
-        });
-
-        return { success: true, data: response.data };
-    } catch (err) {
-        console.error("Error updating vote on comment:", err);
-        return { 
-            success: false, 
-            message: err.response?.data?.error || err.message 
-        };
-    }
-}
-
-/**
- * Delete vote on a comment
- * @param {Object} params - Vote parameters
- * @param {string} params.commentId - Comment ID (ObjectId as string)
- * @returns {Promise<Object>} - Returns success status
- */
-export async function deleteVoteCommentApi({ commentId }) {
-    try {
-        const response = await api.delete(`/vote/v1/delete-vote/${commentId}`);
-
-        return { success: true, data: response.data };
-    } catch (err) {
-        console.error("Error deleting vote on comment:", err);
-        return { 
-            success: false, 
-            message: err.response?.data?.error || err.message 
-        };
-    }
-}
-
-/**
- * Check if user has voted on a comment
- * @param {Object} params - Vote parameters
- * @param {string} params.commentId - Comment ID (ObjectId as string)
- * @returns {Promise<Object>} - Returns vote value (1, -1, or 0)
- */
-export async function isVotedCommentApi({ commentId }) {
-    try {
-        const response = await api.get(`/vote/v1/is-voted/${commentId}`);
-
-        return { success: true, data: response.data };
-    } catch (err) {
-        console.error("Error checking comment vote:", err);
-        return { 
-            success: false, 
-            message: err.response?.data?.error || err.message 
-        };
-    }
-}
+// Comment voting goes through the generic vote-api.js (createVoteApi/updateVoteApi/
+// deleteVoteApi/isVotedApi) — this module used to duplicate those calls; see VoteWidget.jsx.

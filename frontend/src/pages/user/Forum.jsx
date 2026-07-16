@@ -85,6 +85,7 @@ export default function Forum() {
             if (res.success) {
                 showToast('Success', 'You have left the forum.', 'success');
                 setIsJoined(false);
+                setFollowersCount((prev) => Math.max(0, (prev || 0) - 1));
                 return;
             }
             showToast('Failed to leave forum', res.message || 'unknown error', 'error');
@@ -95,6 +96,7 @@ export default function Forum() {
         if (res.success) {
             showToast('Success', 'You have joined the forum.', 'success');
             setIsJoined(true);
+            setFollowersCount((prev) => (prev || 0) + 1);
             return;
         }
         showToast('Failed to join forum', res.message || 'unknown error', 'error');

@@ -1,7 +1,7 @@
 import { useContext, useEffect, useState } from 'react';
 import NavBar from '../../components/OrgAdminNavBar';
 import { ToastContext } from '../../context/ToastContext';
-import { fetchOrgProfile, updateOrgProfile, updateOrgPassword } from '../../api/org-analytics-api';
+import { fetchOrgProfileApi, updateOrgProfileApi, updateOrgPasswordApi } from '../../api/org-analytics-api';
 import './style/orgProfile.css';
 import LoadingFallback from '../../components/LoadingFallback';
 import { Building2, Eye, EyeOff, Lock, Pencil } from 'lucide-react';
@@ -29,7 +29,7 @@ export default function OrgProfile() {
 
     const getOrgData = async () => {
         setLoading(true);
-        const result = await fetchOrgProfile();
+        const result = await fetchOrgProfileApi();
         if (result.success) {
             const data = result.response;
             setOrgData({ name: data.name, about: data.about, email: data.email, createdAt: data.createdAt });
@@ -61,11 +61,11 @@ export default function OrgProfile() {
         }
 
         setLoading(true);
-        const profileResult = await updateOrgProfile({ name: editData.name, about: editData.about });
+        const profileResult = await updateOrgProfileApi({ name: editData.name, about: editData.about });
 
         let passwordResult = { success: true };
         if (password && password.trim()) {
-            passwordResult = await updateOrgPassword(oldPassword, password);
+            passwordResult = await updateOrgPasswordApi(oldPassword, password);
         }
 
         if (profileResult.success && passwordResult.success) {

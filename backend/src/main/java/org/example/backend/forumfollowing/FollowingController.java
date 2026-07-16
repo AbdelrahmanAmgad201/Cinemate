@@ -3,6 +3,7 @@ package org.example.backend.forumfollowing;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import java.util.UUID;
+import org.example.backend.forum.ForumPageResponse;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
@@ -15,7 +16,7 @@ import org.springframework.web.bind.annotation.*;
 public class FollowingController {
     public final FollowingService followingService;
 
-    @PutMapping("/v1/follow/{forumId}")
+    @PutMapping("/v1/{forumId}")
     public ResponseEntity<?> followForum(
             HttpServletRequest request,
             @PathVariable UUID forumId) {
@@ -25,7 +26,7 @@ public class FollowingController {
         return ResponseEntity.ok().build();
     }
 
-    @DeleteMapping("/v1/follow/{forumId}")
+    @DeleteMapping("/v1/{forumId}")
     public ResponseEntity<?> unfollowForum(
             HttpServletRequest request,
             @PathVariable UUID forumId) {
@@ -35,7 +36,7 @@ public class FollowingController {
         return ResponseEntity.noContent().build();
     }
 
-    @GetMapping("/v1/is-followed/{forumId}")
+    @GetMapping("/v1/{forumId}")
     public ResponseEntity<Boolean> isFollowed(
             HttpServletRequest request,
             @PathVariable UUID forumId) {

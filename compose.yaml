@@ -1,7 +1,7 @@
 services:
   # PostgreSQL — the single source of truth for ALL application data (identity,
   # catalog, social content, moderation outbox, auth tokens). Replaced the previous
-  # MySQL + MongoDB split (see dev_docs/postgres-consolidation.md). No replica set,
+  # MySQL + MongoDB split (see docs/database.md). No replica set,
   # no second store, no cross-database transaction boundary.
   postgres:
     image: postgres:16
@@ -310,8 +310,8 @@ services:
       - "8081"
     environment:
       - SPRING_PROFILES_ACTIVE=prod
-      - SPRING_REDIS_HOST=redis
-      - SPRING_REDIS_PORT=6379
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
       - JAVA_OPTS=-Xmx512m -Xms256m
       # Restricts which origins may open the /ws WebSocket (SEC-NEW-02) — same value
       # the backend uses for its own CORS config.
@@ -322,7 +322,7 @@ services:
       # Backend base URL — the service calls the backend's public movie API (read-only) to
       # resolve a movie's playable URL at party-create time (Stage 1). Lazy call, so this
       # is not a startup dependency.
-      - BACKEND_URL=http://backend:8080
+      - BACKEND_URI=http://backend:8080
     depends_on:
       redis:
         condition: service_healthy

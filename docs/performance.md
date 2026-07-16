@@ -1,12 +1,11 @@
-# Cinemate — Measured Performance (Latency & Throughput)
+# Measured Performance (Latency & Throughput)
 
-**Status:** ✅ Measured, reproducible — this document reports numbers **actually observed**
-on the running stack (as opposed to target/aspirational SLOs).
+**Status:** Measured, reproducible — this document reports numbers **actually observed**
+on the running stack
 
-**Date measured:** 2026-07-15
-**Harness:** `bench_inference.py` (ONNX path) + `bench_api.py` (post API + end-to-end verdict).
+**Harness:** `bench/bench_inference.py` (ONNX path) + `bench/bench_api.py` (post API + end-to-end verdict).
 
-## Test environment (report this alongside every number)
+## Test environment 
 
 Single developer machine — Docker Desktop on Windows 11, all services in one Compose
 network. Deliberately modest, per-service resource caps (from `compose.yaml`), so these
@@ -48,7 +47,7 @@ already far above the Tier-1/Tier-2 inference-capacity targets (1–5/s).
 
 ## B. Post API latency — `POST /api/post/v1/post`
 
-Measured **backend-direct** (loud generator on the internal network, forged `X-User-*`
+Measured **backend-direct** (load generator on the internal network, forged `X-User-*`
 headers — the backend trusts these; the gateway is the only thing that mints them). This is
 the post API proper; it **excludes** gateway edge cost (RS256 verify + routing + rate-limit),
 which would add a small fixed overhead. Each request does the real work: insert `posts` row +
@@ -90,7 +89,7 @@ gets their ~10 ms ack immediately; moderation happens asynchronously behind it.
 ## Reproducing
 
 ```bash
-# Bring up the measurement subset (reads POSTGRES_* from .env — now consolidated)
+# Bring up the measurement subset
 docker compose up -d postgres kafka redis watch-party backend moderation-worker
 
 # A — inference (runs inside the worker image, isolated from the pipeline)
@@ -102,10 +101,3 @@ docker run --rm --network cinemate_app-net -e PGPASSWORD -e MODE=all \
   -v "$PWD/bench/bench_api.py:/bench_api.py:ro" python:3.11-slim \
   sh -c "pip install -q requests psycopg2-binary && python /bench_api.py"
 ```
-
-> **Environment cleanup (done):** while measuring, the repo `.env` and `backend/.env.prod` were
-> found still carrying the *pre-consolidation* MySQL/Mongo config (`DB_URL=jdbc:mysql://…`,
-> `DB_USERNAME=root`, `MYSQL_*`, `MONGODB_*`) with **no** `POSTGRES_PASSWORD`, so `docker compose up`
-> couldn't start Postgres. Both files were regenerated from their `*.env.example` templates
-> (Postgres-only, stale vars removed, secrets preserved), so `docker compose up` now works with no
-> manual overrides. `docker compose config` resolves cleanly.

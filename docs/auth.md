@@ -92,40 +92,17 @@ Config knobs (`application.properties`, all env-overridable):
 
 ---
 
-## The gateway (Spring Cloud Gateway, `gateway/`)
+## The gateway's role in this contract
 
-The gateway is now the **single entry point** — the only service with a published
-host port. The browser only ever talks to it; the backend, frontend, and everything
-else are internal to the Docker network. It:
-
-1. **Serves the SPA and proxies everything** from one origin: `/` → frontend nginx,
-   `/api/**` → backend, `/ws/**` → watch-party, plus the OAuth handshake
-   (`/oauth2/authorize/**`, `/login/oauth2/**`) → backend. One origin means no CORS,
-   and the refresh cookie is `SameSite=Lax`.
-
-2. **Verifies access tokens with the public key only** (`JWT_PUBLIC_KEY`; never the
-   private key) — pure RS256 signature + expiry, no call back to the backend, no Redis.
-   Verification is *opportunistic* (a missing/invalid token isn't rejected by the
-   verify step itself; the route matrix decides), mirroring the backend's old filter
-   so public endpoints keep working when the browser sends a stale token.
-
-3. **Enforces the public/protected route matrix** at the edge — the same rules the
-   backend had, driven by the token's `role` claim (`/api/admin/**` → `ROLE_ADMIN`,
-   etc.). Public: auth, verification, sign-up, health, movie browse, `/ws`.
-
-4. **Forwards a trusted identity** to the backend as `X-User-Id/Role/Email/Name`,
-   after **stripping any inbound copies** so a client can't forge them. The backend
-   now trusts these headers (see `GatewayAuthenticationFilter`) instead of parsing
-   JWTs — safe because the backend has no host port and is reachable only through the
-   gateway. Fine-grained checks ("is this user the author of post 42?") still live in
-   the backend.
-
-5. **Rate-limits** (Bucket4j, Redis-backed): a tight per-IP bucket on `/api/auth/**`
-   and a per-user (else per-IP) bucket on the rest, returning `429` +
-   `X-RateLimit-Remaining` + `Retry-After`.
+The gateway (`gateway/`) is the single entry point and verifies access tokens at the
+edge with the **public key only** — pure RS256 signature + expiry, opportunistically
+(a missing/invalid token isn't rejected by the verify step itself; the route matrix
+decides). It forwards a trusted identity to the backend as `X-User-Id/Role/Email/Name`
+after stripping any inbound copies, so the backend never parses a JWT on the request
+path (see `GatewayAuthenticationFilter`).
 
 Issuance (signing tokens, the refresh-token store, the user database) stays entirely
-in the backend — the gateway is a verifier and traffic cop, never a minter. To scale
-the gateway horizontally, nothing changes: token verification is stateless, and its
-only shared state — the rate-limit buckets — lives in Redis. (The refresh-token store
-is the backend's concern, in Postgres, not the gateway's.)
+in the backend — the gateway is a verifier and traffic cop, never a minter.
+
+Full routing table, authorization matrix, rate limiting, and trusted-header contract:
+see [`gateway.md`](gateway.md).

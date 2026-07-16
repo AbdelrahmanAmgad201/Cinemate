@@ -33,9 +33,9 @@ public class MovieClient {
      * unreachable.
      */
     public MovieMetadata getMovie(Long movieId) {
-        String url = backendUrl + "/api/movie/v1/get-specific-movie/" + movieId;
+        String url = backendUrl + "/api/movie/v1/" + movieId;
         try {
-            MovieMetadata movie = restTemplate.postForObject(url, null, MovieMetadata.class);
+            MovieMetadata movie = restTemplate.getForObject(url, MovieMetadata.class);
             if (movie == null || movie.getMovieUrl() == null || movie.getMovieUrl().isBlank()) {
                 throw new ResponseStatusException(HttpStatus.NOT_FOUND,
                         "Movie " + movieId + " not found or has no playable URL");

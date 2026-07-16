@@ -3,7 +3,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Search, Film } from 'lucide-react';
 import './style/navBar.css';
 import ProfileAvatar from './ProfileAvatar.jsx';
-import MoviesDetailsApi from '../api/movies-details-api.js';
+import moviesDetailsApi from '../api/movies-details-api.js';
 import { searchForumsApi } from '../api/forum-api.js';
 
 import { MAX_LENGTHS, PATHS } from '../constants/constants.jsx';
@@ -67,7 +67,7 @@ function NavBar() {
                     setForums([]);
                 }
             } else {
-                const moviesResponse = await MoviesDetailsApi({
+                const moviesResponse = await moviesDetailsApi({
                     name: searchValue, genre: null, sortBy: null, sortDirection: null, page: null, pageSize: 10,
                 });
                 if (moviesResponse.success) {

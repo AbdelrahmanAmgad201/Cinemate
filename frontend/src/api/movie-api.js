@@ -3,7 +3,7 @@ import { mapBackendReviews, mapMovieBackendToFrontend } from "../utils/api-mappe
 
 export async function getMovieApi({ movieId }) {
     try {
-        const response = await api.post(`/movie/v1/get-specific-movie/${movieId}`);
+        const response = await api.get(`/movie/v1/${movieId}`);
         const data = response.data;
 
         const mappedMovie = mapMovieBackendToFrontend(data);
@@ -17,7 +17,7 @@ export async function getReviewsApi({movieId, page, size}) {
     try{
         // movieId;
         // pageable
-        const response = await api.get(`/movie-review/v1/get-movie-reviews/${movieId}`, {
+        const response = await api.get(`/movie-review/v1/movie/${movieId}`, {
             params: { page, size }})
 
         const data = response.data;
@@ -36,7 +36,7 @@ export async function getReviewsApi({movieId, page, size}) {
 
 export async function getUserReviewsApi({userId, page, size}) {
     try{
-        const response = await api.get(`/movie-review/v1/other-user-movie-review/${userId}`, {
+        const response = await api.get(`/movie-review/v1/user/${userId}`, {
             params: { page, size }})
 
         const data = response.data;
@@ -55,7 +55,7 @@ export async function getUserReviewsApi({userId, page, size}) {
 
 export async function getMyReviewsApi({page, size}) {
     try{
-        const response = await api.get(`/movie-review/v1/my-movie-review`, {
+        const response = await api.get(`/movie-review/v1/my-reviews`, {
             params: { page, size }
         });
         const data = response.data;
@@ -76,33 +76,27 @@ export async function postReviewApi({movieId, comment, rating}) {
     // private String comment;
     // private Integer rating;
     try{
-        const response = await api.post("/movie-review/v1/add-review", {movieId, comment, rating});
+        const response = await api.post("/movie-review/v1", {movieId, comment, rating});
 
         const data = response.data;
         const userReview = mapBackendReviews({ content: [data] })[0];
 
-        console.log(userReview);
-
         return { success: true, data: userReview};
     }
     catch(err){
-        console.log(err);
+        console.error('Error posting review:', err);
         return { success: false , message: err.message };
     }
 };
 
 export async function deleteReviewApi({movieId}) {
-    // private Long movieId;
     try{
-        const response = await api.delete(`/delete-movie-review/${movieId}`);
-
-        const data = response.data;
-
+        await api.delete(`/movie-review/v1/${movieId}`);
 
         return { success: true,};
     }
     catch(err){
-        console.log(err);
+        console.error('Error deleting review:', err);
         return { success: false , message: err.message };
     }
 };
@@ -111,56 +105,78 @@ export async function deleteReviewApi({movieId}) {
 
 // Like and watch later
 export async function likeMovieApi({movieId}) {
-    // private Long movieId;
     try{
-        const response = await api.post(`/liked-movie/v1/like-movie/${movieId}`);
-        console.log(response);
-        const data = response.data;
-
-
+        await api.put(`/liked-movie/v1/${movieId}`);
         return { success: true,};
     }
     catch(err){
-        console.log(err);
         return { success: false , message: err.message };
     }
 };
 
 export async function addToWatchLaterApi({movieId}) {
-    // private Long movieId;
     try{
-        const response = await api.post(`/watch-later/v1/watch-later/${movieId}`);
-        console.log(response);
-        const data = response.data;
-
-
+        await api.put(`/watch-later/v1/${movieId}`);
         return { success: true,};
     }
     catch(err){
-        console.log(err);
+        return { success: false , message: err.message };
+    }
+};
+
+export async function unlikeMovieApi({movieId}) {
+    try{
+        await api.delete(`/liked-movie/v1/${movieId}`);
+        return { success: true,};
+    }
+    catch(err){
+        return { success: false , message: err.message };
+    }
+};
+
+export async function removeFromWatchLaterApi({movieId}) {
+    try{
+        await api.delete(`/watch-later/v1/${movieId}`);
+        return { success: true,};
+    }
+    catch(err){
+        return { success: false , message: err.message };
+    }
+};
+
+export async function getIsLikedApi({movieId}) {
+    try{
+        const response = await api.get(`/liked-movie/v1/${movieId}`);
+        return { success: true, data: response.data };
+    }
+    catch(err){
+        return { success: false , message: err.message };
+    }
+};
+
+export async function getIsWatchLaterApi({movieId}) {
+    try{
+        const response = await api.get(`/watch-later/v1/${movieId}`);
+        return { success: true, data: response.data };
+    }
+    catch(err){
         return { success: false , message: err.message };
     }
 };
 
 export async function addToWatchHistoryApi({movieId}) {
-    // private Long movieId;
     try{
-        const response = await api.post(`/watch-history/v1/add-watch-history/${movieId}`);
-        console.log(response);
-        const data = response.data;
-
-
+        await api.post(`/watch-history/v1/${movieId}`);
         return { success: true,};
     }
     catch(err){
-        // console.log(err);
         return { success: false , message: err.message };
     }
 };
 
 export async function getOtherUserLikedMoviesApi({ userId, page = 0, size = 8 } = {}) {
     try {
-        const response = await api.get(`/liked-movie/v1/other-user-liked-movies/${userId}`, { params: { page, size } });
+        const response = await api.get(`/liked-movie/v1/user/${userId}`, { params: { page, size } });
         const data = response.data;
         const mapped = {
             ...data,
@@ -188,7 +204,7 @@ export async function getMyLikedMoviesApi({ page = 0, size = 8 } = {}) {
 
 export async function getWatchHistoryApi({page = 0, size = 20} = {}) {
     try {
-        const response = await api.get(`/watch-history/v1/watch-history`, { params: { page, size } });
+        const response = await api.get(`/watch-history/v1`, { params: { page, size } });
         const data = response.data;
         const content = Array.isArray(data.content) ? data.content.map(item => ({
             ...item,
@@ -202,7 +218,7 @@ export async function getWatchHistoryApi({page = 0, size = 20} = {}) {
 
 export async function getWatchLaterApi({ page = 0, size = 20 } = {}) {
     try {
-        const response = await api.get(`/watch-later/v1/watch-later`, { params: { page, size } });
+        const response = await api.get(`/watch-later/v1`, { params: { page, size } });
         const data = response.data;
         const mapped = {
             ...data,

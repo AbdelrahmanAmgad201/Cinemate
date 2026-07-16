@@ -3,6 +3,7 @@ package org.example.backend.feed;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.example.backend.forum.Forum;
+import org.example.backend.forum.ForumPageResponse;
 import org.example.backend.forum.ForumRepository;
 import org.example.backend.post.Post;
 import org.example.backend.post.PostRepository;
@@ -59,16 +60,7 @@ public class FeedService {
     public ForumPageResponse getExploreForums(int page, int size, String sortBy) {
         Pageable pageable = PageRequest.of(page, size, buildSortForum(sortBy));
         Page<Forum> forumsPage = forumRepository.findAllByIsDeletedFalse(pageable);
-
-        return ForumPageResponse.builder()
-                .forums(forumsPage.getContent())
-                .currentPage(forumsPage.getNumber())
-                .totalPages(forumsPage.getTotalPages())
-                .totalElements(forumsPage.getTotalElements())
-                .pageSize(forumsPage.getSize())
-                .hasNext(forumsPage.hasNext())
-                .hasPrevious(forumsPage.hasPrevious())
-                .build();
+        return ForumPageResponse.from(forumsPage);
     }
 
     public ForumPageResponse getExploreForums(int page) {

@@ -3,7 +3,7 @@ package org.example.backend.movieReview;
 import lombok.Builder;
 import lombok.Data;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 
 /**
  * Review list/detail view (CQ-NEW-03, CQ-NEW-02) — returned instead of the
@@ -19,7 +19,7 @@ public class MovieReviewDetailsDTO {
     private UserSummaryDTO reviewer;
     private Integer rating;
     private String comment;
-    private LocalDateTime createdAt;
+    private Instant createdAt;
 
     public static MovieReviewDetailsDTO from(MovieReview review) {
         return MovieReviewDetailsDTO.builder()

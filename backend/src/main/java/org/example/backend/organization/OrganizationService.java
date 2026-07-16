@@ -1,6 +1,7 @@
 package org.example.backend.organization;
 
 import jakarta.transaction.Transactional;
+import org.example.backend.common.dto.AboutDTO;
 import org.example.backend.errorHandler.ResourceNotFoundException;
 import org.example.backend.movie.Movie;
 import org.example.backend.movie.MovieAddDTO;
@@ -43,7 +44,7 @@ public class OrganizationService {
 
 
     @Transactional
-    public String setOrganizationData(Long userId, OrganizationDataDTO organizationDataDTO) {
+    public String updateOrganizationData(Long userId, OrganizationDataDTO organizationDataDTO) {
         Organization organization = organizationRepository.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("Organization not found"));
 

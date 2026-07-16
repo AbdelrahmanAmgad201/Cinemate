@@ -39,4 +39,13 @@ public interface ForumRepository extends JpaRepository<Forum, UUID> {
     @Modifying
     @Query("update Forum f set f.moderationStatus = org.example.backend.moderation.ModerationStatus.REMOVED where f.id = :id")
     int markModerationRemoved(@Param("id") UUID id);
+
+    // MOD-01 reconciliation sweep: PENDING forums whose moderation request is older than
+    // the sweep's cutoff (verdict never arrived).
+    List<Forum> findByModerationStatusAndModerationRequestedAtBefore(
+            org.example.backend.moderation.ModerationStatus status, Instant cutoff, Pageable pageable);
+
+    @Modifying
+    @Query("update Forum f set f.moderationRequestedAt = :ts where f.id in :ids")
+    int touchModerationRequestedAt(@Param("ids") List<UUID> ids, @Param("ts") Instant ts);
 }

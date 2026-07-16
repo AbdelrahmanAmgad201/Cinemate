@@ -2,6 +2,7 @@ package org.example.backend.forumfollowing;
 
 import lombok.RequiredArgsConstructor;
 import org.example.backend.forum.Forum;
+import org.example.backend.forum.ForumPageResponse;
 import org.example.backend.forum.ForumRepository;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;

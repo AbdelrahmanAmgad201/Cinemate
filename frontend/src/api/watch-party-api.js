@@ -3,7 +3,7 @@ import api from './api-client.js'
 export async function createRoomApi({ movieId }) {
     try {
 
-        const response = await api.post(`/watch-party/${movieId}`);
+        const response = await api.post(`/watch-party/v1/${movieId}`);
 
         const partyData = {
             createdAt: response.data.createdAt,
@@ -36,7 +36,7 @@ export async function createRoomApi({ movieId }) {
 export async function joinRoomApi({ partyId }) {
     try {
 
-        const response = await api.post(`/watch-party/join/${partyId}`);
+        const response = await api.put(`/watch-party/v1/${partyId}/members`);
 
         // Return the full response (FE-09) — the backend already sends members,
         // movieUrl, hostId, etc. here, so the caller doesn't need a follow-up
@@ -51,7 +51,7 @@ export async function joinRoomApi({ partyId }) {
 export async function getRoomApi({ partyId }) {
     try {
 
-        const response = await api.get(`/watch-party/${partyId}`);
+        const response = await api.get(`/watch-party/v1/${partyId}`);
 
         return {success: true, data: response.data}
 
@@ -63,7 +63,7 @@ export async function getRoomApi({ partyId }) {
 // Guest
 export async function leaveRoomApi({ partyId }) {
     try {
-        await api.delete(`/watch-party/leave/${partyId}`);
+        await api.delete(`/watch-party/v1/${partyId}/members`);
 
         return { success: true };
 
@@ -75,7 +75,7 @@ export async function leaveRoomApi({ partyId }) {
 // Host
 export async function deleteRoomApi({ partyId }) {
     try {
-        await api.delete(`/watch-party/${partyId}`);
+        await api.delete(`/watch-party/v1/${partyId}`);
 
         return { success: true };
 

@@ -88,7 +88,7 @@ class RequestsServiceTest {
         when(requestsRepository.findAllByState(eq(State.PENDING), any(Pageable.class)))
                 .thenReturn(List.of(request));
 
-        List<Requests> pending = requestsService.getAllPendingRequests();
+        List<RequestsResponse> pending = requestsService.getAllPendingRequests();
 
         assertEquals(1, pending.size());
         assertEquals(State.PENDING, pending.get(0).getState());
@@ -103,10 +103,10 @@ class RequestsServiceTest {
         when(requestsRepository.findAllByOrganization_Id(eq(1L), any(Pageable.class)))
                 .thenReturn(List.of(request));
 
-        List<Requests> orgRequests = requestsService.getAllOrganizationRequests(1L);
+        List<RequestsResponse> orgRequests = requestsService.getAllOrganizationRequests(1L);
 
         assertEquals(1, orgRequests.size());
-        assertEquals(organization, orgRequests.get(0).getOrganization());
+        assertEquals(organization.getName(), orgRequests.get(0).getOrganization());
         verify(requestsRepository).findAllByOrganization_Id(eq(1L), any(Pageable.class));
     }
 

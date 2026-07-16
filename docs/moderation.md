@@ -1,19 +1,13 @@
 # Content Moderation Architecture — Study Guide
 
-> **⚠️ Update (PostgreSQL consolidation):** the pipeline's *shape* is unchanged (optimistic
-> publish → transactional outbox → Kafka → worker → verdict consumer), but the outbox is now a
-> **PostgreSQL table** (`moderation_outbox`), not a Mongo collection. The content row + outbox row
-> commit in **one ordinary Postgres transaction** — so §4.4 below ("two transaction managers"),
-> the `MongoTransactionManager`/`mongoTransactionOperations` plumbing, and the **replica-set
-> requirement (MOD-07)** are all **gone**. `contentId` is a UUID; the relay reads `findAllByOrderById­Asc`
-> over a BIGINT identity PK. The verdict consumer applies status changes via bulk `@Modifying`
-> queries (not managed-entity saves). Treat §4.3–4.4 and the replica-set notes as historical; see
-> `dev_docs/postgres-consolidation.md`.
-
 A deep walkthrough of how Cinemate moderates user text (posts, comments, forums):
 what each piece does, how they fit together, and **why** each design decision was made.
 Read it top-to-bottom once; after that the "Component reference" and "Failure modes"
 sections are the ones you'll come back to.
+
+The pipeline runs on **PostgreSQL** (`moderation_outbox` table) + **Kafka** — the content
+row and its outbox entry commit in one ordinary Postgres transaction, no distributed
+transaction manager required. See [`database.md`](database.md) for the schema.
 
 ---
 
@@ -53,51 +47,42 @@ write path is bounded by the database, and the model fleet scales independently.
 ### 2.3 Transactional outbox for crash-safety
 The scary bug in any "save to DB, then send to a queue" design is the **dual-write
 problem** (§5). We solve it by writing the content and the "moderate me" request into the
-**same Mongo transaction**, then relaying to Kafka separately. Either both the content and
-its moderation request exist, or neither does — never one without the other.
+**same Postgres transaction**, then relaying to Kafka separately. Either both the content
+and its moderation request exist, or neither does — never one without the other.
 
 ---
 
 ## 3. The end-to-end flow
 
-```
-                          ┌─────────────────────── BACKEND (Spring Boot) ───────────────────────┐
-                          │                                                                      │
-  user ── POST /forum ───▶│  ForumService.createForum()                                          │
-                          │     │                                                                │
-                          │     │  ┌──────── ONE Mongo transaction ────────┐                     │
-                          │     └─▶│  save Forum (status=PENDING, ver=1)    │                     │
-                          │        │  save ModerationOutboxEntry            │                     │
-                          │        └────────────────────────────────────────┘                    │
-                          │                        │ (content is now visible; 200 OK returned)    │
-                          │                        ▼                                              │
-                          │     OutboxRelay  @Scheduled every 1s                                  │
-                          │        reads outbox rows oldest-first                                 │
-                          │        publishes → deletes only after broker ack                      │
-                          └───────────────────────────┬──────────────────────────────────────────┘
-                                                      │ key = contentId
-                                                      ▼
-                                    ┌───────────────────────────────────┐
-                                    │  Kafka topic: moderation.requests │  (12 partitions)
-                                    └──────────────────┬────────────────┘
-                                                       │ consumer group "moderation-workers"
-                                                       ▼
-                          ┌──────────────── moderation-worker × N (Python) ────────────────┐
-                          │  consume up to 32 msgs  →  ONNX score(batch)  →  produce verdict │
-                          │  commit offset only AFTER verdicts are written                  │
-                          │  malformed message → moderation.requests.dlq                    │
-                          └──────────────────────────┬─────────────────────────────────────┘
-                                                     │ key = contentId
-                                                     ▼
-                                    ┌───────────────────────────────────┐
-                                    │  Kafka topic: moderation.verdicts │  (12 partitions)
-                                    └──────────────────┬────────────────┘
-                                                       │ consumer group "backend-moderation"
-                                                       ▼
-                          ┌──────────────── BACKEND: ModerationVerdictConsumer ────────────┐
-                          │  flagged?  →  version matches?  →  soft-delete + cascade        │
-                          │  clean?    →  mark APPROVED (version-guarded, idempotent)       │
-                          └────────────────────────────────────────────────────────────────┘
+```mermaid
+sequenceDiagram
+    actor User
+    participant Backend as Backend (ForumService/PostService/CommentService)
+    participant DB as PostgreSQL (content + outbox, one transaction)
+    participant Relay as OutboxRelay (@Scheduled, 1s)
+    participant Requests as Kafka: moderation.requests
+    participant Worker as moderation-worker (Python, ONNX)
+    participant Verdicts as Kafka: moderation.verdicts
+    participant Consumer as ModerationVerdictConsumer
+
+    User->>Backend: POST /forum (create content)
+    Backend->>DB: save content (status=PENDING, version=1) + outbox row
+    DB-->>Backend: commit (one transaction)
+    Backend-->>User: 200 OK — content is already visible
+    Relay->>DB: poll outbox, oldest first
+    Relay->>Requests: publish request (key = contentId)
+    Relay->>DB: delete outbox row (only after broker ack)
+    Worker->>Requests: consume batch (up to 32 msgs)
+    Worker->>Worker: ONNX score(batch)
+    Worker->>Verdicts: produce verdict (flagged + scores)
+    Consumer->>Verdicts: consume verdict
+    alt flagged, version matches
+        Consumer->>DB: soft-delete + cascade
+    else clean, version matches
+        Consumer->>DB: mark APPROVED (version-guarded, idempotent)
+    else version mismatch (stale)
+        Consumer->>Consumer: discard — newer version is authoritative
+    end
 ```
 
 **Two independent async hops:** backend → `moderation.requests` → worker, and worker →
@@ -115,64 +100,38 @@ Files: [`moderation/Moderatable.java`](../backend/src/main/java/org/example/back
 [`ModerationStatus.java`](../backend/src/main/java/org/example/backend/moderation/ModerationStatus.java),
 [`ContentType.java`](../backend/src/main/java/org/example/backend/moderation/ContentType.java)
 
-Every moderatable document (`Post`, `Comment`, `Forum`) implements `Moderatable` and gains
+Every moderatable entity (`Post`, `Comment`, `Forum`) implements `Moderatable` and carries
 two fields:
 
 | Field | Purpose |
 |---|---|
-| `moderationStatus` | `PENDING` → `APPROVED` / `REMOVED`. Content is visible in **every** state; `REMOVED` also soft-deletes it. Legacy docs with `null` are treated as `APPROVED`. |
+| `moderationStatus` | `PENDING` → `APPROVED` / `REMOVED`. Content is visible in **every** state; `REMOVED` also soft-deletes it. |
 | `moderationVersion` | Starts at 1, **incremented on every edit**. Lets a late verdict for old text be discarded (§6). |
 
 `Moderatable` exists so the verdict consumer can apply a verdict to any content type
-generically (`getModerationVersion()`, `setModerationStatus()`, `getIsDeleted()`) without a
-`switch` on concrete types for the field access.
+generically without a `switch` on concrete types for the field access.
 
 ### 4.2 The outbox table
 Files: [`ModerationOutboxEntry.java`](../backend/src/main/java/org/example/backend/moderation/ModerationOutboxEntry.java),
 [`ModerationOutboxRepository.java`](../backend/src/main/java/org/example/backend/moderation/ModerationOutboxRepository.java)
 
-A row in the `moderation_outbox` collection is a durable "publish this to Kafka later"
-instruction:
+A row in the `moderation_outbox` table is a durable "publish this to Kafka later"
+instruction: `{ id, contentType, contentId, contentVersion, text (snapshot), createdAt }`.
 
-```
-{ _id, contentType, contentId, contentVersion, text (snapshot), createdAt }
-```
-
-- `_id` is a Mongo `ObjectId`, which is **time-ordered**, so reading `findAllByOrderByIdAsc`
-  replays entries in the order they were created (important for per-content edit order).
+- `id` is a monotonic `BIGINT IDENTITY`, so reading `findAllByOrderByIdAsc` replays
+  entries in the order they were created (important for per-content edit order).
 - `text` is a **snapshot** taken at write time. The worker never reads our database — it
   moderates exactly the text that was written, which matters when content is edited (§6).
 
 ### 4.3 Enqueue — writing the outbox row
 File: [`ModerationOutboxService.java`](../backend/src/main/java/org/example/backend/moderation/ModerationOutboxService.java)
 
-`enqueue(contentType, contentId, version, text)` just saves one outbox entry. The
-**contract** is that it must be called **inside the same Mongo transaction as the content
-save** — that's what makes the outbox atomic. The caller owns the transaction.
+`enqueue(contentType, contentId, version, text)` just saves one outbox entry inside the
+**same `@Transactional` method as the content save** — that's what makes the outbox
+atomic. The caller owns the transaction; in one Postgres database this is just an
+ordinary transactional method, no second transaction manager involved.
 
-### 4.4 Two transaction managers — the subtle bit
-File: [`config/TransactionConfig.java`](../backend/src/main/java/org/example/backend/config/TransactionConfig.java)
-
-Cinemate has two datastores: **MySQL** (JPA — users, movies) and **MongoDB** (posts,
-comments, forums, and now the outbox). The moderation outbox needs a **Mongo**
-transaction. Adding a `MongoTransactionManager` naively would break every existing
-unqualified `@Transactional` in the codebase, because Spring Boot auto-configures a JPA
-transaction manager *only when no other `TransactionManager` bean exists*. So we define
-both explicitly:
-
-- `JpaTransactionManager` is `@Primary` → every existing `@Transactional` keeps using MySQL,
-  exactly as before.
-- `MongoTransactionManager` is a second, non-primary bean.
-- `mongoTransactionOperations` is a `TransactionTemplate` around the Mongo manager. Services
-  call `mongoTransactionOperations.execute(...)` to run the content-save + outbox-write
-  atomically.
-
-> **Why injection is unambiguous:** Boot's own auto `TransactionTemplate` is
-> `@ConditionalOnMissingBean(TransactionOperations.class)`. Because we declare
-> `mongoTransactionOperations` (a `TransactionOperations`), Boot backs off and ours is the
-> *only* bean of that type — so constructor injection resolves cleanly by type.
-
-### 4.5 The services — optimistic publish
+### 4.4 The services — optimistic publish
 Files: [`post/PostService.java`](../backend/src/main/java/org/example/backend/post/PostService.java),
 [`comment/CommentService.java`](../backend/src/main/java/org/example/backend/comment/CommentService.java),
 [`forum/ForumService.java`](../backend/src/main/java/org/example/backend/forum/ForumService.java)
@@ -181,18 +140,15 @@ Each create/update follows the same shape (using `createForum` as the example):
 
 ```java
 Forum forum = Forum.builder()...build();          // moderationStatus defaults to PENDING, version 1
-Forum saved = mongoTransactionOperations.execute(status -> {
-    Forum s = forumRepository.save(forum);         // content — visible immediately
-    moderationOutboxService.enqueue(               // outbox — same transaction
-        ContentType.FORUM, s.getId().toHexString(),
-        s.getModerationVersion(),
-        moderationText(s.getName(), s.getDescription()));
-    return s;
-});
+Forum saved = forumRepository.save(forum);          // content — visible immediately
+moderationOutboxService.enqueue(                    // outbox — same transaction
+    ContentType.FORUM, saved.getId(),
+    saved.getModerationVersion(),
+    moderationText(saved.getName(), saved.getDescription()));
 ```
 
 Key points:
-- **No synchronous moderation, no `HateSpeechException`.** The old blocking call is gone.
+- **No synchronous moderation, no blocking call.** The old blocking call is gone.
 - **Title + content (or name + description) are moderated as one snapshot** joined by `\n` —
   one model pass covers both fields, and there's no ambiguity about which field a verdict
   refers to.
@@ -202,7 +158,7 @@ Key points:
   *without* an ownership check — they exist for the verdict consumer to remove flagged
   content (a user isn't "deleting" it; the system is).
 
-### 4.6 The publisher: OutboxRelay
+### 4.5 The publisher: OutboxRelay
 File: [`moderation/OutboxRelay.java`](../backend/src/main/java/org/example/backend/moderation/OutboxRelay.java)
 
 This is the bridge from the durable outbox to Kafka. It runs on a timer:
@@ -230,30 +186,31 @@ Why each detail matters:
   outbox row. This is **delete-after-ack**: if the process dies after `send` but before
   `delete`, the row survives and is re-published next tick. That's what makes delivery
   **at-least-once** (§5).
-- **Stop at the first failed send** (`return`) — if Kafka is down, we stop and retry the
-  whole batch next tick, preserving order rather than skipping ahead. Content creation is
-  unaffected; requests just pile up in the outbox until the broker returns.
+- **Stop at the first failed send** — if Kafka is down, we stop and retry the whole batch
+  next tick, preserving order rather than skipping ahead. Content creation is unaffected;
+  requests just pile up in the outbox until the broker returns.
 - **Unserializable rows are dropped**, not retried forever — they can never succeed.
 
 > **Known limitation (MOD-03):** the relay is an unlocked `@Scheduled` poller, so it assumes a
 > **single backend instance**. With multiple replicas, each would publish every row (duplicate
 > requests). Idempotency (§5) keeps that *correct*, but it's wasteful — a leader lock
-> (ShedLock) is needed before scaling the backend horizontally.
+> (ShedLock) or `FOR UPDATE SKIP LOCKED` claim-before-publish is needed before scaling the
+> backend horizontally. See [`tech-debt.md`](tech-debt.md).
 
-### 4.7 The wire contracts
+### 4.6 The wire contracts
 Files: [`ModerationRequestMessage.java`](../backend/src/main/java/org/example/backend/moderation/ModerationRequestMessage.java),
 [`ModerationVerdictMessage.java`](../backend/src/main/java/org/example/backend/moderation/ModerationVerdictMessage.java)
 
 JSON, keyed by `contentId`. Request (backend → worker):
 
 ```json
-{ "v": 1, "contentType": "POST", "contentId": "665f…", "version": 3, "text": "…" }
+{ "v": 1, "contentType": "POST", "contentId": "0191…", "version": 3, "text": "…" }
 ```
 
 Verdict (worker → backend):
 
 ```json
-{ "v": 1, "contentType": "POST", "contentId": "665f…", "version": 3,
+{ "v": 1, "contentType": "POST", "contentId": "0191…", "version": 3,
   "flagged": true, "scores": { "toxic": 0.98, "severe_toxic": 0.02 } }
 ```
 
@@ -263,27 +220,29 @@ Verdict (worker → backend):
   missing field deserializes to `null` and is rejected explicitly rather than silently
   defaulting (e.g. a missing `flagged` must not read as `false`).
 
-### 4.8 Topic configuration
+### 4.7 Topic configuration
 File: [`moderation/ModerationKafkaConfig.java`](../backend/src/main/java/org/example/backend/moderation/ModerationKafkaConfig.java)
 
-Declares three topics as `NewTopic` beans; Spring's `KafkaAdmin` creates them at backend
+Declares four topics as `NewTopic` beans; Spring's `KafkaAdmin` creates them at backend
 startup (broker auto-create is **off** so partition counts stay deliberate):
 
 | Topic | Partitions | Role |
 |---|---|---|
 | `moderation.requests` | 12 | work queue backend → workers |
 | `moderation.verdicts` | 12 | results workers → backend |
-| `moderation.requests.dlq` | 1 | poison messages (malformed requests) |
+| `moderation.requests.dlq` | 1 | poison messages (malformed requests, worker-side) |
+| `moderation.verdicts.dlq` | 1 | verdicts that exhausted their retry budget (backend-side) |
 
 **Partition count = maximum worker parallelism.** Consumers in a group can't exceed the
 partition count, so 12 leaves room to scale workers without repartitioning. `replicas=1`
 matches the single-broker dev setup; production would use RF=3 with `min.insync.replicas=2`.
 
-### 4.9 The worker (publisher of verdicts, consumer of requests)
+### 4.8 The worker (publisher of verdicts, consumer of requests)
 Files: [`Content-moderator/worker/worker.py`](../Content-moderator/worker/worker.py),
 [`inference.py`](../Content-moderator/worker/inference.py)
 
-This is a standalone Python service (not Spring). The main loop:
+This is a standalone Python service (not a web framework — a pure Kafka consumer/producer
+loop). The main loop:
 
 ```python
 while True:
@@ -317,7 +276,7 @@ one function, `score(texts) -> [{"toxic":…, "severe_toxic":…}]`. The model
 (`minuva/MiniLMv2-toxic-jigsaw-lite`) is baked into the image at build time (see the worker
 Dockerfile), so there's no network fetch at runtime.
 
-### 4.10 The verdict consumer
+### 4.9 The verdict consumer
 File: [`moderation/ModerationVerdictConsumer.java`](../backend/src/main/java/org/example/backend/moderation/ModerationVerdictConsumer.java)
 
 ```java
@@ -329,13 +288,13 @@ It parses/validates the verdict, resolves the `ContentType`, and dispatches:
 
 - **Clean verdict** → one atomic, **version-guarded** update:
   ```
-  updateFirst(where _id == id AND moderationVersion == version AND status == PENDING,
-              set status = APPROVED)
+  UPDATE ... SET status = 'APPROVED'
+  WHERE id = :id AND moderation_version = :version AND status = 'PENDING'
   ```
   If the content was edited since (version moved on), or already resolved, this matches
   nothing — a **no-op**. No read, no delete.
-- **Flagged verdict** → `findById`; then:
-  - content missing or already `isDeleted` → **no-op** (idempotent: a redelivered verdict does
+- **Flagged verdict** → look up by id; then:
+  - content missing or already deleted → **no-op** (idempotent: a redelivered verdict does
     nothing).
   - `moderationVersion != verdict.version` → **stale, ignore** (the text was edited; the newer
     request's verdict is authoritative).
@@ -346,7 +305,18 @@ It parses/validates the verdict, resolves the `ContentType`, and dispatches:
 *after* `onVerdict` returns — so a crash mid-apply redelivers the verdict rather than losing
 it. This is why every branch above must be **idempotent**.
 
-### 4.11 Configuration reference
+**Retry + DLQ.** The branches above are the *expected* failures (all no-ops); an
+*unexpected* one — a repository throwing on a datastore blip, say — used to be swallowed by
+Spring Kafka's default error handler: a few silent retries, then the offset commits anyway and
+the verdict is gone with no trace. `ModerationKafkaConfig` wires the listener to its own
+`moderationVerdictListenerContainerFactory` plus a `DefaultErrorHandler`:
+`FixedBackOff(1000ms, 3 retries)`, then a `DeadLetterPublishingRecoverer` that republishes the
+record — key and value untouched — to `moderation.verdicts.dlq` and *then* commits the offset.
+A stuck verdict no longer wedges the partition or vanishes; it lands somewhere a human can see
+and replay it. There's no automatic consumer of the DLQ (parity with the requests-side DLQ,
+which is likewise inspected manually) — draining it is an operational task, not a code path.
+
+### 4.10 Configuration reference
 File: [`application.properties`](../backend/src/main/resources/application.properties)
 
 ```properties
@@ -361,6 +331,7 @@ spring.kafka.listener.ack-mode=record                # commit after each verdict
 moderation.topics.requests=moderation.requests
 moderation.topics.verdicts=moderation.verdicts
 moderation.topics.dlq=moderation.requests.dlq
+moderation.topics.verdicts-dlq=moderation.verdicts.dlq
 moderation.topics.partitions=12
 moderation.outbox.batch-size=100
 moderation.outbox.relay-delay-ms=1000
@@ -369,6 +340,44 @@ moderation.outbox.relay-delay-ms=1000
 Worker env (defaults in `compose.yaml`): `KAFKA_BOOTSTRAP_SERVERS`, `MAX_BATCH=32`,
 `LINGER_MS=15`, `TOXIC_THRESHOLD=0.5`, `SEVERE_TOXIC_THRESHOLD=0.5`.
 
+### 4.11 The reconciliation sweep
+Files: [`moderation/ModerationReconciliationSweep.java`](../backend/src/main/java/org/example/backend/moderation/ModerationReconciliationSweep.java),
+[`moderation/ModerationReconciliationService.java`](../backend/src/main/java/org/example/backend/moderation/ModerationReconciliationService.java)
+
+Closes the outbox's missing half (§5.4): the outbox guarantees a request is *published*,
+but nothing previously re-checked content whose verdict never came back. Every
+moderatable table (`posts`, `comments`, `forums`) has a `moderation_requested_at` column —
+distinct from `created_at`, which never changes — set when the current moderation request
+was made (on create, and again on every edit that bumps `moderationVersion`).
+
+```java
+@Scheduled(fixedDelayString = "${moderation.sweep.interval-ms:60000}", ...)
+public void sweep() {
+    Instant cutoff = Instant.now().minusSeconds(stuckAfterMinutes * 60);
+    reconciliationService.sweepPendingPosts(cutoff, batchSize);
+    reconciliationService.sweepPendingComments(cutoff, batchSize);
+    reconciliationService.sweepPendingForums(cutoff, batchSize);
+}
+```
+
+For each content type, one `@Transactional` sweep (in `ModerationReconciliationService`,
+a separate bean so the scheduled call goes through the Spring proxy):
+
+1. Finds `PENDING` rows whose `moderation_requested_at` is older than the cutoff (a partial
+   index on `(moderation_requested_at) WHERE moderation_status = 'PENDING'` keeps this cheap
+   as approved/removed content comes to dominate each table).
+2. Bulk-updates `moderation_requested_at = now()` for the batch **before** enqueuing — so a
+   row that's re-swept isn't re-swept again next tick before the fresh request has had a
+   chance to be answered.
+3. Calls `ModerationOutboxService.enqueue(...)` for each row, for the **same**
+   `moderationVersion` — it doesn't touch the content, so a genuinely in-flight verdict (just
+   slow) is still authoritative when it eventually arrives.
+
+A duplicate request (the original verdict shows up late, or after the sweep already
+re-enqueued) is harmless — the pipeline is idempotent by design (§5.3). Config:
+`moderation.sweep.stuck-after-minutes` (default 10), `moderation.sweep.batch-size` (100),
+`moderation.sweep.interval-ms` (60000).
+
 ---
 
 ## 5. Delivery semantics & the transactional outbox (the core "why")
@@ -376,7 +385,7 @@ Worker env (defaults in `compose.yaml`): `KAFKA_BOOTSTRAP_SERVERS`, `MAX_BATCH=3
 This section is the conceptual heart — the part worth truly understanding.
 
 ### 5.1 The dual-write problem
-Naively, moderation would be: `save content to Mongo; then send request to Kafka`. But
+Naively, moderation would be: `save content to the DB; then send request to Kafka`. But
 these are two separate systems with no shared transaction. If the process crashes *between*
 them, you get a post that exists but was never moderated — **silent, permanent**. Retrying
 the Kafka send first and saving after just inverts the failure (a moderation request for a
@@ -388,8 +397,8 @@ fundamental distributed-systems problem, not a Cinemate quirk.
 ### 5.2 How the outbox solves it
 Split the operation into two steps, each individually safe:
 
-1. **Content + outbox row** committed in **one Mongo transaction.** Atomic by construction —
-   both or neither. No Kafka involved yet.
+1. **Content + outbox row** committed in **one Postgres transaction.** Atomic by
+   construction — both or neither. No Kafka involved yet.
 2. **A separate relay** reads the outbox and publishes to Kafka, deleting each row **only
    after** the broker acknowledges.
 
@@ -408,7 +417,7 @@ the worker can double-produce (crash before commit). We deliberately do **not** 
 Kafka's exactly-once semantics (EOS) — it's heavy machinery. Instead we make **duplicates
 harmless** by making every effect **idempotent**:
 
-- Applying "flagged → remove" twice = the second one sees `isDeleted` and no-ops.
+- Applying "flagged → remove" twice = the second one sees it's already deleted and no-ops.
 - Applying "clean → APPROVED" twice = the version-guarded update matches nothing the second
   time.
 - Keying everything by `contentId` keeps a content item's messages ordered and colocated.
@@ -420,10 +429,10 @@ harmless** by making every effect **idempotent**:
 ### 5.4 Where durability is strong vs. soft
 - **Strong (ingress):** once a content write commits, its moderation request *will* reach
   Kafka (outbox + delete-after-ack). Broker downtime only delays it.
-- **Soft (egress):** if a *verdict* is lost — e.g. the verdict consumer throws past its retry
-  budget (MOD-02), or a bug — the content stays `PENDING` forever with nothing re-checking
-  it. The missing safety net is a **reconciliation sweep** (MOD-01) that re-enqueues
-  long-`PENDING` content. This is the top follow-up item.
+- **Covered (egress):** if a *verdict* is lost — e.g. the verdict consumer throws past its
+  retry budget (routed to `moderation.verdicts.dlq`), or a worker bug — the reconciliation
+  sweep (§4.11) re-enqueues content that has sat `PENDING` past a threshold, so a dropped
+  verdict is a delay (until the next sweep tick), not a silent permanent gap.
 
 ---
 
@@ -456,9 +465,9 @@ mechanism; ordering is just a helpful assist.
 | Backend crashes after Kafka `send`, before outbox delete | Row survives → re-published → duplicate request → idempotent verdict. | ✅ |
 | Worker crashes mid-batch (before commit) | Offset not committed → batch redelivered → possibly duplicate verdicts → idempotent apply. | ✅ |
 | Worker gets a malformed request | Routed to `moderation.requests.dlq`; worker keeps running. | ✅ (isolated) |
-| Verdict consumer throws (e.g. datastore blip) | Default error handler retries, then **commits and moves on** → verdict lost, flagged item not removed. **(MOD-02 — open)** | ⚠️ egress soft spot |
-| Verdict simply never arrives (bug/loss) | Content stuck `PENDING` forever, visible, never re-checked. **(MOD-01 — no reconciliation sweep yet)** | ⚠️ |
-| Two backend replicas | Both relays publish every row → duplicate requests → idempotent but wasteful. **(MOD-03)** | ✅ correct, wasteful |
+| Verdict consumer throws (e.g. datastore blip) | Retried (bounded backoff), then republished to `moderation.verdicts.dlq` with offset committed — no infinite redelivery, no silent drop. | ✅ recoverable (manual replay from DLQ) |
+| Verdict simply never arrives (bug/loss) | Reconciliation sweep (§4.11) re-enqueues it once `moderation_requested_at` ages past the threshold — a delayed re-check, not a permanent gap. | ✅ bounded delay |
+| Two backend replicas | Both relays publish every row → duplicate requests → idempotent but wasteful (MOD-03). | ✅ correct, wasteful |
 
 ---
 
@@ -522,9 +531,9 @@ If you can answer these, you understand the system:
    one wins, and what mechanism enforces that?
 4. Why does the worker commit its Kafka offset *after* producing verdicts rather than before?
 5. How does the outbox row commit atomically with its content, and why does that need
-   no special database configuration (unlike the old Mongo multi-document transaction)?
-6. Where is the durability guarantee strong, and where is it soft? What single component would
-   close the soft gap?
+   no special database configuration?
+6. Where is the durability guarantee strong, and where is it soft? What single component closes
+   the soft gap?
 7. Why did we choose at-least-once + idempotency over Kafka's exactly-once semantics?
 8. What breaks if you run two backend replicas today, and why is it a performance problem
    rather than a correctness one?
@@ -532,6 +541,7 @@ If you can answer these, you understand the system:
 ---
 
 ## 11. Related documents
-- [`TECH_DEBT.md`](TECH_DEBT.md) — remaining moderation work items (MOD-01…06) and the wider backlog.
+- [`tech-debt.md`](tech-debt.md) — remaining moderation work items (MOD-03) and the wider backlog.
 - [`Content-moderator/README.md`](../Content-moderator/README.md) — the worker service in isolation.
-- [`docs/environment.md`](../docs/environment.md) — env vars and deployment.
+- [`deployment.md`](deployment.md) — env vars and deployment.
+- [`database.md`](database.md) — schema, including the `moderation_outbox` table.

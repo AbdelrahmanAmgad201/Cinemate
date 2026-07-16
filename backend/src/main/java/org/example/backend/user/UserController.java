@@ -2,6 +2,7 @@ package org.example.backend.user;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
+import org.example.backend.common.dto.AboutDTO;
 import org.example.backend.security.CredentialsRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -18,7 +19,7 @@ public class UserController {
     private UserService userService;
 
     @GetMapping("/v1/profile")
-    public ResponseEntity<?> getProfile(HttpServletRequest request) {
+    public ResponseEntity<?> getMyProfile(HttpServletRequest request) {
         Long userId = (Long) request.getAttribute("userId");
         String email = (String) request.getAttribute("userEmail");
 
@@ -30,20 +31,19 @@ public class UserController {
         return ResponseEntity.ok(userService.getUserProfile(userId));
     }
 
-    @PostMapping("/v1/set-user-data")
+    @PutMapping("/v1/profile-data")
     public ResponseEntity<String> setPersonalData(
             HttpServletRequest request,
             @Valid @RequestBody UserDataDTO userDataDTO) {
 
         Long userId = (Long) request.getAttribute("userId");
-        String message = userService.setUserData(userId, userDataDTO);
+        String message = userService.updateUserData(userId, userDataDTO);
 
         return ResponseEntity.ok(message);
     }
 
-    // Path kept stable for the frontend; ids are plain numeric user ids now (were a
-    // fabricated ObjectId hex). Resolves a user id to a display name.
-    @GetMapping("/v1/user-name-from-object-user-id/{userId}")
+    // Resolves a user id to a display name; ids are plain numeric user ids.
+    @GetMapping("/v1/name/{userId}")
     public ResponseEntity<String> getUserName(
             HttpServletRequest request,
             @PathVariable Long userId) {
@@ -56,9 +56,9 @@ public class UserController {
         return ResponseEntity.ok(userService.isPublic(userId));
     }
 
-    @PutMapping("/v1/is-public/{isPublic}")
+    @PutMapping("/v1/is-public")
     public ResponseEntity<?> isPublic(HttpServletRequest request,
-                                      @PathVariable Boolean isPublic) {
+                                      @RequestBody Boolean isPublic) {
         Long userId = (Long) request.getAttribute("userId");
         userService.setIsPublic(userId, isPublic);
         return ResponseEntity.ok("User has been updated successfully");
@@ -79,7 +79,7 @@ public class UserController {
         return ResponseEntity.ok("USER OK");
     }
 
-    @PutMapping("/v1/user-about")
+    @PutMapping("/v1/about")
     public ResponseEntity<String> updateAboutUser(HttpServletRequest request,
                                             @Valid @RequestBody AboutDTO about) {
         Long userId = (Long) request.getAttribute("userId");
@@ -87,7 +87,7 @@ public class UserController {
         return ResponseEntity.ok("about is updated successfully");
     }
 
-    @PutMapping("/v1/user-birth-date")
+    @PutMapping("/v1/birth-date")
     public ResponseEntity<String> updateBirthDate(HttpServletRequest request,
                                                   @Valid @RequestBody BirthDateDTO birthDate){
         Long userId = (Long) request.getAttribute("userId");
@@ -95,7 +95,7 @@ public class UserController {
         return ResponseEntity.ok("Birth Date is updated successfully");
     }
 
-    @PutMapping("/v1/user-name")
+    @PutMapping("/v1/name")
     public ResponseEntity<String> updateUserName(HttpServletRequest request,
                                                  @Valid @RequestBody UserName userName) {
         Long userId = (Long) request.getAttribute("userId");

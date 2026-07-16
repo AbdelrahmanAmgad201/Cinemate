@@ -2,7 +2,7 @@ import { useState, useEffect, useContext } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import MoviesList from '../../components/MoviesList.jsx';
 import Footer from '../../components/Footer.jsx';
-import MoviesDetailsApi from '../../api/movies-details-api.js';
+import moviesDetailsApi from '../../api/movies-details-api.js';
 import { PATHS } from '../../constants/constants.jsx';
 import { getGenreLabel } from '../../constants/genres.jsx';
 import { ToastContext } from '../../context/ToastContext.jsx';
@@ -23,7 +23,7 @@ const Genre = () => {
 
         async function fetchMovies() {
             setLoading(true);
-            const moviesResponse = await MoviesDetailsApi({
+            const moviesResponse = await moviesDetailsApi({
                 name: null, genre: title.toUpperCase(), sortBy: null, sortDirection: null, page: currPage, pageSize: PAGE_SIZE,
             });
             if (!mounted) return;

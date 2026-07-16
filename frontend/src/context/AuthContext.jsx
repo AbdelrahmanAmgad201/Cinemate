@@ -53,7 +53,7 @@ export default function AuthProvider({ children }){
             return {success: true}
         }
         catch (err){
-            console.log(err);
+            console.error('Error signing up:', err);
             return {success: false, message: err.response?.data?.error};
         }
     }

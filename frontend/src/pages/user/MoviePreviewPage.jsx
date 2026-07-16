@@ -5,7 +5,7 @@ import ReviewCard from '../../components/ReviewCard.jsx';
 import { useParams, useLocation, useNavigate } from 'react-router-dom';
 import { Play, Film, Bookmark, Heart, Users, Star, Clock, Plus, MessageSquareText } from 'lucide-react';
 
-import { getMovieApi, getReviewsApi, postReviewApi, deleteReviewApi, likeMovieApi, addToWatchHistoryApi, addToWatchLaterApi } from '../../api/movie-api.js';
+import { getMovieApi, getReviewsApi, postReviewApi, deleteReviewApi, likeMovieApi, unlikeMovieApi, addToWatchHistoryApi, addToWatchLaterApi, removeFromWatchLaterApi, getIsLikedApi, getIsWatchLaterApi } from '../../api/movie-api.js';
 import { ToastContext } from '../../context/ToastContext.jsx';
 
 import { MAX_LENGTHS, PATHS, ROLES } from '../../constants/constants.jsx';
@@ -31,6 +31,8 @@ export default function MoviePreviewPage() {
 
     const [movie, setMovie] = useState(location.state?.movie ?? null);
     const [movieLoading, setMovieLoading] = useState(false);
+    const [isLiked, setIsLiked] = useState(false);
+    const [isWatchLater, setIsWatchLater] = useState(false);
 
     const [reviews, setReviews] = useState([]);
     const [reviewsLoading, setReviewsLoading] = useState(false);
@@ -63,13 +65,15 @@ export default function MoviePreviewPage() {
             setReviews((prev) => [review, ...prev]);
             setPage(0);
             await fetchReviews(movieId, 0, false);
+            await fetchMovie();
+
+            setFormDesc('');
+            setFormRating(5);
+            setShowForm(false);
         } else {
             showToast('Failed to submit review', res.message || 'unknown error', 'error');
         }
 
-        setFormDesc('');
-        setFormRating(5);
-        setShowForm(false);
         setSubmitting(false);
     };
 
@@ -80,6 +84,8 @@ export default function MoviePreviewPage() {
         if (!res.success) {
             setReviews(prev);
             showToast('Failed to delete review', res.message || 'unknown error', 'error');
+        } else {
+            await fetchMovie();
         }
     };
 
@@ -126,21 +132,23 @@ export default function MoviePreviewPage() {
     };
 
     const handleLike = async () => {
-        const res = await likeMovieApi({ movieId });
+        const res = isLiked ? await unlikeMovieApi({ movieId }) : await likeMovieApi({ movieId });
         if (!res.success) {
-            showToast('Failed to like movie', res.message || 'unknown error', 'error');
+            showToast(isLiked ? 'Failed to unlike movie' : 'Failed to like movie', res.message || 'unknown error', 'error');
             return;
         }
-        showToast('Liked movie', 'Added movie to like list', 'success');
+        setIsLiked(!isLiked);
+        showToast(isLiked ? 'Removed like' : 'Liked movie', isLiked ? 'Removed movie from like list' : 'Added movie to like list', 'success');
     };
 
     const handleWatchLater = async () => {
-        const res = await addToWatchLaterApi({ movieId });
+        const res = isWatchLater ? await removeFromWatchLaterApi({ movieId }) : await addToWatchLaterApi({ movieId });
         if (!res.success) {
-            showToast('Failed to add movie to watch later', res.message || 'unknown error', 'error');
+            showToast(isWatchLater ? 'Failed to remove from watch later' : 'Failed to add movie to watch later', res.message || 'unknown error', 'error');
             return;
         }
-        showToast('Watch later movie', 'Added movie to watch later list', 'success');
+        setIsWatchLater(!isWatchLater);
+        showToast(isWatchLater ? 'Removed' : 'Watch later movie', isWatchLater ? 'Removed movie from watch later list' : 'Added movie to watch later list', 'success');
     };
 
     const handleWatchTogether = async () => {
@@ -178,6 +186,20 @@ export default function MoviePreviewPage() {
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [movieId, location.state?.movie]);
+
+    useEffect(() => {
+        if (!movieId || !user || user.role !== ROLES.USER) return;
+        let ignore = false;
+
+        getIsLikedApi({ movieId }).then((res) => {
+            if (!ignore && res.success) setIsLiked(Boolean(res.data));
+        });
+        getIsWatchLaterApi({ movieId }).then((res) => {
+            if (!ignore && res.success) setIsWatchLater(Boolean(res.data));
+        });
+
+        return () => { ignore = true; };
+    }, [movieId, user]);
 
     useEffect(() => {
         if (!sentinelRef.current) return;
@@ -249,11 +271,11 @@ export default function MoviePreviewPage() {
 
                         {user.role === ROLES.USER && (
                             <>
-                                <IconButton label="Add to watchlist" variant="solid" size="lg" onClick={handleWatchLater}>
-                                    <Bookmark size={18} />
+                                <IconButton label={isWatchLater ? 'Remove from watchlist' : 'Add to watchlist'} variant="solid" size="lg" active={isWatchLater} onClick={handleWatchLater}>
+                                    <Bookmark size={18} fill={isWatchLater ? 'currentColor' : 'none'} />
                                 </IconButton>
-                                <IconButton label="Like" variant="solid" size="lg" onClick={handleLike}>
-                                    <Heart size={18} />
+                                <IconButton label={isLiked ? 'Unlike' : 'Like'} variant="solid" size="lg" active={isLiked} onClick={handleLike}>
+                                    <Heart size={18} fill={isLiked ? 'currentColor' : 'none'} />
                                 </IconButton>
                                 <IconButton label="Start watch party" variant="solid" size="lg" onClick={handleWatchTogether}>
                                     <Users size={18} />

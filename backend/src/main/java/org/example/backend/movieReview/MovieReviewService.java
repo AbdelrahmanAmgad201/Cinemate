@@ -66,6 +66,28 @@ public class MovieReviewService {
         return MovieReviewDetailsDTO.from(reviewRepository.save(review));
     }
 
+    @Transactional
+    public void deleteReview(Long userId, Long movieId) {
+        MovieReviewID id = new MovieReviewID(movieId, userId);
+        MovieReview review = reviewRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Review not found"));
+
+        Movie movie = review.getMovie();
+        movie.setRatingCount(movie.getRatingCount() - 1);
+        movie.setRatingSum(movie.getRatingSum() - review.getRating());
+
+        if (movie.getRatingCount() > 0) {
+            double avg = (double) movie.getRatingSum() / movie.getRatingCount();
+            movie.setAverageRating(Math.round(avg * 10.0) / 10.0);
+        } else {
+            movie.setRatingSum(0L);
+            movie.setAverageRating(0.0);
+        }
+
+        movieRepository.save(movie);
+        reviewRepository.delete(review);
+    }
+
     @Transactional(readOnly = true)
     public Page<MovieReviewDetailsDTO> getMovieReviews(Long movieId, Pageable pageable) {
         return reviewRepository.findByMovie_MovieID(movieId, pageable).map(MovieReviewDetailsDTO::from);

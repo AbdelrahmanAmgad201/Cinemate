@@ -71,6 +71,12 @@ public class Post extends SoftDeletable implements Moderatable {
     @Builder.Default
     private long moderationVersion = 1;
 
+    // When the CURRENT moderation request was made (distinct from createdAt, which never
+    // changes on edit). Drives the MOD-01 reconciliation sweep: PENDING content whose
+    // request is older than the sweep threshold is re-enqueued.
+    @Column(name = "moderation_requested_at", nullable = false)
+    private Instant moderationRequestedAt;
+
     @PrePersist
     protected void onCreate() {
         if (id == null) {
@@ -81,6 +87,9 @@ public class Post extends SoftDeletable implements Moderatable {
         }
         if (lastActivityAt == null) {
             lastActivityAt = createdAt;
+        }
+        if (moderationRequestedAt == null) {
+            moderationRequestedAt = createdAt;
         }
     }
 }

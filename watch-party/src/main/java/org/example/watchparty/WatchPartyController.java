@@ -22,7 +22,7 @@ public class WatchPartyController {
 
     private final WatchPartyService watchPartyService;
 
-    @PostMapping("/{movieId}")
+    @PostMapping("/v1/{movieId}")
     public ResponseEntity<WatchPartyCreatedResponse> create(
             HttpServletRequest request,
             @PathVariable Long movieId) {
@@ -32,12 +32,12 @@ public class WatchPartyController {
                 .body(watchPartyService.create(userId, userName, movieId));
     }
 
-    @GetMapping("/{partyId}")
+    @GetMapping("/v1/{partyId}")
     public ResponseEntity<WatchPartyResponse> get(@PathVariable String partyId) {
         return ResponseEntity.ok(watchPartyService.get(partyId));
     }
 
-    @PostMapping("/join/{partyId}")
+    @PutMapping("/v1/{partyId}/members")
     public ResponseEntity<WatchPartyResponse> join(
             HttpServletRequest request,
             @PathVariable String partyId) {
@@ -46,7 +46,7 @@ public class WatchPartyController {
         return ResponseEntity.ok(watchPartyService.join(userId, userName, partyId));
     }
 
-    @DeleteMapping("/leave/{partyId}")
+    @DeleteMapping("/v1/{partyId}/members")
     public ResponseEntity<Void> leave(
             HttpServletRequest request,
             @PathVariable String partyId) {
@@ -54,7 +54,7 @@ public class WatchPartyController {
         return ResponseEntity.ok().build();
     }
 
-    @DeleteMapping("/{partyId}")
+    @DeleteMapping("/v1/{partyId}")
     public ResponseEntity<Void> delete(
             HttpServletRequest request,
             @PathVariable String partyId) {

@@ -1,4 +1,4 @@
-package org.example.backend.admin;
+package org.example.backend.common.dto;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;

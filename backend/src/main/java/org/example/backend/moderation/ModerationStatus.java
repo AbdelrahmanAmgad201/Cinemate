@@ -7,10 +7,7 @@ package org.example.backend.moderation;
  * treated like APPROVED (they were moderated under the old synchronous model).
  */
 public enum ModerationStatus {
-    /** Published and visible; the async verdict hasn't landed yet. */
     PENDING,
-    /** A clean verdict landed for the current version. */
     APPROVED,
-    /** A flagged verdict landed; the content has been soft-deleted. */
     REMOVED
 }

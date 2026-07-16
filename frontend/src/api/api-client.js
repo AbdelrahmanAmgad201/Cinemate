@@ -48,9 +48,13 @@ api.interceptors.response.use(
 
         // On a 401, transparently try to mint a fresh access token from the refresh
         // cookie and replay the request — but only once per request, and never for
-        // the refresh call itself, to avoid an infinite loop.
+        // the refresh call itself (infinite loop) or the login call (a wrong-password
+        // 401 there is a normal business error, not an expired session, and retrying
+        // it as one silently signs the user out and reloads the page before the login
+        // form ever sees the failure).
         if (status === 401 && original && !original._retry &&
-            !original.url?.includes("/auth/v1/refresh")) {
+            !original.url?.includes("/auth/v1/refresh") &&
+            !original.url?.includes("/auth/v1/login")) {
             original._retry = true;
             try {
                 const newToken = await refreshAccessToken();

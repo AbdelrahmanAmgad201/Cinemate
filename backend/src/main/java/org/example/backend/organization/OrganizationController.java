@@ -2,8 +2,10 @@ package org.example.backend.organization;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
+import org.example.backend.common.dto.AboutDTO;
+import org.example.backend.common.dto.UpdateNameRequest;
 import org.example.backend.movie.*;
-import org.example.backend.requests.Requests;
+import org.example.backend.requests.RequestsResponse;
 import org.example.backend.requests.RequestsService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -28,7 +30,7 @@ public class OrganizationController {
     private MovieService movieService;
 
     @GetMapping("/v1/profile")
-    public ResponseEntity<?> getProfile(HttpServletRequest request) {
+    public ResponseEntity<?> getMyProfile(HttpServletRequest request) {
         Long userId = (Long) request.getAttribute("userId");
         String email = (String) request.getAttribute("userEmail");
 
@@ -36,18 +38,18 @@ public class OrganizationController {
     }
 
 
-    @PostMapping("/v1/set-organization-data")
+    @PutMapping("/v1/profile")
     public ResponseEntity<String> setPersonalData(
             HttpServletRequest request,
             @Valid @RequestBody OrganizationDataDTO organizationDataDTO) {
 
         Long userId = (Long) request.getAttribute("userId");
-        String message = organizationService.setOrganizationData(userId, organizationDataDTO);
+        String message = organizationService.updateOrganizationData(userId, organizationDataDTO);
 
         return ResponseEntity.ok(message);
     }
 
-    @PostMapping("/v1/add-movie")
+    @PostMapping("/v1/movies")
     public ResponseEntity<?> addMovie(HttpServletRequest request, @Valid @RequestBody MovieAddDTO movieAddDTO) {
         Long userId = (Long) request.getAttribute("userId");
         Long movieId = organizationService.requestMovie(userId, movieAddDTO);
@@ -62,10 +64,10 @@ public class OrganizationController {
     }
 
 
-    @GetMapping("/v1/get-all-organization-requests")
-    public List<Requests> getOrgRequests(HttpServletRequest request) {
+    @GetMapping("/v1/requests")
+    public ResponseEntity<List<RequestsResponse>> getOrgRequests(HttpServletRequest request) {
         Long orgId = (Long) request.getAttribute("userId");
-        return requestsService.getAllOrganizationRequests(orgId);
+        return ResponseEntity.ok(requestsService.getAllOrganizationRequests(orgId));
     }
 
     @GetMapping("/v1/movies-overview")
@@ -74,9 +76,9 @@ public class OrganizationController {
         return ResponseEntity.ok().body(movieService.getMoviesOverview(userId));
     }
 
-    @GetMapping("/v1/get-specific-movie-overview")
+    @GetMapping("/v1/movies/{movieId}/overview")
     public ResponseEntity<OneMovieOverView> getSpecificMovieOverview(HttpServletRequest request,
-                                                                     @RequestParam Long movieId) {
+                                                                     @PathVariable Long movieId) {
         Long userId = (Long) request.getAttribute("userId");
 
         if (movieService.OrganizationOwnMovie(userId, movieId)) {
@@ -86,7 +88,7 @@ public class OrganizationController {
         return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
     }
 
-    @GetMapping("/v1/get-requests-over-view")
+    @GetMapping("/v1/requests-overview")
     public ResponseEntity<RequestsOverView> getRequestsOverview(HttpServletRequest request) {
         Long userId = (Long) request.getAttribute("userId");
         return ResponseEntity.ok().body(requestsService.getRequestsOverView(userId));
@@ -114,12 +116,12 @@ public class OrganizationController {
         return  ResponseEntity.ok("about updated successfully");
     }
 
-    @PutMapping("/v1/name/{name}")
+    @PutMapping("/v1/name")
     public ResponseEntity<String> updateName(
             HttpServletRequest request,
-            @PathVariable String name){
+            @Valid @RequestBody UpdateNameRequest nameRequest){
         Long userId = (Long) request.getAttribute("userId");
-        organizationService.updateName(userId, name);
+        organizationService.updateName(userId, nameRequest.getName());
         return  ResponseEntity.ok("name updated successfully");
     }
     

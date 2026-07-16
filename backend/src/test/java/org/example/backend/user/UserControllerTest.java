@@ -57,10 +57,10 @@ class UserControllerTest {
         dto.setFirstName("John");
         dto.setLastName("Doe");
 
-        when(userService.setUserData(eq(5L), any(UserDataDTO.class)))
+        when(userService.updateUserData(eq(5L), any(UserDataDTO.class)))
                 .thenReturn("User data updated successfully");
 
-        mockMvc.perform(post("/api/user/v1/set-user-data")
+        mockMvc.perform(put("/api/user/v1/profile-data")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {
@@ -72,6 +72,6 @@ class UserControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(content().string("User data updated successfully"));
 
-        verify(userService).setUserData(eq(5L), any(UserDataDTO.class));
+        verify(userService).updateUserData(eq(5L), any(UserDataDTO.class));
     }
 }

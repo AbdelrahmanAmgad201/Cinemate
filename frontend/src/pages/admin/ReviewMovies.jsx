@@ -17,8 +17,8 @@ import EmptyState from '../../components/ui/EmptyState.jsx';
 import LoadingFallback from '../../components/LoadingFallback.jsx';
 
 const TABS = [
-    { key: 'pending', label: 'Pending' },
-    { key: 'history', label: 'History' },
+    { id: 'pending', label: 'Pending' },
+    { id: 'history', label: 'History' },
 ];
 
 const STATUS_VARIANT = { PENDING: 'warning', ACCEPTED: 'success', DECLINED: 'error' };
@@ -67,6 +67,10 @@ export default function ReviewRequestsPage() {
     };
 
     const handlePreviewMovie = (movie) => {
+        if (!movie) {
+            showToast('Preview unavailable', "This request doesn't have movie details to preview", 'error');
+            return;
+        }
         const mappedMovie = mapMovieBackendToFrontend(movie);
         navigate(PATHS.MOVIE.DETAILS(mappedMovie.id), { state: { movie: mappedMovie } });
     };
@@ -139,7 +143,7 @@ export default function ReviewRequestsPage() {
                                         </td>
                                         <td>{req.organizationName || 'N/A'}</td>
                                         <td><Badge variant={STATUS_VARIANT[req.state] || 'neutral'}>{req.state}</Badge></td>
-                                        <td>{req.admin?.name || 'Admin'}</td>
+                                        <td>{req.admin || 'Admin'}</td>
                                     </tr>
                                 ))}
                             </tbody>

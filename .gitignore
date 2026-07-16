@@ -2,8 +2,9 @@
 .idea/
 .vscode/
 
-# Claude Code project instructions (not finalized for the team yet)
+# Claude Code project instructions
 CLAUDE.md
+.claude/
 
 # Python cache
 Content-moderator/**/__pycache__/

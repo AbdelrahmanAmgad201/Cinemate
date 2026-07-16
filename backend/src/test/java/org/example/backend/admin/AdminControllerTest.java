@@ -1,16 +1,19 @@
 package org.example.backend.admin;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.example.backend.common.dto.UpdateNameRequest;
 import org.example.backend.movie.MovieDetailsDTO;
 import org.example.backend.movie.MovieService;
 import org.example.backend.movie.OneMovieOverView;
-import org.example.backend.requests.Requests;
+import org.example.backend.requests.RequestsResponse;
 import org.example.backend.requests.RequestsService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
-import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
+import org.springframework.boot.jackson2.autoconfigure.Jackson2AutoConfiguration;
+import org.springframework.context.annotation.Import;
+import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -30,6 +33,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * attribute that GatewayAuthenticationFilter would normally set is supplied directly
  * on each request instead.
  */
+@Import(Jackson2AutoConfiguration.class)
 @WebMvcTest(AdminController.class)
 @AutoConfigureMockMvc(addFilters = false)
 class AdminControllerTest {
@@ -40,13 +44,13 @@ class AdminControllerTest {
     @Autowired
     private ObjectMapper objectMapper;
 
-    @MockBean
+    @MockitoBean
     private AdminService adminService;
 
-    @MockBean
+    @MockitoBean
     private RequestsService requestsService;
 
-    @MockBean
+    @MockitoBean
     private MovieService movieService;
 
     private String json(Object body) throws Exception {
@@ -55,10 +59,10 @@ class AdminControllerTest {
 
     @Test
     void findAllAdminRequests_ReturnsRequestsForCurrentAdmin() throws Exception {
-        Requests req = Requests.builder().id(1L).build();
+        RequestsResponse req = RequestsResponse.builder().id(1L).build();
         when(requestsService.getAllAdminRequests(1L)).thenReturn(List.of(req));
 
-        mockMvc.perform(get("/api/admin/v1/find-admin-requests").requestAttr("userId", 1L))
+        mockMvc.perform(get("/api/admin/v1/my-requests").requestAttr("userId", 1L))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.length()").value(1));
     }
@@ -67,16 +71,15 @@ class AdminControllerTest {
     void findAllAdminRequests_NoRequests_ReturnsEmptyArray() throws Exception {
         when(requestsService.getAllAdminRequests(1L)).thenReturn(Collections.emptyList());
 
-        mockMvc.perform(get("/api/admin/v1/find-admin-requests").requestAttr("userId", 1L))
+        mockMvc.perform(get("/api/admin/v1/my-requests").requestAttr("userId", 1L))
                 .andExpect(status().isOk())
                 .andExpect(content().json("[]"));
     }
 
     @Test
     void declineRequest_Success_ReturnsConfirmationMessage() throws Exception {
-        mockMvc.perform(post("/api/admin/v1/decline-request")
-                        .requestAttr("userId", 1L)
-                        .param("requestId", "5"))
+        mockMvc.perform(post("/api/admin/v1/requests/5/decline")
+                        .requestAttr("userId", 1L))
                 .andExpect(status().isOk())
                 .andExpect(content().string(org.hamcrest.Matchers.containsString("declined successfully")));
     }
@@ -86,18 +89,16 @@ class AdminControllerTest {
         doThrow(new RuntimeException("Movie not found"))
                 .when(adminService).declineRequest(1L, 5L);
 
-        mockMvc.perform(post("/api/admin/v1/decline-request")
-                        .requestAttr("userId", 1L)
-                        .param("requestId", "5"))
+        mockMvc.perform(post("/api/admin/v1/requests/5/decline")
+                        .requestAttr("userId", 1L))
                 .andExpect(status().isInternalServerError())
                 .andExpect(jsonPath("$.status").value(500));
     }
 
     @Test
     void acceptRequest_Success_ReturnsConfirmationMessage() throws Exception {
-        mockMvc.perform(post("/api/admin/v1/accept-request")
-                        .requestAttr("userId", 2L)
-                        .param("requestId", "10"))
+        mockMvc.perform(post("/api/admin/v1/requests/10/accept")
+                        .requestAttr("userId", 2L))
                 .andExpect(status().isOk())
                 .andExpect(content().string(org.hamcrest.Matchers.containsString("accepted successfully")));
     }
@@ -107,7 +108,7 @@ class AdminControllerTest {
         MovieDetailsDTO dto = MovieDetailsDTO.builder().movieID(3L).name("Test Movie").build();
         when(adminService.getRequestedMovie(3L)).thenReturn(dto);
 
-        mockMvc.perform(get("/api/admin/v1/get-requested-movie").param("requestId", "3"))
+        mockMvc.perform(get("/api/admin/v1/requests/3/movie"))
                 .andExpect(status().isOk());
     }
 
@@ -116,7 +117,7 @@ class AdminControllerTest {
         OneMovieOverView overview = new OneMovieOverView(10L, 5L, 2L, 1L, 4.5, 3L);
         when(movieService.getMovieStatsByMovieId(7L)).thenReturn(overview);
 
-        mockMvc.perform(get("/api/admin/v1/get-specific-movie-overview").param("movieId", "7"))
+        mockMvc.perform(get("/api/admin/v1/movies/7/overview"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.averageRating").value(4.5));
     }
@@ -126,7 +127,7 @@ class AdminControllerTest {
         when(adminService.getAdminProfile(1L))
                 .thenReturn(new AdminProfileDTO("John Doe", "john@example.com", "ADMIN"));
 
-        mockMvc.perform(get("/api/admin/v1/get-admin-profile").requestAttr("userId", 1L))
+        mockMvc.perform(get("/api/admin/v1/profile").requestAttr("userId", 1L))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.name").value("John Doe"))
                 .andExpect(jsonPath("$.email").value("john@example.com"));
@@ -139,7 +140,7 @@ class AdminControllerTest {
         dto.setEmail("admin@example.com");
         dto.setPassword("password123");
 
-        mockMvc.perform(post("/api/admin/v1/add-admin")
+        mockMvc.perform(post("/api/admin/v1/admins")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(json(dto)))
                 .andExpect(status().isOk());
@@ -152,7 +153,7 @@ class AdminControllerTest {
         dto.setEmail("admin@example.com");
         dto.setPassword("password123");
 
-        mockMvc.perform(post("/api/admin/v1/add-admin")
+        mockMvc.perform(post("/api/admin/v1/admins")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(json(dto)))
                 .andExpect(status().isBadRequest());
@@ -165,7 +166,7 @@ class AdminControllerTest {
         dto.setEmail("admin@example.com");
         dto.setPassword("short");
 
-        mockMvc.perform(post("/api/admin/v1/add-admin")
+        mockMvc.perform(post("/api/admin/v1/admins")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(json(dto)))
                 .andExpect(status().isBadRequest());
@@ -176,7 +177,7 @@ class AdminControllerTest {
         UpdateNameRequest nameRequest = new UpdateNameRequest();
         nameRequest.setName("Updated Name");
 
-        mockMvc.perform(put("/api/admin/v1/update-name")
+        mockMvc.perform(put("/api/admin/v1/name")
                         .requestAttr("userId", 1L)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(json(nameRequest)))
@@ -189,7 +190,7 @@ class AdminControllerTest {
         UpdateNameRequest nameRequest = new UpdateNameRequest();
         nameRequest.setName("");
 
-        mockMvc.perform(put("/api/admin/v1/update-name")
+        mockMvc.perform(put("/api/admin/v1/name")
                         .requestAttr("userId", 1L)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(json(nameRequest)))

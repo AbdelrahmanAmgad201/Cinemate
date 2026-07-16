@@ -13,7 +13,7 @@ export default async function profileCompletionApi({birthday, gender}) {
         return { success: true, token: token};
     }
     catch(err){
-       console.log(err);
+       console.error('Error completing profile:', err);
        return { success: false , message: err.message };
     }
 };

@@ -33,6 +33,11 @@ import java.util.function.Consumer;
  * Verdicts for one content id share a Kafka partition (keyed by contentId), so they arrive
  * ordered and are applied single-threaded — the in-code version guard is sufficient (no
  * concurrent verdict application for the same content).
+ *
+ * <p>MOD-02: an exception thrown here (e.g. a datastore blip) is retried by
+ * {@code moderationVerdictListenerContainerFactory}'s {@link org.springframework.kafka.listener.DefaultErrorHandler}
+ * a bounded number of times, then the record is published to the verdicts DLQ instead of
+ * being silently committed and lost — see {@link ModerationKafkaConfig}.
  */
 @Slf4j
 @Component
@@ -47,7 +52,7 @@ public class ModerationVerdictConsumer {
     private final ForumService forumService;
     private final ObjectMapper objectMapper;
 
-    @KafkaListener(topics = "${moderation.topics.verdicts}")
+    @KafkaListener(topics = "${moderation.topics.verdicts}", containerFactory = "moderationVerdictListenerContainerFactory")
     @Transactional
     public void onVerdict(String payload) {
         ModerationVerdictMessage verdict;
@@ -86,12 +91,7 @@ public class ModerationVerdictConsumer {
         }
     }
 
-    /**
-     * Moderation-status changes go through bulk {@code approve}/{@code markRemoved} updates,
-     * NOT through the loaded entity. The entity is read only for the version/deleted guards:
-     * if it were modified and saved, its dirty flush at commit would overwrite the is_deleted
-     * that the soft-delete cascade sets, resurrecting removed content.
-     */
+
     private <T extends Moderatable> void apply(
             ModerationVerdictMessage verdict, UUID contentId, JpaRepository<T, UUID> repository,
             BiConsumer<UUID, Long> approve, Consumer<UUID> markRemoved, Consumer<T> remove) {

@@ -13,7 +13,7 @@ public class VoteController {
     @Autowired
     private VoteService voteService;
 
-    @PostMapping("/v1/post-vote")
+    @PostMapping("/v1/post")
     public ResponseEntity<?> postVote(
             HttpServletRequest request,
             @Valid @RequestBody VoteDTO voteDTO) {
@@ -23,7 +23,7 @@ public class VoteController {
         return ResponseEntity.ok().build();
     }
 
-    @PostMapping("/v1/comment-vote")
+    @PostMapping("/v1/comment")
     public ResponseEntity<?> commentVote(
             HttpServletRequest request,
             @Valid @RequestBody VoteDTO voteDTO) {
@@ -33,7 +33,7 @@ public class VoteController {
         return ResponseEntity.ok().build();
     }
 
-    @PutMapping("/v1/update-vote")
+    @PutMapping("/v1")
     public ResponseEntity<?> updateVote(
             HttpServletRequest request,
             @Valid @RequestBody UpdateVoteDTO updateVoteDTO) {
@@ -43,7 +43,7 @@ public class VoteController {
         return ResponseEntity.ok().build();
     }
 
-    @DeleteMapping("/v1/delete-vote/{targetId}")
+    @DeleteMapping("/v1/{targetId}")
     public ResponseEntity<?> deleteVote(
             HttpServletRequest request,
             @PathVariable UUID targetId
@@ -53,7 +53,7 @@ public class VoteController {
         return ResponseEntity.ok().build();
     }
 
-    @GetMapping("/v1/is-voted/{targetId}")
+    @GetMapping("/v1/{targetId}")
     public ResponseEntity<Integer> getIsVoted(
             HttpServletRequest request,
             @PathVariable UUID targetId

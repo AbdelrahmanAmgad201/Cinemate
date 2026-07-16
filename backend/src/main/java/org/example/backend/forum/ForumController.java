@@ -18,7 +18,7 @@ public class ForumController {
     @Autowired
     private ForumService forumService;
 
-    @PostMapping("/v1/create")
+    @PostMapping("/v1")
     public ResponseEntity<ForumDetailsDTO> createForum(
             HttpServletRequest request,
             @Valid @RequestBody ForumCreationRequest requestDTO) {
@@ -28,7 +28,7 @@ public class ForumController {
         return ResponseEntity.ok(forum);
     }
 
-    @GetMapping("/v1/get-forum-by-id/{forumId}")
+    @GetMapping("/v1/{forumId}")
     public ResponseEntity<ForumDetailsDTO> getForumById(
             HttpServletRequest request,
             @PathVariable UUID forumId){
@@ -37,7 +37,7 @@ public class ForumController {
     }
 
 
-    @DeleteMapping("/v1/delete/{forumId}")
+    @DeleteMapping("/v1/{forumId}")
     public ResponseEntity<?> deleteForum(
             HttpServletRequest request,
             @PathVariable UUID forumId) {
@@ -47,7 +47,7 @@ public class ForumController {
         return ResponseEntity.ok().build();
     }
 
-    @PutMapping("/v1/update/{forumId}")
+    @PutMapping("/v1/{forumId}")
     public ResponseEntity<?> updateForum(
             HttpServletRequest request,
             @PathVariable UUID forumId,
@@ -70,7 +70,7 @@ public class ForumController {
      */
 
     @GetMapping("/v1/search")
-    public ResponseEntity<SearchResultDTO> searchForums(
+    public ResponseEntity<ForumPageResponse> searchForums(
             @RequestParam("q") String searchQuery,
             @PageableDefault(size = 20) Pageable pageable) {
 
@@ -78,11 +78,11 @@ public class ForumController {
             return ResponseEntity.badRequest().build();
         }
 
-        SearchResultDTO results = forumService.searchForums(searchQuery.trim(), pageable);
+        ForumPageResponse results = forumService.searchForums(searchQuery.trim(), pageable);
         return ResponseEntity.ok(results);
     }
 
-    @GetMapping("/v1/forum-name/{forumId}")
+    @GetMapping("/v1/{forumId}/name")
     public ResponseEntity<String> getForumByName(
             HttpServletRequest request,
             @PathVariable UUID forumId
@@ -90,11 +90,11 @@ public class ForumController {
         return ResponseEntity.ok(forumService.getForumName(forumId));
         }
 
-    @GetMapping("/v1/user-forums")
+    @GetMapping("/v1/my-forums")
     public ResponseEntity<Page<ForumDisplayDTO>> getForumsByUser(
             HttpServletRequest request,
             @PageableDefault(size = 20) Pageable pageable){
             Long userId = (Long) request.getAttribute("userId");
-            return ResponseEntity.ok(forumService.findUserForums(userId,pageable));
+            return ResponseEntity.ok(forumService.getUserForums(userId,pageable));
     }
 }

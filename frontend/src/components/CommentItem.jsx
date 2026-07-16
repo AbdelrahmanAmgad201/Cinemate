@@ -377,7 +377,7 @@ export const CommentItem = ({ comment, post, postOwnerId, onVoteUpdate, onRemove
                         <span style={{ color: 'rgba(168,168,168,0.9)', fontSize: 13 }}>This comment has been deleted</span>
                     ) }
                     { showRepliesButton && !hideViewReplies && (
-                        <button className="view-replies-btn" onClick={handleViewReplies}>{showReplies ? 'Hide' : (typeof repliesCount === 'number' ? `View ${repliesCount} replies` : 'View replies')}</button>
+                        <button className="view-replies-btn" onClick={handleViewReplies}>{showReplies ? 'Hide' : (typeof repliesCount === 'number' ? `View ${repliesCount} ${repliesCount === 1 ? 'reply' : 'replies'}` : 'View replies')}</button>
                     ) }
                 </div>
                 {showReplyBox && (

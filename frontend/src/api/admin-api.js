@@ -2,65 +2,42 @@ import api from './api-client.js';
 
 export async function getRequestsHistoryApi() {
     try{
-        const response = await api.get("/admin/v1/find-admin-requests");
+        const response = await api.get("/admin/v1/my-requests");
         const rawRequestsHistory = response.data;
-        console.log(rawRequestsHistory);
         const RequestsHistoryMapped = rawRequestsHistory.map(req => ({
             id: req.id,
             movieName: req.movieName,
             state: req.state,
             createdAt: req.createdAt,
             stateUpdatedAt: req.stateUpdatedAt,
-            // movie: req.movie,
             movie: { movieID: req.movieId, name: req.movieName},
             admin: req.admin,
             organizationName: req.organization,
         }));
 
-        // const requests = response.data;
-        // console.log(requests);
-
-
         return { success: true, data: RequestsHistoryMapped};
     }
     catch(err){
-        // console.log(err);
         return { success: false , message: err.message };
     }
 }
 
 export async function declineRequestApi({requestId}) {
     try{
-        const response = await api.post("/admin/v1/decline-request", null, {
-            params: { requestId },
-        });
-
-        const data = response.data;
-        // console.log(data);
-
-
-        return { success: true, data: data};
+        const response = await api.post(`/admin/v1/requests/${requestId}/decline`);
+        return { success: true, data: response.data};
     }
     catch(err){
-        // console.log(err);
         return { success: false , message: err.message };
     }
 }
 
 export async function acceptRequestApi({requestId}) {
     try{
-        const response = await api.post("/admin/v1/accept-request", null, {
-            params: { requestId },
-        });
-
-        const data = response.data;
-        // console.log(data);
-
-
-        return { success: true, data: data};
+        const response = await api.post(`/admin/v1/requests/${requestId}/accept`);
+        return { success: true, data: response.data};
     }
     catch(err){
-        // console.log(err);
         return { success: false , message: err.message };
     }
 }
@@ -68,8 +45,7 @@ export async function acceptRequestApi({requestId}) {
 export async function getPendingRequestsApi() {
 
     try{
-        const response = await api.get("/admin/v1/get-pending-requests");
-        console.log(response.data);
+        const response = await api.get("/admin/v1/pending-requests");
         const pendingRequests = response.data;
         const pendingRequestsArray = pendingRequests.map(req => ({
             id: req.id,
@@ -77,18 +53,14 @@ export async function getPendingRequestsApi() {
             state: req.state,
             createdAt: req.createdAt,
             stateUpdatedAt: req.stateUpdatedAt,
-            // movie: req.movie,
+            movie: { movieID: req.movieId, name: req.movieName },
             admin: req.admin,
             organizationName: req.organization,
         }));
 
-        // console.log(pendingRequestsArray);
-
-
         return { success: true, data: pendingRequestsArray};
     }
     catch(err){
-        // console.log(err);
         return { success: false , message: err.message };
     }
 }
@@ -98,7 +70,7 @@ export async function getPendingRequestsApi() {
 
 export async function getSystemAnalyticsApi() {
     try {
-        const response = await api.get("/admin/v1/get-system-overview");
+        const response = await api.get("/admin/v1/system-overview");
         const systemAnalytics = response.data;
 
         // Mapping based on your provided console log
@@ -114,63 +86,24 @@ export async function getSystemAnalyticsApi() {
 
         return { success: true, data: analyticsData };
     } catch (err) {
-        // console.log(err);
         return { success: false, message: err.message };
     }
 }
 
-export async function getMovieAnalyticsApi({ movieId }) {
-
-    try{
-        const response = await api.get("/admin/v1/get-specific-movie-overview", {
-            params: { movieId },
-        });
-        const movieAnalytics = response.data;
-        console.log(movieAnalytics);
-
-        // private Long numberOfUsers;
-        // private Long numberOfMovies;
-        // private Organization mostPopularOrganization;
-        // private Long mostLikedMovie;
-        // private Long mostRatedMovie;
-
-        const analyticsData ={
-            numberOfUsers: movieAnalytics.numberOfUsers,
-            numberOfMovies: movieAnalytics.numberOfMovies,
-            mostPopularOrganization: movieAnalytics.mostPopularOrganization, // could map .name if you want
-            mostLikedMovie: movieAnalytics.mostLikedMovie,
-            mostRatedMovie: movieAnalytics.mostRatedMovie
-        };
-
-        return { success: true, data: analyticsData};
-    }
-    catch(err){
-        // console.log(err);
-        return { success: false , message: err.message };
-    }
-}
-
 export async function addAdminApi({ name, email, password }) {
-
     try {
-        const res = await api.post("/admin/v1/add-admin", { name, email, password });
-        console.log(res);
-
+        await api.post("/admin/v1/admins", { name, email, password });
         return { success: true };
-
     }catch(err){
-
         return { success: false , message: err.message };
     }
-
-
 }
 
 
 // Admin Profile
 export async function getAdminProfileApi() {
     try {
-        const res = await api.get("/admin/v1/get-admin-profile");
+        const res = await api.get("/admin/v1/profile");
 
         return { success: true, data: res.data };
     }catch (err){
@@ -181,7 +114,7 @@ export async function getAdminProfileApi() {
 
 export async function updateNameApi({name}){
     try {
-        const res = await api.put("/admin/v1/update-name", {name});
+        const res = await api.put("/admin/v1/name", {name});
 
         return { success: true, data: res.data };
     }catch (err){

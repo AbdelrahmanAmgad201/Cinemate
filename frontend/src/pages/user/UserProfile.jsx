@@ -24,20 +24,20 @@ import EmptyState from '../../components/ui/EmptyState.jsx';
 import LoadingFallback from '../../components/LoadingFallback.jsx';
 
 const TABS = [
-    { key: 'posts', label: 'Posts' },
-    { key: 'forums', label: 'Forums' },
-    { key: 'watchlater', label: 'Watch Later' },
-    { key: 'history', label: 'Watch History' },
-    { key: 'liked', label: 'Liked Movies' },
-    { key: 'reviews', label: 'Reviews' },
-    { key: 'personal', label: 'Personal data' },
+    { id: 'posts', label: 'Posts' },
+    { id: 'forums', label: 'Forums' },
+    { id: 'watchlater', label: 'Watch Later' },
+    { id: 'history', label: 'Watch History' },
+    { id: 'liked', label: 'Liked Movies' },
+    { id: 'reviews', label: 'Reviews' },
+    { id: 'personal', label: 'Personal data' },
 ];
 
 export default function UserProfile() {
     const { userId } = useParams();
     const { user } = useContext(AuthContext);
     const [loading, setLoading] = useState(true);
-    const [active, setActive] = useState(TABS[0].key);
+    const [active, setActive] = useState(TABS[0].id);
 
     const [fetchedName, setFetchedName] = useState(null);
     const [profile, setProfile] = useState(null);
@@ -100,13 +100,13 @@ export default function UserProfile() {
 
     const isOwnProfile = user && (String(user.id) === String(userId));
     const visibleTabs = isOwnProfile
-        ? TABS.filter(t => t.key !== 'personal')
-        : TABS.filter(t => ['posts', 'liked', 'reviews'].includes(t.key));
+        ? TABS.filter(t => t.id !== 'personal')
+        : TABS.filter(t => ['posts', 'liked', 'reviews'].includes(t.id));
 
     useEffect(() => {
         if (active === 'personal') return;
-        if (!visibleTabs.find(t => t.key === active)) {
-            setActive(visibleTabs[0]?.key || 'posts');
+        if (!visibleTabs.find(t => t.id === active)) {
+            setActive(visibleTabs[0]?.id || 'posts');
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [visibleTabs, userId]);
@@ -187,7 +187,13 @@ export default function UserProfile() {
             <div className="profile-main-grid">
                 <main className="profile-content-col">
                     <div className="profile-section">
-                        {active === 'personal' && <PersonalData profile={profile} user={user} />}
+                        {active === 'personal' && (
+                            <PersonalData
+                                profile={profile}
+                                user={user}
+                                onProfileUpdated={(partial) => setProfile(prev => ({ ...(prev || {}), ...partial }))}
+                            />
+                        )}
                         {active === 'history' && <WatchHistory active={active} isOwnProfile={isOwnProfile} />}
                         {active === 'watchlater' && <WatchLaterPanel />}
                         {active === 'liked' && <LikedMoviesPanel userId={Number(userId)} my={isOwnProfile} />}

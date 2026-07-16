@@ -121,7 +121,7 @@ public class DataInitializer implements CommandLineRunner {
                 .about("only for test")
                 .birthday(LocalDate.now())
                 .build();
-        userService.setUserData(user.getId(), userDataDTO);
+        userService.updateUserData(user.getId(), userDataDTO);
         return user;
     }
 

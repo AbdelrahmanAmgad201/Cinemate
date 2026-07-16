@@ -11,7 +11,5 @@ import lombok.Data;
 @Data
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class MovieMetadata {
-    private Long movieID;
-    private String name;
     private String movieUrl;
 }

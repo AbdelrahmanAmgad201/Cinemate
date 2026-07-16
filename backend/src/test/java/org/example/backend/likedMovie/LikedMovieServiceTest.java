@@ -83,11 +83,11 @@ class LikedMovieServiceTest {
         when(likedMovieRepository.findById(id)).thenReturn(Optional.empty());
         when(likedMovieRepository.save(any(LikedMovie.class))).thenReturn(savedLikedMovie);
 
-        LikedMovie result = likedMovieService.likeMovie(userId, movieId);
+        LikedMovieResponse result = likedMovieService.likeMovie(userId, movieId);
 
         assertNotNull(result);
         assertEquals(movieName, result.getMovieName());
-        assertFalse(result.getIsDeleted());
+        assertEquals(movieId, result.getMovieId());
 
         // Verify the saved object
         ArgumentCaptor<LikedMovie> captor = ArgumentCaptor.forClass(LikedMovie.class);
@@ -113,11 +113,11 @@ class LikedMovieServiceTest {
         when(userRepository.findById(userId)).thenReturn(Optional.of(user));
         when(likedMovieRepository.findById(id)).thenReturn(Optional.of(existingLike));
 
-        LikedMovie result = likedMovieService.likeMovie(userId, movieId);
+        LikedMovieResponse result = likedMovieService.likeMovie(userId, movieId);
 
         assertNotNull(result);
-        assertSame(existingLike, result);
-        assertFalse(result.getIsDeleted());
+        assertEquals(existingLike.getMovieName(), result.getMovieName());
+        assertEquals(movieId, result.getMovieId());
 
         // Verify save was NOT called since it's already liked
         verify(likedMovieRepository, never()).save(any(LikedMovie.class));
@@ -139,13 +139,14 @@ class LikedMovieServiceTest {
         when(likedMovieRepository.findById(id)).thenReturn(Optional.of(deletedLike));
         when(likedMovieRepository.save(any(LikedMovie.class))).thenReturn(deletedLike);
 
-        LikedMovie result = likedMovieService.likeMovie(userId, movieId);
+        LikedMovieResponse result = likedMovieService.likeMovie(userId, movieId);
 
         assertNotNull(result);
-        assertFalse(result.getIsDeleted());
+        assertEquals(movieId, result.getMovieId());
 
         // Verify isDeleted was set to false and saved
         verify(likedMovieRepository).save(deletedLike);
+        assertFalse(deletedLike.getIsDeleted());
     }
 
     @Test
@@ -195,7 +196,8 @@ class LikedMovieServiceTest {
         when(movieRepository.findById(movieId)).thenReturn(Optional.of(movie));
         when(userRepository.findById(userId)).thenReturn(Optional.of(user));
         when(likedMovieRepository.findById(id)).thenReturn(Optional.empty());
-        when(likedMovieRepository.save(any(LikedMovie.class))).thenReturn(new LikedMovie());
+        when(likedMovieRepository.save(any(LikedMovie.class)))
+                .thenReturn(LikedMovie.builder().likedMoviesID(id).movieName(movieName).build());
 
         likedMovieService.likeMovie(userId, movieId);
 
@@ -505,9 +507,9 @@ class LikedMovieServiceTest {
         LikedMovie newLike = createLikedMovie(userId, movieId, movieName, false);
         when(likedMovieRepository.save(any(LikedMovie.class))).thenReturn(newLike);
 
-        LikedMovie result1 = likedMovieService.likeMovie(userId, movieId);
+        LikedMovieResponse result1 = likedMovieService.likeMovie(userId, movieId);
         assertNotNull(result1);
-        assertFalse(result1.getIsDeleted());
+        assertEquals(movieId, result1.getMovieId());
 
         // Unlike
         when(likedMovieRepository.findById(id)).thenReturn(Optional.of(newLike));
@@ -516,8 +518,9 @@ class LikedMovieServiceTest {
 
         // Like again (restore)
         when(likedMovieRepository.findById(id)).thenReturn(Optional.of(newLike));
-        LikedMovie result2 = likedMovieService.likeMovie(userId, movieId);
-        assertFalse(result2.getIsDeleted());
+        LikedMovieResponse result2 = likedMovieService.likeMovie(userId, movieId);
+        assertEquals(movieId, result2.getMovieId());
+        assertFalse(newLike.getIsDeleted());
     }
 
     @Test
@@ -539,7 +542,8 @@ class LikedMovieServiceTest {
         when(userRepository.findById(user2Id)).thenReturn(Optional.of(user2));
         when(likedMovieRepository.findById(id1)).thenReturn(Optional.empty());
         when(likedMovieRepository.findById(id2)).thenReturn(Optional.empty());
-        when(likedMovieRepository.save(any(LikedMovie.class))).thenReturn(new LikedMovie());
+        when(likedMovieRepository.save(any(LikedMovie.class)))
+                .thenReturn(LikedMovie.builder().likedMoviesID(id1).movieName(movieName).build());
 
         likedMovieService.likeMovie(user1Id, movieId);
         likedMovieService.likeMovie(user2Id, movieId);
@@ -565,7 +569,8 @@ class LikedMovieServiceTest {
         when(movieRepository.findById(movieId2)).thenReturn(Optional.of(movie2));
         when(likedMovieRepository.findById(id1)).thenReturn(Optional.empty());
         when(likedMovieRepository.findById(id2)).thenReturn(Optional.empty());
-        when(likedMovieRepository.save(any(LikedMovie.class))).thenReturn(new LikedMovie());
+        when(likedMovieRepository.save(any(LikedMovie.class)))
+                .thenReturn(LikedMovie.builder().likedMoviesID(id1).movieName("Movie 1").build());
 
         likedMovieService.likeMovie(userId, movieId1);
         likedMovieService.likeMovie(userId, movieId2);

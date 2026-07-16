@@ -41,7 +41,7 @@ jwt:
 
 # Redis backing the rate-limiter's token buckets (shared across gateway replicas).
 # The only Redis the app still runs — the backend's cache + token stores moved to
-# Postgres (see dev_docs/postgres-consolidation.md).
+# Postgres (see docs/database.md).
 redis:
   host: ${REDIS_HOST:redis-ratelimit}
   port: ${REDIS_PORT:6379}

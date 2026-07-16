@@ -7,7 +7,7 @@ import { Film } from 'lucide-react';
 
 import { ROLES, PATHS } from '../constants/constants.jsx';
 
-function NavBar() {
+function OrgAdminNavBar() {
     const { user } = useContext(AuthContext);
     const location = useLocation();
 
@@ -39,4 +39,4 @@ function NavBar() {
     );
 }
 
-export default NavBar;
+export default OrgAdminNavBar;

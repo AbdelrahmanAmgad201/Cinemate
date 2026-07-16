@@ -1,83 +1,66 @@
 import api from "./api-client.js";
 
-export const fetchMoviesOverview = async () => {
+export const fetchMoviesOverviewApi = async () => {
     try {
         const response = await api.get("/organization/v1/movies-overview");
         return response.data;
     } catch (error) {
-        // console.error("Failed to fetch movies overview:", error);
-        // throw error;
         return { success: false , message: error.message };
-
     }
 };
 
-export const fetchOrgRequests = async () => {
+export const fetchOrgRequestsApi = async () => {
     try {
-        const response = await api.get("/organization/v1/get-all-organization-requests");
+        const response = await api.get("/organization/v1/requests");
         return response.data;
     } catch (error) {
-        // console.error("Failed to fetch organization requests:", error);
-        // throw error;
         return { success: false , message: error.message };
-
     }
 };
 
-export async function fetchRequestsOverview (){
+export async function fetchRequestsOverviewApi (){
     try {
-        const response = await api.get("/organization/v1/get-requests-over-view");
+        const response = await api.get("/organization/v1/requests-overview");
         return response.data;
     } catch (error) {
-        // console.error("Failed to fetch requests overview:", error);
-        // throw error;
         return { success: false , message: error.message };
-
     }
 };
 
-export async function fetchOrgAnalytics (){
+export async function fetchOrgAnalyticsApi (){
     try {
         const [moviesOverview, requestsOverview] = await Promise.all([
-            fetchMoviesOverview(),
-            fetchRequestsOverview()
+            fetchMoviesOverviewApi(),
+            fetchRequestsOverviewApi()
         ]);
         return {
             moviesOverview,
             requestsOverview
         };
     } catch (error) {
-        // console.error("Failed to fetch organization analytics:", error);
-        // throw error;
         return { success: false , message: error.message };
-
     }
 };
 
-export async function fetchOrgProfile() {
+export async function fetchOrgProfileApi() {
     try {
         const response = await api.get("/organization/v1/personal-data");
         return {success: true, response: response.data};
     } catch (error) {
-        // console.error("Failed to fetch organization profile:", error);
-        // throw error;
         return { success: false , message: error.message };
-
     }
 }
 
-export async function updateOrgProfile(data) {
+export async function updateOrgProfileApi(data) {
     try {
-        const response = await api.post("/organization/v1/set-organization-data", data);
+        const response = await api.put("/organization/v1/profile", data);
         return {success: true, response: response.data};
     } catch (error) {
-        // console.error("Failed to update organization profile:", error);
-        // throw error;
         return { success: false , message: error.message };
     }
 }
 
-export async function fetchOrgMovies(page = 0, size = 20) {
+export async function fetchOrgMoviesApi(page = 0, size = 20) {
     try {
         const response = await api.get("/organization/v1/my-movies", {
             params: {
@@ -87,14 +70,11 @@ export async function fetchOrgMovies(page = 0, size = 20) {
         });
         return {success: true, response: response.data};
     } catch (error) {
-        // console.error("Failed to fetch organization profile:", error);
-        // throw error;
         return { success: false , message: error.message };
-
     }
 }
 
-export async function updateOrgPassword(oldPassword, newPassword) {
+export async function updateOrgPasswordApi(oldPassword, newPassword) {
     try {
         const response = await api.put("/auth/v1/password", {
             oldPassword: oldPassword,
@@ -102,9 +82,6 @@ export async function updateOrgPassword(oldPassword, newPassword) {
         });
         return {success: true, response: response.data};
     } catch (error) {
-        // console.error("Failed to fetch organization profile:", error);
-        // throw error;
         return { success: false , message: error.message };
-
     }
 }

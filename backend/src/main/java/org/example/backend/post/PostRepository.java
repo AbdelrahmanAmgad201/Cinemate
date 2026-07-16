@@ -54,4 +54,13 @@ public interface PostRepository extends JpaRepository<Post, UUID> {
     @Modifying
     @Query("update Post p set p.moderationStatus = org.example.backend.moderation.ModerationStatus.REMOVED where p.id = :id")
     int markModerationRemoved(@Param("id") UUID id);
+
+    // MOD-01 reconciliation sweep: PENDING posts whose moderation request is older than
+    // the sweep's cutoff (verdict never arrived).
+    List<Post> findByModerationStatusAndModerationRequestedAtBefore(
+            org.example.backend.moderation.ModerationStatus status, Instant cutoff, Pageable pageable);
+
+    @Modifying
+    @Query("update Post p set p.moderationRequestedAt = :ts where p.id in :ids")
+    int touchModerationRequestedAt(@Param("ids") List<UUID> ids, @Param("ts") Instant ts);
 }

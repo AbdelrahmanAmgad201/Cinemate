@@ -79,6 +79,7 @@ public class ForumService {
         long newVersion = forum.getModerationVersion() + 1;
         forum.setModerationVersion(newVersion);
         forum.setModerationStatus(ModerationStatus.PENDING);
+        forum.setModerationRequestedAt(Instant.now());
         Forum saved = forumRepository.save(forum);
         moderationOutboxService.enqueue(ContentType.FORUM, saved.getId(),
                 newVersion, moderationText(saved.getName(), saved.getDescription()));
@@ -87,13 +88,13 @@ public class ForumService {
     }
 
     @Transactional(readOnly = true)
-    public SearchResultDTO searchForums(String searchTerm, Pageable pageable) {
+    public ForumPageResponse searchForums(String searchTerm, Pageable pageable) {
         Page<Forum> forumsPage = forumRepository.findByNameContainingIgnoreCaseAndIsDeletedFalse(searchTerm, pageable);
-        return buildSearchResult(forumsPage);
+        return ForumPageResponse.from(forumsPage);
     }
 
     @Transactional(readOnly = true)
-    public Page<ForumDisplayDTO> findUserForums(Long userId, Pageable pageable) {
+    public Page<ForumDisplayDTO> getUserForums(Long userId, Pageable pageable) {
         return forumRepository.findAllByOwnerIdAndIsDeletedFalse(userId, pageable);
     }
 
@@ -105,18 +106,6 @@ public class ForumService {
             throw new IllegalStateException("Cannot access a deleted forum");
         }
         return ForumDetailsDTO.from(forum);
-    }
-
-    private SearchResultDTO buildSearchResult(Page<Forum> page) {
-        return SearchResultDTO.builder()
-                .forums(page.getContent())
-                .currentPage(page.getNumber())
-                .totalPages(page.getTotalPages())
-                .totalElements(page.getTotalElements())
-                .pageSize(page.getSize())
-                .hasNext(page.hasNext())
-                .hasPrevious(page.hasPrevious())
-                .build();
     }
 
     @Transactional(readOnly = true)

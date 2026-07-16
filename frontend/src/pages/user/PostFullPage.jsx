@@ -57,7 +57,6 @@ const PostFullPage = () => {
                     media: updatedPost.media
                 });
                 setEditMode(false);
-                console.log('Post updated successfully');
             } else {
                 if (!result.success) return showToast('Failed to edit post', result.message || 'unknown error', 'error');
             }

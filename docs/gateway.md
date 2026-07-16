@@ -1,11 +1,11 @@
 # API Gateway — Architecture & Feature Overview
 
-This document describes the Cinemate **API gateway**: the new single entry point that
-sits in front of every service, what it does, what it deliberately does *not* do, and
-everything that changed elsewhere because of it.
+This document describes the Cinemate **API gateway**: the single entry point that sits in
+front of every service, what it does, what it deliberately does *not* do, and everything that
+changed elsewhere because of it.
 
 - Auth/token internals (RS256, refresh tokens, cookie): [`auth.md`](auth.md)
-- Environment variables: [`environment.md`](environment.md)
+- Environment variables and running the stack: [`deployment.md`](deployment.md)
 
 ---
 
@@ -38,16 +38,17 @@ browser ──▶ backend         :8080   (/api, validates JWT on every request,
 ```
                  ┌───────────────────────── gateway :8080 (ONLY published port) ─────────────────────────┐
   browser ──────▶│  verify JWT · route/role matrix · inject X-User-* · rate-limit                          │
-                 │     /            ─▶ frontend nginx  :80     (static SPA)                                 │
-                 │     /api/**      ─▶ backend         :8080   (trusts X-User-* headers, no JWT parsing)    │
-                 │     /ws/**       ─▶ watch-party     :8081   (SockJS / STOMP)                             │
+                 │     /                    ─▶ frontend nginx  :80     (static SPA)                        │
+                 │     /api/watch-party/**  ─▶ watch-party     :8081   (REST, owns the domain)              │
+                 │     /api/**              ─▶ backend         :8080   (trusts X-User-* headers, no JWT)    │
+                 │     /ws/**               ─▶ watch-party     :8081   (SockJS / STOMP)                     │
                  │     /oauth2/authorize/**, /login/oauth2/** ─▶ backend (Google handshake)                 │
                  └──────────────────────────────────────────────────────────────────────────────────────┘
                         backend ──▶ postgres · kafka                             (all internal)
-                        watch-party ──▶ redis                                        (internal)
+                        watch-party ──▶ redis · backend /api/movie (read-only)       (internal)
 ```
 
-Nothing except the gateway (and the raw database ports, for dev convenience) is
+Nothing except the gateway (and the raw database port, for dev convenience) is
 reachable from the host.
 
 ---
@@ -73,7 +74,7 @@ reachable from the host.
 | **Fine-grained authorization** ("is this user the author of post 42?", "does this org own this movie?") | Backend — it needs domain data the gateway shouldn't have. |
 | **Business logic / DB access** | Backend and the other services. The gateway has no database. |
 | **Talk to Postgres** | Only the backend does. The gateway's only stateful dependency is Redis (for rate-limit buckets). |
-| **Per-message WebSocket auth** | Not yet done anywhere (tracked as REL-08). The gateway proxies the `/ws` handshake but does not authenticate individual STOMP frames. |
+| **Per-message WebSocket auth** | Not yet done at the gateway (tracked as REL-08 in [`tech-debt.md`](tech-debt.md)). The gateway proxies the `/ws` handshake but does not authenticate individual STOMP frames — watch-party verifies the JWT itself in the STOMP CONNECT frame instead. |
 | **Service discovery / load balancing logic** | Static routing by Docker DNS name. No Eureka/Consul (overkill for Compose). |
 
 ## 5. Authorization: public vs. protected routes
@@ -120,13 +121,16 @@ catch-all is last so the specific routes win.
 | Route id | Predicate (path) | Upstream |
 |---|---|---|
 | `backend` | `/api/**`, `/oauth2/authorize/**`, `/login/oauth2/**` | `http://backend:8080` |
+| `watch-party-api` | `/api/watch-party/**` | `http://watch-party:8081` |
 | `watch-party` | `/ws/**` | `http://watch-party:8081` |
 | `frontend` | `/**` (catch-all) | `http://frontend:80` (nginx serves the SPA) |
 
 Upstream hosts are env-overridable (`BACKEND_URI`, `WATCHPARTY_URI`, `FRONTEND_URI`).
 Note the OAuth route is `/oauth2/authorize/**` (Spring's initiation endpoint) and
 `/login/oauth2/**` (the callback) — deliberately **not** the broad `/oauth2/**`, because
-the SPA has its own `/oauth2/redirect` page that must reach the frontend.
+the SPA has its own `/oauth2/redirect` page that must reach the frontend. The
+`watch-party-api` route must be ordered **before** the generic `backend` route so
+`/api/watch-party/**` doesn't fall through to `/api/**`.
 
 ## 7. WebSockets — yes, they go through the gateway
 
@@ -146,7 +150,8 @@ same-origin.
 
 What the gateway does **not** do for WebSockets: it does not authenticate individual
 STOMP messages. Per-connection/per-message WS auth remains a separate, open item
-(REL-08).
+(REL-08) — watch-party verifies the JWT itself in the STOMP CONNECT frame, since the
+token can't arrive via the gateway's trusted-header mechanism on a WebSocket upgrade.
 
 ## 8. Rate limiting
 
@@ -187,7 +192,8 @@ After verifying the token, the gateway forwards identity to the backend as heade
 The backend's `GatewayAuthenticationFilter` reads these and reconstructs the exact same
 `SecurityContext` and request attributes (`userId`, `userRole`, `userEmail`, `userName`)
 the old JWT filter produced — so `@PreAuthorize` and every controller are unchanged, but
-the backend does **no** token crypto on the request path.
+the backend does **no** token crypto on the request path. Watch-party has its own
+analogous `GatewayAuthenticationFilter` for its REST endpoints, trusting the same headers.
 
 **Why this is safe:** the backend has no published host port. It's reachable only across
 the internal `app-net` Docker network, through the gateway, which strips inbound
@@ -282,19 +288,16 @@ gateway/
 
 Horizontal scaling of the gateway needs **no code change**: token verification is
 stateless (public key), and both the rate-limit buckets and the refresh tokens already
-live in Redis, shared across instances. Watch-party is already multi-instance-ready via
-its Redis pub/sub bridge; SockJS fallback transports would want sticky sessions at the
+live in Redis/Postgres, shared across instances. Watch-party is already multi-instance-ready
+via its Redis pub/sub bridge; SockJS fallback transports would want sticky sessions at the
 gateway if you scale it.
 
 ## 16. Known limitations / not done
 
 - **Per-message WebSocket authentication** (REL-08) — the gateway proxies the `/ws`
   handshake but does not authenticate individual STOMP frames.
-- **Browser UI click-through** was not run in the build environment (Chrome automation
-  unavailable). Everything is verified at the HTTP/protocol level through the gateway;
-  the outstanding manual check is: open `http://localhost:8080`, sign in via the form,
-  reload to confirm silent-refresh re-authenticates, and open a watch party for live
-  chat — with the devtools console clear of CORS/CSP errors.
 - **Trusted-header trust boundary** is the internal Docker network (no header signing /
   mTLS between gateway and backend) — appropriate for this deployment, not for a
   zero-trust internal network.
+
+See [`tech-debt.md`](tech-debt.md) for the full backlog.

@@ -5,9 +5,8 @@ export async function getExploreForumsApi({ page, size, sort: sort = "new"}) {
         // new
         // "followers" -
         // "posts"
-        const res = await api.get('/feed/v1/explore-forum', { params: { page, size , sort}});
+        const res = await api.get('/feed/v1/explore-forums', { params: { page, size , sort}});
         const data = res.data;
-        console.log(data);
 
         return { success: true, data: data.forums };
     } catch (err) {

@@ -29,6 +29,11 @@ const OrgAddMovie = () => {
 
     const { showToast } = useContext(ToastContext);
 
+    const handleInvalid = (e) => {
+        const label = e.target.labels?.[0]?.textContent || e.target.placeholder || 'A required field';
+        showToast('Missing information', `${label} is required.`, 'warning');
+    };
+
     const handleSubmit = async (e) => {
         e.preventDefault();
         setSubmitting(true);
@@ -57,7 +62,7 @@ const OrgAddMovie = () => {
         <div>
             <NavBar />
             <div className="add-movie-container">
-                <form onSubmit={handleSubmit} className="add-movie-form">
+                <form onSubmit={handleSubmit} onInvalidCapture={handleInvalid} className="add-movie-form">
                 <Card padding="lg">
                     <h1 className="add-movie-title">Submit a movie</h1>
 

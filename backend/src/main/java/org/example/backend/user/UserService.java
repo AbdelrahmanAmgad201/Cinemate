@@ -2,6 +2,7 @@ package org.example.backend.user;
 
 import jakarta.transaction.Transactional;
 import lombok.extern.slf4j.Slf4j;
+import org.example.backend.common.dto.AboutDTO;
 import org.example.backend.errorHandler.ResourceNotFoundException;
 import org.example.backend.verification.Verification;
 import org.example.backend.verification.VerificationService;
@@ -36,7 +37,7 @@ public class UserService {
     }
 
     @Transactional
-    public String setUserData(Long userId, UserDataDTO userDataDTO) {
+    public String updateUserData(Long userId, UserDataDTO userDataDTO) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found"));
 

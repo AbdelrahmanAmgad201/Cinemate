@@ -20,7 +20,7 @@ public class WebSocketController {
 
     private final RedisPublisher redisPublisher;
 
-    @MessageMapping("/party/{partyId}/control")
+    @MessageMapping("/watch-party/{partyId}/control")
     public void handleControl(
             @DestinationVariable String partyId,
             @Payload PartyEvent event,
@@ -39,7 +39,7 @@ public class WebSocketController {
         redisPublisher.publish(partyId, event);
     }
 
-    @MessageMapping("/party/{partyId}/chat")
+    @MessageMapping("/watch-party/{partyId}/chat")
     public void handleChat(
             @DestinationVariable String partyId,
             @Payload PartyEvent event,

@@ -5,7 +5,7 @@ import org.example.backend.movie.Movie;
 import org.example.backend.movie.MovieAddDTO;
 import org.example.backend.movie.MovieService;
 import org.example.backend.movie.OneMovieOverView;
-import org.example.backend.requests.Requests;
+import org.example.backend.requests.RequestsResponse;
 import org.example.backend.requests.RequestsService;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -46,8 +46,8 @@ class OrganizationControllerTest {
 
     private OrganizationDataDTO organizationDataDTO;
     private MovieAddDTO movieAddDTO;
-    private Requests request1;
-    private Requests request2;
+    private RequestsResponse request1;
+    private RequestsResponse request2;
     private Movie movie1;
     private Movie movie2;
     private MoviesOverview moviesOverview;
@@ -58,8 +58,8 @@ class OrganizationControllerTest {
         organizationDataDTO = new OrganizationDataDTO();
         movieAddDTO = new MovieAddDTO();
 
-        request1 = new Requests();
-        request2 = new Requests();
+        request1 = RequestsResponse.builder().build();
+        request2 = RequestsResponse.builder().build();
 
         movie1 = new Movie();
         movie2 = new Movie();
@@ -84,18 +84,18 @@ class OrganizationControllerTest {
         when(request.getAttribute("userId")).thenReturn(1L);
         when(request.getAttribute("userEmail")).thenReturn("test@example.com");
 
-        ResponseEntity<?> response = organizationController.getProfile(request);
+        ResponseEntity<?> response = organizationController.getMyProfile(request);
 
         assertEquals("User profile for ID: 1, Email: test@example.com", response.getBody());
     }
 
     // -------------------------------------------------------------------------
-    // TEST: /set-organization-data
+    // TEST: PUT /v1/profile
     // -------------------------------------------------------------------------
     @Test
     void testSetOrganizationData() {
         when(request.getAttribute("userId")).thenReturn(1L);
-        when(organizationService.setOrganizationData(1L, organizationDataDTO))
+        when(organizationService.updateOrganizationData(1L, organizationDataDTO))
                 .thenReturn("Organization data updated");
 
         ResponseEntity<String> response =
@@ -105,7 +105,7 @@ class OrganizationControllerTest {
     }
 
     // -------------------------------------------------------------------------
-    // TEST: /add-movie (success)
+    // TEST: POST /v1/movies (success)
     // -------------------------------------------------------------------------
     @Test
     void testAddMovieSuccess() {
@@ -122,7 +122,7 @@ class OrganizationControllerTest {
     }
 
     // -------------------------------------------------------------------------
-    // TEST: /add-movie (failure)
+    // TEST: POST /v1/movies (failure)
     // -------------------------------------------------------------------------
     @Test
     void testAddMovieFailure() {
@@ -137,7 +137,7 @@ class OrganizationControllerTest {
     }
 
     // -------------------------------------------------------------------------
-    // TEST: /get-all-organization-requests
+    // TEST: /v1/requests
     // -------------------------------------------------------------------------
     @Test
     void testGetOrganizationRequests() {
@@ -145,9 +145,9 @@ class OrganizationControllerTest {
         when(requestsService.getAllOrganizationRequests(1L))
                 .thenReturn(List.of(request1, request2));
 
-        List<Requests> res = organizationController.getOrgRequests(request);
+        ResponseEntity<List<RequestsResponse>> res = organizationController.getOrgRequests(request);
 
-        assertEquals(2, res.size());
+        assertEquals(2, res.getBody().size());
     }
 
     // -------------------------------------------------------------------------
@@ -160,12 +160,12 @@ class OrganizationControllerTest {
 
         ResponseEntity<MoviesOverview> res = organizationController.getMoviesOverview(request);
 
-        assertEquals(200, res.getStatusCodeValue());
+        assertEquals(200, res.getStatusCode().value());
         assertEquals(moviesOverview, res.getBody());
     }
 
     // -------------------------------------------------------------------------
-    // TEST: /get-specific-movie-overview (authorized)
+    // TEST: /v1/movies/{movieId}/overview (authorized)
     // -------------------------------------------------------------------------
     @Test
     void testGetSpecificMovieOverviewAuthorized() {
@@ -176,12 +176,12 @@ class OrganizationControllerTest {
         ResponseEntity<OneMovieOverView> res =
                 organizationController.getSpecificMovieOverview(request, 10L);
 
-        assertEquals(200, res.getStatusCodeValue());
+        assertEquals(200, res.getStatusCode().value());
         assertEquals(oneMovieOverview, res.getBody());
     }
 
     // -------------------------------------------------------------------------
-    // TEST: /get-specific-movie-overview (forbidden)
+    // TEST: /v1/movies/{movieId}/overview (forbidden)
     // -------------------------------------------------------------------------
     @Test
     void testGetSpecificMovieOverviewForbidden() {
@@ -194,7 +194,7 @@ class OrganizationControllerTest {
         assertEquals(HttpStatus.FORBIDDEN, res.getStatusCode());
     }
     // -------------------------------------------------------------------------
-// TEST: /v1/get-requests-over-view
+// TEST: /v1/requests-overview
 // -------------------------------------------------------------------------
     @Test
     void testGetRequestsOverview() {

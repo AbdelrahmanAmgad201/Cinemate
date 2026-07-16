@@ -6,8 +6,8 @@ import org.example.backend.organization.OrganizationRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.autoconfigure.domain.EntityScan;
-import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
+import org.springframework.boot.persistence.autoconfigure.EntityScan;
+import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
@@ -44,17 +44,20 @@ class MovieSpecificationTest extends AbstractPostgresIntegrationTest {
         Organization org = organizationRepository.save(
                 Organization.builder().name("Org").email("org@test.com").password("pass").build());
 
+        // averageRating is a DB-generated column (rating_sum / rating_count, insertable=false)
+        // — it can't be set directly, so the desired averages are seeded via ratingSum/
+        // ratingCount instead, exactly as real reviews accumulate them.
         darkKnight = movieRepository.save(Movie.builder()
-                .name("The Dark Knight").genre(Genre.ACTION).averageRating(9.0)
+                .name("The Dark Knight").genre(Genre.ACTION).ratingSum(90L).ratingCount(10)
                 .releaseDate(LocalDate.of(2008, 7, 18)).organization(org).build());
         inception = movieRepository.save(Movie.builder()
-                .name("Inception").genre(Genre.SCIFI).averageRating(8.8)
+                .name("Inception").genre(Genre.SCIFI).ratingSum(88L).ratingCount(10)
                 .releaseDate(LocalDate.of(2010, 7, 16)).organization(org).build());
         batmanBegins = movieRepository.save(Movie.builder()
-                .name("Batman Begins").genre(Genre.ACTION).averageRating(8.2)
+                .name("Batman Begins").genre(Genre.ACTION).ratingSum(82L).ratingCount(10)
                 .releaseDate(LocalDate.of(2005, 6, 15)).organization(org).build());
         matrix = movieRepository.save(Movie.builder()
-                .name("The Matrix").genre(Genre.SCIFI).averageRating(8.7)
+                .name("The Matrix").genre(Genre.SCIFI).ratingSum(87L).ratingCount(10)
                 .releaseDate(LocalDate.of(1999, 3, 31)).organization(org).build());
     }
 

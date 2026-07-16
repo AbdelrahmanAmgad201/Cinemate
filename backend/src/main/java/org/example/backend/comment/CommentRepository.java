@@ -66,4 +66,13 @@ public interface CommentRepository extends JpaRepository<Comment, UUID> {
     @Modifying
     @Query("update Comment c set c.moderationStatus = org.example.backend.moderation.ModerationStatus.REMOVED where c.id = :id")
     int markModerationRemoved(@Param("id") UUID id);
+
+    // MOD-01 reconciliation sweep: PENDING comments whose moderation request is older than
+    // the sweep's cutoff (verdict never arrived).
+    List<Comment> findByModerationStatusAndModerationRequestedAtBefore(
+            org.example.backend.moderation.ModerationStatus status, Instant cutoff, Pageable pageable);
+
+    @Modifying
+    @Query("update Comment c set c.moderationRequestedAt = :ts where c.id in :ids")
+    int touchModerationRequestedAt(@Param("ids") List<UUID> ids, @Param("ts") Instant ts);
 }

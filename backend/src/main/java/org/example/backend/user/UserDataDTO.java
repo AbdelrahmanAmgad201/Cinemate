@@ -21,7 +21,7 @@ public class UserDataDTO {
     @Size(max = 100)
     private String lastName;
 
-    // gender/about/birthday stay unconstrained: UserService.setUserData() already
+    // gender/about/birthday stay unconstrained: UserService.updateUserData() already
     // treats a null gender as "leave unchanged" and tolerates null about/birthday.
     private String gender;
 

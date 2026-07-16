@@ -5,7 +5,7 @@ import { getUserProfileApi, setUserDataApi, updateAboutApi, updateBirthDateApi, 
 import { ToastContext } from '../context/ToastContext.jsx';
 import { MIN_LENGTHS, MAX_VALUES } from '../constants/constants.jsx';
 
-export default function PersonalData({ profile, user }) {
+export default function PersonalData({ profile, user, onProfileUpdated }) {
     const [localProfile, setLocalProfile] = useState(profile || {});
 
     useEffect(() => { setLocalProfile(profile || {}); }, [profile]);
@@ -123,12 +123,14 @@ export default function PersonalData({ profile, user }) {
                 res = await updateUserNameApi({ firstName, lastName });
                 if (res?.success) {
                     setLocalProfile(prev => ({ ...(prev || {}), firstName, lastName }));
+                    onProfileUpdated?.({ firstName, lastName });
                     showToast('Saved', 'Name updated', 'success');
                 }
             } else if (editingKey === 'aboutMe') {
                 res = await updateAboutApi({ about: editValue });
                 if (res?.success) {
                     setLocalProfile(prev => ({ ...(prev || {}), aboutMe: editValue, about: editValue }));
+                    onProfileUpdated?.({ aboutMe: editValue, about: editValue });
                     showToast('Saved', 'About updated', 'success');
                 }
             } else if (editingKey === 'birthdate') {
@@ -150,6 +152,7 @@ export default function PersonalData({ profile, user }) {
                 res = await updateBirthDateApi({ birthDate: editValue });
                 if (res?.success) {
                     setLocalProfile(prev => ({ ...(prev || {}), birthdate: editValue, birthDate: editValue }));
+                    onProfileUpdated?.({ birthdate: editValue, birthDate: editValue });
                     showToast('Saved', 'Birthdate updated', 'success');
                 }
             } else {

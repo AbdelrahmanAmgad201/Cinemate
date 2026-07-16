@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { ArrowBigUp, ArrowBigDown } from 'lucide-react';
-import { createVote, updateVote, deleteVote, isVoted } from '../api/vote-api';
+import { createVoteApi, updateVoteApi, deleteVoteApi, isVotedApi } from '../api/vote-api';
 import './style/VoteWidget.css';
 
 const VoteWidget = ({ targetId, initialUp = 0, initialDown = 0, isPost = false, onChange }) => {
@@ -10,7 +10,7 @@ const VoteWidget = ({ targetId, initialUp = 0, initialDown = 0, isPost = false, 
     useEffect(() => {
         const check = async () => {
             try {
-                const res = await isVoted({ targetId });
+                const res = await isVotedApi({ targetId });
                 if (res.success) {
                     setUserVote(typeof res.data === 'number' ? res.data : 0);
                 }
@@ -37,11 +37,11 @@ const VoteWidget = ({ targetId, initialUp = 0, initialDown = 0, isPost = false, 
         try {
             let result;
             if (previousVote === 0 && newVote !== 0) {
-                result = await createVote({ targetId, value: newVote, isPost });
+                result = await createVoteApi({ targetId, value: newVote, isPost });
             } else if (previousVote !== 0 && newVote === 0) {
-                result = await deleteVote({ targetId });
+                result = await deleteVoteApi({ targetId });
             } else if (previousVote !== 0 && newVote !== 0) {
-                result = await updateVote({ targetId, value: newVote });
+                result = await updateVoteApi({ targetId, value: newVote });
             }
 
             if (!result?.success) {

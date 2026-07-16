@@ -8,7 +8,7 @@ import 'swiper/css/navigation';
 import './style/carousel.css';
 import { Star, Play } from 'lucide-react';
 import { Autoplay, Pagination, Navigation } from 'swiper/modules';
-import MoviesDetailsApi from '../api/movies-details-api.js';
+import moviesDetailsApi from '../api/movies-details-api.js';
 import { PATHS } from '../constants/constants.jsx';
 import Skeleton from './ui/Skeleton.jsx';
 
@@ -26,7 +26,7 @@ export default function Carousel() {
 
     useEffect(() => {
         let mounted = true;
-        MoviesDetailsApi({
+        moviesDetailsApi({
             name: null, genre: null, sortBy: 'rating', sortDirection: 'desc', page: 0, pageSize: HERO_SLIDE_COUNT,
         }).then((res) => {
             if (!mounted) return;

@@ -1,6 +1,7 @@
 package org.example.backend.config;
 
 import org.apache.hc.client5.http.config.ConnectionConfig;
+import org.apache.hc.client5.http.config.RequestConfig;
 import org.apache.hc.client5.http.impl.classic.HttpClients;
 import org.apache.hc.client5.http.impl.io.PoolingHttpClientConnectionManager;
 import org.apache.hc.client5.http.socket.ConnectionSocketFactory;
@@ -41,12 +42,16 @@ public class AppConfig {
                 .setConnectTimeout(Timeout.ofSeconds(5))
                 .build());
 
+        RequestConfig requestConfig = RequestConfig.custom()
+                .setConnectionRequestTimeout(Timeout.ofSeconds(5))
+                .setResponseTimeout(Timeout.ofSeconds(10))
+                .build();
+
         HttpComponentsClientHttpRequestFactory factory = new HttpComponentsClientHttpRequestFactory(
                 HttpClients.custom()
                         .setConnectionManager(connectionManager)
+                        .setDefaultRequestConfig(requestConfig)
                         .build());
-        factory.setConnectTimeout(5000);
-        factory.setReadTimeout(10000);
         return new RestTemplate(factory);
     }
 }

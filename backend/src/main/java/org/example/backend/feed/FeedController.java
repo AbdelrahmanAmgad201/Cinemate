@@ -2,6 +2,7 @@ package org.example.backend.feed;
 
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
+import org.example.backend.forum.ForumPageResponse;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -22,12 +23,12 @@ public class FeedController {
      * - sort: sorting method - "top"/"score", "new", "hot" (default: "score")
      *
      * Examples:
-     * GET /api/feed/explore
-     * GET /api/feed/explore?page=0&size=10
-     * GET /api/feed/explore?page=1&size=20&sort=new
-     * GET /api/feed/explore?sort=hot
+     * GET /api/feed/v1/explore
+     * GET /api/feed/v1/explore?page=0&size=10
+     * GET /api/feed/v1/explore?page=1&size=20&sort=new
+     * GET /api/feed/v1/explore?sort=hot
      */
-    @GetMapping("/explore")
+    @GetMapping("/v1/explore")
     public ResponseEntity<PostPageResponse> explore(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size,
@@ -45,7 +46,7 @@ public class FeedController {
         return ResponseEntity.ok(response);
     }
 
-    @GetMapping("/v1/explore-forum")
+    @GetMapping("/v1/explore-forums")
     public ResponseEntity<ForumPageResponse> exploreForum(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size,

@@ -97,9 +97,10 @@ class WatchLaterServiceTest {
         when(watchLaterRepository.findById(watchLaterID)).thenReturn(Optional.of(existing));
         when(watchLaterRepository.save(existing)).thenReturn(existing);
 
-        WatchLater result = watchLaterService.addMovie(userId, movieId);
+        WatchLaterResponse result = watchLaterService.addMovie(userId, movieId);
 
-        assertEquals(existing, result);
+        assertEquals(existing.getMovieName(), result.getMovieName());
+        assertEquals(movieId, result.getMovieId());
         verify(watchLaterRepository).save(existing);
     }
 
@@ -121,12 +122,11 @@ class WatchLaterServiceTest {
 
         when(watchLaterRepository.save(any(WatchLater.class))).thenReturn(newWatchLater);
 
-        WatchLater result = watchLaterService.addMovie(userId, movieId);
+        WatchLaterResponse result = watchLaterService.addMovie(userId, movieId);
 
         assertNotNull(result);
-        assertEquals(user, result.getUser());
         assertEquals(movie.getName(), result.getMovieName());
-        assertEquals(watchLaterID, result.getWatchLaterID());
+        assertEquals(movieId, result.getMovieId());
 
         verify(watchLaterRepository, times(1)).save(any(WatchLater.class));
     }

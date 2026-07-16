@@ -16,19 +16,19 @@ public class CommentController {
     @Autowired
     private CommentService commentService;
 
-    @PostMapping("/v1/create-comment")
+    @PostMapping("/v1")
     public ResponseEntity<String> createComment(HttpServletRequest request, @Valid @RequestBody AddCommentDTO addCommentDTO) {
         Long userId = (Long) request.getAttribute("userId");
         Comment comment=commentService.addComment(userId,addCommentDTO);
         return ResponseEntity.ok(comment.getId().toString());
     }
-    @DeleteMapping("/v1/delete-comment/{commentId}")
+    @DeleteMapping("/v1/{commentId}")
     public ResponseEntity<String> deleteComment(HttpServletRequest request, @PathVariable UUID commentId) {
         Long userId = (Long) request.getAttribute("userId");
         commentService.deleteComment(commentId, userId);
         return ResponseEntity.ok("Comment deleted successfully");
     }
-    @GetMapping("/v1/posts/{postId}/comments")
+    @GetMapping("/v1/post/{postId}")
     public ResponseEntity<Page<CommentView>> getAllComments(HttpServletRequest request,
                                                         @PathVariable UUID postId,
                                                         @RequestParam(defaultValue = "0") int page,
@@ -36,7 +36,7 @@ public class CommentController {
                                                         @RequestParam(defaultValue = "score") String sortBy) {
         return ResponseEntity.ok(commentService.getPostComments(postId, page, size, sortBy));
     }
-    @GetMapping("/v1/replies/{parentId}")
+    @GetMapping("/v1/{parentId}/replies")
     public ResponseEntity<List<CommentView>> getAllReplies(HttpServletRequest request,
                                                        @PathVariable UUID parentId,
                                                        @RequestParam(defaultValue = "score") String sortBy) {

@@ -1,6 +1,6 @@
 import api from './api-client.js';
 
-export default async function MoviesDetailsApi(request) {
+export default async function moviesDetailsApi(request) {
     try {
         const response = await api.post('/movie/v1/search', request);
         const data = response.data;

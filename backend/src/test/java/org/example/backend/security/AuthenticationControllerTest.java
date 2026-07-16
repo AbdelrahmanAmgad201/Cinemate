@@ -7,9 +7,11 @@ import org.example.backend.user.UserService;
 import org.example.backend.verification.Verification;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
-import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
+import org.springframework.boot.jackson2.autoconfigure.Jackson2AutoConfiguration;
+import org.springframework.context.annotation.Import;
+import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseCookie;
 import org.springframework.test.web.servlet.MockMvc;
@@ -29,6 +31,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * authorization is covered separately by SecurityIntegrationTest and
  * GatewayAuthenticationFilterTest — this class only tests MVC dispatch.
  */
+@Import(Jackson2AutoConfiguration.class)
 @WebMvcTest(AuthenticationController.class)
 @AutoConfigureMockMvc(addFilters = false)
 class AuthenticationControllerTest {
@@ -39,22 +42,22 @@ class AuthenticationControllerTest {
     @Autowired
     private ObjectMapper objectMapper;
 
-    @MockBean
+    @MockitoBean
     private AuthenticationService authenticationService;
 
-    @MockBean
+    @MockitoBean
     private JWTProvider jwtTokenProvider;
 
-    @MockBean
+    @MockitoBean
     private UserService userService;
 
-    @MockBean
+    @MockitoBean
     private OAuthExchangeService oAuthExchangeService;
 
-    @MockBean
+    @MockitoBean
     private RefreshTokenService refreshTokenService;
 
-    @MockBean
+    @MockitoBean
     private RefreshTokenCookie refreshTokenCookie;
 
     private String json(Object body) throws Exception {

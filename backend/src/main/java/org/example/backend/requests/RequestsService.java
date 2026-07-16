@@ -13,6 +13,7 @@ import org.springframework.stereotype.Service;
 import java.time.Clock;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -48,16 +49,20 @@ public class RequestsService {
         return requestsRepository.save(request);
     }
     @Transactional(readOnly = true)
-    public List<Requests> getAllPendingRequests() {
-        return requestsRepository.findAllByState(State.PENDING, LATEST_FIRST);
+    public List<RequestsResponse> getAllPendingRequests() {
+        return toResponses(requestsRepository.findAllByState(State.PENDING, LATEST_FIRST));
     }
     @Transactional(readOnly = true)
-    public List<Requests> getAllOrganizationRequests(Long organizationId) {
-        return requestsRepository.findAllByOrganization_Id(organizationId, LATEST_FIRST);
+    public List<RequestsResponse> getAllOrganizationRequests(Long organizationId) {
+        return toResponses(requestsRepository.findAllByOrganization_Id(organizationId, LATEST_FIRST));
     }
     @Transactional(readOnly = true)
-    public List<Requests> getAllAdminRequests(Long adminId) {
-        return requestsRepository.findByAdmin_Id(adminId, LATEST_FIRST);
+    public List<RequestsResponse> getAllAdminRequests(Long adminId) {
+        return toResponses(requestsRepository.findByAdmin_Id(adminId, LATEST_FIRST));
+    }
+
+    private static List<RequestsResponse> toResponses(List<Requests> requests) {
+        return requests.stream().map(RequestsResponse::from).collect(Collectors.toList());
     }
     @Transactional(readOnly = true)
     public RequestsOverView getRequestsOverView(Long orgId) {

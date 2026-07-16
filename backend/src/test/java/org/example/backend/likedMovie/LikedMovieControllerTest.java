@@ -27,18 +27,15 @@ class LikedMovieControllerTest {
 
     private Long userId;
     private Long movieId;
-    private LikedMoviesID likedMoviesID;
-    private LikedMovie likedMovie;
+    private LikedMovieResponse likedMovie;
 
     @BeforeEach
     void setup() {
         userId = 1L;
         movieId = 100L;
 
-        likedMoviesID = new LikedMoviesID(userId, movieId);
-
-        likedMovie = LikedMovie.builder()
-                .likedMoviesID(likedMoviesID)
+        likedMovie = LikedMovieResponse.builder()
+                .movieId(movieId)
                 .build();
     }
 
@@ -80,9 +77,9 @@ class LikedMovieControllerTest {
         when(request.getAttribute("userId")).thenReturn(userId);
         when(likedMovieService.likeMovie(userId, movieId)).thenReturn(likedMovie);
 
-        ResponseEntity<LikedMovie> response = likedMovieController.likeMovie(request, movieId);
+        ResponseEntity<LikedMovieResponse> response = likedMovieController.likeMovie(request, movieId);
 
-        assertEquals(200, response.getStatusCodeValue());
+        assertEquals(200, response.getStatusCode().value());
         assertEquals(likedMovie, response.getBody());
     }
 }

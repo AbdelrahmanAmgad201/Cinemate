@@ -51,7 +51,7 @@ export const useWatchParty = (partyId, userId, userName, isHost, onIncomingChat)
 
         if(eventType === WatchPartyEventType.CHAT){
             stompClientRef.current.publish({
-                destination: `/app/party/${partyId}/chat`,
+                destination: `/app/watch-party/${partyId}/chat`,
                 body: JSON.stringify({
                     userId,
                     userName,
@@ -63,7 +63,7 @@ export const useWatchParty = (partyId, userId, userName, isHost, onIncomingChat)
         }
         else{
             stompClientRef.current.publish({
-                destination: `/app/party/${partyId}/control`,
+                destination: `/app/watch-party/${partyId}/control`,
                 body: JSON.stringify({
                     userId,
                     userName,
@@ -196,7 +196,7 @@ export const useWatchParty = (partyId, userId, userName, isHost, onIncomingChat)
             onConnect: () => {
                 stompClientRef.current = client;
 
-                client.subscribe(`/topic/party/${partyId}`, (message) => {
+                client.subscribe(`/topic/watch-party/${partyId}`, (message) => {
                     const data = JSON.parse(message.body);
                     handleIncomingAction(data);
                 });

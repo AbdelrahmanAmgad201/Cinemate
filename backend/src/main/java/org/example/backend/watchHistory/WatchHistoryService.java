@@ -23,7 +23,7 @@ public class WatchHistoryService {
     MovieRepository movieRepository;
 
     @Transactional
-    public WatchHistory addToWatchHistory(Long userId, Long movieID){
+    public WatchHistoryResponse addToWatchHistory(Long userId, Long movieID){
         Movie movie = movieRepository.findById(movieID)
                 .orElseThrow(() -> new ResourceNotFoundException("Movie not found"));
 
@@ -34,7 +34,7 @@ public class WatchHistoryService {
         watchHistory.setUser(user);
         watchHistory.setMovieId(movieID);
         watchHistory.setMovieName(movie.getName());
-        return  watchHistoryRepository.save(watchHistory);
+        return WatchHistoryResponse.from(watchHistoryRepository.save(watchHistory));
     }
 
     @Transactional

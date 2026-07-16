@@ -44,8 +44,8 @@ public class StompAuthChannelInterceptor implements ChannelInterceptor {
     private final RedisService redisService;
 
     // Destinations the client is allowed to touch; capture group 1 is the party id.
-    private static final Pattern SUBSCRIBE_DEST = Pattern.compile("^/topic/party/([^/]+)$");
-    private static final Pattern SEND_DEST = Pattern.compile("^/app/party/([^/]+)/(?:control|chat)$");
+    private static final Pattern SUBSCRIBE_DEST = Pattern.compile("^/topic/watch-party/([^/]+)$");
+    private static final Pattern SEND_DEST = Pattern.compile("^/app/watch-party/([^/]+)/(?:control|chat)$");
 
     @Override
     public Message<?> preSend(Message<?> message, MessageChannel channel) {
@@ -73,7 +73,7 @@ public class StompAuthChannelInterceptor implements ChannelInterceptor {
         }
         try {
             Jwt jwt = jwtDecoder.decode(header.substring(7)); // verifies RS256 signature + expiry
-            Long userId = Long.parseLong(String.valueOf(jwt.getClaim("id")));
+            Long userId = ((Number) jwt.getClaim("id")).longValue();
             String userName = jwt.getClaimAsString("name");
             String role = jwt.getClaimAsString("role");
             accessor.setUser(new WatchPartyPrincipal(userId, userName, role));

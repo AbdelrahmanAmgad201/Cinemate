@@ -12,7 +12,6 @@ export default function PendingUserRoute() {
     }
 
     if (!pendingUser) {
-        console.log("pendingUser is null, redirecting to sign in");
         return <Navigate to={PATHS.ROOT} replace />;
     }
 

@@ -72,6 +72,7 @@ public class PostService {
         long newVersion = post.getModerationVersion() + 1;
         post.setModerationVersion(newVersion);
         post.setModerationStatus(ModerationStatus.PENDING);
+        post.setModerationRequestedAt(Instant.now());
         Post saved = postRepository.save(post);
         moderationOutboxService.enqueue(ContentType.POST, postId,
                 newVersion, moderationText(saved.getTitle(), saved.getContent()));

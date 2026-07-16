@@ -7,7 +7,7 @@ export default async function signOutApi() {
     try {
         await api.post('/auth/v1/logout');
     } catch (err) {
-        console.log("Error revoking session on logout:", err);
+        console.error("Error revoking session on logout:", err);
     }
     clearAccessToken();
     window.location.href = PATHS.ROOT;

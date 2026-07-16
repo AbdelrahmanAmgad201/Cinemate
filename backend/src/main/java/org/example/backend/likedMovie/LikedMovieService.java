@@ -24,7 +24,7 @@ public class LikedMovieService {
     private final UserRepository userRepository;
 
     @Transactional
-    public LikedMovie likeMovie(Long userId, Long movieId) {
+    public LikedMovieResponse likeMovie(Long userId, Long movieId) {
         Movie movie = movieRepository.findById(movieId)
                 .orElseThrow(() -> new ResourceNotFoundException("Movie not found"));
 
@@ -39,7 +39,7 @@ public class LikedMovieService {
                 existingLike.get().setIsDeleted(false);
                 likedMovieRepository.save(existingLike.get());
             }
-            return existingLike.get();
+            return LikedMovieResponse.from(existingLike.get());
         }
 
         LikedMovie likedMovie = LikedMovie.builder()
@@ -49,7 +49,7 @@ public class LikedMovieService {
                 .movieName(movie.getName())
                 .build();
 
-        return likedMovieRepository.save(likedMovie);
+        return LikedMovieResponse.from(likedMovieRepository.save(likedMovie));
     }
 
     @Transactional

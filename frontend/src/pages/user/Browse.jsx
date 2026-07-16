@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import Carousel from '../../components/Carousel.jsx';
 import MoviesList from '../../components/MoviesList.jsx';
 import Footer from '../../components/Footer.jsx';
-import MoviesDetailsApi from '../../api/movies-details-api.js';
+import moviesDetailsApi from '../../api/movies-details-api.js';
 import { PATHS } from '../../constants/constants.jsx';
 import { GENRES } from '../../constants/genres.jsx';
 import { ToastContext } from '../../context/ToastContext.jsx';
@@ -32,8 +32,8 @@ export default function Browse() {
             setLoading(true);
             try {
                 const [newReleasesResponse, topRatedResponse] = await Promise.all([
-                    MoviesDetailsApi({ name: null, genre: null, sortBy: 'releaseDate', sortDirection: 'desc', page: newReleasesPage, pageSize: PAGE_SIZE }),
-                    MoviesDetailsApi({ name: null, genre: null, sortBy: 'rating', sortDirection: 'desc', page: topRatedPage, pageSize: PAGE_SIZE }),
+                    moviesDetailsApi({ name: null, genre: null, sortBy: 'releaseDate', sortDirection: 'desc', page: newReleasesPage, pageSize: PAGE_SIZE }),
+                    moviesDetailsApi({ name: null, genre: null, sortBy: 'rating', sortDirection: 'desc', page: topRatedPage, pageSize: PAGE_SIZE }),
                 ]);
                 if (!mounted) return;
 

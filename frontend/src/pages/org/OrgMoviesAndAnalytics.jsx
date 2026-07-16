@@ -1,7 +1,7 @@
 import './style/orgAnalytics.css';
 import { useEffect, useState } from 'react';
 import NavBar from '../../components/OrgAdminNavBar.jsx';
-import { fetchOrgAnalytics, fetchOrgRequests, fetchOrgMovies } from '../../api/org-analytics-api.js';
+import { fetchOrgAnalyticsApi, fetchOrgRequestsApi, fetchOrgMoviesApi } from '../../api/org-analytics-api.js';
 import MoviesList from '../../components/MoviesList.jsx';
 import Skeleton from '../../components/ui/Skeleton.jsx';
 import Badge from '../../components/ui/Badge.jsx';
@@ -96,7 +96,7 @@ const OrgMoviesAndAnalytics = () => {
         const loadAnalytics = async () => {
             try {
                 setLoading(true);
-                const { moviesOverview, requestsOverview } = await fetchOrgAnalytics();
+                const { moviesOverview, requestsOverview } = await fetchOrgAnalyticsApi();
                 setAnalytics({
                     totalMovies: moviesOverview.numberOfMovies,
                     totalViews: moviesOverview.totalViewsAcrossAllMovies,
@@ -117,7 +117,7 @@ const OrgMoviesAndAnalytics = () => {
         const loadRequests = async () => {
             try {
                 setRequestsLoading(true);
-                setMovieRequests(await fetchOrgRequests());
+                setMovieRequests(await fetchOrgRequestsApi());
             } catch (err) {
                 console.error('Error loading requests:', err);
             } finally {
@@ -133,7 +133,7 @@ const OrgMoviesAndAnalytics = () => {
         const loadMovies = async () => {
             try {
                 setLoading(true);
-                const result = await fetchOrgMovies(page, 6);
+                const result = await fetchOrgMoviesApi(page, 6);
                 if (result.success) {
                     setMyMovies(result.response.content);
                     setTotalPages(result.response.totalPages);

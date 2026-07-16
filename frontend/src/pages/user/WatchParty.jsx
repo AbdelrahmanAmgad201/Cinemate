@@ -4,7 +4,7 @@ import {useCallback, useContext, useEffect, useRef, useState} from "react";
 import {WatchPartyContext} from "../../context/WatchPartyContext.jsx";
 import {PATHS, ROLES, WATCH_PARTY, WatchPartyEventType} from "../../constants/constants.jsx";
 import {ToastContext} from "../../context/ToastContext.jsx";
-import {getRoomApi} from "../../api/watch-together-api.js";
+import {getRoomApi} from "../../api/watch-party-api.js";
 import WistiaEmbed from "../../components/WistiaEmbed.jsx";
 import {useWatchParty} from "../../hooks/useWatchParty.jsx";
 import {createWistiaAdapter} from "../../utils/video-player-adapters.jsx";
