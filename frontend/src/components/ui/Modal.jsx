@@ -14,7 +14,16 @@ import './style/Modal.css';
 export default function Modal({ open, onClose, title, size = 'md', children, footer }) {
     const dialogRef = useRef(null);
     const previouslyFocused = useRef(null);
+    const onCloseRef = useRef(onClose);
 
+    useEffect(() => {
+        onCloseRef.current = onClose;
+    }, [onClose]);
+
+    // Deliberately depends only on `open`, not `onClose`: callers pass an inline
+    // onClose that gets a new identity on every render, and this effect re-focuses
+    // the first focusable element on setup — including it in the deps stole focus
+    // from whatever the user was typing into on every keystroke.
     useEffect(() => {
         if (!open) return;
 
@@ -27,7 +36,7 @@ export default function Modal({ open, onClose, title, size = 'md', children, foo
 
         const handleKeyDown = (e) => {
             if (e.key === 'Escape') {
-                onClose();
+                onCloseRef.current();
                 return;
             }
             if (e.key !== 'Tab' || !focusable?.length) return;
@@ -51,7 +60,7 @@ export default function Modal({ open, onClose, title, size = 'md', children, foo
             document.body.style.overflow = '';
             previouslyFocused.current?.focus?.();
         };
-    }, [open, onClose]);
+    }, [open]);
 
     if (!open) return null;
 
