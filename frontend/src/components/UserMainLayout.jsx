@@ -1,36 +1,27 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Outlet } from 'react-router-dom';
-import { BsLayoutSidebar, BsLayoutSidebarInset } from "react-icons/bs";
+import { PanelLeftClose, PanelLeftOpen } from 'lucide-react';
 
 import NavBar from './NavBar';
 import SideBar from './SideBar';
+import IconButton from './ui/IconButton.jsx';
 
 import './style/UserMainLayout.css';
-import {SESSION_STORAGE} from "../constants/constants.jsx";
-
+import { SESSION_STORAGE } from '../constants/constants.jsx';
 
 export default function UserMainLayout() {
-
-    // Save sidebar state in session storage
     const [sidebarOpen, setSidebarOpen] = useState(() => {
         try {
             const savedState = sessionStorage.getItem(SESSION_STORAGE.USER_SIDE_BAR_NAME);
-
             if (savedState != null) return JSON.parse(savedState);
-
             return true;
-
-        } catch (e) {
-            console.error("Error reading session storage", e);
+        } catch {
             return true;
         }
     });
 
     useEffect(() => {
-        sessionStorage.setItem(
-            SESSION_STORAGE.USER_SIDE_BAR_NAME,
-            JSON.stringify(sidebarOpen)
-        );
+        sessionStorage.setItem(SESSION_STORAGE.USER_SIDE_BAR_NAME, JSON.stringify(sidebarOpen));
     }, [sidebarOpen]);
 
     return (
@@ -38,19 +29,16 @@ export default function UserMainLayout() {
             <NavBar />
 
             <div className={`user-main-layout-grid ${sidebarOpen ? '' : 'sidebar-closed'}`}>
-
                 <SideBar collapsed={!sidebarOpen} />
 
                 <main className="user-main-content">
-
                     <div className="layout-header">
-                        <button
-                            className="sidebar-toggle-btn"
+                        <IconButton
+                            label={sidebarOpen ? 'Close sidebar' : 'Open sidebar'}
                             onClick={() => setSidebarOpen((s) => !s)}
-                            title={sidebarOpen ? "Close Sidebar" : "Open Sidebar"}
                         >
-                            {sidebarOpen ? <BsLayoutSidebarInset size={24} /> : <BsLayoutSidebar size={24} />}
-                        </button>
+                            {sidebarOpen ? <PanelLeftClose size={19} /> : <PanelLeftOpen size={19} />}
+                        </IconButton>
                     </div>
 
                     <div className="content-wrapper">
@@ -59,5 +47,5 @@ export default function UserMainLayout() {
                 </main>
             </div>
         </div>
-    )
+    );
 }

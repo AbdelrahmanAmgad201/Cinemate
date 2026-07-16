@@ -1,7 +1,8 @@
 package org.example.backend.movie;
 
-import jakarta.transaction.Transactional;
+import org.springframework.transaction.annotation.Transactional;
 import lombok.RequiredArgsConstructor;
+import org.example.backend.errorHandler.ResourceNotFoundException;
 import org.example.backend.organization.MoviesOverview;
 import org.example.backend.organization.Organization;
 import org.example.backend.organization.OrganizationRepository;
@@ -22,8 +23,8 @@ public class MovieService {
     private final OrganizationRepository organizationRepository;
     private final RequestsRepository requestsRepository;
 
-    @Transactional
-    public Page<Movie> getMovies(MovieRequestDTO movieRequestDTO) {
+    @Transactional(readOnly = true)
+    public Page<MovieDetailsDTO> getMovies(MovieRequestDTO movieRequestDTO) {
         Specification<Movie> spec = MovieSpecification.filterMovies(movieRequestDTO)
                 .and((root, query, cb) -> cb.isNotNull(root.get("admin")));
 
@@ -32,14 +33,17 @@ public class MovieService {
                 movieRequestDTO.getPageSize()
         );
 
-        return movieRepository.findAll(spec, pageable);
+        // Mapped to a DTO here, inside the transaction (CQ-NEW-03) — Specification-based
+        // queries don't support Spring Data's automatic interface projections, so this
+        // maps explicitly instead of using a projection interface like MovieView.
+        return movieRepository.findAll(spec, pageable).map(MovieDetailsDTO::from);
     }
 
     @Transactional
     public Movie addMovie(Long orgId,MovieAddDTO movieAddDTO) {
 
         Organization organization = organizationRepository.findById(orgId)
-                .orElseThrow(() -> new RuntimeException("Organization not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Organization not found"));
 
         Movie movie = Movie.builder()
                 .name(movieAddDTO.getName())
@@ -55,24 +59,25 @@ public class MovieService {
         return movieRepository.save(movie);
     }
 
-    @Transactional
-    public Movie getMovie(Long id){
+    @Transactional(readOnly = true)
+    public MovieDetailsDTO getMovie(Long id){
         Movie movie = movieRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Movie not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Movie not found"));
 
         if (movie.getAdmin() == null) {
-            throw new RuntimeException("Movie not found");
+            throw new ResourceNotFoundException("Movie not found");
         }
 
-        return movie;
+        // Mapped to a DTO here, inside the transaction, since MovieDetailsDTO.from()
+        // touches the lazy organization association (CQ-NEW-03).
+        return MovieDetailsDTO.from(movie);
     }
 
-    @Transactional
+    @Transactional(readOnly = true)
     public MoviesOverview getMoviesOverview(Long orgId){
-        Object resultObj = movieRepository.getMovieCountAndTotalViews(orgId);
-        Object[] result = (Object[]) resultObj; // safe now
-        int numberOfMovies = ((Number) result[0]).intValue();
-        int totalViews = ((Number) result[1]).intValue();
+        MovieCountAndViewsDTO counts = movieRepository.getMovieCountAndTotalViews(orgId);
+        int numberOfMovies = (int) counts.numberOfMovies();
+        int totalViews = (int) counts.totalViews();
 
         List<Object[]> genreViews = movieRepository.getGenresOrderedByViews(orgId);
 
@@ -87,19 +92,14 @@ public class MovieService {
         );
     }
 
-    @Transactional
-    public List<Movie> getOrganizationMovies(Long orgId){
-        return movieRepository.findByAdminIsNotNullAndOrganization_Id(orgId);
-    }
-
-    @Transactional
+    @Transactional(readOnly = true)
     public OneMovieOverView getMovieStatsByMovieId(Long movieId){
         return movieRepository.getMovieOverview(movieId);
     }
 
-    @Transactional
+    @Transactional(readOnly = true)
     public boolean OrganizationOwnMovie(Long orgId, Long movieId){
-        Movie movie = movieRepository.findById(movieId).orElseThrow(() -> new RuntimeException("Movie not found"));
+        Movie movie = movieRepository.findById(movieId).orElseThrow(() -> new ResourceNotFoundException("Movie not found"));
         return movie.getOrganization().getId().equals(orgId);
     }
 

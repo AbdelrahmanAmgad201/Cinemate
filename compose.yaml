@@ -1,68 +1,98 @@
 services:
-  # MySQL Database
-  mysql:
-    image: mysql:8.0
-    container_name: mysql
+  # PostgreSQL — the single source of truth for ALL application data (identity,
+  # catalog, social content, moderation outbox, auth tokens). Replaced the previous
+  # MySQL + MongoDB split (see docs/database.md). No replica set,
+  # no second store, no cross-database transaction boundary.
+  postgres:
+    image: postgres:16
+    container_name: postgres
     restart: unless-stopped
     environment:
-      MYSQL_DATABASE: Cinemate
-      MYSQL_ROOT_PASSWORD: 123456
-      MYSQL_ROOT_HOST: "%"
+      POSTGRES_DB: ${POSTGRES_DB:-Cinemate}
+      POSTGRES_USER: ${POSTGRES_USER:-cinemate}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     volumes:
-      - mysql-data:/var/lib/mysql
+      - postgres-data:/var/lib/postgresql/data
     ports:
-      - "3307:3306"  # Changed to avoid conflict with local MySQL
+      - "5433:5432"  # dev access only; avoids clashing with a local Postgres on 5432
     networks:
       - app-net
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-p123456"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-cinemate} -d ${POSTGRES_DB:-Cinemate}"]
       interval: 10s
       timeout: 5s
       retries: 10
-      start_period: 40s
-    command: --default-authentication-plugin=mysql_native_password
+      start_period: 20s
+    # §11.4: a runaway query or unbounded aggregation could otherwise consume unbounded
+    # host memory with nothing to stop it.
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 1G
 
-  # MongoDB Database
-  mongodb:
-    image: mongo:6
-    container_name: mongodb
+  # Kafka — the moderation pipeline's durable, replayable log (single-node KRaft).
+  # Internal only: an unauthenticated broker exposed on the host is a data-loss
+  # vector, same reasoning as the internal Redis instances. Topics are created by
+  # the backend's KafkaAdmin at startup (auto-create is off so partition counts
+  # stay deliberate). Single node ⇒ replication settings are all 1; a real
+  # cluster would run RF=3 / min.insync.replicas=2.
+  kafka:
+    image: apache/kafka:3.9.1
+    container_name: kafka
+    restart: unless-stopped
+    expose:
+      - "9092"
+    environment:
+      KAFKA_NODE_ID: 1
+      KAFKA_PROCESS_ROLES: broker,controller
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka:9093
+      KAFKA_LISTENERS: PLAINTEXT://:9092,CONTROLLER://:9093
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,CONTROLLER:PLAINTEXT
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "false"
+      KAFKA_LOG_DIRS: /var/lib/kafka/data
+    volumes:
+      - kafka-data:/var/lib/kafka/data
+    networks:
+      - app-net
+    healthcheck:
+      test: ["CMD-SHELL", "/opt/kafka/bin/kafka-broker-api-versions.sh --bootstrap-server localhost:9092 >/dev/null 2>&1"]
+      interval: 10s
+      timeout: 10s
+      retries: 10
+      start_period: 30s
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 1G
+
+  # Content Moderation — ONNX inference worker (Kafka micro-batching consumer).
+  # Stateless; scale horizontally with `docker compose up --scale moderation-worker=N`
+  # (parallelism is bounded by moderation.requests' partition count). Commits offsets
+  # only after verdicts are written; crashes restart and redeliver — at-least-once.
+  moderation-worker:
+    build:
+      context: ./Content-moderator
+      dockerfile: worker/Dockerfile
+      args:
+        HF_MODEL_REPO: ${HF_MODEL_REPO:-minuva/MiniLMv2-toxic-jigaw-lite-onnx}
+        HF_MODEL_REVISION: ${HF_MODEL_REVISION:-82158a0b785a545700601d6a72634528f2b917c2}
     restart: unless-stopped
     environment:
-      MONGO_INITDB_DATABASE: Cinemate2
-    volumes:
-      - mongo-data:/data/db
-    ports:
-      - "27018:27017"  # Changed to avoid conflict with local MongoDB
+      - KAFKA_BOOTSTRAP_SERVERS=kafka:9092
+      - TOXIC_THRESHOLD=${TOXIC_THRESHOLD:-0.5}
+      - SEVERE_TOXIC_THRESHOLD=${SEVERE_TOXIC_THRESHOLD:-0.5}
+    depends_on:
+      kafka:
+        condition: service_healthy
     networks:
       - app-net
-    healthcheck:
-      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-      start_period: 20s
-
-  # Hate Speech Detection API
-  hate-api:
-    build:
-      context: ./hate-api
-      dockerfile: Dockerfile
-    container_name: hate-api
-    restart: unless-stopped
-    ports:
-      - "8000:8000"
-    networks:
-      - app-net
-    volumes:
-      - hate-api-models:/models
-      - hate-api-nltk:/nltk_data
-
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/api/hate/v1/health"]
-      interval: 15s
-      timeout: 10s
-      retries: 5
-      start_period: 90s  # Model loading takes time
     deploy:
       resources:
         limits:
@@ -78,23 +108,40 @@ services:
       dockerfile: Dockerfile
     container_name: backend
     restart: unless-stopped
-    ports:
-      - "8080:8080"
+    # No host port: the backend is internal-only, reachable solely across app-net via
+    # the gateway. That's what makes the gateway's X-User-* identity headers trustworthy
+    # (an external client can't reach the backend to forge them).
+    expose:
+      - "8080"
     env_file:
       - ./backend/.env.prod
     environment:
       - JAVA_OPTS=-Xmx512m -Xms256m
-      - WATCHPARTY_SERVICE_URL=http://watch-party:8081
-      - WATCHPARTY_WS_URL=ws://watch-party:8081/ws
+      # Moderation pipeline (Kafka). The transactional outbox now commits the content
+      # row + outbox row in one ordinary Postgres transaction — no replica set required.
+      - KAFKA_BOOTSTRAP_SERVERS=kafka:9092
+      # Single Postgres datasource for everything.
+      - DB_URL=jdbc:postgresql://postgres:5432/${POSTGRES_DB:-Cinemate}
+      - DB_USERNAME=${POSTGRES_USER:-cinemate}
+      - DB_PASSWORD=${POSTGRES_PASSWORD}
+      # These flow in from the root .env file — they override backend/.env.prod values of the same name.
+      # FRONTEND_URL / BASE_URL are the gateway origin now (single entry point): the OAuth
+      # redirect + the post-login SPA redirect both go through the gateway.
+      - FRONTEND_URL=${FRONTEND_URL}
+      - BASE_URL=${BASE_URL}
+      # Single origin now, so the refresh cookie is SameSite=Lax and not Secure (works
+      # over http://localhost). CORS on the backend is gone — the gateway owns the edge.
+      - AUTH_COOKIE_SECURE=false
+      - AUTH_COOKIE_SAME_SITE=Lax
     depends_on:
-      mysql:
+      postgres:
         condition: service_healthy
-      mongodb:
-        condition: service_healthy
-      hate-api:
-        condition: service_healthy
-      watch-party:
-        condition: service_healthy
+      # watch-party is no longer a dependency: the backend doesn't call it anymore
+      # (Stage 1). The dependency now runs the other way — watch-party calls the backend's
+      # public movie API lazily at create-time, which needs no startup ordering.
+      # kafka intentionally excluded: content publishes optimistically, the outbox
+      # relay just retries until the broker is back — the backend must boot and
+      # serve writes even when the moderation pipeline is down.
     networks:
       - app-net
     healthcheck:
@@ -103,7 +150,13 @@ services:
       timeout: 10s
       retries: 3
       start_period: 60s
-
+    # §11.4: container-level ceiling above the -Xmx512m JVM heap — off-heap growth
+    # (direct buffers, native library memory) had no ceiling of its own before this.
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 1G
 
   # React Frontend
   frontend:
@@ -112,26 +165,97 @@ services:
       dockerfile: Dockerfile
     container_name: frontend
     restart: unless-stopped
-    ports:
-      - "5173:80"
+    # No host port: the SPA is served through the gateway (/ -> frontend), so the
+    # gateway is the single origin the browser ever talks to.
+    expose:
+      - "80"
+    environment:
+      # Runtime config (FE-02). Both are empty so the SPA calls the SAME origin it was
+      # served from (the gateway): /api -> backend, /ws -> watch-party, all same-origin.
+      - API_BASE_URL=
+      - WATCH_PARTY_BASE_URL=
     networks:
       - app-net
     depends_on:
-      - backend
+      backend:
+        condition: service_started
+      watch-party:
+        condition: service_healthy
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost/ || exit 1"]
+      test: ["CMD-SHELL", "curl -f http://localhost/ || exit 1"]
       interval: 10s
       timeout: 5s
       retries: 5
       start_period: 10s
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 256M
 
+  # API Gateway (Spring Cloud Gateway) — the single entry point. The browser only
+  # ever talks to this: it serves the SPA (/), proxies the API (/api) and WebSocket
+  # (/ws), and validates access tokens at the edge, forwarding a trusted identity to
+  # the internal backend. It's the only service with a published host port.
+  gateway:
+    build:
+      context: ./gateway
+      dockerfile: Dockerfile
+    container_name: gateway
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    environment:
+      - BACKEND_URI=http://backend:8080
+      - WATCHPARTY_URI=http://watch-party:8081
+      - FRONTEND_URI=http://frontend:80
+      # Public half of the RS256 keypair — the gateway verifies access tokens with
+      # it (can validate, never mint). Same value the backend signs with.
+      - JWT_PUBLIC_KEY=${JWT_PUBLIC_KEY}
+      # Redis for the rate-limiter's token buckets. This is the ONLY Redis the app
+      # keeps now: a per-request hot counter shared across gateway replicas, which is
+      # exactly Redis's sweet spot and a poor fit for Postgres.
+      - REDIS_HOST=redis-ratelimit
+      - REDIS_PORT=6379
+    depends_on:
+      backend:
+        condition: service_healthy
+      watch-party:
+        condition: service_healthy
+      frontend:
+        condition: service_healthy
+      redis-ratelimit:
+        condition: service_healthy
+    networks:
+      - app-net
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/actuator/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 512M
+
+  # Watch-party's main store of live party state — not a cache, must not lose data.
+  # Internal only (no host port, same pattern as watch-party): an
+  # unauthenticated Redis exposed on the host is itself a data-loss vector.
   redis:
     image: redis:7
     container_name: redis
     restart: unless-stopped
-    ports:
-      - "6379:6379"
-    command: redis-server --appendonly yes
+    expose:
+      - "6379"
+    # appendonly: durable AOF log (this is source-of-truth data, not disposable).
+    # appendfsync everysec: fsync once a second — bounds worst-case data loss on a
+    # crash to ~1s of writes, the standard durability/throughput tradeoff for AOF.
+    # maxmemory-policy noeviction: explicit rather than relying on the Redis default,
+    # so this store can never silently evict a key to make room — it should fail
+    # loudly (OOM error on write) instead of quietly dropping party state.
+    command: redis-server --appendonly yes --appendfsync everysec --maxmemory-policy noeviction
     volumes:
       - redis-data:/data
     networks:
@@ -141,6 +265,37 @@ services:
       interval: 5s
       timeout: 3s
       retries: 5
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 512M
+
+  # Gateway rate-limiter's token-bucket store (Bucket4j). Evictable, non-durable —
+  # losing a bucket just resets a client's window, never an incident. Kept separate
+  # from watch-party's durable `redis` on purpose (conflicting eviction/durability
+  # needs). This replaced the old `redis-cache` instance, which also backed the
+  # backend response cache + refresh tokens; both of those moved into Postgres, so
+  # rate-limiting is all that remains on Redis.
+  redis-ratelimit:
+    image: redis:7
+    container_name: redis-ratelimit
+    restart: unless-stopped
+    expose:
+      - "6379"
+    command: redis-server --maxmemory 128mb --maxmemory-policy allkeys-lru --save "" --appendonly no
+    networks:
+      - app-net
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 256M
 
   # Watch Party Microservice
   watch-party:
@@ -149,13 +304,25 @@ services:
       dockerfile: Dockerfile
     container_name: watch-party
     restart: unless-stopped
-    ports:
-      - "8081:8081"
+    # Internal service: not exposed on the host. Only reachable within app-net.
+    # Remove the comment below and add "- 8081:8081" under 'ports:' only when debugging locally.
+    expose:
+      - "8081"
     environment:
       - SPRING_PROFILES_ACTIVE=prod
-      - SPRING_REDIS_HOST=redis
-      - SPRING_REDIS_PORT=6379
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
       - JAVA_OPTS=-Xmx512m -Xms256m
+      # Restricts which origins may open the /ws WebSocket (SEC-NEW-02) — same value
+      # the backend uses for its own CORS config.
+      - CORS_ALLOWED_ORIGINS=${CORS_ALLOWED_ORIGINS}
+      # Public half of the RS256 keypair — the service verifies the access token on the
+      # STOMP CONNECT frame with it (REL-08). Same value the gateway/backend use.
+      - JWT_PUBLIC_KEY=${JWT_PUBLIC_KEY}
+      # Backend base URL — the service calls the backend's public movie API (read-only) to
+      # resolve a movie's playable URL at party-create time (Stage 1). Lazy call, so this
+      # is not a startup dependency.
+      - BACKEND_URI=http://backend:8080
     depends_on:
       redis:
         condition: service_healthy
@@ -167,18 +334,20 @@ services:
       timeout: 10s
       retries: 3
       start_period: 60s
-
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 768M
 
 
 volumes:
-  mysql-data:
+  postgres-data:
     driver: local
-  mongo-data:
-    driver: local
-  hate-api-models:
   redis-data:
     driver: local
-  hate-api-nltk:
+  kafka-data:
+    driver: local
 
 networks:
   app-net:

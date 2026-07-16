@@ -1,0 +1,21 @@
+.genre-tile {
+    display: flex;
+    align-items: flex-end;
+    width: 100%;
+    aspect-ratio: 2 / 1;
+    padding: var(--space-4);
+    border: none;
+    border-radius: var(--radius-lg);
+    background: linear-gradient(135deg, color-mix(in srgb, var(--genre-color) 55%, var(--surface-1)) 0%, var(--surface-1) 100%);
+    color: var(--text-primary);
+    font-size: var(--font-size-h4);
+    font-weight: var(--font-weight-semibold);
+    cursor: pointer;
+    text-align: left;
+    transition: transform var(--duration-base) var(--ease-standard), box-shadow var(--duration-base) var(--ease-standard);
+}
+
+.genre-tile:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--shadow-md);
+}

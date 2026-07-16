@@ -1,116 +1,64 @@
-import { React, useState, useEffect} from 'react';
+import { useState, useEffect, useContext } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import MoviesList from '../../components/MoviesList.jsx';
-import p1 from '../../assets/p1.jpg';
-import p2 from '../../assets/p2.jpg';
-import NavBar from '../../components/NavBar';
 import Footer from '../../components/Footer.jsx';
-import MoviesDetailsApi from '../../api/movies-details-api.jsx';
-import {PATHS} from "../../constants/constants.jsx";
+import moviesDetailsApi from '../../api/movies-details-api.js';
+import { PATHS } from '../../constants/constants.jsx';
+import { getGenreLabel } from '../../constants/genres.jsx';
+import { ToastContext } from '../../context/ToastContext.jsx';
 
-const Genre = ({ listGenre }) => {
+const PAGE_SIZE = 18;
 
+const Genre = () => {
     const [loading, setLoading] = useState(true);
-    const [movies, setMovies] = useState([]);;
+    const [movies, setMovies] = useState([]);
+    const [totalPages, setTotalPages] = useState(0);
+    const [currPage, setCurrPage] = useState(0);
     const { title } = useParams();
-
     const navigate = useNavigate();
-
-    console.log("name:", title);
-
-    const newReleasesTemp = [
-        {
-            title: "The Tuesday Murder Club",
-            poster: p1,
-            duration: "1h 13min",
-            rating: "9.7"
-        },
-        {
-            title: "Spirited Away",
-            poster: p2,
-            duration: "1h 13min",
-            rating: "9.7"
-        },
-        {
-            title: "The Tuesday Murder Club",
-            poster: p1,
-            duration: "1h 13min",
-            rating: "9.7"
-        },
-        {
-            title: "Spirited Away",
-            poster: p2,
-            duration: "1h 13min",
-            rating: "9.7"
-        },
-        {
-            title: "The Tuesday Murder Club",
-            poster: p1,
-            duration: "1h 13min",
-            rating: "9.7"
-        },
-        {
-            title: "Spirited Away",
-            poster: p2,
-            duration: "1h 13min",
-            rating: "9.7"
-        }
-    ];
-
-    const [currPage, setCurrPage] = useState(0)
+    const { showToast } = useContext(ToastContext);
 
     useEffect(() => {
-        fetchMovies();
-    }, [currPage]);
+        let mounted = true;
 
-    const fetchMovies = async () => {
-       try{
-        const moviesRequest = {
-            name: null,
-            genre: title.toUpperCase(),
-            sortBy: null,
-            sortDirection: null,
-            page: currPage,
-            pageSize: 20
-        };
+        async function fetchMovies() {
+            setLoading(true);
+            const moviesResponse = await moviesDetailsApi({
+                name: null, genre: title.toUpperCase(), sortBy: null, sortDirection: null, page: currPage, pageSize: PAGE_SIZE,
+            });
+            if (!mounted) return;
 
-        const moviesResponse = await MoviesDetailsApi(moviesRequest);
-
-        console.log("Response from MoviesDetailsApi:", moviesResponse);
-        if (moviesResponse.success) {
-            const mappedMovies = moviesResponse.movies.map(movie => ({
-                id: movie.movieID,
-                title: movie.name,
-                poster: movie.thumbnailUrl,
-                duration: movie.duration,
-                rating: movie.averageRating || "N/A"
-            }));
-            setMovies(mappedMovies);
-        }else {
-            console.log("Error fetching movies in else loop:", response.message);
-        }
-        setLoading(false);
-       }
-        catch(err){
-            console.log("Error fetching movies:", err);
+            if (moviesResponse.success) {
+                setMovies(moviesResponse.movies.map((movie) => ({
+                    id: movie.movieID, title: movie.name, poster: movie.thumbnailUrl, duration: movie.duration, rating: movie.averageRating,
+                })));
+                setTotalPages(moviesResponse.totalPages || 0);
+            } else {
+                showToast('Failed to load movies', moviesResponse.message, 'error');
+            }
             setLoading(false);
         }
-    }
 
-    return(
-        <div style={{ 
-            display: 'flex', 
-            flexDirection: 'column', 
-            minHeight: '100vh'}}>
-                <main style={{ flex: '1' }}>
-                    <div style={{display: "flex", flexDirection: "column", gap: "60px"}}>
-                        {/*<NavBar />*/}
-                        <MoviesList list={movies} name={title} page={currPage} setPage={setCurrPage} onClick={(id) => navigate(PATHS.MOVIE.DETAILS(id))}  />
-                    </div>
-                </main>
+        fetchMovies();
+        return () => { mounted = false; };
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [title, currPage]);
+
+    return (
+        <div className="genre-page">
+            <main>
+                <MoviesList
+                    list={movies}
+                    name={getGenreLabel(title)}
+                    loading={loading}
+                    page={currPage}
+                    setPage={setCurrPage}
+                    totalPages={totalPages}
+                    onClick={(id) => navigate(PATHS.MOVIE.DETAILS(id))}
+                />
+            </main>
             <Footer />
         </div>
-        
     );
 };
 

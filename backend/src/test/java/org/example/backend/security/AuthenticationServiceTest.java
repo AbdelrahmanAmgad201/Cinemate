@@ -1,11 +1,6 @@
 package org.example.backend.security;
 
-import org.example.backend.admin.Admin;
-import org.example.backend.admin.AdminRepository;
-import org.example.backend.organization.Organization;
-import org.example.backend.organization.OrganizationRepository;
 import org.example.backend.user.User;
-import org.example.backend.user.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -24,13 +19,7 @@ import static org.mockito.Mockito.*;
 class AuthenticationServiceTest {
 
     @Mock
-    private UserRepository userRepository;
-
-    @Mock
-    private AdminRepository adminRepository;
-
-    @Mock
-    private OrganizationRepository organizationRepository;
+    private AccountRegistry accountRegistry;
 
     @Mock
     private PasswordEncoder passwordEncoder;
@@ -43,30 +32,20 @@ class AuthenticationServiceTest {
     private final String encodedPassword = "encodedPassword";
 
     private User user;
-    private Admin admin;
-    private Organization organization;
 
     @BeforeEach
     void setup() {
         user = new User();
         user.setEmail(email);
         user.setPassword(encodedPassword);
-
-        admin = new Admin();
-        admin.setEmail(email);
-        admin.setPassword(encodedPassword);
-
-        organization = new Organization();
-        organization.setEmail(email);
-        organization.setPassword(encodedPassword);
     }
 
     // -------------------------------------------------------------------------
-    // TEST: findByEmailAndRole → ROLE_USER
+    // TEST: findByEmailAndRole → delegates to AccountRegistry
     // -------------------------------------------------------------------------
     @Test
-    void testFindByEmailAndRoleUser() {
-        when(userRepository.findByEmail(email)).thenReturn(Optional.of(user));
+    void testFindByEmailAndRoleDelegatesToRegistry() {
+        when(accountRegistry.findByEmailAndRole(email, "USER")).thenReturn(Optional.of(user));
 
         Optional<Authenticatable> result = authService.findByEmailAndRole(email, "USER");
 
@@ -74,38 +53,12 @@ class AuthenticationServiceTest {
         assertEquals(user, result.get());
     }
 
-    // -------------------------------------------------------------------------
-    // TEST: findByEmailAndRole → ROLE_ADMIN
-    // -------------------------------------------------------------------------
-    @Test
-    void testFindByEmailAndRoleAdmin() {
-        when(adminRepository.findByEmail(email)).thenReturn(Optional.of(admin));
-
-        Optional<Authenticatable> result = authService.findByEmailAndRole(email, "ADMIN");
-
-        assertTrue(result.isPresent());
-        assertEquals(admin, result.get());
-    }
-
-    // -------------------------------------------------------------------------
-    // TEST: findByEmailAndRole → ROLE_ORGANIZATION
-    // -------------------------------------------------------------------------
-    @Test
-    void testFindByEmailAndRoleOrganization() {
-        when(organizationRepository.findByEmail(email)).thenReturn(Optional.of(organization));
-
-        Optional<Authenticatable> result = authService.findByEmailAndRole(email, "ORGANIZATION");
-
-        assertTrue(result.isPresent());
-        assertEquals(organization, result.get());
-    }
-
-    // -------------------------------------------------------------------------
-    // TEST: findByEmailAndRole → unknown role
-    // -------------------------------------------------------------------------
     @Test
     void testFindByEmailAndRoleUnknown() {
+        when(accountRegistry.findByEmailAndRole(email, "UNKNOWN")).thenReturn(Optional.empty());
+
         Optional<Authenticatable> result = authService.findByEmailAndRole(email, "UNKNOWN");
+
         assertTrue(result.isEmpty());
     }
 
@@ -114,7 +67,7 @@ class AuthenticationServiceTest {
     // -------------------------------------------------------------------------
     @Test
     void testAuthenticateSuccess() {
-        when(userRepository.findByEmail(email)).thenReturn(Optional.of(user));
+        when(accountRegistry.findByEmailAndRole(email, "USER")).thenReturn(Optional.of(user));
         when(passwordEncoder.matches(rawPassword, encodedPassword)).thenReturn(true);
 
         Optional<Authenticatable> result = authService.authenticate(email, rawPassword, "USER");
@@ -128,7 +81,7 @@ class AuthenticationServiceTest {
     // -------------------------------------------------------------------------
     @Test
     void testAuthenticateWrongPassword() {
-        when(userRepository.findByEmail(email)).thenReturn(Optional.of(user));
+        when(accountRegistry.findByEmailAndRole(email, "USER")).thenReturn(Optional.of(user));
         when(passwordEncoder.matches(rawPassword, encodedPassword)).thenReturn(false);
 
         Optional<Authenticatable> result = authService.authenticate(email, rawPassword, "USER");
@@ -141,38 +94,44 @@ class AuthenticationServiceTest {
     // -------------------------------------------------------------------------
     @Test
     void testAuthenticateUnknownRole() {
+        when(accountRegistry.findByEmailAndRole(email, "UNKNOWN")).thenReturn(Optional.empty());
+
         Optional<Authenticatable> result = authService.authenticate(email, rawPassword, "UNKNOWN");
+
         assertTrue(result.isEmpty());
     }
 
     // -------------------------------------------------------------------------
-    // TEST: normalizeRole → adds ROLE_ prefix if missing
+    // TEST: updatePassword → wrong old password throws
     // -------------------------------------------------------------------------
     @Test
-    void testNormalizeRoleAddsPrefix() {
-        // Using reflection to invoke private method (optional)
-        try {
-            var method = AuthenticationService.class.getDeclaredMethod("normalizeRole", String.class);
-            method.setAccessible(true);
-            assertEquals("ROLE_ADMIN", method.invoke(authService, "ADMIN"));
-            assertEquals("ROLE_USER", method.invoke(authService, "user"));
-            assertEquals("ROLE_ORGANIZATION", method.invoke(authService, "organization"));
-        } catch (Exception e) {
-            fail(e);
-        }
+    void testUpdatePasswordWrongOldPasswordThrows() {
+        when(accountRegistry.findByEmailAndRole(email, "USER")).thenReturn(Optional.of(user));
+        when(passwordEncoder.matches("wrong-old-password", encodedPassword)).thenReturn(false);
+
+        UpdatePasswordDTO dto = new UpdatePasswordDTO();
+        dto.setOldPassword("wrong-old-password");
+        dto.setNewPassword("new-password");
+
+        assertThrows(WrongPasswordException.class, () -> authService.updatePassword(email, dto, "USER"));
+        verify(accountRegistry, never()).updatePassword(anyString(), anyString(), anyString());
     }
 
     // -------------------------------------------------------------------------
-    // TEST: normalizeRole → keeps ROLE_ if present
+    // TEST: updatePassword → success delegates the encoded new password to the registry
     // -------------------------------------------------------------------------
     @Test
-    void testNormalizeRoleKeepsPrefix() {
-        try {
-            var method = AuthenticationService.class.getDeclaredMethod("normalizeRole", String.class);
-            method.setAccessible(true);
-            assertEquals("ROLE_ADMIN", method.invoke(authService, "ROLE_ADMIN"));
-        } catch (Exception e) {
-            fail(e);
-        }
+    void testUpdatePasswordSuccessDelegatesToRegistry() {
+        when(accountRegistry.findByEmailAndRole(email, "USER")).thenReturn(Optional.of(user));
+        when(passwordEncoder.matches(rawPassword, encodedPassword)).thenReturn(true);
+        when(passwordEncoder.encode("new-password")).thenReturn("new-encoded-password");
+
+        UpdatePasswordDTO dto = new UpdatePasswordDTO();
+        dto.setOldPassword(rawPassword);
+        dto.setNewPassword("new-password");
+
+        authService.updatePassword(email, dto, "USER");
+
+        verify(accountRegistry).updatePassword(email, "USER", "new-encoded-password");
     }
 }

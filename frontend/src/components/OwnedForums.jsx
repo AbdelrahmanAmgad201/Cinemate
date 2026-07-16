@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { getUserForumsApi } from '../api/forums-api.jsx';
+import { getUserForumsApi } from '../api/forum-api.js';
 import ForumCard from './ForumCard.jsx';
 import './style/OwnedForums.css';
 

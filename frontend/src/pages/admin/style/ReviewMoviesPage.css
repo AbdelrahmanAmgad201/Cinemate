@@ -1,196 +1,104 @@
-/* reviewRequestsPage.css */
-
 .review-requests-page {
-    /*background-color: #0f172a;*/
     min-height: 100vh;
-    color: #e2e8f0;
-    padding-top: 80px; /* Space for fixed navbar */
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    padding-top: 60px;
 }
 
 .content-container {
     max-width: 1200px;
     margin: 0 auto;
-    padding: 20px;
+    padding: var(--space-8) var(--page-padding-inline);
 }
 
-/* --- Header & Tabs --- */
 .page-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 30px;
-    border-bottom: 1px solid #1e293b;
-    padding-bottom: 20px;
+    margin-bottom: var(--space-6);
+    padding-bottom: var(--space-4);
+    border-bottom: 1px solid var(--border-subtle);
+    flex-wrap: wrap;
+    gap: var(--space-4);
 }
 
-.tabs {
-    display: flex;
-    gap: 10px;
-    background: #1e293b;
-    padding: 5px;
-    border-radius: 8px;
+.page-header h2 {
+    font-size: var(--font-size-h2);
 }
 
-.tab-btn {
-    background: transparent;
-    border: none;
-    color: #94a3b8;
-    padding: 10px 20px;
-    cursor: pointer;
-    border-radius: 6px;
-    font-weight: 600;
-    transition: all 0.2s;
-}
-
-.tab-btn.active {
-    background: #36A1F3;
-    color: white;
-}
-
-.tab-btn:hover:not(.active) {
-    color: white;
-}
-
-/* --- Pending Requests Grid --- */
 .pending-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
-    gap: 20px;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: var(--space-5);
 }
 
 .request-card {
-    background: #1e293b;
-    border-radius: 12px;
-    padding: 20px;
-    border: 1px solid #334155;
     display: flex;
     flex-direction: column;
-    gap: 15px;
-    transition: transform 0.2s;
-}
-
-.request-card:hover {
-    border-color: #36A1F3;
-    transform: translateY(-2px);
+    gap: var(--space-4);
 }
 
 .card-header {
     display: flex;
     justify-content: space-between;
-    font-size: 0.9rem;
-    color: #94a3b8;
+    align-items: center;
+    font-size: var(--font-size-caption);
+    color: var(--text-tertiary);
+}
+
+.org-name {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
 }
 
 .card-body h3 {
-    margin: 0 0 10px 0;
-    color: white;
-    font-size: 1.2rem;
+    font-size: var(--font-size-h4);
+    margin-bottom: var(--space-2);
 }
 
 .card-actions {
     margin-top: auto;
     display: flex;
     flex-direction: column;
-    gap: 10px;
+    gap: var(--space-2);
 }
 
 .decision-btns {
     display: flex;
-    gap: 10px;
+    gap: var(--space-2);
 }
 
-/* Buttons */
-.btn-preview {
-    width: 100%;
-    padding: 10px;
-    background: #334155;
-    border: none;
-    color: white;
-    border-radius: 6px;
-    cursor: pointer;
-    transition: background 0.2s;
-}
-
-.btn-preview:hover {
-    background: #475569;
-}
-
-.btn-accept {
-    flex: 1;
-    padding: 10px;
-    background: #10b981; /* Green */
-    border: none;
-    color: white;
-    border-radius: 6px;
-    cursor: pointer;
-    font-weight: bold;
-}
-
-.btn-accept:hover { background: #059669; }
-
-.btn-decline {
-    flex: 1;
-    padding: 10px;
-    background: #ef4444; /* Red */
-    border: none;
-    color: white;
-    border-radius: 6px;
-    cursor: pointer;
-    font-weight: bold;
-}
-
-.btn-decline:hover { background: #dc2626; }
-
-/* --- History Table --- */
 .history-table {
     width: 100%;
     border-collapse: collapse;
-    background: #1e293b;
-    border-radius: 8px;
+    background-color: var(--surface-1);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-lg);
     overflow: hidden;
 }
 
-.history-table th, .history-table td {
-    padding: 15px;
+.history-table th,
+.history-table td {
+    padding: var(--space-4);
     text-align: left;
-    border-bottom: 1px solid #334155;
+    border-bottom: 1px solid var(--border-subtle);
+    font-size: var(--font-size-body-sm);
 }
 
 .history-table th {
-    background: #0f172a;
-    color: #94a3b8;
-    font-weight: 600;
+    background-color: var(--surface-0);
+    color: var(--text-tertiary);
+    font-weight: var(--font-weight-semibold);
+    text-transform: uppercase;
+    font-size: var(--font-size-caption);
+    letter-spacing: 0.04em;
 }
 
 .clickable-movie {
-    color: #36A1F3;
+    color: var(--color-accent);
     cursor: pointer;
-    font-weight: 500;
+    font-weight: var(--font-weight-medium);
 }
 
 .clickable-movie:hover {
     text-decoration: underline;
 }
-
-/* Badges */
-.status-badge {
-    padding: 4px 12px;
-    border-radius: 20px;
-    font-size: 0.8rem;
-    font-weight: bold;
-    text-transform: uppercase;
-}
-
-.status-badge.pending { background: #f59e0b20; color: #f59e0b; }
-.status-badge.accepted { background: #10b98120; color: #10b981; }
-.status-badge.declined { background: #ef444420; color: #ef4444; }
-
-.empty-state, .error-message, .loader {
-    text-align: center;
-    padding: 40px;
-    color: #94a3b8;
-    font-size: 1.1rem;
-}
-
-.error-message { color: #ef4444; }

@@ -14,17 +14,18 @@ import java.util.List;
 public interface MovieRepository extends JpaRepository<Movie, Long>, JpaSpecificationExecutor<Movie> {
     List<Movie> findByAdminIsNull();
     @Query("""
-   SELECT 
-     COUNT(m), 
-     (SELECT COUNT(wh) 
-      FROM WatchHistory wh 
+   SELECT new org.example.backend.movie.MovieCountAndViewsDTO(
+     COUNT(m),
+     (SELECT COUNT(wh)
+      FROM WatchHistory wh
       JOIN Movie m2 ON m2.movieID = wh.movieId
       WHERE m2.organization.id = :orgId
       AND (wh.isDeleted = false OR wh.isDeleted IS NULL))
+   )
    FROM Movie m
    WHERE m.organization.id = :orgId
    """)
-    Object getMovieCountAndTotalViews(@Param("orgId") Long orgId);
+    MovieCountAndViewsDTO getMovieCountAndTotalViews(@Param("orgId") Long orgId);
 
     @Query("""
    SELECT m.genre, COUNT(wh) as views
@@ -38,8 +39,6 @@ public interface MovieRepository extends JpaRepository<Movie, Long>, JpaSpecific
     List<Object[]> getGenresOrderedByViews(@Param("orgId") Long orgId);
 
     Page<Movie> findAllByAdminIsNotNull(Specification<Movie> spec, Pageable pageable);
-
-    List<Movie> findByAdminIsNotNullAndOrganization_Id(Long orgId);
 
     @Query("""
             SELECT new org.example.backend.movie.OneMovieOverView(

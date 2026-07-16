@@ -14,12 +14,7 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
-import org.springframework.web.cors.CorsConfiguration;
-import org.springframework.web.cors.CorsConfigurationSource;
-import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import org.springframework.context.annotation.Lazy;
-
-import java.util.List;
 
 @Configuration
 @EnableWebSecurity
@@ -29,19 +24,19 @@ public class SecurityConfig {
 
     private final CustomAuthEntryPoint authEntryPoint;
     private final CustomAccessDeniedHandler accessDeniedHandler;
-    private final JWTProvider jwtProvider;
     @Lazy
     private final OAuthSuccessHandler oAuthSuccessHandler;
 
     @Bean
-    public JWTAuthenticationFilter jwtAuthenticationFilter() {
-        return new JWTAuthenticationFilter(jwtProvider);
+    public GatewayAuthenticationFilter gatewayAuthenticationFilter() {
+        return new GatewayAuthenticationFilter();
     }
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
-                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
+                // CORS is handled at the gateway now (single origin); the backend is
+                // internal-only and never reached cross-origin by a browser.
                 .csrf(csrf -> csrf.disable())
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
@@ -49,7 +44,7 @@ public class SecurityConfig {
                 .requestMatchers("/api/auth/**").permitAll()
                 .requestMatchers("/api/verification/**").permitAll()
                 .requestMatchers("/api/user/v1/sign-up").permitAll()
-                .requestMatchers("api/health/**").permitAll()
+                .requestMatchers("/api/health/**").permitAll()
                 .requestMatchers("/api/admin/**").hasAuthority("ROLE_ADMIN")
                 .requestMatchers("/api/organization/**").hasAuthority("ROLE_ORGANIZATION")
                 .requestMatchers("/api/user/**").hasAuthority("ROLE_USER")
@@ -58,17 +53,15 @@ public class SecurityConfig {
                 .requestMatchers("/api/watch-history/**").hasAuthority("ROLE_USER")
                 .requestMatchers("/api/liked-movie/**").hasAuthority("ROLE_USER")
                 .requestMatchers("/api/watch-later/**").hasAuthority("ROLE_USER")
-                .requestMatchers("api/post/**").hasAuthority("ROLE_USER")
                 .requestMatchers("/api/forum/**").hasAuthority("ROLE_USER")
                 .requestMatchers("/api/comment/**").hasAuthority("ROLE_USER")
                 .requestMatchers("/api/vote/**").hasAuthority("ROLE_USER")
                 .requestMatchers("/api/forum-follow/**").hasAuthority("ROLE_USER")
                 .requestMatchers("/api/feed/**").hasAuthority("ROLE_USER")
                 .requestMatchers("/api/post/**").hasAuthority("ROLE_USER")
-
-
-                .requestMatchers("/api/watch-party/**").hasAuthority("ROLE_USER")
-
+                // /api/watch-party/** is owned by the watch-party microservice now (Stage 1);
+                // the gateway routes it there and enforces ROLE_USER at the edge. The backend
+                // no longer serves it.
 
                 .anyRequest().authenticated()
         )
@@ -81,23 +74,10 @@ public class SecurityConfig {
                 .redirectionEndpoint(redirection -> redirection.baseUri("/login/oauth2/code/*"))
                 .successHandler(oAuthSuccessHandler)
         )
-            .addFilterBefore((jwtAuthenticationFilter()), UsernamePasswordAuthenticationFilter.class);
+            .addFilterBefore((gatewayAuthenticationFilter()), UsernamePasswordAuthenticationFilter.class);
 
 
         return http.build();
-    }
-
-    @Bean
-    public CorsConfigurationSource corsConfigurationSource() {
-        CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOrigins(List.of("http://localhost:5173" , "http://localhost:3000"));
-        configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"));
-        configuration.setAllowedHeaders(List.of("*"));
-        configuration.setAllowCredentials(true);
-
-        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
-        source.registerCorsConfiguration("/api/**", configuration);
-        return source;
     }
 
     @Bean

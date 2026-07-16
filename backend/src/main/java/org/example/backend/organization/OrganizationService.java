@@ -1,6 +1,8 @@
 package org.example.backend.organization;
 
 import jakarta.transaction.Transactional;
+import org.example.backend.common.dto.AboutDTO;
+import org.example.backend.errorHandler.ResourceNotFoundException;
 import org.example.backend.movie.Movie;
 import org.example.backend.movie.MovieAddDTO;
 import org.example.backend.movie.MovieRepository;
@@ -25,20 +27,26 @@ public class OrganizationService {
     @Autowired
     private MovieService movieService;
 
+    /**
+     * Creates an organization record. {@code password} MUST already be a BCrypt hash
+     * (REL-09, same contract as {@code UserService.addUserWithHashedPassword}) — the
+     * plaintext password was hashed and discarded before the verification record that
+     * leads to this call was created, so this method cannot hash it itself.
+     */
     @Transactional
-    public Organization addOrganization(String email, String password) {
+    public Organization addOrganizationWithHashedPassword(String email, String hashedPassword) {
         Organization organization = Organization.builder()
                 .email(email)
-                .password(password)
+                .password(hashedPassword)
                 .build();
         return organizationRepository.save(organization);
     }
 
 
     @Transactional
-    public String setOrganizationData(Long userId, OrganizationDataDTO organizationDataDTO) {
+    public String updateOrganizationData(Long userId, OrganizationDataDTO organizationDataDTO) {
         Organization organization = organizationRepository.findById(userId)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Organization not found"));
 
         organization.setName(organizationDataDTO.getName());
         organization.setAbout(organizationDataDTO.getAbout());
@@ -58,19 +66,19 @@ public class OrganizationService {
 
     public PersonalData getPersonalData(Long userId) {
         return organizationRepository.findProjectedById(userId)
-                .orElseThrow(() -> new RuntimeException("Organization not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Organization not found"));
     }
     public void updateAbout(Long userId, AboutDTO aboutDTO) {
         String about = aboutDTO.getAbout();
         Organization organization = organizationRepository.findById(userId)
-                .orElseThrow(() -> new RuntimeException("Organization not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Organization not found"));
         organization.setAbout(about);
         organizationRepository.save(organization);
     }
 
     public void updateName(Long userId, String newName) {
         Organization organization = organizationRepository.findById(userId)
-                .orElseThrow(() -> new RuntimeException("Organization not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Organization not found"));
         organization.setName(newName);
         organizationRepository.save(organization);
     }

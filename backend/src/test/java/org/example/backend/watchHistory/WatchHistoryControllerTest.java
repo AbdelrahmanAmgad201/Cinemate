@@ -28,18 +28,14 @@ class WatchHistoryControllerTest {
 
     private Long userId;
     private Long movieId;
-    private WatchHistory watchHistory;
+    private WatchHistoryResponse watchHistory;
 
     @BeforeEach
     void setup() {
         userId = 1L;
         movieId = 100L;
 
-        watchHistory = new WatchHistory();
-        watchHistory.setId(1L);
-        watchHistory.setUser(null);  // can set a user object if needed
-        watchHistory.setMovieId(null); // can set a movie object if needed
-        watchHistory.setMovieName(null);
+        watchHistory = WatchHistoryResponse.builder().id(1L).build();
     }
 
     // -------------------------------------------------------------------------
@@ -52,7 +48,7 @@ class WatchHistoryControllerTest {
                 .thenThrow(new RuntimeException("Movie not found"));
 
         RuntimeException exception = assertThrows(RuntimeException.class,
-                () -> watchHistoryController.likeMovie(request, movieId));
+                () -> watchHistoryController.addToWatchHistory(request, movieId));
 
         assertEquals("Movie not found", exception.getMessage());
     }
@@ -67,7 +63,7 @@ class WatchHistoryControllerTest {
                 .thenThrow(new RuntimeException("User not found"));
 
         RuntimeException exception = assertThrows(RuntimeException.class,
-                () -> watchHistoryController.likeMovie(request, movieId));
+                () -> watchHistoryController.addToWatchHistory(request, movieId));
 
         assertEquals("User not found", exception.getMessage());
     }
@@ -80,9 +76,9 @@ class WatchHistoryControllerTest {
         when(request.getAttribute("userId")).thenReturn(userId);
         when(watchHistoryService.addToWatchHistory(userId, movieId)).thenReturn(watchHistory);
 
-        ResponseEntity<WatchHistory> response = watchHistoryController.likeMovie(request, movieId);
+        ResponseEntity<WatchHistoryResponse> response = watchHistoryController.addToWatchHistory(request, movieId);
 
-        assertEquals(200, response.getStatusCodeValue());
+        assertEquals(200, response.getStatusCode().value());
         assertEquals(watchHistory, response.getBody());
     }
 }

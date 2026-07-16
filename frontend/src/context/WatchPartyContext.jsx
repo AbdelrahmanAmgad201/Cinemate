@@ -2,7 +2,7 @@ import React, { createContext, useState, useContext, useEffect } from 'react';
 import { AuthContext } from './AuthContext';
 import { ToastContext } from './ToastContext';
 import {ROLES, SESSION_STORAGE} from '../constants/constants';
-import * as partyApi from '../api/watch-together-api'; // Import all as an object
+import * as partyApi from '../api/watch-party-api'; // Import all as an object
 
 export const WatchPartyContext = createContext();
 

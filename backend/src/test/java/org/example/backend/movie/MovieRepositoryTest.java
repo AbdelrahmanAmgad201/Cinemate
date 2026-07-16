@@ -1,5 +1,6 @@
 package org.example.backend.movie;
 
+import org.example.backend.AbstractPostgresIntegrationTest;
 import org.example.backend.admin.Admin;
 import org.example.backend.admin.AdminRepository;
 import org.example.backend.likedMovie.LikedMovie;
@@ -10,23 +11,21 @@ import org.example.backend.user.User;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.autoconfigure.domain.EntityScan;
-import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
+import org.springframework.boot.persistence.autoconfigure.EntityScan;
+import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
-import org.springframework.test.context.ActiveProfiles;
 
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 @DataJpaTest
-@ActiveProfiles("test")
 @EntityScan(basePackages = "org.example.backend")
 @EnableJpaRepositories(basePackages = "org.example.backend")
-class MovieRepositoryTest {
+class MovieRepositoryTest extends AbstractPostgresIntegrationTest {
 
     @Autowired
     private MovieRepository movieRepository;
@@ -68,13 +67,6 @@ class MovieRepositoryTest {
     void testFindByAdminIsNull() {
         List<Movie> movies = movieRepository.findByAdminIsNull();
         assertThat(movies).hasSize(2); // Movie2 and Movie3
-    }
-
-    @Test
-    void testFindByAdminIsNotNullAndOrganization_Id() {
-        List<Movie> movies = movieRepository.findByAdminIsNotNullAndOrganization_Id(org1.getId());
-        assertThat(movies).hasSize(1);
-        assertThat(movies.get(0).getName()).isEqualTo("Movie1");
     }
 
     @Test

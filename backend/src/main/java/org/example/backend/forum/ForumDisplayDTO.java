@@ -1,9 +1,10 @@
 package org.example.backend.forum;
 
+import java.util.UUID;
 
 public interface ForumDisplayDTO {
 
-    String  getId();
+    UUID getId();
 
     String getName();
 

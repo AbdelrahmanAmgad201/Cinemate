@@ -17,33 +17,33 @@ public class FollowController {
         this.followService = followService;
     }
 
-    @PostMapping("/v1/follow/{followedUserId}")
+    @PutMapping("/v1/{userId}")
     public ResponseEntity<?> follow(
             HttpServletRequest request,
-            @PathVariable Long followedUserId
+            @PathVariable Long userId
     ){
         Long followingUserId = (Long) request.getAttribute("userId");
-        followService.follow(followingUserId,followedUserId);
+        followService.follow(followingUserId,userId);
         return ResponseEntity.ok().build();
     }
 
-    @PostMapping("/v1/unfollow/{followedUserId}")
+    @DeleteMapping("/v1/{userId}")
     public ResponseEntity<?> unFollow(
             HttpServletRequest request,
-            @PathVariable Long followedUserId
+            @PathVariable Long userId
     ){
         Long followingUserId = (Long) request.getAttribute("userId");
-        followService.unfollow(followingUserId,followedUserId);
+        followService.unfollow(followingUserId,userId);
         return ResponseEntity.ok().build();
     }
 
-    @GetMapping("/v1/is-followed/{followedUserId}")
+    @GetMapping("/v1/{userId}")
     public ResponseEntity<?> isFollowed(
             HttpServletRequest request,
-            @PathVariable Long followedUserId
+            @PathVariable Long userId
     ){
         Long followingUserId = (Long) request.getAttribute("userId");
-        return  ResponseEntity.ok(followService.isFollowed(followingUserId,followedUserId));
+        return  ResponseEntity.ok(followService.isFollowed(followingUserId,userId));
     }
 
     @GetMapping("/v1/followers")

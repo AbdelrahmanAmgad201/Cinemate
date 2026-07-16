@@ -1,30 +1,29 @@
 package org.example.backend.verification;
 
+import org.example.backend.AbstractPostgresIntegrationTest;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.autoconfigure.domain.EntityScan;
-import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
+import org.springframework.boot.persistence.autoconfigure.EntityScan;
+import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
 import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
-import org.springframework.test.context.ActiveProfiles;
 
 import java.time.LocalDateTime;
 
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 
 @DataJpaTest
-@ActiveProfiles("test") // <--- make sure this matches your test properties
 @EntityScan(basePackages = "org.example.backend")
 @EnableJpaRepositories(basePackages = "org.example.backend")
-class VerificationRepositoryTest {
+class VerificationRepositoryTest extends AbstractPostgresIntegrationTest {
 
     @Autowired
     private VerificationRepository verificationRepository;
 
     @Test
     void testSaveVerification() {
-        Verfication v = new Verfication();
+        Verification v = new Verification();
         v.setEmail("user@example.com");
-        v.setCode(123456);
+        v.setCode("$2a$10$hashedVerificationCodePlaceholder");
         v.setRole("USER");
         v.setCreatedAt(LocalDateTime.now());
 
@@ -33,6 +32,6 @@ class VerificationRepositoryTest {
         var found = verificationRepository.findByEmail("user@example.com");
 
         assertThat(found).isPresent();
-        assertThat(found.get().getCode()).isEqualTo(123456);
+        assertThat(found.get().getCode()).isEqualTo("$2a$10$hashedVerificationCodePlaceholder");
     }
 }

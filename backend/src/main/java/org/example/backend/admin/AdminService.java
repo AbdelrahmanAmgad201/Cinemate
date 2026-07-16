@@ -1,8 +1,10 @@
 package org.example.backend.admin;
 
-import jakarta.transaction.Transactional;
+import org.springframework.transaction.annotation.Transactional;
 import lombok.RequiredArgsConstructor;
+import org.example.backend.errorHandler.ResourceNotFoundException;
 import org.example.backend.movie.Movie;
+import org.example.backend.movie.MovieDetailsDTO;
 import org.example.backend.movie.MovieRepository;
 import org.example.backend.requests.Requests;
 import org.example.backend.requests.RequestsRepository;
@@ -24,19 +26,20 @@ public class AdminService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
 
-    @Transactional
-    public Movie getRequestedMovie(Long requestId) {
+    @Transactional(readOnly = true)
+    public MovieDetailsDTO getRequestedMovie(Long requestId) {
         Requests request = requestsRepository.findById(requestId)
-                .orElseThrow(() -> new RuntimeException("Request not found"));
-        return request.getMovie();
+                .orElseThrow(() -> new ResourceNotFoundException("Request not found"));
+        // Mapped inside the transaction (CQ-NEW-03) — see MovieDetailsDTO.
+        return MovieDetailsDTO.from(request.getMovie());
     }
 
     @Transactional
     public void acceptRequests(Long adminId,Long requestId) {
         Admin admin = adminRepository.findById(adminId)
-                .orElseThrow(() -> new RuntimeException("Admin not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Admin not found"));
         Requests requests = requestsRepository.findById(requestId)
-                .orElseThrow(() -> new RuntimeException("Movie not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Request not found"));
         Movie movie = requests.getMovie();
         requests.setState(State.ACCEPTED);
         requests.setAdmin(admin);
@@ -49,9 +52,9 @@ public class AdminService {
     @Transactional
     public void declineRequest(Long adminId,Long requestId) {
         Requests requests = requestsRepository.findById(requestId)
-                .orElseThrow(() -> new RuntimeException("Movie not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Request not found"));
         Admin admin = adminRepository.findById(adminId)
-                .orElseThrow(() -> new RuntimeException("Admin not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Admin not found"));
         Long movieId = requests.getMovie().getMovieID();
         requests.setState(State.REJECTED);
         requests.setMovie(null);
@@ -74,7 +77,7 @@ public class AdminService {
         return adminRepository.save(admin);
     }
 
-    @Transactional
+    @Transactional(readOnly = true)
     public SystemOverview getSystemOverview() {
         SystemOverview systemOverview = new SystemOverview();
 
@@ -93,10 +96,10 @@ public class AdminService {
         return systemOverview;
     }
 
-    @Transactional
+    @Transactional(readOnly = true)
     public AdminProfileDTO getAdminProfile(Long userId) {
         Admin admin = adminRepository.findById(userId)
-                .orElseThrow(() -> new RuntimeException("Admin not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Admin not found"));
 
         return new AdminProfileDTO(
                 admin.getName(),
@@ -109,7 +112,7 @@ public class AdminService {
     public void updateAdminName(Long userId, String newName) {
 
         Admin admin = adminRepository.findById(userId)
-                .orElseThrow(() -> new RuntimeException("Admin not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Admin not found"));
 
         admin.setName(newName);
     }

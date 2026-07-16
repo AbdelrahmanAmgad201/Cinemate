@@ -18,7 +18,11 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 @Builder
 @Entity
-@Table(name = "movies")
+@Table(name = "movies", indexes = {
+        @Index(name = "idx_movie_genre", columnList = "genre"),
+        @Index(name = "idx_movie_rating", columnList = "average_rating"),
+        @Index(name = "idx_movie_admin", columnList = "admin_id")
+})
 public class Movie {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -56,7 +60,12 @@ public class Movie {
     @Column(name = "rating_count")
     private Integer ratingCount;
 
-    @Column(name = "average_rating")
+    // Generated column: rating_sum / rating_count. @Generated re-reads it after the
+    // app updates rating_sum/rating_count, so movie.getAverageRating() stays correct.
+    @org.hibernate.annotations.Generated(event = {
+            org.hibernate.generator.EventType.INSERT,
+            org.hibernate.generator.EventType.UPDATE})
+    @Column(name = "average_rating", insertable = false, updatable = false)
     private Double averageRating;
 
     @ManyToOne(fetch = FetchType.LAZY)
@@ -79,11 +88,9 @@ public class Movie {
             ratingSum = 0L;
         }
         if (ratingCount == null) {
-            ratingCount = 1;
+            ratingCount = 0;
         }
-        if (averageRating == null) {
-            averageRating = 0D;
-        }
+        // average_rating is a generated column — computed by the database.
     }
     @PreUpdate
     protected void onUpdate() {

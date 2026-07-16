@@ -1,8 +1,9 @@
 package org.example.backend.watchLater;
 
 
-import jakarta.transaction.Transactional;
+import org.springframework.transaction.annotation.Transactional;
 import lombok.AllArgsConstructor;
+import org.example.backend.errorHandler.ResourceNotFoundException;
 import org.example.backend.likedMovie.LikedMovieRepository;
 import org.example.backend.likedMovie.LikedMoviesID;
 import org.example.backend.movie.Movie;
@@ -25,12 +26,12 @@ public class WatchLaterService {
 
 
     @Transactional
-    public WatchLater addMovie(Long userId, Long movieId) {
+    public WatchLaterResponse addMovie(Long userId, Long movieId) {
         Movie movie = movieRepository.findById(movieId)
-                .orElseThrow(() -> new RuntimeException("Movie not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Movie not found"));
 
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
         WatchLaterID id = new WatchLaterID(userId, movieId);
 
@@ -41,7 +42,7 @@ public class WatchLaterService {
                 watchLater.get().setIsDeleted(false);
             }
             watchLaterRepository.save(watchLater.get());
-            return watchLater.get();
+            return WatchLaterResponse.from(watchLater.get());
         }
         WatchLater newWatchLater = WatchLater.builder().
                 watchLaterID(id).
@@ -49,13 +50,21 @@ public class WatchLaterService {
                 movieName(movie.getName()).
                 user(user).
                 build();
-        return watchLaterRepository.save(newWatchLater);
+        return WatchLaterResponse.from(watchLaterRepository.save(newWatchLater));
 
     }
 
-    @Transactional
+    @Transactional(readOnly = true)
     public Page<WatchLaterView> getWatchLaters(Long userId, Pageable pageable) {
         return watchLaterRepository.findAllByUserIdAndIsDeletedFalse(userId, pageable);
+    }
+
+    @Transactional(readOnly = true)
+    public boolean isWatchLater(Long userId, Long movieId) {
+        WatchLaterID id = new WatchLaterID(userId, movieId);
+        return watchLaterRepository.findById(id)
+                .map(w -> !w.getIsDeleted())
+                .orElse(false);
     }
 
     @Transactional

@@ -7,27 +7,29 @@ import org.example.backend.admin.Admin;
 import org.example.backend.admin.AdminService;
 import org.example.backend.comment.AddCommentDTO;
 import org.example.backend.comment.CommentService;
-import org.example.backend.forum.Forum;
+import java.util.UUID;
 import org.example.backend.forum.ForumCreationRequest;
+import org.example.backend.forum.ForumDetailsDTO;
 import org.example.backend.forum.ForumService;
 import org.example.backend.forumfollowing.FollowingService;
 import org.example.backend.movie.*;
 import org.example.backend.organization.Organization;
 import org.example.backend.organization.OrganizationService;
-import org.example.backend.post.AddPostDto;
+import org.example.backend.post.AddPostDTO;
 import org.example.backend.post.Post;
 import org.example.backend.post.PostService;
 import org.example.backend.user.User;
 import org.example.backend.user.UserDataDTO;
+import org.example.backend.user.UserRepository;
 import org.example.backend.user.UserService;
 import org.example.backend.vote.VoteDTO;
 import org.example.backend.vote.VoteService;
+import org.example.backend.vote.VoteTargetType;
 import org.example.backend.watchHistory.WatchHistory;
 import org.example.backend.watchHistory.WatchHistoryService;
 import org.example.backend.watchLater.WatchLaterService;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.CommandLineRunner;
-import org.springframework.context.annotation.Profile;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
@@ -37,8 +39,12 @@ import java.time.LocalDate;
 import static org.example.backend.movie.Genre.ANIMATION;
 
 
+// §11.6: no longer @Profile("dev") — every env template in the documented
+// `docker compose up` setup path hardcodes SPRING_PROFILES_ACTIVE=prod, which made the
+// "dev" profile (and therefore this seeder) unreachable without manually editing an env
+// file the setup instructions never mention. app.data-init.enabled (default false) is
+// now the single gate; set it explicitly to seed data in any environment/profile.
 @Component
-@Profile("dev") // IMPORTANT: only runs in dev profile
 @RequiredArgsConstructor
 public class DataInitializer implements CommandLineRunner {
     private final String defaultPass = "12345678";
@@ -63,6 +69,7 @@ public class DataInitializer implements CommandLineRunner {
     private final WatchLaterService watchLaterService;
     private final MovieService movieService;
     private final MovieRepository movieRepository;
+    private final UserRepository userRepository;
 
 
     @Value("${app.data-init.enabled:false}")
@@ -73,13 +80,26 @@ public class DataInitializer implements CommandLineRunner {
         if (!enabled) {
             return;
         }
+        // Idempotency guard (DB-NEW-04) — without this, restarting the app with
+        // app.data-init.enabled=true re-runs the full seed and throws a unique-
+        // constraint violation on the second run (testUser1@example.com etc. already exist).
+        if (userRepository.count() > 0) {
+            return;
+        }
         String hashedPassword = passwordEncoder.encode(defaultPass);
-        for(int i=1;i<=defaultNumberOfUsers;i++){
-            User user=initializeUser(i,hashedPassword);
-            Forum forum=initializeForum(i,user);
+        // Create ALL users first: follows/votes/comments below reference users 1..N by id,
+        // and those are real FKs now (forum_follows.user_id, post_votes.user_id, ...). Seeding
+        // content for user i while users i+1.. don't yet exist would violate them.
+        java.util.List<User> users = new java.util.ArrayList<>();
+        for (int i = 1; i <= defaultNumberOfUsers; i++) {
+            users.add(initializeUser(i, hashedPassword));
+        }
+        for (int i = 1; i <= defaultNumberOfUsers; i++) {
+            User user = users.get(i - 1);
+            ForumDetailsDTO forum = initializeForum(i, user);
             forumFollowing(forum);
-            for(int j=1;j<=defaultNumberOfPostsPerUser;j++){
-                initializePostWithVotesAndComments(i,j,forum,user);
+            for (int j = 1; j <= defaultNumberOfPostsPerUser; j++) {
+                initializePostWithVotesAndComments(i, j, forum, user);
             }
         }
         AddAdminDTO addAdminDTO = new AddAdminDTO();
@@ -93,7 +113,7 @@ public class DataInitializer implements CommandLineRunner {
     }
 
     private User initializeUser(int i,String hashedPassword){
-        User user=userService.addUser("testUser"+i+"@example.com",hashedPassword);
+        User user=userService.addUserWithHashedPassword("testUser"+i+"@example.com",hashedPassword);
         UserDataDTO userDataDTO = UserDataDTO.builder()
                 .firstName("tester")
                 .lastName("n"+i)
@@ -101,28 +121,28 @@ public class DataInitializer implements CommandLineRunner {
                 .about("only for test")
                 .birthday(LocalDate.now())
                 .build();
-        userService.setUserData(user.getId(), userDataDTO);
+        userService.updateUserData(user.getId(), userDataDTO);
         return user;
     }
 
-    private Forum initializeForum(int i,User user){
+    private ForumDetailsDTO initializeForum(int i,User user){
         ForumCreationRequest forumCreationRequest= ForumCreationRequest.builder()
                 .name("test"+i)
                 .description("the forum for user"+i)
                 .build();
-        Forum forum=forumService.createForum(forumCreationRequest,user.getId());
-        return forum;
+        return forumService.createForum(forumCreationRequest,user.getId());
     }
 
-    private void forumFollowing(Forum forum){
+    private void forumFollowing(ForumDetailsDTO forum){
+        UUID forumId = UUID.fromString(forum.getId());
         for(int j=1;j<=defaultNumberOfFollowingPosts;j++){
-            followingService.follow(forum.getId(),Long.valueOf(j));
+            followingService.follow(forumId,Long.valueOf(j));
         }
     }
 
-    private void initializePostWithVotesAndComments(int forumNumber,int postNumber,Forum forum,User user){
-        AddPostDto addPostDto = AddPostDto.builder()
-                .forumId(forum.getId())
+    private void initializePostWithVotesAndComments(int forumNumber,int postNumber,ForumDetailsDTO forum,User user){
+        AddPostDTO addPostDto = AddPostDTO.builder()
+                .forumId(UUID.fromString(forum.getId()))
                 .title("test"+postNumber+"for forum"+forumNumber)
                 .content("this only for test")
                 .build();
@@ -137,7 +157,7 @@ public class DataInitializer implements CommandLineRunner {
                     .targetId(post.getId())
                     .value(1)
                     .build();
-            voteService.vote(voteDTO,true,Long.valueOf(k));
+            voteService.vote(voteDTO,VoteTargetType.POST,Long.valueOf(k));
         }
     }
 
@@ -154,7 +174,7 @@ public class DataInitializer implements CommandLineRunner {
     private void initializeOrganization(Long orgId, Admin admin){
         String email = "testOrg"+orgId+"@example.com";
         String hashedPassword = passwordEncoder.encode(defaultPass);
-        Organization organization=organizationService.addOrganization(email,hashedPassword);
+        Organization organization=organizationService.addOrganizationWithHashedPassword(email,hashedPassword);
         for (int i =1 ;i<=defaultNumberOfMoviesPerOrganization;i++){
             Movie movie = Movie.builder()
                     .organization(organization)

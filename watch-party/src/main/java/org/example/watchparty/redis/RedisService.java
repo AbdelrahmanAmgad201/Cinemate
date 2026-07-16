@@ -1,10 +1,15 @@
 package org.example.watchparty.redis;
 
+import org.springframework.data.redis.core.Cursor;
 import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.core.ScanOptions;
+import org.springframework.data.redis.core.script.DefaultRedisScript;
+import org.springframework.data.redis.core.script.RedisScript;
 import org.springframework.stereotype.Service;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
+import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 
@@ -14,6 +19,62 @@ import java.util.concurrent.TimeUnit;
 public class RedisService {
 
     private final RedisTemplate<String, Object> redisTemplate;
+
+    // Atomically checks membership, adds to the set, and increments the participant
+    // count in one round-trip (REL-NEW-01) — doing these as separate calls lets two
+    // concurrent joins both pass the "not already a member" check and both increment,
+    // overcounting a party that actually has one more member than it reports.
+    private static final RedisScript<Long> JOIN_SET_AND_INCREMENT_SCRIPT = new DefaultRedisScript<>(
+            "if redis.call('SISMEMBER', KEYS[1], ARGV[1]) == 1 then\n" +
+            "  return 0\n" +
+            "else\n" +
+            "  redis.call('SADD', KEYS[1], ARGV[1])\n" +
+            "  redis.call('HINCRBY', KEYS[2], ARGV[2], 1)\n" +
+            "  return 1\n" +
+            "end",
+            Long.class
+    );
+
+    /**
+     * Adds {@code member} to the set at {@code setKey} and increments {@code hashField}
+     * in the hash at {@code hashKey} atomically, but only if {@code member} wasn't
+     * already present. Returns {@code true} if the member was newly added, {@code false}
+     * if it was already a member (no-op).
+     */
+    public boolean addToSetAndIncrementHash(String setKey, String hashKey, String hashField, Object member) {
+        Long result = redisTemplate.execute(JOIN_SET_AND_INCREMENT_SCRIPT,
+                List.of(setKey, hashKey), member, hashField);
+        return result != null && result == 1L;
+    }
+
+    // The mirror of the join script for the leave path (REL-NEW-03): atomically checks
+    // membership, removes from the set, and decrements the participant count in one
+    // round-trip. Doing these as separate calls (SISMEMBER → SREM → HINCRBY) lets a
+    // check-then-act race double-decrement the counter or drift it out of step with the
+    // member set — and since a party self-destructs when the count reaches 0, a miscount
+    // can prematurely tear down a live party or strand an empty one. Returns -1 (not a
+    // valid count: the set/count are kept in lockstep, so a present member always implies
+    // count ≥ 1) when the user wasn't a member, so the caller can distinguish a no-op.
+    private static final RedisScript<Long> LEAVE_SET_AND_DECREMENT_SCRIPT = new DefaultRedisScript<>(
+            "if redis.call('SISMEMBER', KEYS[1], ARGV[1]) == 0 then\n" +
+            "  return -1\n" +
+            "end\n" +
+            "redis.call('SREM', KEYS[1], ARGV[1])\n" +
+            "return redis.call('HINCRBY', KEYS[2], ARGV[2], -1)",
+            Long.class
+    );
+
+    /**
+     * Removes {@code member} from the set at {@code setKey} and decrements {@code hashField}
+     * in the hash at {@code hashKey} atomically, but only if {@code member} was present.
+     * Returns the new participant count (≥ 0), or {@code -1} if the user was not a member
+     * (no-op).
+     */
+    public long removeFromSetAndDecrementHash(String setKey, String hashKey, String hashField, Object member) {
+        Long result = redisTemplate.execute(LEAVE_SET_AND_DECREMENT_SCRIPT,
+                List.of(setKey, hashKey), member, hashField);
+        return result != null ? result : -1;
+    }
 
     // ========== Basic Key-Value Operations ==========
 
@@ -29,6 +90,12 @@ public class RedisService {
 
     public Object getValue(String key) {
         return redisTemplate.opsForValue().get(key);
+    }
+
+    // Fetches multiple keys in a single round-trip instead of one GET per key (PERF-01) —
+    // used by getPartyMembers(), which previously issued one Redis call per party member.
+    public List<Object> multiGet(Collection<String> keys) {
+        return redisTemplate.opsForValue().multiGet(keys);
     }
 
     public Boolean deleteKey(String key) {
@@ -196,15 +263,29 @@ public class RedisService {
     // ========== Pattern Matching & Bulk Operations ==========
 
     public Set<String> getKeysByPattern(String pattern) {
-        return redisTemplate.keys(pattern);
+        return scanKeys(pattern);
     }
 
     public Long deleteKeysByPattern(String pattern) {
-        Set<String> keys = redisTemplate.keys(pattern);
-        if (keys != null && !keys.isEmpty()) {
+        Set<String> keys = scanKeys(pattern);
+        if (!keys.isEmpty()) {
             return redisTemplate.delete(keys);
         }
         return 0L;
+    }
+
+    // SCAN instead of KEYS (PERF-05) — KEYS blocks the single-threaded Redis server for
+    // the full O(N) keyspace scan; SCAN walks it incrementally in small batches instead.
+    private Set<String> scanKeys(String pattern) {
+        Set<String> keys = new HashSet<>();
+        ScanOptions options = ScanOptions.scanOptions().match(pattern).count(100).build();
+        try (Cursor<byte[]> cursor = redisTemplate.executeWithStickyConnection(
+                connection -> connection.scan(options))) {
+            while (cursor.hasNext()) {
+                keys.add(new String(cursor.next(), StandardCharsets.UTF_8));
+            }
+        }
+        return keys;
     }
 
     // ========== Pub/Sub Support ==========

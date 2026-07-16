@@ -1,5 +1,6 @@
 package org.example.watchparty.redis;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.example.watchparty.dtos.PartyEvent;
@@ -14,18 +15,19 @@ import org.springframework.stereotype.Component;
 public class RedisSubscriber implements MessageListener {
 
     private final SimpMessagingTemplate messagingTemplate;
+    private final ObjectMapper objectMapper;
 
     @Override
     public void onMessage(Message message, byte[] pattern) {
         try {
             String json = new String(message.getBody());
-            PartyEvent event = JsonUtils.fromJson(json, PartyEvent.class);
+            PartyEvent event = objectMapper.readValue(json, PartyEvent.class);
 
             String partyId = event.getPartyId();
 
             // Broadcast event to all party members via WebSocket
             messagingTemplate.convertAndSend(
-                    "/topic/party/" + partyId,
+                    "/topic/watch-party/" + partyId,
                     event
             );
 

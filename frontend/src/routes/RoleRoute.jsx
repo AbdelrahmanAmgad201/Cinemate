@@ -9,7 +9,7 @@ export default function RoleRoute({ allowedRoles = [], redirectTo = PATHS.ROOT, 
     const { user, loading, isAuthenticated, pendingRestored } = useContext(AuthContext);
 
     if (loading || !pendingRestored) {
-        return <LoadingFallback />;
+        return <LoadingFallback fullScreen />;
     }
 
     // if user is not authenticated, go to login page
@@ -22,7 +22,6 @@ export default function RoleRoute({ allowedRoles = [], redirectTo = PATHS.ROOT, 
     }
 
     if (allowedRoles.length > 0 && !allowedRoles.includes(user.role)) {
-        console.log(`User role ${user.role} is not authorized to access this page`);
         // User is logged in but not in the allowed roles -> send them to a suitable page
         // You may choose to send ADMIN -> /review-movies, USER -> /home-page, ORG -> /org-add-movie
         // Here we redirect to a generic home or "not authorized" page.

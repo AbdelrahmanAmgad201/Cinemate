@@ -1,0 +1,63 @@
+/* Shared by FollowersPage and FollowingPage — these were previously two
+   byte-for-byte duplicate stylesheets differing only in class-name prefix. */
+
+.follow-list-page {
+    max-width: 640px;
+    margin: 0 auto;
+    padding: var(--space-6) 0;
+}
+
+.follow-list-header {
+    display: flex;
+    align-items: center;
+    gap: var(--space-4);
+    margin-bottom: var(--space-6);
+    padding-bottom: var(--space-4);
+    border-bottom: 1px solid var(--border-subtle);
+}
+
+.follow-list-header h1 {
+    font-size: var(--font-size-h2);
+}
+
+.follow-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+}
+
+.follow-list-item {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    padding: var(--space-3);
+    border-radius: var(--radius-md);
+    transition: background-color var(--duration-base) var(--ease-standard);
+}
+
+.follow-list-item:hover {
+    background-color: var(--surface-1);
+}
+
+.follow-list-item__link {
+    text-decoration: none;
+}
+
+.follow-list-item__meta {
+    flex: 1;
+    min-width: 0;
+}
+
+.follow-list-item__name-link {
+    text-decoration: none;
+}
+
+.follow-list-item__name {
+    font-weight: var(--font-weight-semibold);
+    color: var(--text-primary);
+    transition: color var(--duration-base) var(--ease-standard);
+}
+
+.follow-list-item__name-link:hover .follow-list-item__name {
+    color: var(--color-accent);
+}

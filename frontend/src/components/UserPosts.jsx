@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useContext } from 'react';
-import { getMyPostsApi, getOtherUserPostsApi } from '../api/posts-api.jsx';
+import { getMyPostsApi, getOtherUserPostsApi } from '../api/post-api.js';
 import PostCard from './PostCard.jsx';
 import { ToastContext } from '../context/ToastContext.jsx';
 

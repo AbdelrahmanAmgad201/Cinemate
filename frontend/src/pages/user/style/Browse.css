@@ -1,0 +1,16 @@
+.browse-page__main {
+    display: flex;
+    flex-direction: column;
+}
+
+.browse-page__rows {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-16);
+}
+
+.browse-page__genre-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: var(--space-4);
+}

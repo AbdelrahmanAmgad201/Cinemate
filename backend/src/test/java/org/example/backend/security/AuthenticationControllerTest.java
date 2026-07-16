@@ -1,119 +1,177 @@
 package org.example.backend.security;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.example.backend.user.User;
 import org.example.backend.user.UserAlreadyExistsException;
 import org.example.backend.user.UserService;
-import org.example.backend.verification.Verfication;
-import org.junit.jupiter.api.BeforeEach;
+import org.example.backend.verification.Verification;
 import org.junit.jupiter.api.Test;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
-import org.springframework.test.context.ActiveProfiles;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
+import org.springframework.boot.jackson2.autoconfigure.Jackson2AutoConfiguration;
+import org.springframework.context.annotation.Import;
+import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseCookie;
+import org.springframework.test.web.servlet.MockMvc;
 
-import java.util.Map;
 import java.util.Optional;
 
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.*;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-@ActiveProfiles("test")
+/**
+ * Routed through real MockMvc (instead of bare @InjectMocks) so @Valid validation
+ * errors and GlobalExceptionHandler mapping are actually exercised, not just the
+ * controller method body. Security filters are disabled (addFilters = false) since
+ * authorization is covered separately by SecurityIntegrationTest and
+ * GatewayAuthenticationFilterTest — this class only tests MVC dispatch.
+ */
+@Import(Jackson2AutoConfiguration.class)
+@WebMvcTest(AuthenticationController.class)
+@AutoConfigureMockMvc(addFilters = false)
 class AuthenticationControllerTest {
 
-    @Mock
+    @Autowired
+    private MockMvc mockMvc;
+
+    @Autowired
+    private ObjectMapper objectMapper;
+
+    @MockitoBean
     private AuthenticationService authenticationService;
 
-    @Mock
+    @MockitoBean
     private JWTProvider jwtTokenProvider;
 
-    @Mock
+    @MockitoBean
     private UserService userService;
 
-    @InjectMocks
-    private AuthenticationController authenticationController;
+    @MockitoBean
+    private OAuthExchangeService oAuthExchangeService;
 
-    @BeforeEach
-    void setUp() {
-        MockitoAnnotations.openMocks(this);
+    @MockitoBean
+    private RefreshTokenService refreshTokenService;
+
+    @MockitoBean
+    private RefreshTokenCookie refreshTokenCookie;
+
+    private String json(Object body) throws Exception {
+        return objectMapper.writeValueAsString(body);
     }
 
-    // ------------------ LOGIN TESTS ------------------
+    private static UpdatePasswordDTO updatePasswordDTO(String oldPassword, String newPassword) {
+        UpdatePasswordDTO dto = new UpdatePasswordDTO();
+        dto.setOldPassword(oldPassword);
+        dto.setNewPassword(newPassword);
+        return dto;
+    }
 
     @Test
-    void testLoginSuccess() {
-        CredentialsRequest request = new CredentialsRequest("test@example.com", "password", "USER");
-
+    void login_ValidCredentials_ReturnsTokenAndSetsCookie() throws Exception {
         User mockUser = new User();
         mockUser.setId(1L);
         mockUser.setEmail("test@example.com");
 
-        when(authenticationService.authenticate(
-                request.getEmail(),
-                request.getPassword(),
-                request.getRole()))
+        when(authenticationService.authenticate("test@example.com", "password", "USER"))
                 .thenReturn(Optional.of(mockUser));
+        when(jwtTokenProvider.generateAccessToken(mockUser)).thenReturn("mockToken");
+        when(refreshTokenService.issue(anyString(), anyString())).thenReturn("mockRefresh");
+        when(refreshTokenCookie.build(anyString()))
+                .thenReturn(ResponseCookie.from("refresh_token", "mockRefresh").build());
 
-        when(jwtTokenProvider.generateToken(mockUser)).thenReturn("mockToken");
-
-        ResponseEntity<?> response = authenticationController.login(request);
-
-        assertEquals(HttpStatus.OK, response.getStatusCode());
-
-        Map<String, Object> body = (Map<String, Object>) response.getBody();
-        assertNotNull(body);
-        assertEquals("mockToken", body.get("token"));
-        assertEquals(1L, body.get("id"));
-        assertEquals("test@example.com", body.get("email"));
-        assertEquals("ROLE_USER", body.get("role"));
+        mockMvc.perform(post("/api/auth/v1/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(json(new CredentialsRequest("test@example.com", "password", "USER"))))
+                .andExpect(status().isOk())
+                .andExpect(header().exists("Set-Cookie"))
+                .andExpect(jsonPath("$.accessToken").value("mockToken"))
+                .andExpect(jsonPath("$.id").value(1))
+                .andExpect(jsonPath("$.email").value("test@example.com"));
     }
 
     @Test
-    void testLoginFailure() {
-        CredentialsRequest request = new CredentialsRequest("wrong@example.com", "wrong", "USER");
-
-        when(authenticationService.authenticate(
-                request.getEmail(),
-                request.getPassword(),
-                request.getRole()))
+    void login_InvalidCredentials_ReturnsUnauthorized() throws Exception {
+        when(authenticationService.authenticate("wrong@example.com", "wrong", "USER"))
                 .thenReturn(Optional.empty());
 
-        ResponseEntity<?> response = authenticationController.login(request);
-
-        assertEquals(HttpStatus.UNAUTHORIZED, response.getStatusCode());
-
-        Map<String, Object> body = (Map<String, Object>) response.getBody();
-        assertNotNull(body);
-        assertEquals("Invalid credentials", body.get("error"));
-    }
-
-    // ------------------ SIGN-UP TESTS ------------------
-
-    @Test
-    void testSignUpSuccess() throws UserAlreadyExistsException {
-        CredentialsRequest request = new CredentialsRequest("new@example.com", "password", "USER");
-
-        Verfication mockVerification = new Verfication();
-
-        when(userService.signUp(request)).thenReturn(mockVerification);
-
-        ResponseEntity<?> response = authenticationController.signUp(request);
-
-        assertEquals(HttpStatus.CREATED, response.getStatusCode());
-        assertEquals(mockVerification, response.getBody());
+        mockMvc.perform(post("/api/auth/v1/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(json(new CredentialsRequest("wrong@example.com", "wrong", "USER"))))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.error").value("Invalid credentials"));
     }
 
     @Test
-    void testSignUpUserAlreadyExists() throws UserAlreadyExistsException {
-        CredentialsRequest request = new CredentialsRequest("existing@example.com", "password", "USER");
+    void login_MissingEmail_ReturnsBadRequestFromValidation() throws Exception {
+        mockMvc.perform(post("/api/auth/v1/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(json(new CredentialsRequest("", "password", "USER"))))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message").value(org.hamcrest.Matchers.containsString("email")));
+    }
 
-        when(userService.signUp(request))
+    @Test
+    void login_MalformedEmail_ReturnsBadRequestFromValidation() throws Exception {
+        mockMvc.perform(post("/api/auth/v1/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(json(new CredentialsRequest("not-an-email", "password", "USER"))))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void signUp_NewUser_ReturnsCreated() throws Exception {
+        Verification mockVerification = new Verification();
+        when(userService.signUp(org.mockito.ArgumentMatchers.any())).thenReturn(mockVerification);
+
+        mockMvc.perform(post("/api/auth/v1/sign-up")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(json(new CredentialsRequest("new@example.com", "password", "USER"))))
+                .andExpect(status().isCreated());
+    }
+
+    @Test
+    void signUp_UserAlreadyExists_ReturnsConflict() throws Exception {
+        when(userService.signUp(org.mockito.ArgumentMatchers.any()))
                 .thenThrow(new UserAlreadyExistsException("User already exists"));
 
-        ResponseEntity<?> response = authenticationController.signUp(request);
+        mockMvc.perform(post("/api/auth/v1/sign-up")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(json(new CredentialsRequest("existing@example.com", "password", "USER"))))
+                .andExpect(status().isConflict())
+                .andExpect(content().string("User already exists"));
+    }
 
-        assertEquals(HttpStatus.CONFLICT, response.getStatusCode());
-        assertEquals("User already exists", response.getBody());
+    @Test
+    void signUp_BlankPassword_ReturnsBadRequestFromValidation() throws Exception {
+        mockMvc.perform(post("/api/auth/v1/sign-up")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(json(new CredentialsRequest("new@example.com", "", "USER"))))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void updatePassword_Valid_ReturnsSuccessMessage() throws Exception {
+        mockMvc.perform(put("/api/auth/v1/password")
+                        .requestAttr("userEmail", "test@example.com")
+                        .requestAttr("userRole", "ROLE_USER")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(json(updatePasswordDTO("oldpass123", "newpass123"))))
+                .andExpect(status().isOk())
+                .andExpect(content().string("password updated successfully"));
+    }
+
+    @Test
+    void updatePassword_NewPasswordTooShort_ReturnsBadRequestFromValidation() throws Exception {
+        mockMvc.perform(put("/api/auth/v1/password")
+                        .requestAttr("userEmail", "test@example.com")
+                        .requestAttr("userRole", "ROLE_USER")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(json(updatePasswordDTO("oldpass123", "short"))))
+                .andExpect(status().isBadRequest());
     }
 }

@@ -1,16 +1,17 @@
-import {FiArrowRight, FiCheck, FiLogOut, FiUsers} from 'react-icons/fi';
+import { ArrowRight, Check, LogOut, Users } from 'lucide-react';
 import './style/PartySessionHandler.css';
-import {useContext, useEffect, useRef, useState} from "react";
-import {useLocation, useNavigate} from "react-router-dom";
-import {ToastContext} from "../../context/ToastContext.jsx";
-import {MAX_LENGTHS, ROLES} from "../../constants/constants.jsx";
-import {joinRoomApi, leaveRoomApi} from "../../api/watch-together-api.jsx";
+import { useContext, useEffect, useRef, useState } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
+import { ToastContext } from "../../context/ToastContext.jsx";
+import { ROLES } from "../../constants/constants.jsx";
 import { Tooltip } from 'react-tooltip';
 import { WatchPartyContext } from "../../context/WatchPartyContext.jsx";
-import Swal from "sweetalert2";
+import Input from '../ui/Input.jsx';
+import IconButton from '../ui/IconButton.jsx';
+import ConfirmDialog from '../ui/ConfirmDialog.jsx';
 
 export default function PartySessionHandler(){
-    const { activeParty, activePartyId, role, joinParty, leaveOrEndParty} = useContext(WatchPartyContext);
+    const { activePartyId, role, joinParty, leaveOrEndParty} = useContext(WatchPartyContext);
     const { showToast } = useContext(ToastContext)
 
     const containerRef = useRef(null);
@@ -19,6 +20,7 @@ export default function PartySessionHandler(){
 
     const [isOpen, setIsOpen] = useState(false);
     const [code, setCode] = useState('');
+    const [confirmEndOpen, setConfirmEndOpen] = useState(false);
     const isHost = role === ROLES.WATCH_PARTY_HOST;
     const isInsideActiveRoom = location.pathname === `/watch-party/${activePartyId}`;
 
@@ -53,25 +55,20 @@ export default function PartySessionHandler(){
         navigate(`/watch-party/${code}`);
     };
 
-    const handleQuickLeave = async (e) => {
+    const handleQuickLeave = (e) => {
         e.stopPropagation();
 
         if (isHost) {
-
-            const confirmEnd = await Swal.fire({
-                title: "Confirm Ending Party?",
-                text: `Ending the party will close it for everyone. Continue?`,
-                icon: "question",
-                showCancelButton: true,
-                confirmButtonText: "Yes, end",
-                cancelButtonText: "Cancel",
-                confirmButtonColor: '#36A1F3',
-            });
-
-            if (!confirmEnd.isConfirmed) return;
+            setConfirmEndOpen(true);
+            return;
         }
 
-        const res = await leaveOrEndParty();
+        finishLeave();
+    };
+
+    const finishLeave = async () => {
+        setConfirmEndOpen(false);
+        await leaveOrEndParty();
 
         showToast("Watch Party", isHost ? "Party Ended" : "You left the party", "info");
 
@@ -91,7 +88,7 @@ export default function PartySessionHandler(){
                     data-tooltip-id="handler-tip"
                     data-tooltip-content="Join a watch party"
                 >
-                    <FiUsers size={22} />
+                    <Users size={22} />
                     <span className="join-text">Join Party</span>
                 </button>
             ) : isInsideActiveRoom ? (
@@ -102,7 +99,7 @@ export default function PartySessionHandler(){
                     data-tooltip-id="handler-tip"
                     data-tooltip-content={isHost ? "End Party" : "Leave Party"}
                 >
-                    <FiLogOut size={22} />
+                    <LogOut size={22} />
                     <span>{isHost ? "End Party" : "Leave Party"}</span>
                 </button>
             ) : (
@@ -114,17 +111,18 @@ export default function PartySessionHandler(){
                         data-tooltip-id="handler-tip"
                         data-tooltip-content="Back to the party"
                     >
-                        <FiArrowRight size={22} />
+                        <ArrowRight size={22} />
                         <span>Go To Party</span>
                     </button>
-                    <button
-                        className="handler-btn leave-part"
+                    <IconButton
+                        variant="ghost"
+                        label={isHost ? "End Party" : "Leave Party"}
                         onClick={handleQuickLeave}
                         data-tooltip-id="handler-tip"
                         data-tooltip-content={isHost ? "End Party" : "Leave Party"}
                     >
-                        <FiLogOut size={18} />
-                    </button>
+                        <LogOut size={18} />
+                    </IconButton>
                 </div>
             )}
 
@@ -133,16 +131,28 @@ export default function PartySessionHandler(){
             {isOpen && (
                 <div className="join-popover">
                     <div className="popover-arrow"></div>
-                    <input
-                        type="text"
+                    <Input
                         placeholder="Enter Room Code"
                         value={code}
                         onChange={(e) => setCode(e.target.value)}
                         autoFocus
+                        className="join-popover__field"
                     />
-                    <button className="confirm-icon-btn" onClick={handleJoin}><FiCheck /></button>
+                    <IconButton variant="solid" label="Join party" onClick={handleJoin}>
+                        <Check size={18} />
+                    </IconButton>
                 </div>
             )}
+
+            <ConfirmDialog
+                open={confirmEndOpen}
+                onClose={() => setConfirmEndOpen(false)}
+                onConfirm={finishLeave}
+                title="Confirm ending party?"
+                message="Ending the party will close it for everyone. Continue?"
+                confirmLabel="Yes, end"
+                danger
+            />
         </div>
     );
 }

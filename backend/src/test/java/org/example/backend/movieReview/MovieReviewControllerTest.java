@@ -1,116 +1,225 @@
 package org.example.backend.movieReview;
 
-import jakarta.servlet.http.HttpServletRequest;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import org.example.backend.errorHandler.ResourceNotFoundException;
+import org.example.backend.user.PrivateProfileException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.*;
-import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.data.domain.*;
-import org.springframework.http.ResponseEntity;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.jackson2.autoconfigure.Jackson2AutoConfiguration;
+import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
+import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
+import org.springframework.context.annotation.Import;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.test.web.servlet.MockMvc;
 
 import java.util.List;
 
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.*;
+import static org.hamcrest.Matchers.is;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-@ExtendWith(MockitoExtension.class)
+/**
+ * Refactored from bare @InjectMocks to @WebMvcTest so HTTP dispatch, @Valid constraints,
+ * content-type negotiation, and GlobalExceptionHandler mappings are all exercised
+ * (not just the controller method body in isolation).
+ *
+ * <p>Security filters are disabled (addFilters = false) since authorization is covered
+ * separately. The userId request attribute that GatewayAuthenticationFilter would
+ * normally set is supplied directly on each request instead.
+ */
+@Import(Jackson2AutoConfiguration.class)
+@WebMvcTest(MovieReviewController.class)
+@AutoConfigureMockMvc(addFilters = false)
 @ActiveProfiles("test")
 class MovieReviewControllerTest {
 
-    @Mock
+    @Autowired
+    private MockMvc mockMvc;
+
+    @Autowired
+    private ObjectMapper objectMapper;
+
+    @MockitoBean
     private MovieReviewService movieReviewService;
 
-    @Mock
-    private HttpServletRequest request;
+    private static final Long USER_ID = 1L;
+    private static final Long MOVIE_ID = 100L;
 
-    @InjectMocks
-    private MovieReviewController movieReviewController;
-
-    private Long userId;
-    private MovieReviewDTO dto;
-    private MovieReviewID reviewID;
-    private MovieReview review;
+    private MovieReviewDTO validReviewDto;
+    private MovieReviewDetailsDTO reviewDetails;
 
     @BeforeEach
-    void setup() {
-        userId = 1L;
+    void setUp() {
+        validReviewDto = new MovieReviewDTO(MOVIE_ID, "A great film!", 8);
 
-        dto = new MovieReviewDTO();
-        dto.setMovieId(100L);
-        dto.setRating(5);
-        dto.setComment("Amazing!");
-
-        reviewID = new MovieReviewID(dto.getMovieId(), userId);
-
-        review = MovieReview.builder()
-                .movieReviewID(reviewID)
-                .rating(dto.getRating())
-                .comment(dto.getComment())
+        reviewDetails = MovieReviewDetailsDTO.builder()
+                .movieReviewID(new MovieReviewID(MOVIE_ID, USER_ID))
+                .movie("The Dark Knight")
+                .rating(8)
+                .comment("A great film!")
                 .build();
     }
 
-    // -------------------------------------------------------------------------
-    // TEST: addOrUpdateReview → Movie not found
-    // -------------------------------------------------------------------------
+    // ─────────────────────────────────────────────────────────────────────────
+    // POST /api/movie-review/v1 — addOrUpdateReview
+    // ─────────────────────────────────────────────────────────────────────────
+
     @Test
-    void testAddOrUpdateReviewMovieNotFound() {
-        when(request.getAttribute("userId")).thenReturn(userId);
-        when(movieReviewService.addOrUpdateReview(userId, dto))
-                .thenThrow(new RuntimeException("Movie not found"));
+    void addOrUpdateReview_ValidPayload_Returns200WithBody() throws Exception {
+        when(movieReviewService.addOrUpdateReview(eq(USER_ID), any(MovieReviewDTO.class)))
+                .thenReturn(reviewDetails);
 
-        RuntimeException ex = assertThrows(RuntimeException.class,
-                () -> movieReviewController.addOrUpdateReview(request, dto));
-
-        assertEquals("Movie not found", ex.getMessage());
+        mockMvc.perform(post("/api/movie-review/v1")
+                        .requestAttr("userId", USER_ID)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(validReviewDto)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.rating", is(8)))
+                .andExpect(jsonPath("$.comment", is("A great film!")));
     }
 
-    // -------------------------------------------------------------------------
-    // TEST: addOrUpdateReview → User not found
-    // -------------------------------------------------------------------------
     @Test
-    void testAddOrUpdateReviewUserNotFound() {
-        when(request.getAttribute("userId")).thenReturn(userId);
-        when(movieReviewService.addOrUpdateReview(userId, dto))
-                .thenThrow(new RuntimeException("User not found"));
+    void addOrUpdateReview_NullMovieId_ReturnsBadRequestFromValidation() throws Exception {
+        MovieReviewDTO dto = new MovieReviewDTO(null, "comment", 5);
 
-        RuntimeException ex = assertThrows(RuntimeException.class,
-                () -> movieReviewController.addOrUpdateReview(request, dto));
-
-        assertEquals("User not found", ex.getMessage());
+        mockMvc.perform(post("/api/movie-review/v1")
+                        .requestAttr("userId", USER_ID)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(dto)))
+                .andExpect(status().isBadRequest());
     }
 
-    // -------------------------------------------------------------------------
-    // TEST: addOrUpdateReview → Success
-    // -------------------------------------------------------------------------
     @Test
-    void testAddOrUpdateReviewSuccess() {
-        when(request.getAttribute("userId")).thenReturn(userId);
-        when(movieReviewService.addOrUpdateReview(userId, dto)).thenReturn(review);
+    void addOrUpdateReview_RatingBelowMin_ReturnsBadRequestFromValidation() throws Exception {
+        MovieReviewDTO dto = new MovieReviewDTO(MOVIE_ID, "comment", 0); // min is 1
 
-        ResponseEntity<MovieReview> response =
-                movieReviewController.addOrUpdateReview(request, dto);
-
-        assertEquals(200, response.getStatusCodeValue());
-        assertEquals(review, response.getBody());
+        mockMvc.perform(post("/api/movie-review/v1")
+                        .requestAttr("userId", USER_ID)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(dto)))
+                .andExpect(status().isBadRequest());
     }
 
-    // -------------------------------------------------------------------------
-    // TEST: getMovieReviews → Success
-    // -------------------------------------------------------------------------
     @Test
-    void testGetMovieReviewsSuccess() {
-        Pageable pageable = PageRequest.of(0, 10);
-        Page<MovieReview> page = new PageImpl<>(List.of(review), pageable, 1);
+    void addOrUpdateReview_RatingAboveMax_ReturnsBadRequestFromValidation() throws Exception {
+        MovieReviewDTO dto = new MovieReviewDTO(MOVIE_ID, "comment", 11); // max is 10
 
-        when(movieReviewService.getMovieReviews(dto.getMovieId(), pageable)).thenReturn(page);
+        mockMvc.perform(post("/api/movie-review/v1")
+                        .requestAttr("userId", USER_ID)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(dto)))
+                .andExpect(status().isBadRequest());
+    }
 
-        ResponseEntity<Page<MovieReview>> response =
-                movieReviewController.getMovieReviews(dto.getMovieId(), pageable);
+    @Test
+    void addOrUpdateReview_MovieNotFound_Returns404() throws Exception {
+        when(movieReviewService.addOrUpdateReview(eq(USER_ID), any(MovieReviewDTO.class)))
+                .thenThrow(new ResourceNotFoundException("Movie not found"));
 
-        assertEquals(200, response.getStatusCodeValue());
-        assertEquals(1, response.getBody().getTotalElements());
-        assertEquals(review, response.getBody().getContent().get(0));
+        mockMvc.perform(post("/api/movie-review/v1")
+                        .requestAttr("userId", USER_ID)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(validReviewDto)))
+                .andExpect(status().isNotFound());
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // DELETE /api/movie-review/v1/{movieId} — deleteReview
+    // ─────────────────────────────────────────────────────────────────────────
+
+    @Test
+    void deleteReview_Success_Returns200() throws Exception {
+        mockMvc.perform(delete("/api/movie-review/v1/{movieId}", MOVIE_ID)
+                        .requestAttr("userId", USER_ID))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    void deleteReview_ReviewNotFound_Returns404() throws Exception {
+        doThrow(new ResourceNotFoundException("Review not found"))
+                .when(movieReviewService).deleteReview(USER_ID, MOVIE_ID);
+
+        mockMvc.perform(delete("/api/movie-review/v1/{movieId}", MOVIE_ID)
+                        .requestAttr("userId", USER_ID))
+                .andExpect(status().isNotFound());
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // GET /api/movie-review/v1/movie/{movieId} — getMovieReviews
+    // ─────────────────────────────────────────────────────────────────────────
+
+    @Test
+    void getMovieReviews_ReturnsPagedResults() throws Exception {
+        Page<MovieReviewDetailsDTO> page = new PageImpl<>(
+                List.of(reviewDetails), PageRequest.of(0, 10), 1);
+        when(movieReviewService.getMovieReviews(eq(MOVIE_ID), any(Pageable.class)))
+                .thenReturn(page);
+
+        mockMvc.perform(get("/api/movie-review/v1/movie/{movieId}", MOVIE_ID))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.totalElements", is(1)))
+                .andExpect(jsonPath("$.content[0].rating", is(8)));
+    }
+
+    @Test
+    void getMovieReviews_EmptyPage_Returns200WithEmptyContent() throws Exception {
+        Page<MovieReviewDetailsDTO> empty = Page.empty();
+        when(movieReviewService.getMovieReviews(eq(MOVIE_ID), any(Pageable.class)))
+                .thenReturn(empty);
+
+        mockMvc.perform(get("/api/movie-review/v1/movie/{movieId}", MOVIE_ID))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.totalElements", is(0)));
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // GET /api/movie-review/v1/my-reviews — getMyMovieReviews
+    // ─────────────────────────────────────────────────────────────────────────
+
+    @Test
+    void getMyMovieReviews_Returns200WithPagedResults() throws Exception {
+        Page<MovieReviewDetailsDTO> page = new PageImpl<>(List.of(reviewDetails));
+        when(movieReviewService.getMyMovieReviews(eq(USER_ID), any(Pageable.class)))
+                .thenReturn(page);
+
+        mockMvc.perform(get("/api/movie-review/v1/my-reviews")
+                        .requestAttr("userId", USER_ID))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content[0].rating", is(8)));
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // GET /api/movie-review/v1/user/{userId} — getOtherUserMovieReviews
+    // ─────────────────────────────────────────────────────────────────────────
+
+    @Test
+    void getOtherUserMovieReviews_PublicProfile_Returns200() throws Exception {
+        Page<MovieReviewDetailsDTO> page = new PageImpl<>(List.of(reviewDetails));
+        when(movieReviewService.getOtherUserMovieReviews(eq(2L), any(Pageable.class)))
+                .thenReturn(page);
+
+        mockMvc.perform(get("/api/movie-review/v1/user/{userId}", 2L))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content[0].rating", is(8)));
+    }
+
+    @Test
+    void getOtherUserMovieReviews_PrivateProfile_Returns403() throws Exception {
+        when(movieReviewService.getOtherUserMovieReviews(eq(2L), any(Pageable.class)))
+                .thenThrow(new PrivateProfileException("this profile is private"));
+
+        mockMvc.perform(get("/api/movie-review/v1/user/{userId}", 2L))
+                .andExpect(status().isForbidden());
     }
 }

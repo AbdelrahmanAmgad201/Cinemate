@@ -1,125 +1,118 @@
 package org.example.backend.comment;
 
-import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
-import org.bson.types.ObjectId;
 import org.example.backend.deletion.AccessService;
 import org.example.backend.deletion.CascadeDeletionService;
-import org.example.backend.forum.Forum;
+import org.example.backend.moderation.ContentType;
+import org.example.backend.moderation.ModerationOutboxService;
 import org.example.backend.post.Post;
 import org.example.backend.post.PostRepository;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
-import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
 public class CommentService {
     private final CommentRepository commentRepository;
-    private final MongoTemplate mongoTemplate;
     private final PostRepository postRepository;
     private final CascadeDeletionService deletionService;
     private final AccessService accessService;
+    private final ModerationOutboxService moderationOutboxService;
 
+    // Optimistic-publish moderation. The comment insert + outbox entry commit in one
+    // transaction; the comment-count and reply-count are maintained by DB triggers (no
+    // more manual $inc), and we bump the post's lastActivityAt for the "hot" ranking.
     @Transactional
-    public Comment addComment(Long ownerId,AddCommentDTO addCommentDTO) {
-        ObjectId postId = addCommentDTO.getPostId();
-        canComment(postId);
+    public Comment addComment(Long ownerId, AddCommentDTO addCommentDTO) {
+        Post post = canComment(addCommentDTO.getPostId());
         Comment parentComment = getParentComment(addCommentDTO.getParentId());
-        ObjectId parentId = (parentComment != null ) ? parentComment.getId() : null;
-        Comment comment = defaultCommentBuilder(ownerId,postId,parentId,addCommentDTO);
-        if (parentComment == null)
-                    comment.setDepth(0);
-        else {
-            int depth = parentComment.getDepth() + 1;
-            comment.setDepth(depth);
-            parentComment.setNumberOfReplies(parentComment.getNumberOfReplies() + 1);
-            commentRepository.save(comment);
+        UUID parentId = (parentComment != null) ? parentComment.getId() : null;
+
+        Comment comment = Comment.builder()
+                .ownerId(ownerId)
+                .postId(post.getId())
+                .parentId(parentId)
+                .content(addCommentDTO.getContent())
+                .depth(parentComment == null ? 0 : parentComment.getDepth() + 1)
+                .createdAt(Instant.now())
+                .build();
+
+        Comment saved = commentRepository.save(comment);
+        if (parentId != null) {
+            commentRepository.incrementReplies(parentId);
         }
-        Post post = mongoTemplate.findById(postId, Post.class);
-        post.setCommentCount(post.getCommentCount() + 1);
-        post.updateLastActivityAt(Instant.now());
-        postRepository.save(post);
-        return commentRepository.save(comment);
+        postRepository.touchLastActivity(post.getId(), Instant.now());
+        moderationOutboxService.enqueue(ContentType.COMMENT, saved.getId(),
+                saved.getModerationVersion(), saved.getContent());
+        return saved;
     }
 
     @Transactional
-    public void deleteComment(ObjectId commentId, Long userId) {
-        if (!accessService.canDeleteComment(longToObjectId(userId), commentId)) {
-            throw new AccessDeniedException("User " + " cannot delete this post");
+    public void deleteComment(UUID commentId, Long userId) {
+        if (!accessService.canDeleteComment(userId, commentId)) {
+            throw new AccessDeniedException("User cannot delete this comment");
         }
-        Comment comment = mongoTemplate.findById(commentId, Comment.class);
-        if (comment == null) {
-            throw new IllegalArgumentException("Comment not found with id: " + commentId);
-        }
+        Comment comment = commentRepository.findById(commentId)
+                .orElseThrow(() -> new IllegalArgumentException("Comment not found with id: " + commentId));
         systemDeleteComment(comment);
     }
 
+    @Transactional
     public void systemDeleteComment(Comment comment) {
-        Post post = mongoTemplate.findById(comment.getPostId(), Post.class);
-        post.updateLastActivityAt(Instant.now());
-        postRepository.save(post);
+        postRepository.touchLastActivity(comment.getPostId(), Instant.now());
         deletionService.deleteComment(comment.getId());
+        // The surviving parent loses exactly one direct child (the subtree root); the rest
+        // of the subtree is deleted too, so no other reply-counts matter (REL-07).
+        if (comment.getParentId() != null) {
+            commentRepository.decrementReplies(comment.getParentId());
+        }
     }
 
-    @Transactional
-    public Page<Comment> getPostComments(ObjectId postId, int  page,int size,String sortBy) {
-        Sort sort = getSort(sortBy);
-        Pageable pageable = PageRequest.of(
-                page,
-                size,
-                sort);
-        return commentRepository.findByPostIdAndIsDeletedAndDepth(postId,false,0,pageable);
+    @Transactional(readOnly = true)
+    public Page<CommentView> getPostComments(UUID postId, int page, int size, String sortBy) {
+        Pageable pageable = PageRequest.of(page, size, getSort(sortBy));
+        return commentRepository.findByPostIdAndIsDeletedAndDepth(postId, false, 0, pageable);
     }
 
-    @Transactional
-    public List<Comment> getReplies(ObjectId commentId,String sortBy) {
-        Sort sort = getSort(sortBy);
-        return commentRepository.findByParentIdAndIsDeleted(commentId,false,sort);
+    // Cap on direct replies returned for one comment (API-NEW-01).
+    private static final int MAX_REPLIES = 200;
+
+    @Transactional(readOnly = true)
+    public List<CommentView> getReplies(UUID commentId, String sortBy) {
+        Pageable pageable = PageRequest.of(0, MAX_REPLIES, getSort(sortBy));
+        return commentRepository.findByParentIdAndIsDeleted(commentId, false, pageable);
     }
 
-    private Sort  getSort(String  sortBy) {
+    private Sort getSort(String sortBy) {
         return switch (sortBy) {
             case "new" -> Sort.by(Sort.Direction.DESC, "createdAt");
             case "top", "score" -> Sort.by(Sort.Direction.DESC, "score");
             default -> Sort.by(Sort.Direction.DESC, "score");
         };
     }
-    private void canComment(ObjectId postId) {
-        Post post = mongoTemplate.findById(postId, Post.class);
-        if (post == null) {
-            throw new IllegalArgumentException("Post not found with id: " + postId);
-        }
-        if (post.getIsDeleted()) {
+
+    private Post canComment(UUID postId) {
+        Post post = postRepository.findById(postId)
+                .orElseThrow(() -> new IllegalArgumentException("Post not found with id: " + postId));
+        if (Boolean.TRUE.equals(post.getIsDeleted())) {
             throw new IllegalStateException("this post is deleted");
         }
+        return post;
     }
 
-    private Comment defaultCommentBuilder(Long ownerId,ObjectId postId, ObjectId parentId,AddCommentDTO addCommentDTO) {
-        Comment comment = Comment.builder()
-                .ownerId(longToObjectId(ownerId))
-                .postId(postId)
-                .parentId(parentId)
-                .content(addCommentDTO.getContent())
-                .createdAt(Instant.now())
-                .build();
-        return comment;
-    }
-
-    private Comment getParentComment(ObjectId parentId) {
-        if (parentId == null )
+    private Comment getParentComment(UUID parentId) {
+        if (parentId == null) {
             return null;
-        return mongoTemplate.findById(parentId, Comment.class);
-    }
-
-    private ObjectId longToObjectId(Long value) {
-        return new ObjectId(String.format("%024x", value));
+        }
+        return commentRepository.findById(parentId).orElse(null);
     }
 }

@@ -28,7 +28,6 @@ import FollowersPage from "../pages/user/FollowersPage.jsx";
 import FollowingPage from "../pages/user/FollowingPage.jsx";
 
 import NotFoundPage from "../components/NotFoundPage.jsx";
-import TestSandBox from "../pages/TestSandBox.jsx";
 
 import ReviewMovies from "../pages/admin/ReviewMovies.jsx";
 import SiteAnalytics from "../pages/admin/SiteAnalytics.jsx";
@@ -98,8 +97,6 @@ export default function AppRoutes() {
                 <Route path={PATHS.PROFILE_COMPLETION} element={<ProfileCompletion />} />
             </Route>
 
-            {/*Added here for testing*/}
-            {/*<Route path="/test-sand-box" element={<TestSandBox />} />*/}
 
             <Route element={<UserMainLayout />}>
                 <Route path={PATHS.FORUM.PAGE()} element={<Forum/>} />

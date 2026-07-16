@@ -1,152 +1,107 @@
-import { React, useEffect, useState } from 'react';
+import { useEffect, useState, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
-import NavBar from '../../components/NavBar';
 import Carousel from '../../components/Carousel.jsx';
 import MoviesList from '../../components/MoviesList.jsx';
 import Footer from '../../components/Footer.jsx';
-import p1 from '../../assets/p1.jpg';
-import p2 from '../../assets/p2.jpg';
-import action from '../../assets/action.jpg';
-import MoviesDetailsApi from '../../api/movies-details-api.jsx';
-import {PATHS} from "../../constants/constants.jsx";
+import moviesDetailsApi from '../../api/movies-details-api.js';
+import { PATHS } from '../../constants/constants.jsx';
+import { GENRES } from '../../constants/genres.jsx';
+import { ToastContext } from '../../context/ToastContext.jsx';
+import GenreTile from '../../components/ui/GenreTile.jsx';
+import './style/Browse.css';
+
+const PAGE_SIZE = 6;
 
 export default function Browse() {
-
     const [newReleases, setNewReleases] = useState([]);
     const [topRated, setTopRated] = useState([]);
-    const [genres, setGenres] = useState([]);
     const [loading, setLoading] = useState(true);
 
     const [newReleasesPage, setNewReleasesPage] = useState(0);
     const [topRatedPage, setTopRatedPage] = useState(0);
+    const [newReleasesTotalPages, setNewReleasesTotalPages] = useState(0);
+    const [topRatedTotalPages, setTopRatedTotalPages] = useState(0);
 
-    
     const navigate = useNavigate();
+    const { showToast } = useContext(ToastContext);
 
     useEffect(() => {
+        let mounted = true;
+
+        async function fetchMovies() {
+            setLoading(true);
+            try {
+                const [newReleasesResponse, topRatedResponse] = await Promise.all([
+                    moviesDetailsApi({ name: null, genre: null, sortBy: 'releaseDate', sortDirection: 'desc', page: newReleasesPage, pageSize: PAGE_SIZE }),
+                    moviesDetailsApi({ name: null, genre: null, sortBy: 'rating', sortDirection: 'desc', page: topRatedPage, pageSize: PAGE_SIZE }),
+                ]);
+                if (!mounted) return;
+
+                if (newReleasesResponse.success) {
+                    setNewReleases(newReleasesResponse.movies.map((movie) => ({
+                        id: movie.movieID, title: movie.name, poster: movie.thumbnailUrl, duration: movie.duration, rating: movie.averageRating,
+                    })));
+                    setNewReleasesTotalPages(newReleasesResponse.totalPages || 0);
+                } else {
+                    showToast('Failed to load new releases', newReleasesResponse.message, 'error');
+                }
+
+                if (topRatedResponse.success) {
+                    setTopRated(topRatedResponse.movies.map((movie) => ({
+                        id: movie.movieID, title: movie.name, poster: movie.thumbnailUrl, duration: movie.duration, rating: movie.averageRating,
+                    })));
+                    setTopRatedTotalPages(topRatedResponse.totalPages || 0);
+                } else {
+                    showToast('Failed to load top rated movies', topRatedResponse.message, 'error');
+                }
+            } finally {
+                if (mounted) setLoading(false);
+            }
+        }
+
         fetchMovies();
+        return () => { mounted = false; };
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [newReleasesPage, topRatedPage]);
 
-    const fetchMovies = async () => {
-       try{
-        const newReleasesRequest = {
-            name: null,
-            genre: null,
-            sortBy: "releaseDate",
-            sortDirection: "desc",
-            page: newReleasesPage,
-            pageSize: 6
-        };
-
-        const topRatedRequest = {
-            name: null,
-            genre: null,
-            sortBy: "rating",
-            sortDirection: "desc",
-            page: topRatedPage,
-            pageSize: 6
-        };
-
-        const [newReleasesResponse, topRatedResponse] = await Promise.all([
-                MoviesDetailsApi(newReleasesRequest),
-                MoviesDetailsApi(topRatedRequest)
-            ]);
-        console.log("Response from MoviesDetailsApi:", newReleasesResponse, ",", topRatedResponse);
-        if (newReleasesResponse.success) {
-            const mappedNewReleases = newReleasesResponse.movies.map(movie => ({
-                id: movie.movieID,
-                title: movie.name,
-                poster: movie.thumbnailUrl,
-                duration: movie.duration,
-                rating: movie.averageRating || "N/A"
-            }));
-            setNewReleases(mappedNewReleases);
-        }
-
-        if (topRatedResponse.success) {
-            const mappedTopRated = topRatedResponse.movies.map(movie => ({
-                id: movie.movieID,
-                title: movie.name,
-                poster: movie.thumbnailUrl,
-                duration: movie.duration,
-                rating: movie.averageRating || "N/A"
-            }));
-            setTopRated(mappedTopRated);
-        } else {
-            console.log("Error fetching movies in else loop:", response.message);
-        }
-        setGenres([
-            { title: "Mystery", poster: p1 },
-            { title: "Comedy", poster: p2 },
-            { title: "Animation", poster: p1 },
-            { title: "Documentary", poster: p2 },
-            { title: "Romance", poster: p1 },
-            { title: "Thriller", poster: p2 },
-            { title: "Sci-Fi", poster: p1 },
-            { title: "Horror", poster: p2 },
-            { title: "Drama", poster: p1 },
-            { title: "Action", poster: action }
-        ]);
-        setLoading(false);
-       }
-        catch(err){
-        console.log("Error fetching movies:", err);
-        setLoading(false);
-        }
-    }
-
-    const newReleasesTemp = [
-        {
-            title: "The Tuesday Murder Club",
-            poster: p1,
-            duration: "1h 13min",
-            rating: "9.7"
-        },
-        {
-            title: "Spirited Away",
-            poster: p2,
-            duration: "1h 13min",
-            rating: "9.7"
-        },
-        {
-            title: "The Tuesday Murder Club",
-            poster: p1,
-            duration: "1h 13min",
-            rating: "9.7"
-        },
-        {
-            title: "Spirited Away",
-            poster: p2,
-            duration: "1h 13min",
-            rating: "9.7"
-        },
-        {
-            title: "The Tuesday Murder Club",
-            poster: p1,
-            duration: "1h 13min",
-            rating: "9.7"
-        },
-        {
-            title: "Spirited Away",
-            poster: p2,
-            duration: "1h 13min",
-            rating: "9.7"
-        }
-    ];
-
-    
-
     return (
-        <div>
-            {/*<NavBar />*/}
-            <main style={{flex: "1"}}>
-                <div>
-                    <Carousel />
-                </div>
-                <div style={{display: "flex", flexDirection: "column", gap: "60px"}}>
-                    <MoviesList list={newReleases} name={"New Releases"} page={newReleasesPage} setPage={setNewReleasesPage} onClick={(id) => navigate(PATHS.MOVIE.DETAILS(id))} />
-                    <MoviesList list={topRated} name={"Top Rated"} page={topRatedPage} setPage={setTopRatedPage} onClick={(id) => navigate(PATHS.MOVIE.DETAILS(id))} />
-                    <MoviesList list={genres} name={"Genres"} onClick={(genre) => navigate(`/genre/${genre}`)} />
+        <div className="browse-page">
+            <main className="browse-page__main">
+                <Carousel />
+
+                <div className="browse-page__rows">
+                    <MoviesList
+                        list={newReleases}
+                        name="New Releases"
+                        loading={loading}
+                        page={newReleasesPage}
+                        setPage={setNewReleasesPage}
+                        totalPages={newReleasesTotalPages}
+                        onClick={(id) => navigate(PATHS.MOVIE.DETAILS(id))}
+                    />
+                    <MoviesList
+                        list={topRated}
+                        name="Top Rated"
+                        loading={loading}
+                        page={topRatedPage}
+                        setPage={setTopRatedPage}
+                        totalPages={topRatedTotalPages}
+                        onClick={(id) => navigate(PATHS.MOVIE.DETAILS(id))}
+                    />
+
+                    <section className="movies-list">
+                        <h2 className="movies-list__title">Browse by genre</h2>
+                        <div className="browse-page__genre-grid">
+                            {GENRES.map((genre) => (
+                                <GenreTile
+                                    key={genre.key}
+                                    label={genre.label}
+                                    color={genre.color}
+                                    onClick={() => navigate(PATHS.MOVIE.GENRE(genre.key))}
+                                />
+                            ))}
+                        </div>
+                    </section>
                 </div>
             </main>
             <Footer />

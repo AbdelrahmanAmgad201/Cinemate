@@ -4,21 +4,32 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.example.watchparty.dtos.MovieMetadata;
 import org.example.watchparty.dtos.UserDataDTO;
 import org.example.watchparty.dtos.WatchParty;
+import org.example.watchparty.dtos.WatchPartyCreatedResponse;
 import org.example.watchparty.dtos.WatchPartyResponse;
+import org.example.watchparty.movie.MovieClient;
 import org.example.watchparty.redis.RedisService;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
-import org.springframework.util.StringUtils;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
+/**
+ * Owns the entire watch-party session domain (Stage 1): lifecycle, membership, host
+ * authority and status all live here, backed by Redis. The one datum it doesn't own — the
+ * movie's playable URL — is fetched read-only from the backend catalog via {@link MovieClient}.
+ * There is no longer a backend control-plane copy to keep in sync.
+ */
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -27,89 +38,127 @@ public class WatchPartyService {
     private final RedisService redisService;
     private final ObjectMapper objectMapper;
     private final PartyEventService partyEventService;
+    private final MovieClient movieClient;
 
     private static final String PARTY_PREFIX = "party:";
     private static final String MEMBERS_SUFFIX = ":members";
     private static final DateTimeFormatter FORMATTER = DateTimeFormatter.ISO_LOCAL_DATE_TIME;
     private static final long PARTY_TTL_HOURS = 10;
 
-    /**
-     * Creates a new watch party with validation and proper initialization
-     */
-    public WatchParty createParty(WatchParty request) {
-        validateCreateRequest(request);
+    // ==================== Public API (reached via the gateway) ====================
 
-        String partyId = StringUtils.hasText(request.getPartyId())
-                ? request.getPartyId()
-                : UUID.randomUUID().toString();
+    /**
+     * Creates a new party for {@code movieId}, hosted by the authenticated caller. The
+     * movie's playable URL is fetched from the backend catalog; everything else — including
+     * the party id — is owned and generated here.
+     */
+    public WatchPartyCreatedResponse create(Long hostId, String hostName, Long movieId) {
+        if (movieId == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Movie ID is required");
+        }
+        MovieMetadata movie = movieClient.getMovie(movieId); // validates existence + playable URL
+
+        String partyId = UUID.randomUUID().toString();
+        LocalDateTime createdAt = LocalDateTime.now();
 
         WatchParty party = WatchParty.builder()
                 .partyId(partyId)
-                .movieId(request.getMovieId())
-                .movieUrl(request.getMovieUrl())
-                .hostId(request.getHostId())
-                .hostName(request.getHostName())
+                .movieId(movieId)
+                .movieUrl(movie.getMovieUrl())
+                .hostId(hostId)
+                .hostName(hostName)
                 .currentParticipants(1)
                 .status("ACTIVE")
-                .createdAt(LocalDateTime.now())
+                .createdAt(createdAt)
                 .build();
 
         String partyKey = PARTY_PREFIX + partyId;
         savePartyToRedis(party, partyKey);
 
         String membersKey = partyKey + MEMBERS_SUFFIX;
-        redisService.addToSet(membersKey, createMemberKey(party.getHostId()));
+        redisService.addToSet(membersKey, createMemberKey(hostId));
         redisService.expire(membersKey, PARTY_TTL_HOURS, TimeUnit.HOURS);
 
-        // Store host user data
-        String hostDataKey = partyKey + ":user:" + party.getHostId();
-        try {
-            UserDataDTO hostData = new UserDataDTO();
-            hostData.setUserId(party.getHostId());
-            hostData.setUserName(party.getHostName());
-            redisService.setValue(hostDataKey, objectMapper.writeValueAsString(hostData),
-                    PARTY_TTL_HOURS, TimeUnit.HOURS);
-        } catch (JsonProcessingException e) {
-            log.error("Failed to serialize host data", e);
-        }
+        storeUserData(partyKey, hostId, hostName);
 
-        log.info("Created watch party: {} for movie: {} by host: {} ({})",
-                partyId, party.getMovieId(), party.getHostName(), party.getHostId());
+        log.info("Created watch party {} for movie {} by host {} ({})",
+                partyId, movieId, hostName, hostId);
 
-        return party;
+        return WatchPartyCreatedResponse.builder()
+                .partyId(partyId)
+                .movieId(movieId)
+                .status("ACTIVE")
+                .createdAt(createdAt)
+                .userId(hostId)
+                .build();
     }
+
+    /** Party details with members; 404 if it doesn't exist. */
+    public WatchPartyResponse get(String partyId) {
+        WatchPartyResponse response = getPartyWithMembers(partyId);
+        if (response == null) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Watch party not found: " + partyId);
+        }
+        return response;
+    }
+
+    /** The authenticated caller joins {@code partyId}; returns the updated details. */
+    public WatchPartyResponse join(Long userId, String userName, String partyId) {
+        UserDataDTO user = new UserDataDTO();
+        user.setUserId(userId);
+        user.setUserName(userName);
+        joinParty(partyId, user);
+        return get(partyId);
+    }
+
+    /**
+     * The caller leaves. If they're the host, the party ends for everyone (mirrors the
+     * previous behaviour, but the authority now lives here rather than in the backend).
+     */
+    public void leave(Long userId, String partyId) {
+        Long hostId = requirePartyHost(partyId);
+        if (hostId.equals(userId)) {
+            deleteParty(partyId);
+            log.info("Host {} ended party {} by leaving", userId, partyId);
+            return;
+        }
+        leaveParty(partyId, userId);
+    }
+
+    /** Host-only deletion. */
+    public void delete(Long userId, String partyId) {
+        Long hostId = requirePartyHost(partyId);
+        if (!hostId.equals(userId)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Only the host can delete the party");
+        }
+        deleteParty(partyId);
+        log.info("Party {} deleted by host {}", partyId, userId);
+    }
+
+    // ==================== Domain operations ====================
 
     /**
      * Allows a user to join an existing party with duplicate prevention
      */
     public void joinParty(String partyId, UserDataDTO user) {
-        validateJoinRequest(partyId, user);
-
         if (!partyExists(partyId)) {
-            throw new IllegalArgumentException("Party does not exist: " + partyId);
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Watch party not found: " + partyId);
         }
 
         String partyKey = PARTY_PREFIX + partyId;
         String membersKey = partyKey + MEMBERS_SUFFIX;
         String memberKey = createMemberKey(user.getUserId());
 
-        if (Boolean.TRUE.equals(redisService.isMemberOfSet(membersKey, memberKey))) {
+        // Atomic check-membership + add + increment (REL-NEW-01) — see RedisService
+        // for why doing these as three separate calls can overcount participants.
+        boolean joined = redisService.addToSetAndIncrementHash(
+                membersKey, partyKey, "currentParticipants", memberKey);
+        if (!joined) {
             log.info("User {} ({}) already in party {}", user.getUserName(), user.getUserId(), partyId);
             return;
         }
 
-        redisService.addToSet(membersKey, memberKey);
-
-        String userDataKey = partyKey + ":user:" + user.getUserId();
-        try {
-            redisService.setValue(userDataKey, objectMapper.writeValueAsString(user),
-                    PARTY_TTL_HOURS, TimeUnit.HOURS);
-        } catch (JsonProcessingException e) {
-            log.error("Failed to serialize user data", e);
-            throw new RuntimeException("Failed to join party", e);
-        }
-
-        incrementParticipantCount(partyKey);
+        storeUserData(partyKey, user.getUserId(), user.getUserName());
         redisService.expire(membersKey, PARTY_TTL_HOURS, TimeUnit.HOURS);
 
         // Notify all members about the new user
@@ -123,42 +172,40 @@ public class WatchPartyService {
      */
     public void leaveParty(String partyId, Long userId) {
         if (!partyExists(partyId)) {
-            throw new IllegalArgumentException("Party does not exist: " + partyId);
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Watch party not found: " + partyId);
         }
 
         String partyKey = PARTY_PREFIX + partyId;
         String membersKey = partyKey + MEMBERS_SUFFIX;
         String memberKey = createMemberKey(userId);
+        String userDataKey = partyKey + ":user:" + userId;
 
-        if (Boolean.FALSE.equals(redisService.isMemberOfSet(membersKey, memberKey))) {
+        // Read the name before removal, for the "user left" notification.
+        String userName = getUserName(userDataKey);
+
+        // Atomic check-membership + remove + decrement (REL-NEW-03), mirroring the join
+        // path — see RedisService for why separate calls can drift the count vs the member
+        // set and wrongly tear down (or strand) a party.
+        long newCount = redisService.removeFromSetAndDecrementHash(
+                membersKey, partyKey, "currentParticipants", memberKey);
+        if (newCount < 0) {
             log.warn("User {} not in party {}", userId, partyId);
             return;
         }
 
-        // Get user name before removal for notification
-        String userDataKey = partyKey + ":user:" + userId;
-        String userName = getUserName(userDataKey);
-
-        redisService.removeFromSet(membersKey, memberKey);
         redisService.deleteKey(userDataKey);
 
-        Integer newCount = decrementParticipantCount(partyKey);
-
-        // Notify other members that user left
-        if (newCount != null && newCount > 0) {
+        if (newCount > 0) {
             partyEventService.notifyUserLeft(partyId, userId, userName);
-        }
-
-        if (newCount != null && newCount <= 0) {
+            log.info("User {} left party {}", userId, partyId);
+        } else {
             deletePartyInternal(partyId, "No participants remaining");
             log.info("Party {} deleted - no participants remaining", partyId);
-        } else {
-            log.info("User {} left party {}", userId, partyId);
         }
     }
 
     /**
-     * Retrieves party details with all members
+     * Retrieves party details with all members, or {@code null} if the party doesn't exist.
      */
     public WatchPartyResponse getPartyWithMembers(String partyId) {
         if (!partyExists(partyId)) {
@@ -198,6 +245,32 @@ public class WatchPartyService {
 
     // ==================== Helper Methods ====================
 
+    // Confirms the party exists and returns its host id, for authorization decisions.
+    private Long requirePartyHost(String partyId) {
+        if (!partyExists(partyId)) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Watch party not found: " + partyId);
+        }
+        Object hostId = redisService.getHashValue(PARTY_PREFIX + partyId, "hostId");
+        if (hostId == null) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Watch party not found: " + partyId);
+        }
+        return Long.parseLong(hostId.toString());
+    }
+
+    private void storeUserData(String partyKey, Long userId, String userName) {
+        String userDataKey = partyKey + ":user:" + userId;
+        try {
+            UserDataDTO data = new UserDataDTO();
+            data.setUserId(userId);
+            data.setUserName(userName);
+            redisService.setValue(userDataKey, objectMapper.writeValueAsString(data),
+                    PARTY_TTL_HOURS, TimeUnit.HOURS);
+        } catch (JsonProcessingException e) {
+            log.error("Failed to serialize user data for user {}", userId, e);
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Failed to store user data", e);
+        }
+    }
+
     private void deletePartyInternal(String partyId, String reason) {
         // Notify all members before deleting
         partyEventService.notifyPartyDeleted(partyId, reason);
@@ -226,18 +299,25 @@ public class WatchPartyService {
         Set<Object> memberKeys = redisService.getSetMembers(membersKey);
         Set<UserDataDTO> members = new HashSet<>();
 
-        if (memberKeys != null) {
-            for (Object memberKeyObj : memberKeys) {
-                Long userId = extractUserIdFromMemberKey(memberKeyObj.toString());
-                String userDataKey = partyKey + ":user:" + userId;
-                Object userData = redisService.getValue(userDataKey);
+        if (memberKeys == null || memberKeys.isEmpty()) {
+            return members;
+        }
 
+        // Single MGET instead of one GET per member (PERF-01) — a 20-person party
+        // previously meant 20 sequential Redis round-trips just to list who's in it.
+        List<String> userDataKeys = memberKeys.stream()
+                .map(memberKeyObj -> partyKey + ":user:" + extractUserIdFromMemberKey(memberKeyObj.toString()))
+                .toList();
+        List<Object> userDataValues = redisService.multiGet(userDataKeys);
+
+        if (userDataValues != null) {
+            for (Object userData : userDataValues) {
                 if (userData != null) {
                     try {
                         UserDataDTO user = objectMapper.readValue(userData.toString(), UserDataDTO.class);
                         members.add(user);
                     } catch (JsonProcessingException e) {
-                        log.error("Failed to deserialize user data for userId: {}", userId, e);
+                        log.error("Failed to deserialize user data in party {}", partyId, e);
                     }
                 }
             }
@@ -257,53 +337,6 @@ public class WatchPartyService {
             }
         }
         return "Unknown User";
-    }
-
-    private void incrementParticipantCount(String partyKey) {
-        Object currentValue = redisService.getHashValue(partyKey, "currentParticipants");
-        int current = Integer.parseInt(currentValue.toString());
-        redisService.setHashValue(partyKey, "currentParticipants", String.valueOf(current + 1));
-    }
-
-    private Integer decrementParticipantCount(String partyKey) {
-        Object currentValue = redisService.getHashValue(partyKey, "currentParticipants");
-        int current = Integer.parseInt(currentValue.toString());
-        int newValue = current - 1;
-        redisService.setHashValue(partyKey, "currentParticipants", String.valueOf(newValue));
-        return newValue;
-    }
-
-    private void validateCreateRequest(WatchParty request) {
-        if (request == null) {
-            throw new IllegalArgumentException("Party request cannot be null");
-        }
-        if (request.getMovieId() == null) {
-            throw new IllegalArgumentException("Movie ID is required");
-        }
-        if (!StringUtils.hasText(request.getMovieUrl())) {
-            throw new IllegalArgumentException("Movie URL is required");
-        }
-        if (request.getHostId() == null) {
-            throw new IllegalArgumentException("Host ID is required");
-        }
-        if (!StringUtils.hasText(request.getHostName())) {
-            throw new IllegalArgumentException("Host name is required");
-        }
-    }
-
-    private void validateJoinRequest(String partyId, UserDataDTO user) {
-        if (!StringUtils.hasText(partyId)) {
-            throw new IllegalArgumentException("Party ID is required");
-        }
-        if (user == null) {
-            throw new IllegalArgumentException("User data cannot be null");
-        }
-        if (user.getUserId() == null) {
-            throw new IllegalArgumentException("User ID is required");
-        }
-        if (!StringUtils.hasText(user.getUserName())) {
-            throw new IllegalArgumentException("User name is required");
-        }
     }
 
     private boolean partyExists(String partyId) {

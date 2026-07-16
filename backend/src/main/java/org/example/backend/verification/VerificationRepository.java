@@ -9,11 +9,11 @@ import org.springframework.data.repository.query.Param;
 import java.time.LocalDateTime;
 import java.util.Optional;
 
-public interface VerificationRepository extends JpaRepository<Verfication, String> {
-    Optional<Verfication> findByEmail(String email);
+public interface VerificationRepository extends JpaRepository<Verification, String> {
+    Optional<Verification> findByEmail(String email);
 
     @Modifying
     @Transactional
-    @Query("DELETE FROM Verfication v WHERE v.createdAt < :cutoff")
+    @Query("DELETE FROM Verification v WHERE v.createdAt < :cutoff")
     void deleteOlderThan(@Param("cutoff") LocalDateTime cutoff);
 }

@@ -1,7 +1,28 @@
+# IDE / editor
 .idea/
-backend/env
 .vscode/
+
+# Claude Code project instructions
+CLAUDE.md
+.claude/
+
+# Python cache
+Content-moderator/**/__pycache__/
+bench/__pycache__/
+
+# ── Secret env files (never commit these) ────────────────────────────────────
+# Root Compose secrets
 .env
-/model-api/__pycache__
+
+# Backend secrets
+backend/.env.prod
+backend/env
 backend/env.dev
-hate-api/__pycache__/app.cpython-312.pyc
+
+# Frontend local overrides
+frontend/.env.local
+
+# ── .env.example files ARE committed ─────────────────────────────────────────
+# .env.example        → safe to commit (no real secrets)
+# backend/.env.example → safe to commit
+# frontend/.env.example → safe to commit

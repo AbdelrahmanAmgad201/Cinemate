@@ -9,8 +9,7 @@ export default function GuestOnlyRoute({ redirectTo = PATHS.HOME }) {
     const { loading, isAuthenticated, pendingRestored } = useContext(AuthContext);
 
     if (loading || !pendingRestored) {
-
-        return <LoadingFallback />;
+        return <LoadingFallback fullScreen />;
     }
 
     if (isAuthenticated) {

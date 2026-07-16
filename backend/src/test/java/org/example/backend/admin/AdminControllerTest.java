@@ -1,208 +1,199 @@
 package org.example.backend.admin;
 
-import org.example.backend.movie.Movie;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import org.example.backend.common.dto.UpdateNameRequest;
+import org.example.backend.movie.MovieDetailsDTO;
 import org.example.backend.movie.MovieService;
 import org.example.backend.movie.OneMovieOverView;
-import org.example.backend.requests.Requests;
+import org.example.backend.requests.RequestsResponse;
 import org.example.backend.requests.RequestsService;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
+import org.springframework.boot.jackson2.autoconfigure.Jackson2AutoConfiguration;
+import org.springframework.context.annotation.Import;
+import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.http.MediaType;
+import org.springframework.test.web.servlet.MockMvc;
 
-import jakarta.servlet.http.HttpServletRequest;
-import org.mockito.MockitoAnnotations;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
-import org.springframework.test.context.ActiveProfiles;
-
-import java.util.List;
 import java.util.Collections;
+import java.util.List;
 
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-@ActiveProfiles("test")
+/**
+ * Routed through real MockMvc (instead of bare @InjectMocks) so @Valid validation
+ * errors and GlobalExceptionHandler mapping are actually exercised. Security filters
+ * are disabled (addFilters = false) since authorization is covered separately by
+ * SecurityIntegrationTest and GatewayAuthenticationFilterTest — the "userId" request
+ * attribute that GatewayAuthenticationFilter would normally set is supplied directly
+ * on each request instead.
+ */
+@Import(Jackson2AutoConfiguration.class)
+@WebMvcTest(AdminController.class)
+@AutoConfigureMockMvc(addFilters = false)
 class AdminControllerTest {
 
-    @Mock
+    @Autowired
+    private MockMvc mockMvc;
+
+    @Autowired
+    private ObjectMapper objectMapper;
+
+    @MockitoBean
     private AdminService adminService;
 
-    @Mock
+    @MockitoBean
     private RequestsService requestsService;
 
-    @Mock
+    @MockitoBean
     private MovieService movieService;
 
-    @Mock
-    private HttpServletRequest httpServletRequest;
-
-    @InjectMocks
-    private AdminController adminController;
-
-    @BeforeEach
-    void setup() {
-        MockitoAnnotations.openMocks(this);
+    private String json(Object body) throws Exception {
+        return objectMapper.writeValueAsString(body);
     }
 
     @Test
-    void testFindAllAdminRequests() {
-        Long adminId = 1L;
-        Requests req1 = mock(Requests.class);
-        Requests req2 = mock(Requests.class);
-        when(requestsService.getAllAdminRequests(adminId)).thenReturn(List.of(req1, req2));
-        when(httpServletRequest.getAttribute("userId")).thenReturn(adminId);
-        ResponseEntity<List<Requests>> response = adminController.findAllAdminRequests(httpServletRequest);
+    void findAllAdminRequests_ReturnsRequestsForCurrentAdmin() throws Exception {
+        RequestsResponse req = RequestsResponse.builder().id(1L).build();
+        when(requestsService.getAllAdminRequests(1L)).thenReturn(List.of(req));
 
-        assertEquals(2, response.getBody().size());
-        verify(requestsService, times(1)).getAllAdminRequests(adminId);
+        mockMvc.perform(get("/api/admin/v1/my-requests").requestAttr("userId", 1L))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(1));
     }
 
     @Test
-    void testDeclineRequest_Success() {
-        Long requestId = 5L;
-        Long adminId = 1L;
-        when(httpServletRequest.getAttribute("userId")).thenReturn(adminId);
-
-        ResponseEntity<String> response = adminController.declineRequest(httpServletRequest, requestId);
-
-        verify(adminService, times(1)).declineRequest(adminId, requestId);
-        assertTrue(response.getBody().contains("declined successfully"));
-    }
-
-    @Test
-    void testDeclineRequest_Failure() {
-        Long requestId = 5L;
-        Long adminId = 1L;
-        when(httpServletRequest.getAttribute("userId")).thenReturn(adminId);
-        doThrow(new RuntimeException("Movie not found")).when(adminService).declineRequest(adminId, requestId);
-
-        ResponseEntity<String> response = adminController.declineRequest(httpServletRequest, requestId);
-
-        assertEquals(400, response.getStatusCodeValue());
-        assertTrue(response.getBody().contains("Failed to decline request"));
-    }
-
-    @Test
-    void testAcceptRequest_Success() {
-        Long requestId = 10L;
-        Long adminId = 2L;
-        when(httpServletRequest.getAttribute("userId")).thenReturn(adminId);
-
-        ResponseEntity<String> response = adminController.acceptRequest(httpServletRequest, requestId);
-
-        verify(adminService, times(1)).acceptRequests(adminId, requestId);
-        assertTrue(response.getBody().contains("accepted successfully"));
-    }
-
-    @Test
-    void testAcceptRequest_Failure() {
-        Long requestId = 10L;
-        Long adminId = 2L;
-        when(httpServletRequest.getAttribute("userId")).thenReturn(adminId);
-        doThrow(new RuntimeException("Movie not found")).when(adminService).acceptRequests(adminId, requestId);
-
-        ResponseEntity<String> response = adminController.acceptRequest(httpServletRequest, requestId);
-
-        assertEquals(400, response.getStatusCodeValue());
-        assertTrue(response.getBody().contains("Failed to accept request"));
-    }
-
-    @Test
-    void testFindAllPendingRequests() {
-        Requests r1 = mock(Requests.class);
-        Requests r2 = mock(Requests.class);
-        when(requestsService.getAllPendingRequests()).thenReturn(List.of(r1, r2));
-
-        ResponseEntity<List<Requests>> response = adminController.findAllPendingRequests(httpServletRequest);
-
-        assertEquals(2, response.getBody().size());
-        verify(requestsService, times(1)).getAllPendingRequests();
-    }
-
-    @Test
-    void testGetRequestedMovie() {
-        Long requestId = 3L;
-        Movie movie = mock(Movie.class);
-        when(adminService.getRequestedMovie(requestId)).thenReturn(movie);
-
-        ResponseEntity<Movie> response = adminController.getRequestedMovie(httpServletRequest, requestId);
-
-        assertEquals(movie, response.getBody());
-        verify(adminService, times(1)).getRequestedMovie(requestId);
-    }
-
-    @Test
-    void testGetSpecificMovieOverview() {
-        Long movieId = 7L;
-        OneMovieOverView overview = mock(OneMovieOverView.class);
-        when(movieService.getMovieStatsByMovieId(movieId)).thenReturn(overview);
-
-        ResponseEntity<OneMovieOverView> response = adminController.getSpecificMovieOverview(httpServletRequest, movieId);
-
-        assertEquals(overview, response.getBody());
-        verify(movieService, times(1)).getMovieStatsByMovieId(movieId);
-    }
-
-    @Test
-    void testGetSystemOverview() {
-        SystemOverview overview = mock(SystemOverview.class);
-        when(adminService.getSystemOverview()).thenReturn(overview);
-
-        ResponseEntity<SystemOverview> response = adminController.getSystemOverview(httpServletRequest);
-
-        assertEquals(overview, response.getBody());
-        verify(adminService, times(1)).getSystemOverview();
-    }
-
-    @Test
-    void testAllBranches_EmptyLists() {
-        // Simulate empty lists returned from services
+    void findAllAdminRequests_NoRequests_ReturnsEmptyArray() throws Exception {
         when(requestsService.getAllAdminRequests(1L)).thenReturn(Collections.emptyList());
-        when(requestsService.getAllPendingRequests()).thenReturn(Collections.emptyList());
-        when(httpServletRequest.getAttribute("userId")).thenReturn(1L);
-        ResponseEntity<List<Requests>> adminRequests = adminController.findAllAdminRequests(httpServletRequest);
-        ResponseEntity<List<Requests>> pendingRequests = adminController.findAllPendingRequests(httpServletRequest);
 
-        assertTrue(adminRequests.getBody().isEmpty());
-        assertTrue(pendingRequests.getBody().isEmpty());
+        mockMvc.perform(get("/api/admin/v1/my-requests").requestAttr("userId", 1L))
+                .andExpect(status().isOk())
+                .andExpect(content().json("[]"));
     }
 
     @Test
-    void getAdminProfile_ShouldReturnDto() {
-        // Arrange
-        Long mockUserId = 1L;
-        AdminProfileDTO mockDto = new AdminProfileDTO("John Doe", "john@example.com", "ADMIN");
-
-        when(httpServletRequest.getAttribute("userId")).thenReturn(mockUserId);
-        when(adminService.getAdminProfile(mockUserId)).thenReturn(mockDto);
-
-        // Act
-        ResponseEntity<AdminProfileDTO> response = adminController.getAdminProfile(httpServletRequest);
-
-        // Assert
-        assertEquals(HttpStatus.OK, response.getStatusCode());
-        assertEquals("John Doe", response.getBody().name());
-        verify(adminService, times(1)).getAdminProfile(mockUserId);
+    void declineRequest_Success_ReturnsConfirmationMessage() throws Exception {
+        mockMvc.perform(post("/api/admin/v1/requests/5/decline")
+                        .requestAttr("userId", 1L))
+                .andExpect(status().isOk())
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("declined successfully")));
     }
 
     @Test
-    void updateAdminName_ShouldReturnSuccessMessage() {
-        // Arrange
-        Long mockUserId = 1L;
-        String newName = "Updated Name";
+    void declineRequest_ServiceThrows_MapsToInternalServerError() throws Exception {
+        doThrow(new RuntimeException("Movie not found"))
+                .when(adminService).declineRequest(1L, 5L);
+
+        mockMvc.perform(post("/api/admin/v1/requests/5/decline")
+                        .requestAttr("userId", 1L))
+                .andExpect(status().isInternalServerError())
+                .andExpect(jsonPath("$.status").value(500));
+    }
+
+    @Test
+    void acceptRequest_Success_ReturnsConfirmationMessage() throws Exception {
+        mockMvc.perform(post("/api/admin/v1/requests/10/accept")
+                        .requestAttr("userId", 2L))
+                .andExpect(status().isOk())
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("accepted successfully")));
+    }
+
+    @Test
+    void getRequestedMovie_ReturnsMovieDetails() throws Exception {
+        MovieDetailsDTO dto = MovieDetailsDTO.builder().movieID(3L).name("Test Movie").build();
+        when(adminService.getRequestedMovie(3L)).thenReturn(dto);
+
+        mockMvc.perform(get("/api/admin/v1/requests/3/movie"))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    void getSpecificMovieOverview_ReturnsOverview() throws Exception {
+        OneMovieOverView overview = new OneMovieOverView(10L, 5L, 2L, 1L, 4.5, 3L);
+        when(movieService.getMovieStatsByMovieId(7L)).thenReturn(overview);
+
+        mockMvc.perform(get("/api/admin/v1/movies/7/overview"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.averageRating").value(4.5));
+    }
+
+    @Test
+    void getAdminProfile_ReturnsProfileForCurrentAdmin() throws Exception {
+        when(adminService.getAdminProfile(1L))
+                .thenReturn(new AdminProfileDTO("John Doe", "john@example.com", "ADMIN"));
+
+        mockMvc.perform(get("/api/admin/v1/profile").requestAttr("userId", 1L))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.name").value("John Doe"))
+                .andExpect(jsonPath("$.email").value("john@example.com"));
+    }
+
+    @Test
+    void addAdmin_Valid_ReturnsOk() throws Exception {
+        AddAdminDTO dto = new AddAdminDTO();
+        dto.setName("New Admin");
+        dto.setEmail("admin@example.com");
+        dto.setPassword("password123");
+
+        mockMvc.perform(post("/api/admin/v1/admins")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(json(dto)))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    void addAdmin_BlankName_ReturnsBadRequestFromValidation() throws Exception {
+        AddAdminDTO dto = new AddAdminDTO();
+        dto.setName("");
+        dto.setEmail("admin@example.com");
+        dto.setPassword("password123");
+
+        mockMvc.perform(post("/api/admin/v1/admins")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(json(dto)))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void addAdmin_PasswordTooShort_ReturnsBadRequestFromValidation() throws Exception {
+        AddAdminDTO dto = new AddAdminDTO();
+        dto.setName("New Admin");
+        dto.setEmail("admin@example.com");
+        dto.setPassword("short");
+
+        mockMvc.perform(post("/api/admin/v1/admins")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(json(dto)))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void updateAdminName_Valid_ReturnsSuccessMessage() throws Exception {
         UpdateNameRequest nameRequest = new UpdateNameRequest();
-        nameRequest.setName(newName);
+        nameRequest.setName("Updated Name");
 
-        when(httpServletRequest.getAttribute("userId")).thenReturn(mockUserId);
-        // updateAdminName returns void, so we just verify the call
+        mockMvc.perform(put("/api/admin/v1/name")
+                        .requestAttr("userId", 1L)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(json(nameRequest)))
+                .andExpect(status().isOk())
+                .andExpect(content().string("Name updated successfully"));
+    }
 
-        // Act
-        ResponseEntity<String> response = adminController.updateAdminName(httpServletRequest, nameRequest);
+    @Test
+    void updateAdminName_BlankName_ReturnsBadRequestFromValidation() throws Exception {
+        UpdateNameRequest nameRequest = new UpdateNameRequest();
+        nameRequest.setName("");
 
-        // Assert
-        assertEquals(HttpStatus.OK, response.getStatusCode());
-        assertEquals("Name updated successfully", response.getBody());
-        verify(adminService, times(1)).updateAdminName(mockUserId, newName);
+        mockMvc.perform(put("/api/admin/v1/name")
+                        .requestAttr("userId", 1L)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(json(nameRequest)))
+                .andExpect(status().isBadRequest());
     }
 }

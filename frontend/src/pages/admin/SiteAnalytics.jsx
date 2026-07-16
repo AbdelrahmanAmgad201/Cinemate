@@ -1,33 +1,26 @@
-import "./style/SiteAnalytics.css";
-import "./style/NavBar.css";
+import './style/SiteAnalytics.css';
+import './style/NavBar.css';
 
-import { useState, useEffect, useContext } from "react";
-import { Link, useNavigate } from "react-router-dom";
-import NavBar from "../../components/OrgAdminNavBar.jsx";
+import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { Users, Film, Building2, Heart, BarChart3, ArrowUpRight } from 'lucide-react';
+import NavBar from '../../components/OrgAdminNavBar.jsx';
 
-import { AuthContext } from "../../context/AuthContext.jsx";
-import { getSystemAnalyticsApi } from "../../api/admin-api.jsx";
-import { getMovieApi } from "../../api/movie-api.jsx";
-import {PATHS} from "../../constants/constants.jsx";
-
-
-const icons = {
-    users: "👥",
-    movies: "🎬",
-    org: "🏢",
-    star: "⭐",
-    like: "❤️",
-    rate: "📊"
-};
+import { getSystemAnalyticsApi } from '../../api/admin-api.js';
+import { getMovieApi } from '../../api/movie-api.js';
+import { PATHS } from '../../constants/constants.jsx';
+import StatCard from '../../components/ui/StatCard.jsx';
+import Card from '../../components/ui/Card.jsx';
+import Button from '../../components/ui/Button.jsx';
+import EmptyState from '../../components/ui/EmptyState.jsx';
+import LoadingFallback from '../../components/LoadingFallback.jsx';
 
 export default function SiteAnalytics() {
-    // const { signOut } = useContext(AuthContext);
     const navigate = useNavigate();
 
     const [systemData, setSystemData] = useState(null);
-    // New state to hold the fetched names
-    const [mostLikedName, setMostLikedName] = useState("Loading...");
-    const [mostRatedName, setMostRatedName] = useState("Loading...");
+    const [mostLikedName, setMostLikedName] = useState('Loading…');
+    const [mostRatedName, setMostRatedName] = useState('Loading…');
 
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
@@ -35,40 +28,27 @@ export default function SiteAnalytics() {
     useEffect(() => {
         const fetchData = async () => {
             setLoading(true);
-
-            // 1. Fetch the main analytics data
             const res = await getSystemAnalyticsApi();
 
             if (res.success) {
                 const data = res.data;
                 setSystemData(data);
 
-                // 2. Fetch the "Most Liked" Movie Name
                 if (data.mostLikedMovieId) {
                     const likedRes = await getMovieApi({ movieId: data.mostLikedMovieId });
-                    if (likedRes.success) {
-                        setMostLikedName(likedRes.data.title); // Assuming mapped object has .title
-                    } else {
-                        setMostLikedName("Unknown Movie");
-                    }
+                    setMostLikedName(likedRes.success ? likedRes.data.title : 'Unknown movie');
                 } else {
-                    setMostLikedName("N/A");
+                    setMostLikedName('N/A');
                 }
 
-                // 3. Fetch the "Most Rated" Movie Name
                 if (data.mostRatedMovieId) {
                     const ratedRes = await getMovieApi({ movieId: data.mostRatedMovieId });
-                    if (ratedRes.success) {
-                        setMostRatedName(ratedRes.data.title);
-                    } else {
-                        setMostRatedName("Unknown Movie");
-                    }
+                    setMostRatedName(ratedRes.success ? ratedRes.data.title : 'Unknown movie');
                 } else {
-                    setMostRatedName("N/A");
+                    setMostRatedName('N/A');
                 }
-
             } else {
-                setError(res.message || "Failed to load system analytics");
+                setError(res.message || 'Failed to load system analytics');
             }
             setLoading(false);
         };
@@ -77,8 +57,7 @@ export default function SiteAnalytics() {
     }, []);
 
     const handlePreviewMovie = (id) => {
-        if (!id) return;
-        navigate(PATHS.MOVIE.DETAILS(id));
+        if (id) navigate(PATHS.MOVIE.DETAILS(id));
     };
 
     return (
@@ -87,93 +66,47 @@ export default function SiteAnalytics() {
 
             <div className="content-container">
                 <div className="page-header">
-                    <h2>System Overview</h2>
+                    <h2>System overview</h2>
                     <p className="subtitle">Platform performance and engagement metrics</p>
                 </div>
 
-                {loading && <div className="loader">Loading analytics...</div>}
-                {error && <div className="error-card">⚠️ {error}</div>}
+                {loading && <LoadingFallback />}
+                {!loading && error && <EmptyState title="Couldn't load analytics" description={error} />}
 
                 {!loading && systemData && (
                     <div className="analytics-dashboard">
-
-                        {/* 1. General Counts */}
                         <div className="stats-grid">
-                            <div className="stat-card">
-                                <div className="icon-wrapper green">{icons.users}</div>
-                                <div className="stat-info">
-                                    <span className="stat-label">Total Users</span>
-                                    <span className="stat-value">{systemData.numberOfUsers?.toLocaleString() ?? 0}</span>
-                                </div>
-                            </div>
-
-                            <div className="stat-card">
-                                <div className="icon-wrapper blue">{icons.movies}</div>
-                                <div className="stat-info">
-                                    <span className="stat-label">Total Movies</span>
-                                    <span className="stat-value">{systemData.numberOfMovies?.toLocaleString() ?? 0}</span>
-                                </div>
-                            </div>
+                            <StatCard icon={<Users size={20} />} label="Total users" value={systemData.numberOfUsers?.toLocaleString() ?? 0} />
+                            <StatCard icon={<Film size={20} />} label="Total movies" value={systemData.numberOfMovies?.toLocaleString() ?? 0} />
                         </div>
 
-                        <h3 className="section-title">Platform Highlights</h3>
+                        <h3 className="section-title">Platform highlights</h3>
 
-                        {/* 2. Highlights Grid */}
                         <div className="highlights-grid">
+                            <Card padding="lg" className="highlight-card">
+                                <div className="card-top"><Building2 size={16} /><span>Top organization</span></div>
+                                <h3>{systemData.mostPopularOrgName}</h3>
+                            </Card>
 
-                            {/* Most Popular Organization */}
-                            <div className="highlight-card org-card">
-                                <div className="card-top">
-                                    <span className="card-icon">{icons.org}</span>
-                                    <span className="card-label">Top Organization</span>
-                                </div>
-                                <div className="card-main">
-                                    <h3>{systemData.mostPopularOrgName}</h3>
-                                </div>
-                            </div>
+                            <Card padding="lg" className="highlight-card">
+                                <div className="card-top"><Heart size={16} /><span>Most liked movie</span></div>
+                                <h3>{mostLikedName}</h3>
+                                {systemData.mostLikedMovieId && (
+                                    <Button variant="secondary" size="sm" icon={<ArrowUpRight size={14} />} onClick={() => handlePreviewMovie(systemData.mostLikedMovieId)}>
+                                        View movie page
+                                    </Button>
+                                )}
+                            </Card>
 
-                            {/* Most Liked Movie */}
-                            <div className="highlight-card movie-card">
-                                <div className="card-top">
-                                    <span className="card-icon">{icons.like}</span>
-                                    <span className="card-label">Most Liked Movie</span>
-                                </div>
-                                <div className="card-main">
-                                    {/* Display the FETCHED NAME instead of ID */}
-                                    <h3>{mostLikedName}</h3>
-
-                                    {systemData.mostLikedMovieId && (
-                                        <button
-                                            className="preview-link-btn"
-                                            onClick={() => handlePreviewMovie(systemData.mostLikedMovieId)}
-                                        >
-                                            View Movie Page ↗
-                                        </button>
-                                    )}
-                                </div>
-                            </div>
-
-                            {/* Most Rated Movie */}
-                            <div className="highlight-card movie-card">
-                                <div className="card-top">
-                                    <span className="card-icon">{icons.rate}</span>
-                                    <span className="card-label">Most Rated Movie</span>
-                                </div>
-                                <div className="card-main">
-                                    {/* Display the FETCHED NAME instead of ID */}
-                                    <h3>{mostRatedName}</h3>
-
-                                    {systemData.mostRatedMovieId && (
-                                        <button
-                                            className="preview-link-btn"
-                                            onClick={() => handlePreviewMovie(systemData.mostRatedMovieId)}
-                                        >
-                                            View Movie Page ↗
-                                        </button>
-                                    )}
-                                </div>
-                            </div>
-
+                            <Card padding="lg" className="highlight-card">
+                                <div className="card-top"><BarChart3 size={16} /><span>Most rated movie</span></div>
+                                <h3>{mostRatedName}</h3>
+                                {systemData.mostRatedMovieId && (
+                                    <Button variant="secondary" size="sm" icon={<ArrowUpRight size={14} />} onClick={() => handlePreviewMovie(systemData.mostRatedMovieId)}>
+                                        View movie page
+                                    </Button>
+                                )}
+                            </Card>
                         </div>
                     </div>
                 )}

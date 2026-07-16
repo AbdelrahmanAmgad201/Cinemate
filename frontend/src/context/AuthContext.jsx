@@ -1,17 +1,18 @@
 import {useState, useEffect, createContext, useContext} from 'react'
-import signInApi from '../api/sign-in-api.jsx';
-import signOutApi from '../api/sign-out-api.jsx';
-import signUpApi from '../api/sign-up-api.jsx';
-import verifyApi from '../api/verify-api.jsx';
-import signUpOrgDetailsApi from '../api/sign-up-org-details-api.jsx';
-import signUpUserDetailsApi from '../api/sign-up-user-details-api.jsx';
+import signInApi from '../api/sign-in-api.js';
+import signOutApi from '../api/sign-out-api.js';
+import signUpApi from '../api/sign-up-api.js';
+import verifyApi from '../api/verify-api.js';
+import signUpOrgDetailsApi from '../api/sign-up-org-details-api.js';
+import signUpUserDetailsApi from '../api/sign-up-user-details-api.js';
 
 
 import {jwtDecode}  from "jwt-decode";
 import {ToastContext} from "./ToastContext.jsx";
-import {JWT, ROLES} from "../constants/constants.jsx";
+import {ROLES} from "../constants/constants.jsx";
+import {refreshAccessToken} from "../api/api-client.js";
+import {getAccessToken, clearAccessToken} from "../auth/tokenStore.js";
 
-// Always handle token expiry: either catch 401 responses in an axios response interceptor and attempt refresh or redirect to login.
 export const AuthContext   = createContext(null);
 
 
@@ -52,7 +53,7 @@ export default function AuthProvider({ children }){
             return {success: true}
         }
         catch (err){
-            console.log(err);
+            console.error('Error signing up:', err);
             return {success: false, message: err.response?.data?.error};
         }
     }
@@ -62,7 +63,7 @@ export default function AuthProvider({ children }){
         signOutApi();
         setUser(null);
         setPendingUser(null);
-        sessionStorage.removeItem(JWT.STORAGE_NAME);
+        clearAccessToken();
     }
 
     const verifyEmail = async ( email, code ) => {
@@ -117,39 +118,48 @@ export default function AuthProvider({ children }){
 
 
     useEffect(()=>{
-        const token = sessionStorage.getItem(JWT.STORAGE_NAME);
-        // console.log(token);
-        // const token = null; // uncomment this if you want to sign out
+        const applyToken = (token) => {
+            const userData = jwtDecode(token); // { id, email, role, profileComplete, exp }
+            setUser({
+                id: userData.id,
+                email: userData.email,
+                role: userData.role.replace("ROLE_", ""),
+                profileComplete: userData.profileComplete
+            });
+        };
 
-        if (!token){
-            setLoading(false);
-            return;
-        }
+        const bootstrap = async () => {
+            const token = getAccessToken();
 
-        try{
-            const userData = jwtDecode(token); // returns { id, email, role, iat }
-            if (userData.exp * 1000 < Date.now()) {
-                // token expired
-                sessionStorage.removeItem(JWT.STORAGE_NAME);
+            // 1) A valid, unexpired access token already in memory — use it directly.
+            if (token) {
+                try {
+                    const userData = jwtDecode(token);
+                    if (userData.exp * 1000 > Date.now()) {
+                        applyToken(token);
+                        setLoading(false);
+                        return;
+                    }
+                } catch {
+                    // fall through to a refresh attempt
+                }
+            }
+
+            // 2) No usable access token (expired, or a returning visitor with a fresh
+            // tab) — try to silently restore the session from the httpOnly refresh
+            // cookie. Succeeds seamlessly if the cookie is still valid (up to 7 days).
+            try {
+                const newToken = await refreshAccessToken();
+                applyToken(newToken);
+            } catch {
+                clearAccessToken();
                 setUser(null);
+            } finally {
+                setLoading(false);
             }
-            else {
-                setUser({
-                    id: userData.id,
-                    email: userData.email,
-                    role: userData.role.replace("ROLE_", ""),
-                    profileComplete: userData.profileComplete
-                });
-            }
+        };
 
-        }
-        catch(err){
-            console.log(err);
-            sessionStorage.removeItem(JWT.STORAGE_NAME); // invalid token
-        }
-        finally {
-            setLoading(false);
-        }
+        bootstrap();
     }, [])
 
     return(

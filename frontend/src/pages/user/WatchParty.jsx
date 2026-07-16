@@ -1,20 +1,21 @@
-import {useLocation, useNavigate, useParams} from "react-router-dom";
+import {useNavigate, useParams} from "react-router-dom";
 import "./style/WatchParty.css"
 import {useCallback, useContext, useEffect, useRef, useState} from "react";
 import {WatchPartyContext} from "../../context/WatchPartyContext.jsx";
 import {PATHS, ROLES, WATCH_PARTY, WatchPartyEventType} from "../../constants/constants.jsx";
 import {ToastContext} from "../../context/ToastContext.jsx";
-import {getRoomApi} from "../../api/watch-together-api.jsx";
+import {getRoomApi} from "../../api/watch-party-api.js";
 import WistiaEmbed from "../../components/WistiaEmbed.jsx";
 import {useWatchParty} from "../../hooks/useWatchParty.jsx";
 import {createWistiaAdapter} from "../../utils/video-player-adapters.jsx";
 import {AuthContext} from "../../context/AuthContext.jsx";
-import {getModApi} from "../../api/forum-api.jsx";
+import {getModApi} from "../../api/forum-api.js";
 import LiveChat from "../../components/watch-party/LiveChat.jsx";
 import {generateColorFromUserId} from "../../utils/generate-color.jsx";
+import LoadingFallback from "../../components/LoadingFallback.jsx";
 
 export default function WatchParty() {
-    const { activeParty, activePartyId, role, joinParty, leaveOrEndParty, loading} = useContext(WatchPartyContext);
+    const { activePartyId, role, joinParty, leaveOrEndParty, loading} = useContext(WatchPartyContext);
     const { showToast } = useContext(ToastContext)
     const { user, loading: authLoading } = useContext(AuthContext);
     const [userId, setUserId] = useState(user?.id || null);
@@ -62,25 +63,29 @@ export default function WatchParty() {
         const initializeRoom = async () => {
             setRoomLoading(true);
 
-            // Auto join if user goes to link directly
+            // Auto join if user goes to link directly. joinRoomApi now returns the full
+            // room data (FE-09), so the join response doubles as the room-data fetch —
+            // only fall back to a separate getRoomApi call when we're already in the
+            // party and have no fresh join response to use.
+            let roomRes;
             if (activePartyId !== roomId) {
                 showToast("Watch Party", "Joining party...", "info")
 
-                const res = await joinParty(roomId);
+                roomRes = await joinParty(roomId);
 
-                if (!res.success) {
-                    showToast("Watch Party", res.message, "error");
+                if (!roomRes.success) {
+                    showToast("Watch Party", roomRes.message, "error");
                     navigate(PATHS.ROOT);
                     return null;
                 }
 
                 showToast("Watch Party", "Joined successfully!", "success");
+            } else {
+                roomRes = await getRoomApi({ partyId: roomId });
             }
 
-            // Fetch room data
-            const res = await getRoomApi({ partyId: roomId });
-            if (res.success) {
-                setRoomData(res.data);
+            if (roomRes.success) {
+                setRoomData(roomRes.data);
             } else {
                 showToast("Watch Party", "Room no longer exists", "error");
                 leaveOrEndParty();
@@ -90,8 +95,7 @@ export default function WatchParty() {
             // Fetch user data
             setUserId(user.id);
 
-            const hexId = user.id.toString(16).padStart(24, '0');
-            const response = await getModApi({ userId:hexId });
+            const response = await getModApi({ userId: user.id });
             const userName = response.data;
             setUserName(userName);
             setUserColor(generateColorFromUserId(user.id));
@@ -103,7 +107,7 @@ export default function WatchParty() {
     }, [roomId, loading])
 
     const syncInterval = useRef(null);
-    const [syncTime, setSyncTime] = useState(3000); // So if can be changed from settings
+    const syncTime = 3000; // TODO: make configurable via a settings UI
 
     // Auto Sync every
     useEffect(() => {
@@ -122,7 +126,7 @@ export default function WatchParty() {
     }, [isHost, playerRef, broadcastAction]);
 
     if (roomLoading || loading) {
-        return <div className="loading-container">Connecting to Party...</div>;
+        return <LoadingFallback fullScreen />;
     }
 
     return (

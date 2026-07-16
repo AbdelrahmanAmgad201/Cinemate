@@ -5,6 +5,7 @@ import SockJS from "sockjs-client";
 import {ToastContext} from "../context/ToastContext.jsx";
 import {useNavigate} from "react-router-dom";
 import {generateColorFromUserId} from "../utils/generate-color.jsx";
+import {getAccessToken} from "../auth/tokenStore.js";
 
 // PartyEventPayload {
 //     time?: number;
@@ -50,7 +51,7 @@ export const useWatchParty = (partyId, userId, userName, isHost, onIncomingChat)
 
         if(eventType === WatchPartyEventType.CHAT){
             stompClientRef.current.publish({
-                destination: `/app/party/${partyId}/chat`,
+                destination: `/app/watch-party/${partyId}/chat`,
                 body: JSON.stringify({
                     userId,
                     userName,
@@ -62,7 +63,7 @@ export const useWatchParty = (partyId, userId, userName, isHost, onIncomingChat)
         }
         else{
             stompClientRef.current.publish({
-                destination: `/app/party/${partyId}/control`,
+                destination: `/app/watch-party/${partyId}/control`,
                 body: JSON.stringify({
                     userId,
                     userName,
@@ -75,15 +76,31 @@ export const useWatchParty = (partyId, userId, userName, isHost, onIncomingChat)
         }
     }
 
+    // Truncates the rendered sender name and strips control/formatting characters
+    // (SEC-NEW-05) — `userName` on an incoming WebSocket event is attacker-controlled
+    // (no message-level auth on this channel yet, see REL-08), and React's JSX escaping
+    // already prevents script injection but not an arbitrarily long or control-character-
+    // laden name from breaking the chat UI's layout.
+    const MAX_SENDER_NAME_LENGTH = 30;
+    const sanitizeSenderName = (name) => {
+        if (typeof name !== "string") return "Unknown";
+        // eslint-disable-next-line no-control-regex
+        const stripped = name.replace(/[\x00-\x1F\x7F]/g, "").trim();
+        if (!stripped) return "Unknown";
+        return stripped.length > MAX_SENDER_NAME_LENGTH
+            ? stripped.slice(0, MAX_SENDER_NAME_LENGTH) + "…"
+            : stripped;
+    };
+
     const handleChat = (content, type = "system", senderName= "System", color = null) => {
         if(onChatRef.current){
             onChatRef.current({
                 id: Date.now().toString() + Math.random(),
-                sender: senderName,
+                sender: sanitizeSenderName(senderName),
                 type: type,
                 content: content,
                 timestamp: new Date().toLocaleTimeString('en-US', {hour: '2-digit', minute:'2-digit'}),
-                color: color 
+                color: color
             });
         }
     }
@@ -168,10 +185,18 @@ export const useWatchParty = (partyId, userId, userName, isHost, onIncomingChat)
             webSocketFactory: () => new SockJS(`${BACKEND_URL.WATCH_PARTY_BASE_URL}/ws`),
             reconnectDelay: 5000,
 
+            // Authenticate the STOMP session (REL-08): the service verifies this token on
+            // CONNECT and binds the identity it then stamps on every event. Read fresh on
+            // each (re)connect so a token refreshed via the axios flow is picked up.
+            beforeConnect: () => {
+                const token = getAccessToken();
+                client.connectHeaders = token ? { Authorization: `Bearer ${token}` } : {};
+            },
+
             onConnect: () => {
                 stompClientRef.current = client;
 
-                client.subscribe(`/topic/party/${partyId}`, (message) => {
+                client.subscribe(`/topic/watch-party/${partyId}`, (message) => {
                     const data = JSON.parse(message.body);
                     handleIncomingAction(data);
                 });

@@ -1,11 +1,11 @@
 import React, { useState, useEffect, useContext } from 'react';
 import { useLocation, useParams, useNavigate, Link } from 'react-router-dom';
-import { CommentItem } from '../../components/PostComments';
+import { CommentItem } from '../../components/CommentItem';
 import { getRepliesApi, getPostCommentsApi, addCommentApi } from '../../api/comment-api';
 import { getPostApi } from '../../api/post-api';
 import { PATHS, MAX_LENGTHS } from '../../constants/constants';
-import { MdKeyboardArrowDown } from 'react-icons/md';
-import '../../components/style/postFullPage.css';
+import { ChevronDown } from 'lucide-react';
+import '../../components/style/postThread.css';
 import '../../components/style/postCard.css';
 import { ToastContext } from '../../context/ToastContext';
 
@@ -26,7 +26,7 @@ const ReplyThreadPage = () => {
         if (suppliedPost && suppliedPost.id) {
             try {
                 sessionStorage.setItem(`CINEMATE_LAST_POST_${suppliedPost.id}`, JSON.stringify(suppliedPost));
-            } catch (e) {
+            } catch {
                 // ignore storage errors
             }
         }
@@ -46,7 +46,7 @@ const ReplyThreadPage = () => {
     useEffect(() => {
         try {
             window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
-        } catch (e) {
+        } catch {
             // ignore in environments without window
         }
     }, [commentId]);
@@ -74,7 +74,7 @@ const ReplyThreadPage = () => {
                     if (res.success && res.data && res.data.length > 0) {
                         return { ...it, numberOfReplies: (it.numberOfReplies || 0) + res.data.length };
                     }
-                } catch (e) {
+                } catch {
                     // ignore per-item errors
                 }
                 return it;
@@ -106,7 +106,7 @@ const ReplyThreadPage = () => {
                     try {
                         const cached = JSON.parse(sessionStorage.getItem(`CINEMATE_LAST_COMMENT_${initialComment.id}`) || 'null');
                         if (cached) merged = { ...initialComment, ...cached };
-                    } catch (e) { /* ignore storage errors */ }
+                    } catch { /* ignore storage errors */ }
 
                     setComment(merged);
                     const sortBy = sort === 'best' ? 'score' : 'new';
@@ -141,7 +141,7 @@ const ReplyThreadPage = () => {
                         try {
                             const cached = JSON.parse(sessionStorage.getItem(`CINEMATE_LAST_COMMENT_${found.id}`) || 'null');
                             if (cached) found = { ...found, ...cached };
-                        } catch (e) { /* ignore storage errors */ }
+                        } catch { /* ignore storage errors */ }
 
                         setComment(found);
                         const sortBy = sort === 'best' ? 'score' : 'new';
@@ -200,7 +200,7 @@ const ReplyThreadPage = () => {
         setComment(prevC => {
             if (!prevC) return prevC;
             const updated = { ...prevC, upvoteCount: (prevC.upvoteCount || 0) + upDelta, downvoteCount: (prevC.downvoteCount || 0) + downDelta };
-            try { sessionStorage.setItem(`CINEMATE_LAST_COMMENT_${updated.id}`, JSON.stringify({ upvoteCount: updated.upvoteCount, downvoteCount: updated.downvoteCount, ts: Date.now() })); } catch (e) { /* ignore */ }
+            try { sessionStorage.setItem(`CINEMATE_LAST_COMMENT_${updated.id}`, JSON.stringify({ upvoteCount: updated.upvoteCount, downvoteCount: updated.downvoteCount, ts: Date.now() })); } catch { /* ignore */ }
             return updated;
         });
     };
@@ -235,7 +235,7 @@ const ReplyThreadPage = () => {
                                 } else {
                                     navigate(PATHS.POST.FULLPAGE(comment.postId), { state: { post: { id: comment.postId, postId: comment.postId }, commentId: comment.id } });
                                 }
-                            } catch (e) {
+                            } catch {
                                 navigate(PATHS.POST.FULLPAGE(comment.postId), { state: { post: { id: comment.postId, postId: comment.postId }, commentId: comment.id } });
                             }
                         }}
@@ -258,7 +258,7 @@ const ReplyThreadPage = () => {
                                 if (res.success) setReplies(await enrichRepliesWithChildrenFlag(res.data || []));
                                 setLoading(false);
                             }}
-                            onRemoveComment={async (id) => {
+                            onRemoveComment={async () => {
                                 try {
                                     const res = await getPostApi({ postId: comment.postId });
                                     if (res.success) {
@@ -266,7 +266,7 @@ const ReplyThreadPage = () => {
                                     } else {
                                         navigate(PATHS.POST.FULLPAGE(comment.postId), { state: { post: { id: comment.postId, postId: comment.postId } } });
                                     }
-                                } catch (e) {
+                                } catch {
                                     navigate(PATHS.POST.FULLPAGE(comment.postId), { state: { post: { id: comment.postId, postId: comment.postId } } });
                                 }
                                 showToast("", "This comment has been deleted. Returning to the post.", "info");
@@ -297,7 +297,7 @@ const ReplyThreadPage = () => {
                                 <option value="best">Best</option>
                                 <option value="new">New</option>
                             </select>
-                            <MdKeyboardArrowDown className="select-arrow" />
+                            <ChevronDown size={16} className="select-arrow" />
                         </div>
                     </div>
 

@@ -1,0 +1,12 @@
+.loading-fallback {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    padding: var(--space-12) 0;
+}
+
+.loading-fallback--full-screen {
+    min-height: 100vh;
+    padding: 0;
+}

@@ -1,11 +1,14 @@
-import React, {useContext, useState} from 'react';
-import { Link, useLocation } from 'react-router-dom';
-import "./style/SideBar.css";
+import { useContext, useState } from 'react';
+import { Link, useLocation, useSearchParams } from 'react-router-dom';
+import { Home, TrendingUp, Compass, Plus } from 'lucide-react';
+import './style/SideBar.css';
 import FollowedForums from './FollowedForums.jsx';
-import {MAX_LENGTHS, PATHS} from '../constants/constants.jsx';
-import { useSearchParams } from 'react-router-dom';
-import {createForumApi} from "../api/forum-api.jsx";
-import {ToastContext} from "../context/ToastContext.jsx";
+import { MAX_LENGTHS, PATHS } from '../constants/constants.jsx';
+import { createForumApi } from '../api/forum-api.js';
+import { ToastContext } from '../context/ToastContext.jsx';
+import Modal from './ui/Modal.jsx';
+import Textarea from './ui/Textarea.jsx';
+import Button from './ui/Button.jsx';
 
 const SideBar = ({ collapsed }) => {
     const location = useLocation();
@@ -19,116 +22,98 @@ const SideBar = ({ collapsed }) => {
     const handleNavClick = () => {
         try {
             window.scrollTo({ top: 0, behavior: 'smooth' });
-        } catch (e) {
+        } catch {
             window.scrollTo(0, 0);
         }
     };
 
-    const [forumName, setForumName] = useState("");
-    const [forumDescription, setForumDescription] = useState("");
-
+    const [forumName, setForumName] = useState('');
+    const [forumDescription, setForumDescription] = useState('');
     const [showForm, setShowForm] = useState(false);
     const [submitting, setSubmitting] = useState(false);
 
-    const {showToast} = useContext(ToastContext);
+    const { showToast } = useContext(ToastContext);
 
     const handleAddForum = async (e) => {
         e.preventDefault();
-
         setSubmitting(true);
 
-        const res = await createForumApi({ name: forumName, description: forumDescription})
+        const res = await createForumApi({ name: forumName, description: forumDescription });
 
-        if (res.success === true) {
-            showToast("Success", "Your forum has been submitted.", "success")
-            setForumName("");
-            setForumDescription("");
+        if (res.success) {
+            showToast('Success', 'Your forum has been submitted.', 'success');
+            setForumName('');
+            setForumDescription('');
             setShowForm(false);
-        }
-        else {
-            showToast("Failed to submit forum", res.message || "unknown error", "error")
+        } else {
+            showToast('Failed to submit forum', res.message || 'unknown error', 'error');
         }
 
         setSubmitting(false);
-    }
+    };
 
     return (
         <>
-            {showForm && (
-                <div className="modal-overlay" onMouseDown={() => setShowForm(false)}>
-                    <div className="modal" onMouseDown={(e) => e.stopPropagation()}>
-                        <h3>Create forum</h3>
-                        <div className="header-left" style={{alignItems: "center", marginBottom: "10px"}}>
-                            <div className="forum-icon-placeholder" style={{width: "50px", height: "50px"}}></div>
-                            <h1 style={{fontSize: "16px"}}>{forumName}</h1>
-                        </div>
-                        <form onSubmit={handleAddForum}>
+            <Modal
+                open={showForm}
+                onClose={() => setShowForm(false)}
+                title="Create a forum"
+                footer={
+                    <>
+                        <Button variant="ghost" onClick={() => setShowForm(false)} disabled={submitting}>Cancel</Button>
+                        <Button onClick={handleAddForum} loading={submitting} disabled={!forumName.trim()}>Create forum</Button>
+                    </>
+                }
+            >
+                <form className="create-forum-form" onSubmit={handleAddForum}>
+                    <Textarea
+                        label="Name"
+                        rows={2}
+                        value={forumName}
+                        onChange={(e) => setForumName(e.target.value.slice(0, MAX_LENGTHS.TEXTAREA))}
+                        placeholder="e.g. Sci-Fi Enthusiasts"
+                        maxLength={MAX_LENGTHS.TEXTAREA}
+                        required
+                    />
+                    <Textarea
+                        label="Description"
+                        rows={4}
+                        value={forumDescription}
+                        onChange={(e) => setForumDescription(e.target.value.slice(0, MAX_LENGTHS.TEXTAREA))}
+                        placeholder="What's this forum about?"
+                        maxLength={MAX_LENGTHS.TEXTAREA}
+                    />
+                </form>
+            </Modal>
 
-                            <label>
-                                Title
-                                <textarea
-                                    rows="3"
-                                    value={forumName} onChange={e => {
-                                    const inputValue = e.target.value;
-                                    if (inputValue.length <= MAX_LENGTHS.TEXTAREA) {
-                                        setForumName(inputValue);
-                                    }
-                                }}
-                                    placeholder={`Name (max ${MAX_LENGTHS.TEXTAREA} characters)`}
-                                    maxLength={MAX_LENGTHS.TEXTAREA}
-                                    required
-                                />
-                                <small>{forumName.length} / {MAX_LENGTHS.TEXTAREA} characters</small>
-                            </label>
+            <aside className={`user-left-sidebar ${collapsed ? 'collapsed' : ''}`}>
+                <nav aria-label="Feed navigation">
+                    <ul>
+                        <li>
+                            <Link to={PATHS.HOME} className={`sidebar-button ${isHomeRoute ? 'active' : ''}`} onClick={handleNavClick}>
+                                <Home size={17} aria-hidden="true" /> Home
+                            </Link>
+                        </li>
+                        <li>
+                            <Link to={`${PATHS.HOME}?feed=popular`} className={`sidebar-button ${isPopular ? 'active' : ''}`} onClick={handleNavClick}>
+                                <TrendingUp size={17} aria-hidden="true" /> Popular
+                            </Link>
+                        </li>
+                        <li>
+                            <Link to={PATHS.FORUM.EXPLORE} className={`sidebar-button ${isExplore ? 'active' : ''}`} onClick={handleNavClick}>
+                                <Compass size={17} aria-hidden="true" /> Explore forums
+                            </Link>
+                        </li>
+                    </ul>
+                </nav>
 
-                            <label>
-                                Body
-                                <textarea
-                                    rows="5"
-                                    value={forumDescription} onChange={e => {
-                                    const inputValue = e.target.value;
-                                    if (inputValue.length <= MAX_LENGTHS.TEXTAREA) {
-                                        setForumDescription(inputValue);
-                                    }
-                                }}
-                                    placeholder={`Description (max ${MAX_LENGTHS.TEXTAREA} characters)`}
-                                    maxLength={MAX_LENGTHS.TEXTAREA}
-                                />
-                                <small>{forumDescription.length} / {MAX_LENGTHS.TEXTAREA} characters</small>
-                            </label>
-                            <div className="modal-actions">
-                                <button type="button" className="modal-btn-cancel" onClick={() => setShowForm(false)}>Cancel</button>
-                                <button type="submit" className="modal-btn-submit" disabled={submitting}>{submitting ? "Adding..." : "Add Forum"}</button>
-                            </div>
-                        </form>
-                    </div>
-                </div>
-            )}
+                <div className="sidebar-divider" />
 
-                <aside className={`user-left-sidebar ${collapsed ? 'collapsed' : ''}`}>
-                <ul>
-                    <li>
-                        <Link to={`${PATHS.HOME}`} className={`sidebar-button ${isHomeRoute ? 'active' : ''}`} onClick={handleNavClick}>
-                            Home
-                        </Link>
-                    </li>
-                    <li>
-                        <Link to={`${PATHS.HOME}?feed=popular`} className={`sidebar-button ${isPopular ? 'active' : ''}`} onClick={handleNavClick}>
-                            Popular
-                        </Link>
-                    </li>
-                    <li>
-                        <Link to={`${PATHS.FORUM.EXPLORE}`} className={`sidebar-button ${isExplore ? 'active' : ''}`} onClick={handleNavClick}>
-                            Explore forums
-                        </Link>
-                    </li>
-                    <li>
-                        <FollowedForums />
-                    </li>
-                    <li>
-                        <div className="sidebar-button" onClick={() => setShowForm(true)}> + Create a forum</div>
-                    </li>
-                </ul>
+                <FollowedForums />
+
+                <button type="button" className="sidebar-create-btn" onClick={() => setShowForm(true)}>
+                    <Plus size={16} aria-hidden="true" /> Create a forum
+                </button>
             </aside>
         </>
     );

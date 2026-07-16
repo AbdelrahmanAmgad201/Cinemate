@@ -1,0 +1,53 @@
+spring:
+  application:
+    name: gateway
+  cloud:
+    gateway:
+      server:
+        webmvc:
+          routes:
+            # Order matters: the /** catch-all to the frontend must come last so the
+            # more specific /api and /ws routes win first. The watch-party API route must
+            # precede the broad /api/** backend route so it wins for /api/watch-party/**.
+            - id: watch-party-api
+              uri: ${WATCHPARTY_URI:http://watch-party:8081}
+              predicates:
+                # The watch-party microservice now owns this domain directly (Stage 1).
+                # The gateway still authenticates + injects X-User-* here (see SecurityConfig).
+                - Path=/api/watch-party/**
+            - id: backend
+              uri: ${BACKEND_URI:http://backend:8080}
+              predicates:
+                # The Google OAuth handshake endpoints Spring Security owns on the backend
+                # (initiation + callback). Deliberately NOT the broad /oauth2/** — the SPA
+                # has its own /oauth2/redirect page that must reach the frontend.
+                - Path=/api/**,/oauth2/authorize/**,/login/oauth2/**
+            - id: watch-party
+              uri: ${WATCHPARTY_URI:http://watch-party:8081}
+              predicates:
+                - Path=/ws/**
+            - id: frontend
+              uri: ${FRONTEND_URI:http://frontend:80}
+              predicates:
+                - Path=/**
+
+server:
+  port: 8080
+
+# RS256 public key the gateway uses to verify access tokens. Same key the backend
+# holds; the gateway only ever gets the PUBLIC half, so it can verify but never mint.
+jwt:
+  public-key: ${JWT_PUBLIC_KEY}
+
+# Redis backing the rate-limiter's token buckets (shared across gateway replicas).
+# The only Redis the app still runs — the backend's cache + token stores moved to
+# Postgres (see docs/database.md).
+redis:
+  host: ${REDIS_HOST:redis-ratelimit}
+  port: ${REDIS_PORT:6379}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health

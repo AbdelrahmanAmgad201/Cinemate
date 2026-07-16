@@ -1,51 +1,54 @@
-.EmailVerification-container{
+.email-verification {
     text-align: center;
-    padding: 50px;
-    border: 0;
-    margin: 20px;
+    align-items: center;
+}
+
+.email-verification__icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    background-color: var(--color-accent-muted);
+    color: var(--color-accent);
+    margin-bottom: var(--space-2);
 }
 
 .EmailVerification-code-container {
     display: flex;
     flex-direction: row;
-    flex-wrap: wrap;
     justify-content: center;
-    padding: 50px;
-    gap: 15px;
-    border: 0;
-    margin: 20px;
-
+    gap: var(--space-3);
+    margin: var(--space-2) 0;
 }
+
 .EmailVerification-code-container input {
-    width: 60px;
-    height: 70px;
-    border: solid 2px white;
-    border-radius: 10px;
+    width: 48px;
+    height: 56px;
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-md);
+    background-color: var(--surface-1);
     text-align: center;
-    background-color: transparent;
-    color: var(--ghost-white);
-    font-size: 20px;
+    color: var(--text-primary);
+    font-size: var(--font-size-h4);
+    font-weight: var(--font-weight-semibold);
+    transition: border-color var(--duration-base) var(--ease-standard), box-shadow var(--duration-base) var(--ease-standard);
 }
-.Resend-Verification-Email-button {
-    background-color: var(--ink-black);
-    color: var(--ghost-white);
-    padding: 12px 28px;
-    margin: 20px;
-    text-align: center;
-    font-size: 16px;
-    border-radius: 8px;
-    border: 2px solid var(--ink-black-border);
-    box-shadow:0 8px 16px 0 rgba(0,0,0,0.6)
 
+.EmailVerification-code-container input:focus {
+    outline: none;
+    border-color: var(--border-focus);
+    box-shadow: var(--shadow-focus);
 }
-.Resend-Verification-Email-button:hover {
-    background-color: var(--ink-black-hover);
-    color: var(--ghost-white);
 
+.EmailVerification-code-container input:disabled {
+    opacity: 0.5;
 }
-.Resend-Verification-Email-button:disabled {
-    background-color: var(--ink-black-disabled);
-    color: var(--ghost-white);
-    opacity: 0.6;
-    cursor: not-allowed;
+
+@media (max-width: 480px) {
+    .EmailVerification-code-container input {
+        width: 40px;
+        height: 48px;
+    }
 }

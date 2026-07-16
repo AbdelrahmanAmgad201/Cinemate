@@ -1,6 +1,7 @@
 package org.example.backend.movieReview;
 
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -15,10 +16,10 @@ public class MovieReviewController {
     @Autowired
     private MovieReviewService movieReviewService;
 
-    @PostMapping("/v1/add-review")
-    public ResponseEntity<MovieReview> addOrUpdateReview(
+    @PostMapping("/v1")
+    public ResponseEntity<MovieReviewDetailsDTO> addOrUpdateReview(
             HttpServletRequest request,
-            @RequestBody MovieReviewDTO movieReviewDTO) {
+            @Valid @RequestBody MovieReviewDTO movieReviewDTO) {
 
         Long userId = (Long) request.getAttribute("userId");
 
@@ -26,8 +27,18 @@ public class MovieReviewController {
                 movieReviewService.addOrUpdateReview(userId, movieReviewDTO)
         );
     }
-    @GetMapping("/v1/get-movie-reviews/{movieId}")
-    public ResponseEntity<Page<MovieReview>> getMovieReviews(
+    @DeleteMapping("/v1/{movieId}")
+    public ResponseEntity<?> deleteReview(
+            HttpServletRequest request,
+            @PathVariable Long movieId) {
+
+        Long userId = (Long) request.getAttribute("userId");
+        movieReviewService.deleteReview(userId, movieId);
+        return ResponseEntity.ok().build();
+    }
+
+    @GetMapping("/v1/movie/{movieId}")
+    public ResponseEntity<Page<MovieReviewDetailsDTO>> getMovieReviews(
             @PathVariable Long movieId,
             Pageable pageable) {
 
@@ -36,8 +47,8 @@ public class MovieReviewController {
         );
     }
 
-    @GetMapping("/v1/my-movie-review")
-    public ResponseEntity<Page<MovieReview>> getMyMovieReviews(
+    @GetMapping("/v1/my-reviews")
+    public ResponseEntity<Page<MovieReviewDetailsDTO>> getMyMovieReviews(
             HttpServletRequest request,
             @PageableDefault Pageable pageable
     ){
@@ -45,8 +56,8 @@ public class MovieReviewController {
         return ResponseEntity.ok(movieReviewService.getMyMovieReviews(userId, pageable));
     }
 
-    @GetMapping("/v1/other-user-movie-review/{userId}")
-    public ResponseEntity<Page<MovieReview>> getOtherUserMovieReviews(
+    @GetMapping("/v1/user/{userId}")
+    public ResponseEntity<Page<MovieReviewDetailsDTO>> getOtherUserMovieReviews(
             @PathVariable Long userId,
             Pageable pageable
     ){

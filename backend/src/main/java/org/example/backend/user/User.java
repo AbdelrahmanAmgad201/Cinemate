@@ -107,27 +107,35 @@ public class User implements Authenticatable {
         return !"local".equals(provider);
     }
 
-    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
+    // DB-NEW-01: no cascade/orphanRemoval on any of these six relations. Verified every
+    // caller (WatchHistoryService, WatchLaterService, LikedMovieService, FollowService,
+    // MovieReviewService) always persists these directly through their own repository,
+    // never via user.get*().add(...) + userRepository.save(user) — so removing cascade
+    // doesn't change any existing behavior. CascadeType.ALL + orphanRemoval previously
+    // meant a plain userRepository.delete()/.deleteById() would silently hard-cascade-
+    // delete all six collections, bypassing the isDeleted soft-delete flag every one of
+    // them defines — defused now, before that call path exists, rather than after.
+    @OneToMany(mappedBy = "user")
     @Builder.Default
     private List<WatchHistory> watchHistory = new ArrayList<>();
 
-    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OneToMany(mappedBy = "user")
     @Builder.Default
     private List<WatchLater> watchLater = new ArrayList<>();
 
-    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OneToMany(mappedBy = "user")
     @Builder.Default
     private List<LikedMovie> likedMovies = new ArrayList<>();
 
-    @OneToMany(mappedBy = "followingUser", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OneToMany(mappedBy = "followingUser")
     @Builder.Default
     private List<Follows> following = new ArrayList<>();
 
-    @OneToMany(mappedBy = "followedUser", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OneToMany(mappedBy = "followedUser")
     @Builder.Default
     private List<Follows> followers = new ArrayList<>();
 
-    @OneToMany(mappedBy = "reviewer", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OneToMany(mappedBy = "reviewer")
     @Builder.Default
     private List<MovieReview> reviews = new ArrayList<>();
 }

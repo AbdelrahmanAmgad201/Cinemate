@@ -1,7 +1,8 @@
 package org.example.backend.vote;
 
 import jakarta.servlet.http.HttpServletRequest;
-import org.bson.types.ObjectId;
+import jakarta.validation.Valid;
+import java.util.UUID;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -12,50 +13,50 @@ public class VoteController {
     @Autowired
     private VoteService voteService;
 
-    @PostMapping("/v1/post-vote")
+    @PostMapping("/v1/post")
     public ResponseEntity<?> postVote(
             HttpServletRequest request,
-            @RequestBody VoteDTO voteDTO) {
+            @Valid @RequestBody VoteDTO voteDTO) {
 
         Long userId = (Long) request.getAttribute("userId");
-        voteService.vote(voteDTO,true,userId);
+        voteService.vote(voteDTO,VoteTargetType.POST,userId);
         return ResponseEntity.ok().build();
     }
 
-    @PostMapping("/v1/comment-vote")
+    @PostMapping("/v1/comment")
     public ResponseEntity<?> commentVote(
             HttpServletRequest request,
-            @RequestBody VoteDTO voteDTO) {
+            @Valid @RequestBody VoteDTO voteDTO) {
 
         Long userId = (Long) request.getAttribute("userId");
-        voteService.vote(voteDTO,false,userId);
+        voteService.vote(voteDTO,VoteTargetType.COMMENT,userId);
         return ResponseEntity.ok().build();
     }
 
-    @PutMapping("/v1/update-vote")
+    @PutMapping("/v1")
     public ResponseEntity<?> updateVote(
             HttpServletRequest request,
-            @RequestBody UpdateVoteDTO updateVoteDTO) {
+            @Valid @RequestBody UpdateVoteDTO updateVoteDTO) {
 
         Long userId = (Long) request.getAttribute("userId");
         voteService.updateVote(updateVoteDTO,userId);
         return ResponseEntity.ok().build();
     }
 
-    @DeleteMapping("/v1/delete-vote/{targetId}")
+    @DeleteMapping("/v1/{targetId}")
     public ResponseEntity<?> deleteVote(
             HttpServletRequest request,
-            @PathVariable ObjectId targetId
+            @PathVariable UUID targetId
     ){
         Long userId = (Long) request.getAttribute("userId");
         voteService.deleteVote(targetId,userId);
         return ResponseEntity.ok().build();
     }
 
-    @GetMapping("/v1/is-voted/{targetId}")
+    @GetMapping("/v1/{targetId}")
     public ResponseEntity<Integer> getIsVoted(
             HttpServletRequest request,
-            @PathVariable ObjectId targetId
+            @PathVariable UUID targetId
     ){
         Long userId = (Long) request.getAttribute("userId");
         return ResponseEntity.ok(voteService.isVote(targetId,userId));

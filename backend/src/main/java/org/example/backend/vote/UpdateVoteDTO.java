@@ -1,10 +1,15 @@
 package org.example.backend.vote;
 
+import jakarta.validation.constraints.NotNull;
 import lombok.Data;
-import org.bson.types.ObjectId;
+
+import java.util.UUID;
 
 @Data
 public class UpdateVoteDTO {
-    private ObjectId targetId;
+    @NotNull
+    private UUID targetId;
+
+    @NotNull
     private Integer value;
 }

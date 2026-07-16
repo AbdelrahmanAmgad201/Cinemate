@@ -1,0 +1,11 @@
+.spinner {
+    display: inline-block;
+    border-radius: 50%;
+    border: 3px solid var(--border-default);
+    border-top-color: var(--color-accent);
+    animation: spinner-rotate 0.7s linear infinite;
+}
+
+@keyframes spinner-rotate {
+    to { transform: rotate(360deg); }
+}

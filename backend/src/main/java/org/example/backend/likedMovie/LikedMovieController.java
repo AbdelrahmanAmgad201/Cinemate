@@ -14,19 +14,18 @@ public class LikedMovieController {
     @Autowired
     private LikedMovieService likedMovieService;
 
-    @PostMapping("/v1/like-movie/{movieId}")
-    public ResponseEntity<LikedMovie> likeMovie(
+    @PutMapping("/v1/{movieId}")
+    public ResponseEntity<LikedMovieResponse> likeMovie(
             HttpServletRequest request,
             @PathVariable Long movieId) {
 
         Long userId = (Long) request.getAttribute("userId");
-//        System.out.println("userId = " + userId);
         return ResponseEntity.ok(
                 likedMovieService.likeMovie(userId, movieId)
         );
     }
 
-    @DeleteMapping("/v1/like-movie/{movieId}")
+    @DeleteMapping("/v1/{movieId}")
     public ResponseEntity<?> deleteMovie(
             HttpServletRequest request,
             @PathVariable Long movieId
@@ -43,7 +42,7 @@ public class LikedMovieController {
         return ResponseEntity.ok(likedMovieService.getMyLikedMovies(userId,pageable));
     }
 
-    @GetMapping("/v1/other-user-liked-movies/{userId}")
+    @GetMapping("/v1/user/{userId}")
     public ResponseEntity<Page<LikedMovieView>> getOtherUserLikedMovies(
             @PathVariable Long userId,
             @PageableDefault(size = 20) Pageable pageable
@@ -51,7 +50,7 @@ public class LikedMovieController {
         return ResponseEntity.ok(likedMovieService.getOtherUserLikedMovies(userId,pageable));
     }
 
-    @GetMapping("/v1/is-liked/{movieId}")
+    @GetMapping("/v1/{movieId}")
     public ResponseEntity<Boolean> isLiked(
             HttpServletRequest request,
             @PathVariable Long movieId

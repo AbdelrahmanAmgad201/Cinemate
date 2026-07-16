@@ -1,9 +1,16 @@
-import React from 'react';
+import { Film } from 'lucide-react';
+import './style/Footer.css';
 
 const Footer = () => {
-    return(
-        <footer style={{width: "100%", height: "247px", backgroundColor: "#1A3039", marginTop: "66px"}}>
-
+    return (
+        <footer className="app-footer">
+            <div className="app-footer__inner">
+                <div className="app-footer__brand">
+                    <Film size={18} aria-hidden="true" />
+                    <span>Cinemate</span>
+                </div>
+                <p className="app-footer__tagline">Watch together. Talk about it after.</p>
+            </div>
         </footer>
     );
 };

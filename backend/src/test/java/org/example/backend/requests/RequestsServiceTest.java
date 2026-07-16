@@ -5,12 +5,18 @@ import org.example.backend.organization.Organization;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.Pageable;
 import org.springframework.test.context.ActiveProfiles;
 
+import java.time.Clock;
+import java.time.Instant;
 import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -22,6 +28,9 @@ class RequestsServiceTest {
 
     @Mock
     private RequestsRepository requestsRepository;
+
+    @Spy
+    private Clock clock = Clock.fixed(Instant.parse("2024-06-15T12:00:00Z"), ZoneOffset.UTC);
 
     @InjectMocks
     private RequestsService requestsService;
@@ -76,13 +85,14 @@ class RequestsServiceTest {
     // -----------------------------------------------------
     @Test
     void testGetAllPendingRequests() {
-        when(requestsRepository.findAllByState(State.PENDING)).thenReturn(List.of(request));
+        when(requestsRepository.findAllByState(eq(State.PENDING), any(Pageable.class)))
+                .thenReturn(List.of(request));
 
-        List<Requests> pending = requestsService.getAllPendingRequests();
+        List<RequestsResponse> pending = requestsService.getAllPendingRequests();
 
         assertEquals(1, pending.size());
         assertEquals(State.PENDING, pending.get(0).getState());
-        verify(requestsRepository).findAllByState(State.PENDING);
+        verify(requestsRepository).findAllByState(eq(State.PENDING), any(Pageable.class));
     }
 
     // -----------------------------------------------------
@@ -90,13 +100,14 @@ class RequestsServiceTest {
     // -----------------------------------------------------
     @Test
     void testGetAllOrganizationRequests() {
-        when(requestsRepository.findAllByOrganization_Id(1L)).thenReturn(List.of(request));
+        when(requestsRepository.findAllByOrganization_Id(eq(1L), any(Pageable.class)))
+                .thenReturn(List.of(request));
 
-        List<Requests> orgRequests = requestsService.getAllOrganizationRequests(1L);
+        List<RequestsResponse> orgRequests = requestsService.getAllOrganizationRequests(1L);
 
         assertEquals(1, orgRequests.size());
-        assertEquals(organization, orgRequests.get(0).getOrganization());
-        verify(requestsRepository).findAllByOrganization_Id(1L);
+        assertEquals(organization.getName(), orgRequests.get(0).getOrganization());
+        verify(requestsRepository).findAllByOrganization_Id(eq(1L), any(Pageable.class));
     }
 
     // -----------------------------------------------------
@@ -104,9 +115,12 @@ class RequestsServiceTest {
     // -----------------------------------------------------
     @Test
     void testDeleteOldRequests() {
+        ArgumentCaptor<LocalDateTime> cutoffCaptor = ArgumentCaptor.forClass(LocalDateTime.class);
+
         requestsService.deleteOldRequests();
 
-        // We can only verify that the repository method is called with a cutoff
-        verify(requestsRepository).deleteOldNonPending(any(LocalDateTime.class));
+        LocalDateTime expectedCutoff = LocalDateTime.now(clock).minusDays(10);
+        verify(requestsRepository).deleteOldNonPending(cutoffCaptor.capture());
+        assertEquals(expectedCutoff, cutoffCaptor.getValue());
     }
 }

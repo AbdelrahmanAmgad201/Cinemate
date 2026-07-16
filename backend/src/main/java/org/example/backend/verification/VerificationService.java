@@ -1,19 +1,16 @@
 package org.example.backend.verification;
 
-import jakarta.transaction.Transactional;
+import org.springframework.transaction.annotation.Transactional;
 import lombok.RequiredArgsConstructor;
-import org.example.backend.admin.Admin;
-import org.example.backend.admin.AdminRepository;
+import lombok.extern.slf4j.Slf4j;
 import org.example.backend.admin.AdminService;
-import org.example.backend.organization.Organization;
-import org.example.backend.organization.OrganizationRepository;
+import org.example.backend.security.AccountRegistry;
+import org.example.backend.security.AccountRole;
 import org.example.backend.security.Authenticatable;
 import org.example.backend.security.JWTProvider;
-import org.springframework.context.annotation.Lazy;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.example.backend.organization.OrganizationService;
 import org.example.backend.user.*;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
@@ -21,33 +18,29 @@ import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
+import java.time.Clock;
 import java.time.LocalDateTime;
 import java.util.*;
 
 import lombok.Getter;
 import lombok.Setter;
 
+@Slf4j
 @Getter
 @Setter
 @RequiredArgsConstructor
 @Service
 public class VerificationService {
 
-    @Autowired
-    private VerificationRepository verificationRepository;
+    private final VerificationRepository verificationRepository;
 
-    @Autowired
-    @Lazy
-    private UserService userService;
+    private final AccountRegistry accountRegistry;
 
-    @Autowired
-    private OrganizationService organizationService;
+    private final OrganizationService organizationService;
 
-    @Autowired
-    private AdminService adminService;
+    private final AdminService adminService;
 
-    @Autowired
-    private JWTProvider jwtTokenProvider;
+    private final JWTProvider jwtTokenProvider;
 
     @Value("${sendgrid.api.key}")
     private String sendGridApiKey;
@@ -55,91 +48,69 @@ public class VerificationService {
     @Value("${sendgrid.from.email}")
     private String fromEmail;
 
-
-    private final RestTemplate restTemplate = new RestTemplate();
+    private final RestTemplate restTemplate; // injected from AppConfig (has configured timeouts)
     private final PasswordEncoder passwordEncoder;
     private final UserRepository userRepository;
-    private final OrganizationRepository organizationRepository;
-    private final AdminRepository adminRepository;
+    private final Clock clock;
     private final Random random = new Random();
 
     @Transactional
-    public Verfication forgetPassword(String email,String role) {
+    public Verification forgetPassword(String email,String role) {
         int code = 100000 + random.nextInt(900000);
         if(sendVerificationEmail(email, code)){
-            return addVerfication(email ,code,role);
+            return addVerification(email ,code,role);
         }
         else{
-            return new Verfication();
+            // Fail loudly (REL-05) instead of returning an empty, unpersisted object —
+            // consistent with how UserService.signUp() handles the same failure.
+            throw new RuntimeException(
+                "Failed to send password reset email to " + email + ". Please try again later.");
         }
     }
 
     @Transactional
-    public Verfication addVerfication(String email, String password, int code, String role) {
+    public Verification addVerification(String email, String password, int code, String role) {
         String hashedPassword = passwordEncoder.encode(password);
-        Optional<Verfication> oldVerification = verificationRepository.findByEmail(email);
+        Optional<Verification> oldVerification = verificationRepository.findByEmail(email);
         oldVerification.ifPresent(verificationRepository::delete);
-        Verfication verfication = Verfication.builder()
+        Verification verification = Verification.builder()
                 .email(email)
                 .password(hashedPassword)
-                .code(code)
+                .code(passwordEncoder.encode(String.valueOf(code)))
                 .role(role)
                 .build();
-        return verificationRepository.save(verfication);
+        return verificationRepository.save(verification);
     }
 
-    private Verfication addVerfication(String email, int code,String role) {
-        Optional<Verfication> oldVerification = verificationRepository.findByEmail(email);
+    private Verification addVerification(String email, int code,String role) {
+        Optional<Verification> oldVerification = verificationRepository.findByEmail(email);
         oldVerification.ifPresent(verificationRepository::delete);
-        Verfication verfication = Verfication.builder()
+        Verification verification = Verification.builder()
                 .email(email)
-                .code(code)
+                .code(passwordEncoder.encode(String.valueOf(code)))
                 .role(role)
                 .build();
-        return verificationRepository.save(verfication);
+        return verificationRepository.save(verification);
     }
 
     @Transactional
     public void updatePasswordByVerificationCode(String email, UpdatePasswordWithVerificationDTO updatePasswordWithVerificationDTO,String role) {
         int verificationCode = updatePasswordWithVerificationDTO.getCode();
         String password = updatePasswordWithVerificationDTO.getPassword();
-        Optional<Verfication> verification =verify(email,verificationCode);
+        Optional<Verification> verification =verify(email,verificationCode);
         if(verification.isPresent()) {
-            switch (role) {
-                case "ROLE_USER" -> updateUserPassword(email,password);
-                case "ROLE_ADMIN" ->  updateOrganizationPassword(email,password);
-                case "ROLE_ORGANIZATION" ->  updateAdminPassword(email,password);
-            }
+            accountRegistry.updatePassword(email, role, passwordEncoder.encode(password));
+            // One-time code must be consumed on use (REL-04) — without this, the same
+            // code can reset the password again for the rest of its 10-minute window.
+            verificationRepository.delete(verification.get());
         }
     }
 
-    private void updateUserPassword(String email, String password) {
-        User user  = userRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("User not found"));
-        user.setPassword(passwordEncoder.encode(password));
-        userRepository.save(user);
-    }
-
-    private void updateOrganizationPassword(String email, String password) {
-        Organization organization  = organizationRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("User not found"));
-        organization.setPassword(passwordEncoder.encode(password));
-        organizationRepository.save(organization);
-    }
-
-    private void updateAdminPassword(String email, String password) {
-        Admin admin  = adminRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("User not found"));
-        admin.setPassword(passwordEncoder.encode(password));
-        adminRepository.save(admin);
-    }
-
-    private Optional<Verfication> verify(String Email, int code) {
-        Optional<Verfication> verification = verificationRepository.findByEmail(Email);
+    private Optional<Verification> verify(String Email, int code) {
+        Optional<Verification> verification = verificationRepository.findByEmail(Email);
         try {
             if (verification.isPresent()) {
-                int verifiedCode = verification.get().getCode();
-                if (verifiedCode == code) {
+                if (passwordEncoder.matches(String.valueOf(code), verification.get().getCode())) {
                     return verification;
                 } else {
                     return Optional.empty();
@@ -148,7 +119,7 @@ public class VerificationService {
                 throw new RuntimeException("email not found in DB");
             }
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("Verification check failed for email {}", Email, e);
             return Optional.empty();
         }
     }
@@ -187,14 +158,14 @@ public class VerificationService {
             return true;
 
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("Failed to send verification email to {}", toEmail, e);
             return false;
         }
     }
 
-    @Transactional
+    @Transactional(readOnly = true)
     public boolean forgetPasswordVerification(String Email, int code) {
-        Optional<Verfication> verification=verify(Email, code);
+        Optional<Verification> verification=verify(Email, code);
         return verification.isPresent();
     }
 
@@ -203,27 +174,32 @@ public class VerificationService {
         try {
             String email = verificationDTO.getEmail();
             int code = verificationDTO.getCode();
-            Optional<Verfication> verification = verify(email, code);
+            Optional<Verification> verification = verify(email, code);
 
             if (verification.isPresent()) {
                 String password = verification.get().getPassword();
-                String role = verification.get().getRole();
+                AccountRole role = AccountRole.fromString(verification.get().getRole());
 
-                Authenticatable account = switch (role) {
-                    case "ORGANIZATION" -> organizationService.addOrganization(email, password);
-                    case "USER" -> userService.addUser(email, password);
-                    default -> null;
+                // Admin accounts aren't self-registered through email verification (they're
+                // created directly via AdminService.addAdmin), so ADMIN falls through to null
+                // here same as an unrecognized role.
+                Authenticatable account = role == null ? null : switch (role) {
+                    case ORGANIZATION -> organizationService.addOrganizationWithHashedPassword(email, password);
+                    // Built directly against userRepository rather than via UserService, which
+                    // avoids a UserService <-> VerificationService circular bean dependency.
+                    case USER -> userRepository.save(User.builder().email(email).password(password).build());
+                    case ADMIN -> null;
                 };
 
                 verificationRepository.delete(verification.get());
 
                 if (account != null) {
-                    String token = jwtTokenProvider.generateToken(account);
+                    String accessToken = jwtTokenProvider.generateAccessToken(account);
 
                     return VerificationResponseDTO.builder()
                             .success(true)
                             .message("Verification successful")
-                            .token(token)
+                            .accessToken(accessToken)
                             .id(account.getId())
                             .email(account.getEmail())
                             .role(account.getRole())
@@ -237,7 +213,7 @@ public class VerificationService {
                     .build();
 
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("Email verification failed", e);
             return VerificationResponseDTO.builder()
                     .success(false)
                     .message("Verification failed: " + e.getMessage())
@@ -247,7 +223,7 @@ public class VerificationService {
 
     @Transactional
     public void deleteOldVerifications() {
-        LocalDateTime cutoff = LocalDateTime.now().minusMinutes(10);
+        LocalDateTime cutoff = LocalDateTime.now(clock).minusMinutes(10);
         verificationRepository.deleteOlderThan(cutoff);
     }
 }

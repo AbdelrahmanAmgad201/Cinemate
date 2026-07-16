@@ -1,11 +1,11 @@
 import React, { useState, useContext, useEffect } from 'react';
-import { FaPencilAlt } from 'react-icons/fa';
-import { updatePasswordApi } from '../api/admin-api.jsx';
-import { getUserProfileApi, setUserDataApi, updateAboutApi, updateBirthDateApi, updateUserNameApi } from '../api/user-api.jsx';
+import { Pencil } from 'lucide-react';
+import { updatePasswordApi } from '../api/admin-api.js';
+import { getUserProfileApi, setUserDataApi, updateAboutApi, updateBirthDateApi, updateUserNameApi } from '../api/user-api.js';
 import { ToastContext } from '../context/ToastContext.jsx';
 import { MIN_LENGTHS, MAX_VALUES } from '../constants/constants.jsx';
 
-export default function PersonalData({ profile, user }) {
+export default function PersonalData({ profile, user, onProfileUpdated }) {
     const [localProfile, setLocalProfile] = useState(profile || {});
 
     useEffect(() => { setLocalProfile(profile || {}); }, [profile]);
@@ -123,12 +123,14 @@ export default function PersonalData({ profile, user }) {
                 res = await updateUserNameApi({ firstName, lastName });
                 if (res?.success) {
                     setLocalProfile(prev => ({ ...(prev || {}), firstName, lastName }));
+                    onProfileUpdated?.({ firstName, lastName });
                     showToast('Saved', 'Name updated', 'success');
                 }
             } else if (editingKey === 'aboutMe') {
                 res = await updateAboutApi({ about: editValue });
                 if (res?.success) {
                     setLocalProfile(prev => ({ ...(prev || {}), aboutMe: editValue, about: editValue }));
+                    onProfileUpdated?.({ aboutMe: editValue, about: editValue });
                     showToast('Saved', 'About updated', 'success');
                 }
             } else if (editingKey === 'birthdate') {
@@ -150,6 +152,7 @@ export default function PersonalData({ profile, user }) {
                 res = await updateBirthDateApi({ birthDate: editValue });
                 if (res?.success) {
                     setLocalProfile(prev => ({ ...(prev || {}), birthdate: editValue, birthDate: editValue }));
+                    onProfileUpdated?.({ birthdate: editValue, birthDate: editValue });
                     showToast('Saved', 'Birthdate updated', 'success');
                 }
             } else {
@@ -243,7 +246,7 @@ export default function PersonalData({ profile, user }) {
                                     aria-label={`Edit ${label}`}
                                     onClick={() => handleEditClick(k)}
                                 >
-                                    <FaPencilAlt />
+                                    <Pencil size={14} />
                                 </button>
                             )}
 
@@ -316,7 +319,7 @@ export default function PersonalData({ profile, user }) {
                                 aria-label={`Change password`}
                                 onClick={() => setEditingPassword(true)}
                             >
-                                <FaPencilAlt />
+                                <Pencil size={14} />
                             </button>
 
                             <div className="pd-label">Password</div>

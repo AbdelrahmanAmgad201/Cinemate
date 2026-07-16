@@ -1,18 +1,16 @@
-/* sort by list */
 .feed-sort-bar {
-    margin-bottom: 16px;
+    margin-bottom: var(--space-4);
     display: flex;
     align-items: center;
-    gap: 8px;
-    font-size: 14px;
-    color: var(--grey-text);
+    gap: var(--space-2);
+    font-size: var(--font-size-body-sm);
+    color: var(--text-tertiary);
     position: relative;
-    z-index: 10;
-
+    z-index: var(--z-dropdown);
 }
 
 .sort-label {
-    font-weight: 500;
+    font-weight: var(--font-weight-medium);
 }
 
 .sort-dropdown-container {
@@ -23,30 +21,29 @@
 .sort-trigger {
     display: flex;
     align-items: center;
-    gap: 6px;
+    gap: var(--space-2);
     background: transparent;
     border: none;
-    color: var(--blue-bell);
-    font-weight: 700;
-    font-size: 14px;
+    color: var(--color-accent);
+    font-weight: var(--font-weight-semibold);
+    font-size: var(--font-size-body-sm);
     cursor: pointer;
-    padding: 4px 8px;
-    border-radius: 20px;
-    transition: background 0.2s ease;
+    padding: var(--space-2) var(--space-3);
+    border-radius: var(--radius-pill);
+    transition: background-color var(--duration-base) var(--ease-standard);
 }
 
 .sort-trigger:hover {
-    background-color: rgba(255, 255, 255, 0.1);
+    background-color: var(--surface-2);
 }
 
 .sort-icon {
     display: flex;
     align-items: center;
-    font-size: 16px;
 }
 
 .sort-arrow {
-    transition: transform 0.2s ease;
+    transition: transform var(--duration-base) var(--ease-standard);
 }
 
 .sort-arrow.open {
@@ -57,40 +54,39 @@
     position: absolute;
     top: 100%;
     left: 0;
-    margin-top: 8px;
-    background-color: var(--ink-black);
-    border: 1px solid var(--border-color);
-    border-radius: 8px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-    min-width: 120px;
+    margin-top: var(--space-2);
+    background-color: var(--surface-2);
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-md);
+    min-width: 140px;
     overflow: hidden;
     display: flex;
     flex-direction: column;
 }
 
 .sort-option {
-    padding: 10px 16px;
+    padding: var(--space-3) var(--space-4);
     cursor: pointer;
     display: flex;
     align-items: center;
-    gap: 10px;
-    color: var(--grey-text);
-    font-size: 14px;
-    transition: background 0.2s;
+    gap: var(--space-2);
+    color: var(--text-secondary);
+    font-size: var(--font-size-body-sm);
+    transition: background-color var(--duration-base) var(--ease-standard), color var(--duration-base) var(--ease-standard);
 }
 
 .sort-option:hover {
-    background-color: rgba(255, 255, 255, 0.05);
-    color: #fff;
+    background-color: var(--surface-3);
+    color: var(--text-primary);
 }
 
 .sort-option.selected {
-    color: var(--blue-bell);
-    font-weight: 600;
+    color: var(--color-accent);
+    font-weight: var(--font-weight-semibold);
 }
 
 .sort-option-icon {
-    font-size: 16px;
     display: flex;
     align-items: center;
 }

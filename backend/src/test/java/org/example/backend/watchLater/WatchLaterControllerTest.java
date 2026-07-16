@@ -28,23 +28,16 @@ class WatchLaterControllerTest {
 
     private Long userId;
     private Long movieId;
-    private WatchLaterID watchLaterID;
-    private WatchLater watchLater;
-    private WatchLater newWatchLater;
+    private WatchLaterResponse watchLater;
+    private WatchLaterResponse newWatchLater;
 
     @BeforeEach
     void setup() {
         userId = 1L;
         movieId = 10L;
-        watchLaterID = new WatchLaterID(userId, movieId);
 
-        watchLater = WatchLater.builder()
-                .watchLaterID(watchLaterID)
-                .build();
-
-        newWatchLater = WatchLater.builder()
-                .watchLaterID(watchLaterID)
-                .build();
+        watchLater = WatchLaterResponse.builder().movieId(movieId).build();
+        newWatchLater = WatchLaterResponse.builder().movieId(movieId).build();
     }
 
     // -------------------------------------------------------------------------
@@ -85,9 +78,9 @@ class WatchLaterControllerTest {
         when(request.getAttribute("userId")).thenReturn(userId);
         when(watchLaterService.addMovie(userId, movieId)).thenReturn(watchLater);
 
-        ResponseEntity<WatchLater> response = watchLaterController.addToWatchLater(request, movieId);
+        ResponseEntity<WatchLaterResponse> response = watchLaterController.addToWatchLater(request, movieId);
 
-        assertEquals(200, response.getStatusCodeValue());
+        assertEquals(200, response.getStatusCode().value());
         assertEquals(watchLater, response.getBody());
     }
 
@@ -99,9 +92,9 @@ class WatchLaterControllerTest {
         when(request.getAttribute("userId")).thenReturn(userId);
         when(watchLaterService.addMovie(userId, movieId)).thenReturn(newWatchLater);
 
-        ResponseEntity<WatchLater> response = watchLaterController.addToWatchLater(request, movieId);
+        ResponseEntity<WatchLaterResponse> response = watchLaterController.addToWatchLater(request, movieId);
 
-        assertEquals(200, response.getStatusCodeValue());
+        assertEquals(200, response.getStatusCode().value());
         assertEquals(newWatchLater, response.getBody());
     }
 }

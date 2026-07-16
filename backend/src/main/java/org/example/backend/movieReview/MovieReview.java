@@ -7,7 +7,7 @@ import jakarta.persistence.*;
 import lombok.*;
 import org.example.backend.movie.Movie;
 import org.example.backend.user.User;
-import java.time.LocalDateTime;
+import java.time.Instant;
 
 @Getter
 @Setter
@@ -55,12 +55,12 @@ public class MovieReview {
     private String comment;
 
     @Column(name = "created_at", nullable = false, updatable = false)
-    private LocalDateTime createdAt;
+    private Instant createdAt;
 
     @PrePersist
     protected void onCreate() {
         if (createdAt == null) {
-            createdAt = LocalDateTime.now();
+            createdAt = Instant.now();
         }
         validateRating();
     }

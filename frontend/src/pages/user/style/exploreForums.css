@@ -1,50 +1,69 @@
+.explore-container {
+    padding: var(--space-6) 0;
+}
+
 .explore-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 24px;
+    margin-bottom: var(--space-6);
     flex-wrap: wrap;
-    gap: 16px;
+    gap: var(--space-4);
 }
 
 .explore-title {
+    font-size: var(--font-size-h1);
     margin: 0;
 }
 
 .explore-sort-buttons {
     display: flex;
-    gap: 8px;
-    background-color: rgba(255, 255, 255, 0.05);
-    padding: 4px;
-    border-radius: 8px;
+    gap: var(--space-1);
+    background-color: var(--surface-1);
+    padding: var(--space-1);
+    border-radius: var(--radius-md);
 }
 
 .sort-btn {
     background: transparent;
     border: none;
-    color: #8ba2b1;
-    padding: 6px 16px;
-    font-size: 14px;
-    font-weight: 600;
+    color: var(--text-tertiary);
+    padding: var(--space-2) var(--space-4);
+    font-size: var(--font-size-body-sm);
+    font-weight: var(--font-weight-medium);
     cursor: pointer;
-    border-radius: 6px;
-    transition: all 0.2s ease;
+    border-radius: var(--radius-sm);
+    transition: color var(--duration-base) var(--ease-standard), background-color var(--duration-base) var(--ease-standard);
 }
 
 .sort-btn:hover {
-    color: #ffffff;
-    background-color: rgba(255, 255, 255, 0.1);
+    color: var(--text-primary);
+    background-color: var(--surface-2);
 }
 
 .sort-btn.active {
-    background-color: var(--blue-bell, #7c83fd);
-    color: #ffffff;
+    background-color: var(--color-accent);
+    color: var(--text-on-accent);
 }
 
-.loading-text {
+.forums-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: var(--space-5);
+    width: 100%;
+}
+
+.load-more-container {
+    display: flex;
+    justify-content: center;
+    margin: var(--space-8) 0;
+}
+
+.explore-end-of-results {
     text-align: center;
-    color: #8ba2b1;
-    margin-top: 40px;
+    color: var(--text-disabled);
+    margin: var(--space-8) 0;
+    font-size: var(--font-size-body-sm);
 }
 
 @media (max-width: 600px) {
@@ -52,52 +71,12 @@
         flex-direction: column;
         align-items: flex-start;
     }
-
     .explore-sort-buttons {
         width: 100%;
         justify-content: space-between;
     }
-
     .sort-btn {
         flex: 1;
         text-align: center;
-        padding: 8px 4px;
-        font-size: 13px;
     }
-}
-
-.forums-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-
-    gap: 24px;
-
-    width: 100%;
-    margin-top: 20px;
-}
-
-.load-more-container {
-    display: flex;
-    justify-content: center;
-    margin: 40px 0;
-}
-
-.load-more-btn {
-    background-color: rgba(255, 255, 255, 0.1);
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    color: white;
-    padding: 10px 24px;
-    border-radius: 20px;
-    cursor: pointer;
-    font-weight: 600;
-    transition: all 0.2s;
-}
-
-.load-more-btn:hover {
-    background-color: rgba(255, 255, 255, 0.2);
-}
-
-.load-more-btn:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
 }

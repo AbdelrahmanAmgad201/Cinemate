@@ -1,15 +1,20 @@
 package org.example.watchparty;
 
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.example.watchparty.dtos.UserDataDTO;
-import org.example.watchparty.dtos.WatchParty;
+import org.example.watchparty.dtos.WatchPartyCreatedResponse;
 import org.example.watchparty.dtos.WatchPartyResponse;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
 
-@Slf4j
+/**
+ * Public watch-party API. Reached directly through the gateway (Stage 1): the gateway
+ * authenticates the access token and forwards a trusted identity as X-User-* headers,
+ * which {@code GatewayAuthenticationFilter} exposes as request attributes. This service
+ * now owns the whole domain — there is no backend proxy in front of it.
+ */
 @RestController
 @RequestMapping("/api/watch-party")
 @RequiredArgsConstructor
@@ -17,74 +22,54 @@ public class WatchPartyController {
 
     private final WatchPartyService watchPartyService;
 
-    @PostMapping
-    public ResponseEntity<WatchParty> createParty(@RequestBody WatchParty request) {
-        try {
-            WatchParty party = watchPartyService.createParty(request);
-            return ResponseEntity.status(HttpStatus.CREATED).body(party);
-        } catch (IllegalArgumentException e) {
-            log.error("Invalid party creation request: {}", e.getMessage());
-            return ResponseEntity.badRequest().build();
-        } catch (Exception e) {
-            log.error("Error creating party", e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
-        }
+    @PostMapping("/v1/{movieId}")
+    public ResponseEntity<WatchPartyCreatedResponse> create(
+            HttpServletRequest request,
+            @PathVariable Long movieId) {
+        Long userId = requireUserId(request);
+        String userName = (String) request.getAttribute("userName");
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(watchPartyService.create(userId, userName, movieId));
     }
 
-    @PostMapping("/{partyId}/join")
-    public ResponseEntity<Void> joinParty(
-            @PathVariable String partyId,
-            @RequestBody UserDataDTO user) {
-        try {
-            watchPartyService.joinParty(partyId, user);
-            return ResponseEntity.ok().build();
-        } catch (IllegalArgumentException e) {
-            log.error("Invalid join party request: {}", e.getMessage());
-            return ResponseEntity.badRequest().build();
-        } catch (Exception e) {
-            log.error("Error joining party", e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
-        }
+    @GetMapping("/v1/{partyId}")
+    public ResponseEntity<WatchPartyResponse> get(@PathVariable String partyId) {
+        return ResponseEntity.ok(watchPartyService.get(partyId));
     }
 
-    @DeleteMapping("/{partyId}/leave")
-    public ResponseEntity<Void> leaveParty(
-            @PathVariable String partyId,
-            @RequestParam Long userId) {
-        try {
-            watchPartyService.leaveParty(partyId, userId);
-            return ResponseEntity.ok().build();
-        } catch (IllegalArgumentException e) {
-            log.error("Invalid leave party request: {}", e.getMessage());
-            return ResponseEntity.badRequest().build();
-        } catch (Exception e) {
-            log.error("Error leaving party", e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
-        }
+    @PutMapping("/v1/{partyId}/members")
+    public ResponseEntity<WatchPartyResponse> join(
+            HttpServletRequest request,
+            @PathVariable String partyId) {
+        Long userId = requireUserId(request);
+        String userName = (String) request.getAttribute("userName");
+        return ResponseEntity.ok(watchPartyService.join(userId, userName, partyId));
     }
 
-    @GetMapping("/{partyId}")
-    public ResponseEntity<WatchPartyResponse> getParty(@PathVariable String partyId) {
-        try {
-            WatchPartyResponse party = watchPartyService.getPartyWithMembers(partyId);
-            if (party == null) {
-                return ResponseEntity.notFound().build();
-            }
-            return ResponseEntity.ok(party);
-        } catch (Exception e) {
-            log.error("Error getting party", e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
-        }
+    @DeleteMapping("/v1/{partyId}/members")
+    public ResponseEntity<Void> leave(
+            HttpServletRequest request,
+            @PathVariable String partyId) {
+        watchPartyService.leave(requireUserId(request), partyId);
+        return ResponseEntity.ok().build();
     }
 
-    @DeleteMapping("/{partyId}")
-    public ResponseEntity<Void> deleteParty(@PathVariable String partyId) {
-        try {
-            watchPartyService.deleteParty(partyId);
-            return ResponseEntity.noContent().build();
-        } catch (Exception e) {
-            log.error("Error deleting party", e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+    @DeleteMapping("/v1/{partyId}")
+    public ResponseEntity<Void> delete(
+            HttpServletRequest request,
+            @PathVariable String partyId) {
+        watchPartyService.delete(requireUserId(request), partyId);
+        return ResponseEntity.noContent().build();
+    }
+
+    // Identity is injected by GatewayAuthenticationFilter from the gateway's verified
+    // X-User-* headers. Its absence means the request didn't arrive through the
+    // authenticated edge — reject rather than act anonymously.
+    private Long requireUserId(HttpServletRequest request) {
+        Object userId = request.getAttribute("userId");
+        if (userId == null) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Authentication required");
         }
+        return (Long) userId;
     }
 }
