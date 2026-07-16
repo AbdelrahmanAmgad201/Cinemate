@@ -1,7 +1,3 @@
-"""Batch-native model wrapper. Loaded once per worker process, never per-message.
-
-Exposes a single function: score(texts) -> list[{"toxic": float, "severe_toxic": float}]
-"""
 import os
 
 import numpy as np
